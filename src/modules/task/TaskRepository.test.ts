@@ -109,6 +109,7 @@ const h = vi.hoisted(() => {
 vi.mock("@/src/lib/supabaseClient", () => ({ supabase: { from: h.from } }));
 
 import * as TaskRepository from "@/src/modules/task/TaskRepository";
+import { MaxDepthError } from "@/src/modules/task/TaskRepository";
 import type { TaskStatus } from "@/src/modules/task/types";
 
 type SeedTask = {
@@ -231,5 +232,39 @@ describe("createTask", () => {
     });
 
     expect(statusOf("parent")).toBe("todo");
+  });
+
+  it("allows a subtask at the deepest permitted level (level 3)", async () => {
+    // root(1) -> child(2); adding under child creates level 3, which is allowed.
+    h.seed([
+      task({ id: "root" }),
+      task({ id: "child", parent_task_id: "root" }),
+    ]);
+
+    await expect(
+      TaskRepository.createTask({ title: "grandchild", parentTaskId: "child" }),
+    ).resolves.toBeDefined();
+
+    expect(h.store.rows.some((r) => r.parent_task_id === "child")).toBe(true);
+  });
+
+  it("rejects a subtask that would exceed the max depth (level 4)", async () => {
+    // root(1) -> child(2) -> grandchild(3); adding under grandchild is level 4.
+    h.seed([
+      task({ id: "root" }),
+      task({ id: "child", parent_task_id: "root" }),
+      task({ id: "grandchild", parent_task_id: "child" }),
+    ]);
+
+    const before = h.store.rows.length;
+    await expect(
+      TaskRepository.createTask({
+        title: "too deep",
+        parentTaskId: "grandchild",
+      }),
+    ).rejects.toBeInstanceOf(MaxDepthError);
+
+    // Nothing was inserted.
+    expect(h.store.rows.length).toBe(before);
   });
 });

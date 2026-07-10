@@ -1,5 +1,16 @@
 import { supabase } from "@/src/lib/supabaseClient";
 import type { Task, TaskStatus } from "@/src/modules/task/types";
+import { MAX_TASK_DEPTH } from "@/src/modules/task/taskTree";
+
+// Thrown when creating a subtask would exceed the nesting limit (spec §4).
+// Carries a stable `code` so the store/UI can distinguish it from generic failures.
+export class MaxDepthError extends Error {
+  readonly code = "max_depth" as const;
+  constructor() {
+    super(`Subtasks can only nest ${MAX_TASK_DEPTH} levels deep`);
+    this.name = "MaxDepthError";
+  }
+}
 
 interface TaskRow {
   id: string;
@@ -44,6 +55,15 @@ export async function createTask(input: {
   dueDate?: string | null;
   position?: number;
 }): Promise<Task> {
+  // Enforce the nesting limit before inserting: a new child sits one level below
+  // its parent, so the parent must be shallower than the max depth.
+  if (input.parentTaskId) {
+    const parentDepth = await getDepth(input.parentTaskId);
+    if (parentDepth >= MAX_TASK_DEPTH) {
+      throw new MaxDepthError();
+    }
+  }
+
   const { data, error } = await supabase
     .from("tasks")
     .insert({
@@ -62,6 +82,30 @@ export async function createTask(input: {
   }
 
   return fromRow(data);
+}
+
+// Depth of a task counting itself and all ancestors (root = 1), via the DB.
+// Authoritative counterpart to taskTree.taskDepth, which the UI uses client-side.
+async function getDepth(taskId: string): Promise<number> {
+  let depth = 0;
+  let currentId: string | null = taskId;
+
+  while (currentId) {
+    const { data, error } = (await supabase
+      .from("tasks")
+      .select("parent_task_id")
+      .eq("id", currentId)
+      .single()) as {
+      data: { parent_task_id: string | null } | null;
+      error: unknown;
+    };
+
+    if (error) throw error;
+    depth += 1;
+    currentId = data?.parent_task_id ?? null;
+  }
+
+  return depth;
 }
 
 export async function updateTask(

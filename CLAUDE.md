@@ -18,7 +18,7 @@ rather than picking a "reasonable" alternative.
 - Forms: `react-hook-form` (or plain controlled state — nothing else)
 - Data fetching: `@supabase/supabase-js` client directly, or React Query if explicitly specced
 - Testing: Playwright (E2E), Vitest (unit)
-- Drag-and-drop: none approved yet — ask before adding one
+- Drag-and-drop: dnd kit library
 
 ## Architecture Rules (hard constraints)
 1. **Never import a module's internals directly into another module.** `Finance` must not

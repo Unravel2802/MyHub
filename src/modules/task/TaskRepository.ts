@@ -64,13 +64,17 @@ export async function createTask(input: {
     }
   }
 
+  // New tasks land in the inbox column; append them to the end so ordering is
+  // stable and drag-and-drop has distinct positions to reorder against.
+  const position = input.position ?? (await nextPosition("inbox"));
+
   const { data, error } = await supabase
     .from("tasks")
     .insert({
       title: input.title,
       parent_task_id: input.parentTaskId ?? null,
       due_date: input.dueDate ?? null,
-      position: input.position ?? 0,
+      position,
     })
     .select()
     .single();
@@ -82,6 +86,23 @@ export async function createTask(input: {
   }
 
   return fromRow(data);
+}
+
+// The next position at the end of a column: one past the current max among
+// non-deleted tasks of that status (0 when the column is empty).
+async function nextPosition(status: TaskStatus): Promise<number> {
+  const { data, error } = (await supabase
+    .from("tasks")
+    .select("position")
+    .eq("status", status)
+    .is("deleted_at", null)) as {
+    data: { position: number }[] | null;
+    error: unknown;
+  };
+
+  if (error) throw error;
+  const positions = (data ?? []).map((r) => r.position);
+  return positions.length > 0 ? Math.max(...positions) + 1 : 0;
 }
 
 // Depth of a task counting itself and all ancestors (root = 1), via the DB.
@@ -124,6 +145,39 @@ export async function updateTask(
 
   if (error) throw error;
   return fromRow(data);
+}
+
+// Move a task to a new position, optionally into a different column, in a single
+// write. Used for drag-and-drop drops (within-column reorder and cross-column
+// moves). When the status changes, runs the same parent auto-complete / revert
+// cascade as updateTaskStatus so completion behavior stays consistent.
+export async function moveTask(
+  id: string,
+  changes: { status?: TaskStatus; position: number },
+): Promise<Task> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({
+      position: changes.position,
+      ...(changes.status !== undefined && { status: changes.status }),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  const task = fromRow(data);
+
+  if (changes.status !== undefined && task.parentTaskId) {
+    if (changes.status === "done") {
+      await autoCompleteAncestors(task.parentTaskId);
+    } else {
+      await revertAncestorsToIncomplete(task.parentTaskId);
+    }
+  }
+
+  return task;
 }
 
 export async function reorderTask(id: string, position: number): Promise<Task> {

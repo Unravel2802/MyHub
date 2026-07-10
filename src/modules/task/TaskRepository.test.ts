@@ -267,4 +267,53 @@ describe("createTask", () => {
     // Nothing was inserted.
     expect(h.store.rows.length).toBe(before);
   });
+
+  it("appends new tasks to the end of the inbox column", async () => {
+    h.seed([task({ id: "a", position: 0 }), task({ id: "b", position: 1 })]);
+
+    const created = await TaskRepository.createTask({ title: "c" });
+
+    expect(created.position).toBe(2);
+  });
+});
+
+const positionOf = (id: string) =>
+  h.store.rows.find((r) => r.id === id)?.position;
+
+describe("moveTask", () => {
+  it("repositions within a column without changing status", async () => {
+    h.seed([
+      task({ id: "a", status: "todo", position: 0 }),
+      task({ id: "b", status: "todo", position: 1 }),
+    ]);
+
+    await TaskRepository.moveTask("a", { position: 1.5 });
+
+    expect(positionOf("a")).toBe(1.5);
+    expect(statusOf("a")).toBe("todo");
+  });
+
+  it("auto-completes the parent when a cross-column move finishes the last child", async () => {
+    h.seed([
+      task({ id: "root" }),
+      task({ id: "child", parent_task_id: "root" }),
+    ]);
+
+    await TaskRepository.moveTask("child", { status: "done", position: 0 });
+
+    expect(statusOf("child")).toBe("done");
+    expect(statusOf("root")).toBe("done");
+  });
+
+  it("reverts a done parent when a child is moved out of done", async () => {
+    h.seed([
+      task({ id: "root", status: "done" }),
+      task({ id: "child", parent_task_id: "root", status: "done" }),
+    ]);
+
+    await TaskRepository.moveTask("child", { status: "todo", position: 0 });
+
+    expect(statusOf("child")).toBe("todo");
+    expect(statusOf("root")).toBe("todo");
+  });
 });

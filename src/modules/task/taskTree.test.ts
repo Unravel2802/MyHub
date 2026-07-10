@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   taskDepth,
   canAddSubtask,
+  positionBetween,
   MAX_TASK_DEPTH,
 } from "@/src/modules/task/taskTree";
 import type { Task } from "@/src/modules/task/types";
@@ -47,5 +48,23 @@ describe("canAddSubtask", () => {
 
   it("uses MAX_TASK_DEPTH as the boundary", () => {
     expect(MAX_TASK_DEPTH).toBe(3);
+  });
+});
+
+describe("positionBetween", () => {
+  it("returns the midpoint between two neighbors", () => {
+    expect(positionBetween(2, 4)).toBe(3);
+  });
+
+  it("drops before the first card when there is no card above", () => {
+    expect(positionBetween(null, 4)).toBe(3);
+  });
+
+  it("drops after the last card when there is no card below", () => {
+    expect(positionBetween(2, null)).toBe(3);
+  });
+
+  it("returns 0 for an empty column", () => {
+    expect(positionBetween(null, null)).toBe(0);
   });
 });

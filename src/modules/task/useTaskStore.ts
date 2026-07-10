@@ -25,6 +25,10 @@ interface TaskStore {
   ) => Promise<void>;
   updateStatus: (id: string, status: TaskStatus) => Promise<void>;
   reorderTask: (id: string, position: number) => Promise<void>;
+  moveTask: (
+    id: string,
+    changes: { status?: TaskStatus; position: number },
+  ) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
 }
 
@@ -161,6 +165,43 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
       try {
         await TaskRepository.reorderTask(id, position);
+      } catch (err) {
+        set({ tasks: previousTasks, error: toUserMessage(err) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    moveTask: async (id, changes) => {
+      const previousTasks = get().tasks;
+      set({
+        tasks: previousTasks.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                position: changes.position,
+                ...(changes.status !== undefined && { status: changes.status }),
+              }
+            : t,
+        ),
+        error: null,
+      });
+      addPending(id);
+
+      try {
+        const updated = await TaskRepository.moveTask(id, changes);
+        if (changes.status !== undefined) {
+          // Cross-column move: refetch so a parent auto-complete/revert cascade
+          // is reflected. Within-column reorder skips this to stay snap-free.
+          await get().fetchTasks();
+        } else {
+          set({ tasks: get().tasks.map((t) => (t.id === id ? updated : t)) });
+        }
+        emit({
+          type: changes.status === "done" ? "task.completed" : "task.updated",
+          payload: { taskId: id },
+          timestamp: Date.now(),
+        });
       } catch (err) {
         set({ tasks: previousTasks, error: toUserMessage(err) });
       } finally {

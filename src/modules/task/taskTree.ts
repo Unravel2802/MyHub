@@ -22,3 +22,16 @@ export function taskDepth(tasks: Task[], id: string): number {
 export function canAddSubtask(tasks: Task[], id: string): boolean {
   return taskDepth(tasks, id) < MAX_TASK_DEPTH;
 }
+
+// Fractional position for a card dropped between two neighbors. Pass the position
+// of the card immediately before / after the drop target, or null when dropping
+// at the start/end of a column. Pair with the store's moveTask on drop.
+export function positionBetween(
+  before: number | null,
+  after: number | null,
+): number {
+  if (before === null && after === null) return 0;
+  if (before === null) return after! - 1;
+  if (after === null) return before + 1;
+  return (before + after) / 2;
+}

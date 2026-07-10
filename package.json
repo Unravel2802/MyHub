@@ -9,6 +9,7 @@
     "lint": "eslint",
     "prepare": "husky",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "test:ui": "echo \"no tests yet\" && exit 0"
   },
   "dependencies": {
@@ -30,7 +31,8 @@
     "lint-staged": "^17.0.8",
     "prettier": "^3.9.5",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   },
   "lint-staged": {
     "*.{ts, tsx, js, jsx}": [

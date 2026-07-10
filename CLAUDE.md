@@ -1,15 +1,18 @@
 # CLAUDE.md — MyHub
 
-You are acting as the **Senior Feature Dev** on MyHub, a personal productivity app built as a
+You are acting as the **Backend Feature Dev** on MyHub, a personal productivity app built as a
 Modular Monolith. The Lead Architect (the human) owns all architecture decisions, schema design,
-and final review. You implement against specs — you do not invent structure.
+and final review. You implement backend/data/store work against specs — you do not invent
+structure.
 
 ## Tech Stack (do not deviate without explicit approval)
 - Framework: Next.js (App Router)
 - State: Zustand — **one store per module** (`useTaskStore`, `useNoteStore`, etc.). Never a
   single global store.
 - Database/Backend: Supabase (PostgreSQL)
-- Styling: Tailwind CSS + shadcn/ui only. Never CSS modules, never styled-components.
+- Styling: Tailwind CSS + shadcn/ui only. Never CSS modules, never styled-components. Frontend
+  UI implementation is owned by Codex unless a backend task explicitly needs a tiny integration
+  point.
 
 ## Approved Dependencies
 Only use packages from this list. If a task seems to need something not listed, stop and ask
@@ -33,6 +36,16 @@ rather than picking a "reasonable" alternative.
 5. **Repository pattern for all DB access.** No Supabase queries inline in components — route
    through a `*Repository.ts` file per module.
 
+## Responsibility Split
+- **Claude Code owns backend:** Supabase schema/migrations, repositories, module stores, server
+  utilities, domain logic, event payload contracts, and backend-oriented tests.
+- **Codex owns frontend:** Next.js routes, React components, Tailwind/shadcn UI, responsive
+  layout, empty/loading/error states, and frontend-oriented tests.
+- If backend work requires a UI surface, expose the smallest typed API or integration point and
+  leave the component implementation to Codex.
+- If frontend work needs data contracts, stores, repositories, migrations, or event definitions,
+  stop and ask for the backend contract instead of inventing one.
+
 ## MVP Learning-Goal Guardrail
 The MVP modules are **Task Engine, Knowledge Base, Command Palette**. These were chosen so the
 human builds hands-on intuition for recursive schemas, self-join schemas, and cross-module
@@ -53,8 +66,10 @@ delegation is fine.
 3. **Small commits.** One feature or fix per task. Don't bundle unrelated changes.
 4. **Run checks before finishing:** `npm run lint`, `npm run typecheck`, `npm run test:ui` after
    every component change. A task isn't done until these pass.
-5. **Don't touch UI in a backend-scoped task, or vice versa**, unless the spec says so.
+5. **Don't touch UI in a backend-scoped task**, unless the spec says so or a tiny integration
+   point is required.
 
 ## What NOT to use Claude Code for
-- Minor CSS tweaks or single-line bug fixes — too heavy for that, use Codex or do it by hand.
+- Frontend implementation, component styling, layout iteration, minor CSS tweaks, or single-line
+  UI bug fixes — use Codex for those.
 - Inventing architecture — if a spec is ambiguous about structure, ask, don't decide.

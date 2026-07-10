@@ -1,0 +1,78 @@
+import { describe, expect, it } from "vitest";
+import {
+  filterVisibleTasks,
+  formatDueDate,
+  formatStatus,
+  getTaskStats,
+  groupTasksByStatus,
+} from "@/src/modules/task/taskBoardUtils";
+import type { Task } from "@/src/modules/task/types";
+
+function task(overrides: Partial<Task> & Pick<Task, "id" | "title">): Task {
+  return {
+    id: overrides.id,
+    title: overrides.title,
+    status: overrides.status ?? "inbox",
+    position: overrides.position ?? 0,
+    dueDate: overrides.dueDate ?? null,
+    parentTaskId: overrides.parentTaskId ?? null,
+    deletedAt: overrides.deletedAt ?? null,
+    createdAt: overrides.createdAt ?? "2026-01-01T00:00:00.000Z",
+    updatedAt: overrides.updatedAt ?? "2026-01-01T00:00:00.000Z",
+  };
+}
+
+describe("task board helpers", () => {
+  it("formats status and due date labels", () => {
+    expect(formatStatus("in_progress")).toBe("In Progress");
+    expect(formatDueDate(null)).toBe("No due date");
+    expect(formatDueDate("2026-07-10")).toBe("Jul 10");
+  });
+
+  it("filters active tasks by title search", () => {
+    const tasks = [
+      task({ id: "a", title: "Plan sprint" }),
+      task({ id: "b", title: "Review notes" }),
+      task({
+        id: "c",
+        title: "Deleted planning note",
+        deletedAt: "2026-07-10T00:00:00.000Z",
+      }),
+    ];
+
+    expect(filterVisibleTasks(tasks, "PLAN").map((t) => t.id)).toEqual(["a"]);
+  });
+
+  it("groups tasks by status in position order", () => {
+    const grouped = groupTasksByStatus([
+      task({ id: "later", title: "Later", status: "todo", position: 20 }),
+      task({ id: "first", title: "First", status: "todo", position: 10 }),
+      task({ id: "done", title: "Done", status: "done", position: 0 }),
+    ]);
+
+    expect(grouped.todo.map((t) => t.id)).toEqual(["first", "later"]);
+    expect(grouped.done.map((t) => t.id)).toEqual(["done"]);
+  });
+
+  it("computes active task stats", () => {
+    const stats = getTaskStats(
+      [
+        task({ id: "a", title: "Open", status: "todo", dueDate: "2026-07-10" }),
+        task({ id: "b", title: "Done", status: "done", dueDate: "2026-07-10" }),
+        task({
+          id: "c",
+          title: "Deleted",
+          dueDate: "2026-07-10",
+          deletedAt: "2026-07-10T00:00:00.000Z",
+        }),
+      ],
+      "2026-07-10",
+    );
+
+    expect(stats).toEqual([
+      { label: "Open tasks", value: 1 },
+      { label: "Due today", value: 2 },
+      { label: "Completed", value: 1 },
+    ]);
+  });
+});

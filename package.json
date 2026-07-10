@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "prepare": "husky"
+    "prepare": "husky",
+    "typecheck": "tsc --noEmit",
+    "test:ui": "echo \"no tests yet\" && exit 0"
   },
   "dependencies": {
     "next": "16.2.10",

@@ -10,9 +10,12 @@
     "prepare": "husky",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:ui": "echo \"no tests yet\" && exit 0"
+    "test:ui": "playwright test"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "^2.110.2",
     "next": "16.2.10",
     "react": "19.2.4",
@@ -20,6 +23,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

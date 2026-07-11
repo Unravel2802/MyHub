@@ -1,12 +1,22 @@
+import { useDroppable } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { TaskCard } from "@/src/modules/task/components/TaskCard";
 import type { ColumnConfig } from "@/src/modules/task/taskBoardConfig";
 import type { Task, TaskStatus } from "@/src/modules/task/types";
 
 type BoardColumnProps = {
+  canAddSubtaskIds: Set<string>;
+  childCounts: Map<string, number>;
   column: ColumnConfig;
+  depths: Map<string, number>;
   disabledTaskIds: Set<string>;
+  isCreating: boolean;
   isLoading: boolean;
   tasks: Task[];
+  onCreateSubtask: (id: string, title: string) => void;
   onDeleteTask: (id: string) => void;
   onUpdateDueDate: (id: string, dueDate: string | null) => void;
   onUpdateStatus: (id: string, status: TaskStatus) => void;
@@ -14,17 +24,27 @@ type BoardColumnProps = {
 };
 
 export function BoardColumn({
+  canAddSubtaskIds,
+  childCounts,
   column,
+  depths,
   disabledTaskIds,
+  isCreating,
   isLoading,
   tasks,
+  onCreateSubtask,
   onDeleteTask,
   onUpdateDueDate,
   onUpdateStatus,
   onUpdateTitle,
 }: BoardColumnProps) {
+  const { setNodeRef } = useDroppable({ id: column.status });
+
   return (
-    <section className="flex min-h-[520px] flex-col rounded-lg border border-zinc-200 bg-white">
+    <section
+      className="flex min-h-[520px] flex-col rounded-lg border border-zinc-200 bg-white"
+      ref={setNodeRef}
+    >
       <div className="border-b border-zinc-200 p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
@@ -40,31 +60,42 @@ export function BoardColumn({
         </p>
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-3">
-        {isLoading ? (
-          <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-stone-50 p-6 text-center">
-            <p className="text-sm leading-6 text-zinc-500">Loading tasks...</p>
-          </div>
-        ) : tasks.length > 0 ? (
-          tasks.map((task) => (
-            <TaskCard
-              key={`${task.id}-${task.title}-${task.dueDate ?? ""}`}
-              disabled={disabledTaskIds.has(task.id)}
-              onDelete={onDeleteTask}
-              onUpdateDueDate={onUpdateDueDate}
-              onUpdateStatus={onUpdateStatus}
-              onUpdateTitle={onUpdateTitle}
-              task={task}
-            />
-          ))
-        ) : (
-          <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-stone-50 p-6 text-center">
-            <p className="max-w-40 text-sm leading-6 text-zinc-500">
-              {column.emptyCopy}
-            </p>
-          </div>
-        )}
-      </div>
+      <SortableContext
+        items={tasks.map((task) => task.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="flex flex-1 flex-col gap-3 p-3">
+          {isLoading ? (
+            <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-stone-50 p-6 text-center">
+              <p className="text-sm leading-6 text-zinc-500">
+                Loading tasks...
+              </p>
+            </div>
+          ) : tasks.length > 0 ? (
+            tasks.map((task) => (
+              <TaskCard
+                key={`${task.id}-${task.title}-${task.dueDate ?? ""}`}
+                canCreateSubtask={canAddSubtaskIds.has(task.id)}
+                childCount={childCounts.get(task.id) ?? 0}
+                depth={depths.get(task.id) ?? 1}
+                disabled={isCreating || disabledTaskIds.has(task.id)}
+                onCreateSubtask={onCreateSubtask}
+                onDelete={onDeleteTask}
+                onUpdateDueDate={onUpdateDueDate}
+                onUpdateStatus={onUpdateStatus}
+                onUpdateTitle={onUpdateTitle}
+                task={task}
+              />
+            ))
+          ) : (
+            <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-stone-50 p-6 text-center">
+              <p className="max-w-40 text-sm leading-6 text-zinc-500">
+                {column.emptyCopy}
+              </p>
+            </div>
+          )}
+        </div>
+      </SortableContext>
     </section>
   );
 }

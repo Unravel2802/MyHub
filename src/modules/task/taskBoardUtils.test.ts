@@ -3,8 +3,10 @@ import {
   filterVisibleTasks,
   formatDueDate,
   formatStatus,
+  getDropPosition,
   getTaskStats,
   groupTasksByStatus,
+  isTaskStatus,
 } from "@/src/modules/task/taskBoardUtils";
 import type { Task } from "@/src/modules/task/types";
 
@@ -74,5 +76,23 @@ describe("task board helpers", () => {
       { label: "Due today", value: 2 },
       { label: "Completed", value: 1 },
     ]);
+  });
+
+  it("identifies valid task statuses", () => {
+    expect(isTaskStatus("todo")).toBe(true);
+    expect(isTaskStatus("blocked")).toBe(false);
+  });
+
+  it("calculates sparse positions for drag/drop ordering", () => {
+    const tasks = [
+      task({ id: "a", title: "A", status: "todo", position: 1000 }),
+      task({ id: "b", title: "B", status: "todo", position: 2000 }),
+      task({ id: "c", title: "C", status: "todo", position: 3000 }),
+    ];
+
+    expect(getDropPosition(tasks, "c", "a")).toBe(999);
+    expect(getDropPosition(tasks, "a", "c")).toBe(2500);
+    expect(getDropPosition(tasks, "a", null)).toBe(4000);
+    expect(getDropPosition([], "a", null)).toBe(0);
   });
 });

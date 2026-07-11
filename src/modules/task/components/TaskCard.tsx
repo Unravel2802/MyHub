@@ -1,11 +1,17 @@
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { FormEvent, useId, useState } from "react";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import { formatDueDate } from "@/src/modules/task/taskBoardUtils";
 import type { Task, TaskStatus } from "@/src/modules/task/types";
 
 type TaskCardProps = {
+  canCreateSubtask: boolean;
+  childCount: number;
+  depth: number;
   disabled: boolean;
   task: Task;
+  onCreateSubtask: (id: string, title: string) => void;
   onDelete: (id: string) => void;
   onUpdateDueDate: (id: string, dueDate: string | null) => void;
   onUpdateStatus: (id: string, status: TaskStatus) => void;
@@ -13,18 +19,34 @@ type TaskCardProps = {
 };
 
 export function TaskCard({
+  canCreateSubtask,
+  childCount,
+  depth,
   disabled,
   task,
+  onCreateSubtask,
   onDelete,
   onUpdateDueDate,
   onUpdateStatus,
   onUpdateTitle,
 }: TaskCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: task.id,
+    disabled,
+  });
   const titleInputId = useId();
   const dueDateInputId = useId();
   const statusInputId = useId();
   const [titleDraft, setTitleDraft] = useState(task.title);
   const [dueDateDraft, setDueDateDraft] = useState(task.dueDate ?? "");
+  const [subtaskTitle, setSubtaskTitle] = useState("");
 
   const titleChanged = titleDraft.trim() !== task.title;
   const dueDateChanged = dueDateDraft !== (task.dueDate ?? "");
@@ -44,6 +66,15 @@ export function TaskCard({
     onUpdateDueDate(task.id, dueDateDraft || null);
   }
 
+  function handleSubtaskSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const title = subtaskTitle.trim();
+    if (!title || !canCreateSubtask) return;
+
+    setSubtaskTitle("");
+    onCreateSubtask(task.id, title);
+  }
+
   function handleDelete() {
     if (window.confirm(`Delete "${task.title}"?`)) {
       onDelete(task.id);
@@ -51,7 +82,28 @@ export function TaskCard({
   }
 
   return (
-    <article className="rounded-md border border-zinc-200 bg-stone-50 p-4 shadow-sm transition-colors hover:border-zinc-300">
+    <article
+      className={`rounded-md border border-zinc-200 bg-stone-50 p-4 shadow-sm transition-colors hover:border-zinc-300 ${
+        isDragging ? "opacity-60 ring-2 ring-teal-500" : ""
+      }`}
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+    >
+      <div className="mb-3 flex justify-end">
+        <button
+          className="h-8 rounded-md border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-400"
+          disabled={disabled}
+          type="button"
+          {...attributes}
+          {...listeners}
+        >
+          Move
+        </button>
+      </div>
+
       <form className="flex gap-2" onSubmit={handleTitleSubmit}>
         <label className="sr-only" htmlFor={titleInputId}>
           Task title
@@ -123,7 +175,13 @@ export function TaskCard({
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3 text-xs text-zinc-500">
-        <span>{formatDueDate(task.dueDate)}</span>
+        <div className="flex flex-col gap-1">
+          <span>{formatDueDate(task.dueDate)}</span>
+          <span>
+            Level {depth}
+            {childCount > 0 ? ` / ${childCount} subtasks` : ""}
+          </span>
+        </div>
         <button
           className="rounded-md border border-red-200 bg-white px-2 py-1 font-medium text-red-700 transition-colors hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-red-300"
           disabled={disabled}
@@ -132,6 +190,26 @@ export function TaskCard({
           Delete
         </button>
       </div>
+
+      <form className="mt-4 flex gap-2" onSubmit={handleSubtaskSubmit}>
+        <label className="sr-only" htmlFor={`${titleInputId}-subtask`}>
+          New subtask title
+        </label>
+        <input
+          className="h-9 min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-2 text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-teal-600 disabled:bg-zinc-100"
+          disabled={disabled || !canCreateSubtask}
+          id={`${titleInputId}-subtask`}
+          onChange={(event) => setSubtaskTitle(event.target.value)}
+          placeholder={canCreateSubtask ? "New subtask" : "Max depth reached"}
+          value={subtaskTitle}
+        />
+        <button
+          className="rounded-md border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-400"
+          disabled={disabled || !canCreateSubtask || !subtaskTitle.trim()}
+        >
+          Add
+        </button>
+      </form>
     </article>
   );
 }

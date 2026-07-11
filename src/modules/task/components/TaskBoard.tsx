@@ -2,10 +2,14 @@
 
 import {
   closestCorners,
+  CollisionDetection,
   DndContext,
   DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
   KeyboardSensor,
   PointerSensor,
+  pointerWithin,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -17,6 +21,7 @@ import { Sidebar } from "@/src/modules/task/components/Sidebar";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import {
   filterVisibleTasks,
+  formatDueDate,
   getDropPosition,
   getTaskStats,
   getTaskStatus,
@@ -24,8 +29,16 @@ import {
   isTaskStatus,
 } from "@/src/modules/task/taskBoardUtils";
 import { canAddSubtask, taskDepth } from "@/src/modules/task/taskTree";
-import type { TaskStatus } from "@/src/modules/task/types";
+import type { Task, TaskStatus } from "@/src/modules/task/types";
 import { useTaskStore } from "@/src/modules/task/useTaskStore";
+
+// Prefer whatever droppable the pointer is actually inside (so empty columns
+// receive drops reliably); fall back to closest-corners for keyboard drags,
+// where there is no pointer position.
+const boardCollisionDetection: CollisionDetection = (args) => {
+  const withinPointer = pointerWithin(args);
+  return withinPointer.length > 0 ? withinPointer : closestCorners(args);
+};
 
 export function TaskBoard() {
   const {
@@ -43,8 +56,11 @@ export function TaskBoard() {
   } = useTaskStore();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    // Distance constraint keeps plain clicks (expand, buttons, inputs) from
+    // starting a drag now that the whole card is a drag handle.
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -134,7 +150,12 @@ export function TaskBoard() {
     void deleteTask(id);
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    setActiveTask(tasks.find((task) => task.id === event.active.id) ?? null);
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
+    setActiveTask(null);
     const activeId = String(event.active.id);
     const overId = event.over?.id ? String(event.over.id) : null;
     if (!overId || activeId === overId) return;
@@ -184,8 +205,10 @@ export function TaskBoard() {
 
           <div className="flex-1 overflow-x-auto p-4 sm:p-6">
             <DndContext
-              collisionDetection={closestCorners}
+              collisionDetection={boardCollisionDetection}
+              onDragCancel={() => setActiveTask(null)}
               onDragEnd={(event) => void handleDragEnd(event)}
+              onDragStart={handleDragStart}
               sensors={sensors}
             >
               <div className="grid min-w-[960px] gap-4 xl:grid-cols-4">
@@ -208,6 +231,19 @@ export function TaskBoard() {
                   />
                 ))}
               </div>
+
+              <DragOverlay>
+                {activeTask ? (
+                  <div className="rounded-md border border-teal-500 bg-white p-4 shadow-lg">
+                    <p className="text-sm font-semibold text-zinc-950">
+                      {activeTask.title}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {formatDueDate(activeTask.dueDate)}
+                    </p>
+                  </div>
+                ) : null}
+              </DragOverlay>
             </DndContext>
           </div>
         </section>

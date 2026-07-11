@@ -3,12 +3,12 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/ui",
   webServer: {
-    command: "next dev -H 127.0.0.1",
+    command: "next dev",
     reuseExistingServer: true,
-    url: "http://127.0.0.1:3000",
+    url: "http://localhost:3000",
   },
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: "http://localhost:3000",
     trace: "on-first-retry",
   },
   projects: [

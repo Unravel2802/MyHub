@@ -100,13 +100,19 @@ export function TaskCard({
       }
     >
       <div className="mb-3 flex justify-end">
+        {/* Keyboard drag handle: pointer drags bubble to the card itself, so
+            only the keydown listener lives here to avoid double activation. */}
         <button
           aria-label={`Move task: ${task.title}`}
           className="h-8 cursor-grab rounded-md border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-400"
           disabled={disabled}
           type="button"
           {...attributes}
-          {...listeners}
+          onKeyDown={
+            listeners?.onKeyDown as
+              React.KeyboardEventHandler<HTMLElement> | undefined
+          }
+          onPointerDown={(event) => event.stopPropagation()}
         >
           ⠿ Move
         </button>

@@ -42,7 +42,7 @@ export function BoardColumn({
 
   return (
     <section
-      className="flex min-h-[520px] flex-col rounded-lg border border-zinc-200 bg-white"
+      className="flex min-h-[520px] min-w-0 flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white"
       ref={setNodeRef}
     >
       <div className="border-b border-zinc-200 p-4">
@@ -64,7 +64,7 @@ export function BoardColumn({
         items={tasks.map((task) => task.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="flex flex-1 flex-col gap-3 p-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-3 p-3">
           {isLoading ? (
             <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-stone-50 p-6 text-center">
               <p className="text-sm leading-6 text-zinc-500">
@@ -74,7 +74,7 @@ export function BoardColumn({
           ) : tasks.length > 0 ? (
             tasks.map((task) => (
               <TaskCard
-                key={`${task.id}-${task.title}-${task.dueDate ?? ""}`}
+                key={task.id}
                 canCreateSubtask={canAddSubtaskIds.has(task.id)}
                 childCount={childCounts.get(task.id) ?? 0}
                 depth={depths.get(task.id) ?? 1}

@@ -44,6 +44,62 @@ function toUserMessage(err: unknown): string {
   return FAILURE_MESSAGE;
 }
 
+function replaceTask(tasks: Task[], updated: Task): Task[] {
+  return tasks.map((task) => (task.id === updated.id ? updated : task));
+}
+
+function completeDoneAncestors(tasks: Task[], parentId: string | null): Task[] {
+  let nextTasks = tasks;
+  let currentParentId = parentId;
+
+  while (currentParentId) {
+    const children = nextTasks.filter(
+      (task) => task.parentTaskId === currentParentId && !task.deletedAt,
+    );
+    if (
+      children.length === 0 ||
+      !children.every((task) => task.status === "done")
+    ) {
+      break;
+    }
+
+    const parent = nextTasks.find((task) => task.id === currentParentId);
+    if (!parent) break;
+
+    nextTasks = nextTasks.map((task) =>
+      task.id === currentParentId ? { ...task, status: "done" } : task,
+    );
+    currentParentId = parent.parentTaskId;
+  }
+
+  return nextTasks;
+}
+
+function revertDoneAncestors(tasks: Task[], parentId: string | null): Task[] {
+  let nextTasks = tasks;
+  let currentParentId = parentId;
+
+  while (currentParentId) {
+    const parent = nextTasks.find((task) => task.id === currentParentId);
+    if (!parent || parent.status !== "done") break;
+
+    nextTasks = nextTasks.map((task) =>
+      task.id === currentParentId ? { ...task, status: "todo" } : task,
+    );
+    currentParentId = parent.parentTaskId;
+  }
+
+  return nextTasks;
+}
+
+function applyStatusCascade(tasks: Task[], updated: Task): Task[] {
+  const nextTasks = replaceTask(tasks, updated);
+  if (!updated.parentTaskId) return nextTasks;
+  return updated.status === "done"
+    ? completeDoneAncestors(nextTasks, updated.parentTaskId)
+    : revertDoneAncestors(nextTasks, updated.parentTaskId);
+}
+
 export const useTaskStore = create<TaskStore>((set, get) => {
   const addPending = (id: string) =>
     set({ pendingIds: [...get().pendingIds, id] });
@@ -143,7 +199,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
       try {
         const updated = await TaskRepository.updateTaskStatus(id, status);
-        await get().fetchTasks();
+        set({ tasks: applyStatusCascade(get().tasks, updated) });
         emit({
           type: status === "done" ? "task.completed" : "task.updated",
           payload: { taskId: updated.id },
@@ -191,13 +247,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
       try {
         const updated = await TaskRepository.moveTask(id, changes);
-        if (changes.status !== undefined) {
-          // Cross-column move: refetch so a parent auto-complete/revert cascade
-          // is reflected. Within-column reorder skips this to stay snap-free.
-          await get().fetchTasks();
-        } else {
-          set({ tasks: get().tasks.map((t) => (t.id === id ? updated : t)) });
-        }
+        set({
+          tasks:
+            changes.status === undefined
+              ? replaceTask(get().tasks, updated)
+              : applyStatusCascade(get().tasks, updated),
+        });
         emit({
           type: changes.status === "done" ? "task.completed" : "task.updated",
           payload: { taskId: id },

@@ -22,10 +22,10 @@ Actions:
 - `setColumnFilters(statuses: TaskStatus[]): void` — stores board filter state.
 - `createTask(input): Promise<void>` — creates an inbox task; subtasks use `parentTaskId`.
 - `updateTask(id, updates): Promise<void>` — updates `title` and/or `dueDate`.
-- `updateStatus(id, status): Promise<void>` — updates status and refetches after cascades.
+- `updateStatus(id, status): Promise<void>` — updates status and mirrors parent cascades locally.
 - `reorderTask(id, position): Promise<void>` — updates position only.
 - `moveTask(id, { status?, position }): Promise<void>` — drag/drop move; status is optional for
-  same-column reorders.
+  same-column reorders. Cross-column moves do not refetch the whole board after success.
 - `deleteTask(id): Promise<void>` — recursively soft-deletes a task and descendants.
 
 ## Task Shape
@@ -42,6 +42,8 @@ Actions:
 - Use `descendantIds(tasks, id)` when a UI needs the subtree for display/animation.
 - Use `positionBetween(before, after)` to calculate fractional drag/drop positions.
 - On repository failure, store actions roll back optimistic changes and set `error`.
+- Parent completion/revert cascades are mirrored in the store after successful status changes and
+  drag/drop moves so the board does not reset.
 - Known max-depth failures return `Subtasks can only nest 3 levels deep`.
 
 ## Events

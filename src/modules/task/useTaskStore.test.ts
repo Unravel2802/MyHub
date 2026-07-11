@@ -92,6 +92,33 @@ describe("useTaskStore createTask", () => {
   });
 });
 
+describe("useTaskStore updateStatus", () => {
+  it("applies completion cascades without refetching the board", async () => {
+    const parent = task({ id: "parent", status: "todo" });
+    const child = task({
+      id: "child",
+      parentTaskId: "parent",
+      status: "todo",
+    });
+    const updated = { ...child, status: "done" as const };
+    resetStore([parent, child]);
+    repository.updateTaskStatus.mockResolvedValue(updated);
+
+    await useTaskStore.getState().updateStatus("child", "done");
+
+    expect(useTaskStore.getState().tasks).toEqual([
+      { ...parent, status: "done" },
+      updated,
+    ]);
+    expect(repository.getTasks).not.toHaveBeenCalled();
+    expect(emitMock).toHaveBeenCalledWith({
+      type: "task.completed",
+      payload: { taskId: "child" },
+      timestamp: expect.any(Number),
+    });
+  });
+});
+
 describe("useTaskStore moveTask", () => {
   it("keeps a successful within-column reorder without refetching", async () => {
     const original = task({ id: "a", status: "todo", position: 0 });
@@ -111,25 +138,61 @@ describe("useTaskStore moveTask", () => {
     });
   });
 
-  it("refetches after a cross-column move so cascade side effects are reflected", async () => {
-    const original = task({ id: "child", status: "todo", position: 0 });
+  it("reflects cross-column cascade side effects without refetching the board", async () => {
+    const parent = task({ id: "parent", status: "todo" });
+    const original = task({
+      id: "child",
+      parentTaskId: "parent",
+      status: "todo",
+      position: 0,
+    });
     const moved = { ...original, status: "done" as const, position: 1 };
-    const parent = task({ id: "parent", status: "done" });
-    resetStore([original]);
+    resetStore([parent, original]);
     repository.moveTask.mockResolvedValue(moved);
-    repository.getTasks.mockResolvedValue([parent, moved]);
 
     await useTaskStore
       .getState()
       .moveTask("child", { status: "done", position: 1 });
 
-    expect(useTaskStore.getState().tasks).toEqual([parent, moved]);
-    expect(repository.getTasks).toHaveBeenCalledOnce();
+    expect(useTaskStore.getState().tasks).toEqual([
+      { ...parent, status: "done" },
+      moved,
+    ]);
+    expect(repository.getTasks).not.toHaveBeenCalled();
     expect(emitMock).toHaveBeenCalledWith({
       type: "task.completed",
       payload: { taskId: "child" },
       timestamp: expect.any(Number),
     });
+  });
+
+  it("reverts done ancestors locally when a child is moved out of done", async () => {
+    const grandparent = task({ id: "grandparent", status: "done" });
+    const parent = task({
+      id: "parent",
+      parentTaskId: "grandparent",
+      status: "done",
+    });
+    const original = task({
+      id: "child",
+      parentTaskId: "parent",
+      status: "done",
+    });
+    const moved = { ...original, status: "todo" as const, position: 2 };
+    resetStore([grandparent, parent, original]);
+    repository.moveTask.mockResolvedValue(moved);
+
+    await useTaskStore.getState().moveTask("child", {
+      status: "todo",
+      position: 2,
+    });
+
+    expect(useTaskStore.getState().tasks).toEqual([
+      { ...grandparent, status: "todo" },
+      { ...parent, status: "todo" },
+      moved,
+    ]);
+    expect(repository.getTasks).not.toHaveBeenCalled();
   });
 
   it("rolls back a failed move and clears pending state", async () => {

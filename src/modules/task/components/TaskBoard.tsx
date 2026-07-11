@@ -211,7 +211,7 @@ export function TaskBoard() {
               onDragStart={handleDragStart}
               sensors={sensors}
             >
-              <div className="grid min-w-[960px] gap-4 xl:grid-cols-4">
+              <div className="grid min-w-[1120px] grid-cols-4 gap-4">
                 {columns.map((column) => (
                   <BoardColumn
                     key={column.status}

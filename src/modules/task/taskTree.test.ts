@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   taskDepth,
   canAddSubtask,
+  descendantIds,
   positionBetween,
   MAX_TASK_DEPTH,
 } from "@/src/modules/task/taskTree";
@@ -48,6 +49,30 @@ describe("canAddSubtask", () => {
 
   it("uses MAX_TASK_DEPTH as the boundary", () => {
     expect(MAX_TASK_DEPTH).toBe(3);
+  });
+});
+
+describe("descendantIds", () => {
+  it("returns the full subtree (children and grandchildren), excluding the task itself", () => {
+    expect(descendantIds(tree, "root").sort()).toEqual(["child", "grandchild"]);
+  });
+
+  it("returns direct children only when there are no deeper descendants", () => {
+    expect(descendantIds(tree, "child")).toEqual(["grandchild"]);
+  });
+
+  it("returns an empty array for a leaf", () => {
+    expect(descendantIds(tree, "grandchild")).toEqual([]);
+  });
+
+  it("does not include siblings or unrelated tasks", () => {
+    const forest: Task[] = [
+      task("a"),
+      task("a-child", "a"),
+      task("b"),
+      task("b-child", "b"),
+    ];
+    expect(descendantIds(forest, "a")).toEqual(["a-child"]);
   });
 });
 

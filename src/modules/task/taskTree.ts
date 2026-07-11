@@ -23,6 +23,29 @@ export function canAddSubtask(tasks: Task[], id: string): boolean {
   return taskDepth(tasks, id) < MAX_TASK_DEPTH;
 }
 
+// All descendant ids of a task (children, grandchildren, …), excluding the task
+// itself. Client-side mirror of the repository's soft-delete cascade — use it to
+// optimistically remove a whole subtree from the board.
+export function descendantIds(tasks: Task[], id: string): string[] {
+  const childrenByParent = new Map<string, string[]>();
+  for (const t of tasks) {
+    if (t.parentTaskId) {
+      const siblings = childrenByParent.get(t.parentTaskId) ?? [];
+      siblings.push(t.id);
+      childrenByParent.set(t.parentTaskId, siblings);
+    }
+  }
+
+  const result: string[] = [];
+  const stack = [...(childrenByParent.get(id) ?? [])];
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    result.push(current);
+    stack.push(...(childrenByParent.get(current) ?? []));
+  }
+  return result;
+}
+
 // Fractional position for a card dropped between two neighbors. Pass the position
 // of the card immediately before / after the drop target, or null when dropping
 // at the start/end of a column. Pair with the store's moveTask on drop.

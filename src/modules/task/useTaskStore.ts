@@ -2,6 +2,7 @@ import { create } from "zustand";
 import * as TaskRepository from "@/src/modules/task/TaskRepository";
 import { MaxDepthError } from "@/src/modules/task/TaskRepository";
 import type { Task, TaskStatus } from "@/src/modules/task/types";
+import { descendantIds } from "@/src/modules/task/taskTree";
 import { emit } from "@/src/lib/events";
 
 interface TaskStore {
@@ -211,10 +212,11 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
     deleteTask: async (id) => {
       const previousTasks = get().tasks;
+      // Optimistically drop the whole subtree, matching the repository's
+      // recursive soft-delete cascade (not just direct children).
+      const toRemove = new Set([id, ...descendantIds(previousTasks, id)]);
       set({
-        tasks: previousTasks.filter(
-          (t) => t.id !== id && t.parentTaskId !== id,
-        ),
+        tasks: previousTasks.filter((t) => !toRemove.has(t.id)),
         error: null,
       });
       addPending(id);

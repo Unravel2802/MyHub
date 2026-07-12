@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { THEME_STORAGE_KEY } from "@/src/lib/theme";
+import { DEFAULT_THEME, THEME_STORAGE_KEY } from "@/src/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,19 +18,18 @@ export const metadata: Metadata = {
   description: "Personal productivity hub",
 };
 
-// Runs before first paint so a dark-theme load never flashes the light palette.
-// Kept as a string literal because it must execute ahead of hydration.
+// Runs before first paint so a dark load never flashes the light palette. Must
+// mirror DEFAULT_THEME in src/lib/theme.ts: if the two disagree, a first-time
+// visitor gets the flash this script exists to prevent.
 const themeScript = `
 (function () {
   try {
     var stored = localStorage.getItem("${THEME_STORAGE_KEY}");
-    var theme = stored === "light" || stored === "dark" ? stored : "system";
-    var isDark =
-      theme === "dark" ||
-      (theme === "system" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
-    document.documentElement.classList.toggle("dark", isDark);
-  } catch (e) {}
+    var theme = stored === "light" ? "light" : "${DEFAULT_THEME}";
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  } catch (e) {
+    document.documentElement.classList.add("dark");
+  }
 })();
 `;
 

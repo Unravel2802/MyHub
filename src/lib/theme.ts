@@ -1,25 +1,15 @@
-export type Theme = "light" | "dark" | "system";
+export type Theme = "light" | "dark";
 
 export const THEME_STORAGE_KEY = "myhub-theme";
-export const THEMES: Theme[] = ["light", "dark", "system"];
+export const THEMES: Theme[] = ["light", "dark"];
+export const DEFAULT_THEME: Theme = "dark";
 
 export function isTheme(value: unknown): value is Theme {
   return THEMES.includes(value as Theme);
 }
 
-// "system" follows the OS setting; everything else is an explicit choice.
-export function resolveTheme(theme: Theme): "light" | "dark" {
-  if (theme !== "system") return theme;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
 export function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle(
-    "dark",
-    resolveTheme(theme) === "dark",
-  );
+  document.documentElement.classList.toggle("dark", theme === "dark");
 }
 
 function readStoredTheme(): Theme {
@@ -27,9 +17,9 @@ function readStoredTheme(): Theme {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (isTheme(stored)) return stored;
   } catch {
-    // Private browsing can throw on localStorage access; fall back to system.
+    // Private browsing can throw on localStorage access; fall back to default.
   }
-  return "system";
+  return DEFAULT_THEME;
 }
 
 // A minimal external store so the toggle can render the active theme via
@@ -40,16 +30,17 @@ const listeners = new Set<() => void>();
 export function subscribeTheme(onChange: () => void) {
   listeners.add(onChange);
 
-  // While the choice is "system", follow the OS as it changes.
-  const media = window.matchMedia("(prefers-color-scheme: dark)");
-  const onSystemChange = () => {
-    if (readStoredTheme() === "system") applyTheme("system");
+  // Keep other tabs of the app in sync when the choice changes.
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== THEME_STORAGE_KEY) return;
+    applyTheme(readStoredTheme());
+    onChange();
   };
-  media.addEventListener("change", onSystemChange);
+  window.addEventListener("storage", onStorage);
 
   return () => {
     listeners.delete(onChange);
-    media.removeEventListener("change", onSystemChange);
+    window.removeEventListener("storage", onStorage);
   };
 }
 
@@ -57,9 +48,9 @@ export function getTheme(): Theme {
   return readStoredTheme();
 }
 
-// The server has no storage or OS hint, so it always renders the default.
+// The server has no storage to read, so it renders the default.
 export function getServerTheme(): Theme {
-  return "system";
+  return DEFAULT_THEME;
 }
 
 export function setTheme(theme: Theme) {

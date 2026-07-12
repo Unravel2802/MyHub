@@ -13,7 +13,6 @@ import {
 const LABELS: Record<Theme, string> = {
   light: "Light",
   dark: "Dark",
-  system: "System",
 };
 
 export function ThemeToggle() {

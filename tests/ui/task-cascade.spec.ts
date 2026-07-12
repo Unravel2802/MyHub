@@ -117,3 +117,25 @@ test("a parent stays open while any sibling subtask is outstanding", async ({
   await expect(statusOf(page, "Ship the module")).toHaveValue("todo");
   await expect.poll(() => statusIn(db, "parent")).toBe("todo");
 });
+
+test("adding a subtask reopens a completed parent", async ({ page }) => {
+  const db = await loadBoard(page, [
+    row({
+      id: "parent",
+      title: "Ship the module",
+      status: "done",
+      position: 1000,
+    }),
+  ]);
+
+  await card(page, "Ship the module")
+    .getByPlaceholder("New subtask")
+    .fill("One more thing");
+  await card(page, "Ship the module")
+    .getByRole("button", { name: "Add" })
+    .click();
+
+  // The board must reflect the revert without waiting for a refetch.
+  await expect(statusOf(page, "Ship the module")).toHaveValue("todo");
+  await expect.poll(() => statusIn(db, "parent")).toBe("todo");
+});

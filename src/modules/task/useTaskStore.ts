@@ -1,12 +1,16 @@
 import { create } from "zustand";
 import * as TaskRepository from "@/src/modules/task/TaskRepository";
 import { MaxDepthError } from "@/src/modules/task/TaskRepository";
-import type { Task, TaskStatus } from "@/src/modules/task/types";
+import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
 import { descendantIds } from "@/src/modules/task/taskTree";
 import { emit } from "@/src/lib/events";
 
 interface TaskStore {
   tasks: Task[];
+  // Recurrence rules, kept separate from `tasks` on purpose: a template is not a
+  // work item and must never reach the board. This backs the "manage recurring
+  // rules" surface — components can't call the repository directly.
+  templates: Task[];
   isLoading: boolean;
   error: string | null;
   columnFilters: TaskStatus[];
@@ -14,11 +18,22 @@ interface TaskStore {
   isCreating: boolean;
   pendingIds: string[];
   fetchTasks: () => Promise<void>;
+  fetchTemplates: () => Promise<void>;
+  // Stops future generation. Instances already generated are left alone — they're
+  // real work you may still intend to do, and silently deleting last Tuesday's
+  // completed block would rewrite history.
+  deleteTemplate: (id: string) => Promise<void>;
   setColumnFilters: (statuses: TaskStatus[]) => void;
+  // Passing recursWeekly + weekday creates a recurrence template rather than a
+  // board task: it generates a fresh instance each week and never appears on the
+  // board itself (myhub_plan.md §2.3).
   createTask: (input: {
     title: string;
+    description?: string | null;
     parentTaskId?: string | null;
     dueDate?: string | null;
+    recursWeekly?: boolean;
+    weekday?: Weekday | null;
   }) => Promise<void>;
   updateTask: (
     id: string,
@@ -117,6 +132,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
   return {
     tasks: [],
+    templates: [],
     isLoading: false,
     error: null,
     columnFilters: [],
@@ -125,11 +141,50 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
     fetchTasks: async () => {
       set({ isLoading: true, error: null });
+      let recurrenceError: string | null = null;
+
+      try {
+        await TaskRepository.regenerateWeeklyInstances();
+      } catch (err) {
+        recurrenceError = toUserMessage(err);
+      }
+
       try {
         const tasks = await TaskRepository.getTasks();
-        set({ tasks, isLoading: false });
+        set({ tasks, isLoading: false, error: recurrenceError });
       } catch (err) {
         set({ isLoading: false, error: toUserMessage(err) });
+      }
+    },
+
+    fetchTemplates: async () => {
+      try {
+        const templates = await TaskRepository.getTemplates();
+        set({ templates });
+      } catch (err) {
+        set({ error: toUserMessage(err) });
+      }
+    },
+
+    deleteTemplate: async (id) => {
+      const previousTemplates = get().templates;
+      set({
+        templates: previousTemplates.filter((t) => t.id !== id),
+        error: null,
+      });
+      addPending(id);
+
+      try {
+        await TaskRepository.deleteTask(id);
+        emit({
+          type: "task.deleted",
+          payload: { taskId: id },
+          timestamp: Date.now(),
+        });
+      } catch (err) {
+        set({ templates: previousTemplates, error: toUserMessage(err) });
+      } finally {
+        removePending(id);
       }
     },
 
@@ -140,28 +195,45 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       const optimisticTask: Task = {
         id: `optimistic-${crypto.randomUUID()}`,
         title: input.title,
+        description: input.description ?? null,
         status: "inbox",
         position: 0,
         dueDate: input.dueDate ?? null,
         parentTaskId: input.parentTaskId ?? null,
+        recursWeekly: input.recursWeekly ?? false,
+        weekday: input.weekday ?? null,
+        recurrenceTemplateId: null,
+        occurrenceDate: null,
         deletedAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
+      // A template is a recurrence rule, not a work item — it must never enter
+      // `tasks`, or the board would render the rule alongside the instances it
+      // generates. Its instance shows up on the next fetch instead.
+      const isTemplate = input.recursWeekly === true;
       set({
-        tasks: [...previousTasks, optimisticTask],
+        tasks: isTemplate ? previousTasks : [...previousTasks, optimisticTask],
         error: null,
         isCreating: true,
       });
 
       try {
         const created = await TaskRepository.createTask(input);
-        set({
-          tasks: revertDoneAncestors(
-            get().tasks.map((t) => (t.id === optimisticTask.id ? created : t)),
-            created.parentTaskId,
-          ),
-        });
+        if (isTemplate) {
+          // The rule itself belongs in `templates`, not on the board. Its first
+          // instance appears on the next fetch, via regeneration.
+          set({ templates: [...get().templates, created] });
+        } else {
+          set({
+            tasks: revertDoneAncestors(
+              get().tasks.map((t) =>
+                t.id === optimisticTask.id ? created : t,
+              ),
+              created.parentTaskId,
+            ),
+          });
+        }
         emit({
           type: "task.created",
           payload: { taskId: created.id },

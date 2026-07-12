@@ -30,7 +30,8 @@ rather than picking a "reasonable" alternative.
 - Forms: `react-hook-form` (or plain controlled state — nothing else)
 - Data fetching: `@supabase/supabase-js` client directly, or React Query if explicitly specced
 - Testing: Playwright (E2E), Vitest (unit)
-- Drag-and-drop: none approved yet — ask before adding one
+- Drag-and-drop: `@dnd-kit/*` (core, sortable, utilities) — approved and already load-bearing in
+  the Kanban board; don't add a second DnD library
 
 This list is shared with Codex via `AGENTS.md`. If you need to approve a new dependency, update
 both files in the same commit so the two agents never diverge on tooling.
@@ -75,6 +76,18 @@ other's files. The split is **contract-first**:
    Palette registry core, and all Supabase migrations.
    **Codex owns:** module UI components, forms, boilerplate types, and unit tests
    (`*.test.ts`/`*.spec.ts`) for the interfaces you publish.
+
+   **Capacity amendment (2026-07-12):** Claude Code's usage budget is the scarce resource on this
+   project; Codex's is not. So ownership of the files above means _design_ ownership, not a
+   monopoly on typing. Spend your budget on the parts only you can do — the schema, the published
+   TypeScript contract, the correctness-critical domain logic (cascades, recursive CTEs, date
+   math, rollback semantics), and review. Once those are published and unit-tested, **Codex may
+   implement the mechanical wiring inside `*Repository.ts` and `use*Store.ts`** — Supabase
+   round-trips, optimistic-set-then-rollback plumbing, event emission — against your contract,
+   and you review the diff rather than writing it. Codex still may not change a published
+   interface, invent a schema, or alter domain logic: if the contract looks wrong, it flags,
+   you fix.
+
 4. If a module's interface needs to change mid-build, you own the change — update the interface
    file and flag it, don't let Codex patch around a stale contract.
 

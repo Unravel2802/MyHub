@@ -169,6 +169,10 @@ export async function moveTask(
 
   const task = fromRow(data);
 
+  if (changes.status === "done") {
+    await completeDescendants(task.id);
+  }
+
   if (changes.status !== undefined && task.parentTaskId) {
     if (changes.status === "done") {
       await autoCompleteAncestors(task.parentTaskId);
@@ -207,9 +211,12 @@ export async function updateTaskStatus(
 
   const task = fromRow(data);
 
-  if (status === "done" && task.parentTaskId) {
-    await autoCompleteAncestors(task.parentTaskId);
-  } else if (status !== "done" && task.parentTaskId) {
+  if (status === "done") {
+    await completeDescendants(task.id);
+    if (task.parentTaskId) {
+      await autoCompleteAncestors(task.parentTaskId);
+    }
+  } else if (task.parentTaskId) {
     await revertAncestorsToIncomplete(task.parentTaskId);
   }
 
@@ -246,6 +253,19 @@ async function collectDescendantIds(rootIds: string[]): Promise<string[]> {
   }
 
   return allIds;
+}
+
+async function completeDescendants(taskId: string): Promise<void> {
+  const subtreeIds = await collectDescendantIds([taskId]);
+  const descendantIds = subtreeIds.filter((id) => id !== taskId);
+  if (descendantIds.length === 0) return;
+
+  const { error } = await supabase
+    .from("tasks")
+    .update({ status: "done" satisfies TaskStatus })
+    .in("id", descendantIds);
+
+  if (error) throw error;
 }
 
 async function autoCompleteAncestors(parentId: string): Promise<void> {

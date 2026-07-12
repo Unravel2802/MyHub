@@ -194,6 +194,20 @@ describe("updateTaskStatus auto-complete", () => {
     expect(statusOf("grandparent")).toBe("done");
   });
 
+  it("recursively completes descendants when a level 2 task is completed", async () => {
+    h.seed([
+      task({ id: "root" }),
+      task({ id: "parent", parent_task_id: "root" }),
+      task({ id: "child", parent_task_id: "parent" }),
+    ]);
+
+    await TaskRepository.updateTaskStatus("parent", "done");
+
+    expect(statusOf("parent")).toBe("done");
+    expect(statusOf("child")).toBe("done");
+    expect(statusOf("root")).toBe("done");
+  });
+
   it("does not complete a parent while a sibling is unfinished", async () => {
     h.seed([
       task({ id: "root" }),
@@ -301,6 +315,20 @@ describe("moveTask", () => {
 
     await TaskRepository.moveTask("child", { status: "done", position: 0 });
 
+    expect(statusOf("child")).toBe("done");
+    expect(statusOf("root")).toBe("done");
+  });
+
+  it("recursively completes descendants when a level 2 task is moved to done", async () => {
+    h.seed([
+      task({ id: "root" }),
+      task({ id: "parent", parent_task_id: "root" }),
+      task({ id: "child", parent_task_id: "parent" }),
+    ]);
+
+    await TaskRepository.moveTask("parent", { status: "done", position: 0 });
+
+    expect(statusOf("parent")).toBe("done");
     expect(statusOf("child")).toBe("done");
     expect(statusOf("root")).toBe("done");
   });

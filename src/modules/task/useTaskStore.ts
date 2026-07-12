@@ -92,12 +92,21 @@ function revertDoneAncestors(tasks: Task[], parentId: string | null): Task[] {
   return nextTasks;
 }
 
+function completeTaskDescendants(tasks: Task[], taskId: string): Task[] {
+  const idsToComplete = new Set(descendantIds(tasks, taskId));
+  return tasks.map((task) =>
+    idsToComplete.has(task.id) ? { ...task, status: "done" } : task,
+  );
+}
+
 function applyStatusCascade(tasks: Task[], updated: Task): Task[] {
-  const nextTasks = replaceTask(tasks, updated);
-  if (!updated.parentTaskId) return nextTasks;
-  return updated.status === "done"
-    ? completeDoneAncestors(nextTasks, updated.parentTaskId)
-    : revertDoneAncestors(nextTasks, updated.parentTaskId);
+  let nextTasks = replaceTask(tasks, updated);
+  if (updated.status === "done") {
+    nextTasks = completeTaskDescendants(nextTasks, updated.id);
+    return completeDoneAncestors(nextTasks, updated.parentTaskId);
+  }
+
+  return revertDoneAncestors(nextTasks, updated.parentTaskId);
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => {

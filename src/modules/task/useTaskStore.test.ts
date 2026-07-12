@@ -117,6 +117,31 @@ describe("useTaskStore updateStatus", () => {
       timestamp: expect.any(Number),
     });
   });
+
+  it("recursively completes descendants of a level 2 task", async () => {
+    const root = task({ id: "root", status: "todo" });
+    const parent = task({
+      id: "parent",
+      parentTaskId: "root",
+      status: "todo",
+    });
+    const child = task({
+      id: "child",
+      parentTaskId: "parent",
+      status: "in_progress",
+    });
+    const updated = { ...parent, status: "done" as const };
+    resetStore([root, parent, child]);
+    repository.updateTaskStatus.mockResolvedValue(updated);
+
+    await useTaskStore.getState().updateStatus("parent", "done");
+
+    expect(useTaskStore.getState().tasks).toEqual([
+      { ...root, status: "done" },
+      updated,
+      { ...child, status: "done" },
+    ]);
+  });
 });
 
 describe("useTaskStore moveTask", () => {
@@ -164,6 +189,34 @@ describe("useTaskStore moveTask", () => {
       payload: { taskId: "child" },
       timestamp: expect.any(Number),
     });
+  });
+
+  it("recursively completes descendants when a level 2 task is moved to done", async () => {
+    const root = task({ id: "root", status: "todo" });
+    const parent = task({
+      id: "parent",
+      parentTaskId: "root",
+      status: "todo",
+      position: 0,
+    });
+    const child = task({
+      id: "child",
+      parentTaskId: "parent",
+      status: "in_progress",
+    });
+    const moved = { ...parent, status: "done" as const, position: 1 };
+    resetStore([root, parent, child]);
+    repository.moveTask.mockResolvedValue(moved);
+
+    await useTaskStore
+      .getState()
+      .moveTask("parent", { status: "done", position: 1 });
+
+    expect(useTaskStore.getState().tasks).toEqual([
+      { ...root, status: "done" },
+      moved,
+      { ...child, status: "done" },
+    ]);
   });
 
   it("reverts done ancestors locally when a child is moved out of done", async () => {

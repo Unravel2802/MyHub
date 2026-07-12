@@ -49,6 +49,14 @@ both files in the same commit so the two agents never diverge on tooling.
    application code.
 5. **Repository pattern for all DB access.** No Supabase queries inline in components — route
    through a `*Repository.ts` file per module.
+6. **Store errors: generic message to the user, real error to the console.** Every store's
+   `toUserMessage`-style helper must `console.error` the real error for debugging, then return a
+   generic user-facing string (e.g. `"Something went wrong, please try again later."`) unless it's
+   a known typed error the UI should react to specifically (e.g. `MaxDepthError`). Never surface a
+   raw Supabase/Postgres error message in the UI — it leaks schema details (table/column names)
+   and reads as meaningless jargon to the user. This was the original Task Engine spec's rule
+   (`task-module-spec.md` §7, since folded in here) and applies to every module's store, not just
+   Task's.
 
 ## MVP Modules — Full Delegation, Reprioritized (2026-07-12)
 

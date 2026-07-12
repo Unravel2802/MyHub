@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => {
@@ -161,7 +162,7 @@ describe("application repository", () => {
     expect(updated).toMatchObject({
       roleTitle: "MLE",
       referralSource: "Alex",
-      lastUpdateDate: "2026-07-12",
+      lastUpdateDate: format(new Date(), "yyyy-MM-dd"),
     });
   });
   it("soft-deletes applications", async () => {

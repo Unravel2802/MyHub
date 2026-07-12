@@ -53,6 +53,17 @@ migration, or alter domain logic (cascade rules, nesting caps, recurrence date m
 Claude Code's. If the contract looks wrong or is missing something the UI needs, **flag it — do
 not patch around it.**
 
+## Store Error Messages Are Not Yours to Change
+
+Every store's error-handling helper (`toUserMessage` or similar) `console.error`s the real error
+for debugging, then returns a generic user-facing string. This is deliberate: a raw
+Supabase/Postgres error message leaks schema details (table/column names) and is meaningless
+jargon to the user — this was the original Task Engine spec's rule, and it applies to every
+module. If you're debugging locally and want to see the real error, it's already in the browser/
+server console via `console.error` — that does not require changing what the UI shows. Don't
+widen a store's error message to surface raw error text, even temporarily; if the generic message
+is genuinely hiding something you need for a task, flag it instead of patching it yourself.
+
 ## What You Do NOT Own
 
 - **Published interfaces and domain logic** inside `*Repository.ts`, `use*Store.ts`, or

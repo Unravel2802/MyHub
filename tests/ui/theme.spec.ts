@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { FakeTaskDb, mockSupabaseTasks } from "./supabaseTasksMock";
+import { FakeTaskDb, mockSupabaseTasks, row } from "./supabaseTasksMock";
 
 async function loadBoard(page: Page) {
   await mockSupabaseTasks(page, new FakeTaskDb([]));
@@ -60,6 +60,27 @@ test("the dark palette is applied before first paint", async ({ page }) => {
   );
 
   expect(darkBeforeHydration).toBe(true);
+});
+
+test("the theme control stays on screen when a column is long", async ({
+  page,
+}) => {
+  const tasks = Array.from({ length: 14 }, (_, index) =>
+    row({
+      id: `task-${index}`,
+      title: `Inbox task ${index + 1}`,
+      position: (index + 1) * 1000,
+    }),
+  );
+  await mockSupabaseTasks(page, new FakeTaskDb(tasks));
+  await page.goto("/");
+  await expect(themeControl(page)).toBeInViewport();
+
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+  // The sidebar is a sticky viewport-height rail, so the control must not
+  // scroll away with the board content.
+  await expect(themeControl(page)).toBeInViewport();
 });
 
 test.describe("with a dark OS preference", () => {

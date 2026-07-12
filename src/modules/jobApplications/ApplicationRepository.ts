@@ -3,6 +3,58 @@ import type {
   ApplicationStage,
   ResumeVariant,
 } from "@/src/modules/jobApplications/types";
+import { format } from "date-fns";
+import { supabase } from "@/src/lib/supabaseClient";
+
+interface ApplicationRow {
+  id: string;
+  company_id: string;
+  role_title: string;
+  resume_variant: ResumeVariant;
+  stage: ApplicationStage;
+  applied_date: string | null;
+  last_update_date: string;
+  referral_source: string | null;
+  follow_up_date: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function fromRow(row: ApplicationRow): Application {
+  return {
+    id: row.id,
+    companyId: row.company_id,
+    roleTitle: row.role_title,
+    resumeVariant: row.resume_variant,
+    stage: row.stage,
+    appliedDate: row.applied_date,
+    lastUpdateDate: row.last_update_date,
+    referralSource: row.referral_source,
+    followUpDate: row.follow_up_date,
+    deletedAt: row.deleted_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toRow(input: Partial<CreateApplicationInput>) {
+  return {
+    ...(input.companyId !== undefined && { company_id: input.companyId }),
+    ...(input.roleTitle !== undefined && { role_title: input.roleTitle }),
+    ...(input.resumeVariant !== undefined && {
+      resume_variant: input.resumeVariant,
+    }),
+    ...(input.stage !== undefined && { stage: input.stage }),
+    ...(input.appliedDate !== undefined && { applied_date: input.appliedDate }),
+    ...(input.referralSource !== undefined && {
+      referral_source: input.referralSource,
+    }),
+    ...(input.followUpDate !== undefined && {
+      follow_up_date: input.followUpDate,
+    }),
+  };
+}
 
 // Published contract (myhub_plan.md §2.3). Soft deletes only. See
 // docs/handoff/job-application-crm.md for the wiring brief — in particular, note
@@ -30,14 +82,25 @@ export interface UpdateApplicationInput {
 }
 
 export async function getApplications(): Promise<Application[]> {
-  throw new Error("not implemented");
+  const { data, error } = await supabase
+    .from("applications")
+    .select("*")
+    .is("deleted_at", null)
+    .order("last_update_date", { ascending: false });
+  if (error) throw error;
+  return data.map(fromRow);
 }
 
 export async function createApplication(
   input: CreateApplicationInput,
 ): Promise<Application> {
-  void input;
-  throw new Error("not implemented");
+  const { data, error } = await supabase
+    .from("applications")
+    .insert(toRow(input))
+    .select()
+    .single();
+  if (error) throw error;
+  return fromRow(data);
 }
 
 // Every update — stage change or not — must bump `last_update_date` to today.
@@ -47,12 +110,23 @@ export async function updateApplication(
   id: string,
   updates: UpdateApplicationInput,
 ): Promise<Application> {
-  void id;
-  void updates;
-  throw new Error("not implemented");
+  const { data, error } = await supabase
+    .from("applications")
+    .update({
+      ...toRow(updates),
+      last_update_date: format(new Date(), "yyyy-MM-dd"),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return fromRow(data);
 }
 
 export async function deleteApplication(id: string): Promise<void> {
-  void id;
-  throw new Error("not implemented");
+  const { error } = await supabase
+    .from("applications")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
 }

@@ -1,0 +1,119 @@
+import { expect, test, type Page } from "@playwright/test";
+import {
+  FakeTaskDb,
+  mockSupabaseTasks,
+  row,
+  type TaskRow,
+} from "./supabaseTasksMock";
+
+// Browser-level coverage for the subtask cascades in specs/task-module-spec.md
+// section 4: completing a task completes its whole subtree, and completing the
+// last outstanding subtask auto-completes the ancestors above it.
+
+function card(page: Page, title: string) {
+  return page.getByRole("article", { name: `Task: ${title}` });
+}
+
+function statusOf(page: Page, title: string) {
+  return card(page, title).getByLabel("Status");
+}
+
+async function loadBoard(page: Page, rows: TaskRow[]) {
+  const db = new FakeTaskDb(rows);
+  await mockSupabaseTasks(page, db);
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Kanban board" }),
+  ).toBeVisible();
+  return db;
+}
+
+function statusIn(db: FakeTaskDb, id: string) {
+  return db.rows.find((task) => task.id === id)?.status;
+}
+
+// parent → child → grandchild, the deepest tree the spec allows.
+function nestedTree(): TaskRow[] {
+  return [
+    row({
+      id: "parent",
+      title: "Ship the module",
+      status: "todo",
+      position: 1000,
+    }),
+    row({
+      id: "child",
+      title: "Write the store",
+      status: "todo",
+      position: 2000,
+      parent_task_id: "parent",
+    }),
+    row({
+      id: "grandchild",
+      title: "Cover the cascade",
+      status: "todo",
+      position: 3000,
+      parent_task_id: "child",
+    }),
+  ];
+}
+
+test("completing a task completes its entire subtree", async ({ page }) => {
+  const db = await loadBoard(page, nestedTree());
+
+  await statusOf(page, "Ship the module").selectOption("done");
+
+  await expect(statusOf(page, "Write the store")).toHaveValue("done");
+  await expect(statusOf(page, "Cover the cascade")).toHaveValue("done");
+
+  await expect.poll(() => statusIn(db, "child")).toBe("done");
+  await expect.poll(() => statusIn(db, "grandchild")).toBe("done");
+});
+
+test("completing the last subtask auto-completes its ancestors", async ({
+  page,
+}) => {
+  const db = await loadBoard(page, nestedTree());
+
+  // The grandchild is the only leaf, so finishing it should complete the child
+  // and then the parent, all the way up the chain.
+  await statusOf(page, "Cover the cascade").selectOption("done");
+
+  await expect(statusOf(page, "Write the store")).toHaveValue("done");
+  await expect(statusOf(page, "Ship the module")).toHaveValue("done");
+
+  await expect.poll(() => statusIn(db, "child")).toBe("done");
+  await expect.poll(() => statusIn(db, "parent")).toBe("done");
+});
+
+test("a parent stays open while any sibling subtask is outstanding", async ({
+  page,
+}) => {
+  const db = await loadBoard(page, [
+    row({
+      id: "parent",
+      title: "Ship the module",
+      status: "todo",
+      position: 1000,
+    }),
+    row({
+      id: "child-a",
+      title: "Write the store",
+      status: "todo",
+      position: 2000,
+      parent_task_id: "parent",
+    }),
+    row({
+      id: "child-b",
+      title: "Write the tests",
+      status: "todo",
+      position: 3000,
+      parent_task_id: "parent",
+    }),
+  ]);
+
+  await statusOf(page, "Write the store").selectOption("done");
+
+  await expect(statusOf(page, "Ship the module")).toHaveValue("todo");
+  await expect.poll(() => statusIn(db, "parent")).toBe("todo");
+});

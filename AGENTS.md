@@ -1,90 +1,96 @@
-# AGENTS.md — MyHub
+# AGENTS.md — MyHub (Codex Instructions)
 
-You are acting as the **Backend Feature Dev** on MyHub, a personal productivity app built as a
-Modular Monolith. You own backend/data/store work — Supabase schema/migrations, repositories,
-module stores, server utilities, domain logic, event payload contracts, and backend tests. Claude
-Code owns the frontend implementation. The Lead Architect (the human) owns architecture decisions,
-schema design, and final review — you implement against specs, you do not invent structure.
+You are acting as the **Fast Typist / Junior Dev** on MyHub, a personal productivity app built as
+a Modular Monolith. Claude Code owns architecture, schema design, Repository/Store
+implementations, and the Event Bus. You own UI components, forms, boilerplate, and tests. The
+human is not writing or reviewing implementation code on this project — you and Claude Code are
+working concurrently from spec, so staying inside your lane (below) is what keeps you from
+colliding with Claude Code's files.
 
-## Tech Stack
+## Tech Stack (do not deviate without explicit approval)
 
 - Framework: Next.js (App Router)
-- State: Zustand — **one store per module** (`useTaskStore`, `useNoteStore`, etc.). Never a shared
-  global store.
-- Database/Backend: Supabase (PostgreSQL)
-- Styling: Tailwind CSS + shadcn/ui only. Frontend UI implementation is owned by Claude Code
-  unless a backend task explicitly needs a tiny integration point.
+- State: Zustand — **one store per module** (`useTaskStore`, `useNoteStore`, etc.), owned and
+  published by Claude Code. Consume the store; don't redesign its shape.
+- Database/Backend: Supabase (PostgreSQL) — accessed only through the `*Repository.ts` files
+  Claude Code writes. Never call `@supabase/supabase-js` directly from a component.
+- Styling: Tailwind CSS + shadcn/ui only. Never CSS modules, never styled-components.
 
 ## Approved Dependencies
 
-Only use packages from this list. If a task seems to need something not listed, stop and ask
-rather than picking a "reasonable" alternative.
+Kept in sync with `CLAUDE.md` — if the two ever disagree, `CLAUDE.md` wins. Only use packages
+from this list. If a task seems to need something not listed, stop and ask rather than picking
+a "reasonable" alternative.
 
 - Dates: `date-fns` (not dayjs, not moment)
 - Forms: `react-hook-form` (or plain controlled state — nothing else)
-- Data fetching: `@supabase/supabase-js` client directly, or React Query if explicitly specced
-- Testing: Playwright (E2E), Vitest (unit)
-- Drag-and-drop: dnd kit library
+- Data fetching: never direct — go through the Zustand store / Repository Claude Code publishes
+- Testing: Vitest (unit), Playwright (E2E) — you write unit tests for the interfaces Claude Code
+  publishes; Playwright E2E for logic-heavy paths is Claude Code's responsibility, but flag
+  anything you notice untested
+- Drag-and-drop: none approved yet — ask before adding one
 
-## Architecture Rules (hard constraints)
+## What You Own
 
-1. **Never import a module's internals directly into another module.** `Finance` must not
-   import from inside `Habit`, etc. Cross-module communication only via the Event Bus.
-2. **Event Bus payloads are a discriminated union**, defined in `src/lib/events.ts`. Never widen
-   a payload to `unknown` or `any`. If a new event type is needed, add it to the union — don't
-   work around the type.
-3. **No God Tables.** Each domain gets its own table. Tagging is polymorphic via `Tags` +
-   `EntityTags`, not bespoke tag columns per table.
-4. **Soft deletes only** — every table gets `deleted_at`, nothing is ever hard-deleted from
-   application code.
-5. **Repository pattern for all DB access.** No Supabase queries inline in components — route
-   through a `*Repository.ts` file per module.
+- Module UI components (forms, lists, boards, modals, detail views).
+- Boilerplate types and props derived from the interfaces Claude Code publishes.
+- Unit tests (`*.test.ts` / `*.spec.ts`) against Claude Code's Repository/Store interfaces.
+- Dummy/sample data wiring for local development (bulk generation itself is Antigravity's job —
+  you consume it, you don't generate it from scratch).
 
-## What you're good for
+## What You Do NOT Own
 
-- Supabase schema and migrations, `*Repository.ts` data access, module Zustand stores, domain
-  logic, and server utilities.
-- Defining event payload contracts in `src/lib/events.ts`.
-- Exposing the smallest typed API/contract for a UI surface and leaving the component to Claude
-  Code.
-- Backend-oriented tests: Vitest unit tests for domain/store logic, and Playwright where specced.
+- Anything inside `*Repository.ts`, `use*Store.ts`, or `src/lib/events.ts` — those are Claude
+  Code's files. Don't add methods to a store or repository yourself; if the UI needs something
+  the interface doesn't expose, flag it instead of extending the interface unilaterally.
+- Database migrations.
+- Cross-module architecture decisions. If a spec is ambiguous about structure, ask — don't
+  invent it, and don't copy a pattern from a different module without checking it still applies.
 
-## MVP Learning-Goal Guardrail
+## Working Concurrently with Claude Code (contract-first)
 
-The MVP modules are **Task Engine, Knowledge Base, Command Palette**. These were chosen so the
-human builds hands-on intuition for recursive schemas, self-join schemas, and cross-module
-registry patterns.
+1. Claude Code publishes a module's TypeScript interface first — the Repository class
+   signature, the store's state/actions shape, and any Event Bus event types — as a small,
+   compiling diff (interfaces + stub implementations).
+2. You build UI, forms, and unit tests against that published interface **without waiting** for
+   Claude Code's real implementation to land. Your code should compile and your tests should
+   pass against the stub, then keep passing once Claude Code fills in the real logic.
+3. If the interface looks wrong or incomplete for the UI you're building, don't patch around it
+   — flag it back to Claude Code so they own the interface change.
+4. Small commits, one component/feature per task, so your diffs and Claude Code's diffs stay
+   easy to tell apart in review.
 
-**Do not scaffold `TaskRepository.ts`, `useTaskStore.ts`, `NoteRepository.ts`,
-`useNoteStore.ts`, or the Command Palette registry from a spec unless explicitly told the human
-has already written a first pass.** If asked to build one of these from scratch, ask first:
-"Do you want me to scaffold this, or would you rather write the first pass and have me review
-it?" For every other module (Finance, Habit, Job CRM, Dashboard, etc.), normal spec-to-code
-delegation is fine.
+## Per-Module Task Split (reprioritized 2026-07-12 — build order: Task Engine → Prep Tracker → Job Application CRM → Daily Dashboard)
 
-## Workflow
+The MVP changed: it's no longer Task Engine / Knowledge Base / Command Palette. Prep Tracker and
+Job Application CRM are new/promoted because they directly serve the human's external roadmap
+(`engineering_first_roadmap_v2.md`) — see `myhub_plan.md` Phase 1.2 if you want the full
+rationale. Knowledge Base and Command Palette are now V2 — don't start on those.
 
-1. **Plan before code.** For any multi-file task, first output a step-by-step plan and a
-   file-by-file diff outline. Wait for approval before writing code.
-2. **Read the module spec** (`/specs/<module>-spec.md`) before touching that module. If no spec
-   exists, ask for one rather than inferring structure.
-3. **Small commits.** One feature or fix per task. Don't bundle unrelated changes.
-4. **Run checks before finishing:** `npm run lint`, `npm run typecheck`, `npm run test` after
-   every backend change. A task isn't done until these pass.
-5. **Don't touch UI in a backend-scoped task**, unless the spec says so or a tiny integration
-   point is required.
+| Module                  | Your deliverables                                                                                                                                                                     | Depends on (from Claude Code)                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Task Engine**         | Kanban board UI, quick-capture inbox form, task card components, unit tests for `TaskRepository`/`useTaskStore` (now including weekly-recurrence behavior)                            | Published `TaskRepository.ts` / `useTaskStore.ts` interface stubs                                        |
+| **Prep Tracker**        | Entry-logging forms per `entry_type` (algorithm/system_design/ml_system_design/behavioral/mock_interview), behavioral-story editor, scorecard-progress display components, unit tests | Published `PrepRepository.ts` / `usePrepStore.ts` interface stubs                                        |
+| **Job Application CRM** | Pipeline/kanban-by-stage UI, company/application/interview forms, unit tests                                                                                                          | Published `ApplicationRepository.ts` / `CompanyRepository.ts` / `InterviewRepository.ts` interface stubs |
+| **Daily Dashboard**     | Dashboard layout and panel components: this week's schedule, applications needing follow-up, scorecard progress vs. monthly targets, current month's gate checklist                   | Event Bus types from the three modules above (build this one last)                                       |
 
-## What NOT to do
+Task Engine, Prep Tracker, and Job Application CRM share no files with each other, so you don't
+need to wait for one module's UI to be done before starting the next one's — just wait for
+Claude Code to publish that module's interface first.
 
-- **Do not do frontend implementation** — Next.js routes, React components, Tailwind/shadcn UI,
-  layout, responsive work, or UI states. That's Claude Code's.
-- **Do not invent architecture** — if a spec is ambiguous about structure, ask the human, don't
-  decide.
+## Checks Before Finishing Any Task
 
-## Style
+Since there's no human reading every diff line-by-line, treat these as the actual gate, not a
+formality:
 
-- Match existing formatting exactly — don't reformat surrounding code.
-- Keep functions small and single-purpose; if a comment implies more than one function's worth
-  of logic, write multiple small functions rather than one large one.
-- No inline Supabase queries in components — route through the module's `*Repository.ts` file,
-  even for a "quick" fetch.
+1. `npm run lint`
+2. `npm run typecheck`
+3. `npm run test:ui`
+4. Your new unit tests pass against the current interface (stub or real implementation,
+   whichever has landed).
+
+## When NOT to Use Codex For Something
+
+- Architecting a new feature, designing a schema, or reasoning about cross-store interactions —
+  hand that to Claude Code, you lack the deep context for it.
+- Anything inside the files Claude Code owns (see "What You Do NOT Own" above).

@@ -217,13 +217,23 @@ Do not build microservices. For a solo developer, build a **Modular Monolith**.
 **Task Engine — `Tasks` table:**
 
 - `id` (uuid, pk), `title` (text, required), `description` (text, nullable), `status` (enum:
-  `todo` / `in_progress` / `done`), `due_date` (timestamptz, nullable), `parent_task_id`
-  (uuid, self-referencing FK, nullable — null means top-level task), `deleted_at` (timestamptz,
-  nullable, default `NULL` — never default to `now()`), `created_at`/`updated_at` (timestamptz).
-- **3-level nesting cap:** a task's depth (root = 0) must not exceed 2 (i.e. root → child →
-  grandchild is the deepest allowed chain). Enforce in `TaskRepository.ts`, not just in the UI.
-- **Cascade behavior:** soft-deleting a parent soft-deletes its descendants. Use a recursive CTE
-  to resolve the descendant set; don't loop application-side.
+  `inbox` / `todo` / `in_progress` / `done`), `position` (numeric — ordering within a Kanban
+  column; fractional, so dropping a card between two others is one write, not a reindex),
+  `due_date` (date, nullable), `parent_task_id` (uuid, self-referencing FK, nullable — null means
+  top-level task), `deleted_at` (timestamptz, nullable, default `NULL` — never default to
+  `now()`), `created_at`/`updated_at` (timestamptz).
+- **`inbox` is a real status, not a UI affordance.** Quick capture drops a task into `inbox`
+  untriaged; it moves to `todo` once you decide to actually do it. The roadmap's quick-capture
+  flow depends on this, and the shipped board already has the column.
+- **3-level nesting cap:** root → child → grandchild is the deepest allowed chain. Counting the
+  root as level 1, a task's level must not exceed 3 (`MAX_TASK_DEPTH = 3` in `taskTree.ts`).
+  Enforce in `TaskRepository.ts`, not just in the UI.
+- **Delete cascade:** soft-deleting a parent soft-deletes its descendants. Use a recursive CTE to
+  resolve the descendant set; don't loop application-side.
+- **Completion cascade:** completing a task completes all of its descendants. When every subtask
+  of a parent is `done`, the parent auto-completes — recursively, up the whole ancestor chain.
+  Creating a new subtask under a `done` parent reverts that parent (and any `done` ancestors) to
+  `todo`, since the work is no longer finished.
 - **Optimistic UI:** Kanban drag updates `status` optimistically in `useTaskStore`; on a failed
   write, roll the task back to its pre-drag column rather than leaving it in the optimistic
   state.
@@ -234,6 +244,22 @@ Do not build microservices. For a solo developer, build a **Modular Monolith**.
   of its `weekday` each week. No custom intervals, no skip/pause logic, no exceptions-to-the-rule
   handling — that richer version is still V2. This exists solely so the fixed Mon–Sun roadmap
   schedule doesn't have to be re-entered by hand every week for nine months.
+  - **Template/instance model (implementation decision, 2026-07-12).** A row with
+    `recurs_weekly = true` is a _template_, not a work item: it never appears on the board and is
+    never completed. Each week it generates an _instance_ — an ordinary task carrying
+    `recurrence_template_id` (FK → Tasks) and `occurrence_date` (date). The instance is what you
+    drag, complete, and see on the board. Without this split, completing a recurring task would
+    destroy the rule that regenerates it.
+  - Regeneration is **check-on-load** (no cron, no extra infra): on `fetchTasks`, ensure an
+    instance exists for the current Monday-start week. It generates the whole week at once rather
+    than on the morning of each `weekday`, so Monday shows the full week ahead — that's what the
+    Dashboard's "this week's schedule blocks" panel reads.
+  - Idempotency is enforced in the DB, not in application logic: a unique index on
+    (`recurrence_template_id`, `occurrence_date`) means a double page-load cannot produce
+    duplicate instances.
+  - Generated instances land in `todo`, not `inbox` — a fixed schedule block is already triaged
+    work, and `inbox` means "needs a decision". Their `due_date` is set to the occurrence date so
+    the Dashboard can query the week by date.
 
 **Prep Tracker — `PrepEntries` and `BehavioralStories` tables (new, 2026-07-12):**
 

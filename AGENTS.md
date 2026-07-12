@@ -28,7 +28,8 @@ a "reasonable" alternative.
 - Testing: Vitest (unit), Playwright (E2E) — you write unit tests for the interfaces Claude Code
   publishes; Playwright E2E for logic-heavy paths is Claude Code's responsibility, but flag
   anything you notice untested
-- Drag-and-drop: none approved yet — ask before adding one
+- Drag-and-drop: `@dnd-kit/*` (core, sortable, utilities) — approved and already load-bearing in
+  the Kanban board; don't add a second DnD library
 
 ## What You Own
 
@@ -38,11 +39,26 @@ a "reasonable" alternative.
 - Dummy/sample data wiring for local development (bulk generation itself is Antigravity's job —
   you consume it, you don't generate it from scratch).
 
+## Capacity Amendment (2026-07-12) — you now implement behind Claude Code's contracts
+
+Claude Code's usage budget is the scarce resource on this project; yours is not. The split below
+still holds for _design_, but not for typing. Once Claude Code has published a module's contract
+(the TypeScript interface, the migration, and the unit-tested domain logic), **you implement the
+mechanical wiring inside `*Repository.ts` and `use*Store.ts`** — Supabase round-trips,
+optimistic-update-then-rollback plumbing, event emission — against that contract. Claude Code
+reviews your diff instead of writing it.
+
+What this does _not_ let you do: change a published interface, design a schema, write a
+migration, or alter domain logic (cascade rules, nesting caps, recurrence date math). Those stay
+Claude Code's. If the contract looks wrong or is missing something the UI needs, **flag it — do
+not patch around it.**
+
 ## What You Do NOT Own
 
-- Anything inside `*Repository.ts`, `use*Store.ts`, or `src/lib/events.ts` — those are Claude
-  Code's files. Don't add methods to a store or repository yourself; if the UI needs something
-  the interface doesn't expose, flag it instead of extending the interface unilaterally.
+- **Published interfaces and domain logic** inside `*Repository.ts`, `use*Store.ts`, or
+  `src/lib/events.ts` — you may now fill in implementations behind them (see the capacity
+  amendment above), but the exported signatures, the event union, and the domain rules are Claude
+  Code's. Don't add or reshape a store action or repository method yourself; flag it instead.
 - Database migrations.
 - Cross-module architecture decisions. If a spec is ambiguous about structure, ask — don't
   invent it, and don't copy a pattern from a different module without checking it still applies.

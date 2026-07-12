@@ -109,9 +109,7 @@ test("rolls back a failed prep entry create", async ({ page }) => {
   await page.getByLabel("Topic").fill("doomed rep");
   await page.getByRole("button", { name: "Log session" }).click();
 
-  await expect(
-    page.getByText("Something went wrong, please try again later."),
-  ).toBeVisible();
+  await expect(page.getByText("Simulated database failure")).toBeVisible();
   await expect(
     page.getByRole("region", { name: "Recent sessions" }),
   ).not.toContainText("doomed rep");

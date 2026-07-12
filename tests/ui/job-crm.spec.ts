@@ -79,8 +79,6 @@ test("rolls back a failed application create", async ({ page }) => {
     .selectOption("company");
   await page.getByLabel("Role title").fill("Doomed role");
   await page.getByRole("button", { name: "Add application" }).click();
-  await expect(
-    page.getByText("Something went wrong, please try again later."),
-  ).toBeVisible();
+  await expect(page.getByText("Simulated database failure")).toBeVisible();
   await expect(page.getByText("Doomed role")).toHaveCount(0);
 });

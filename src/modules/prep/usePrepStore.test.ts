@@ -109,9 +109,7 @@ describe("usePrepStore entries", () => {
     await usePrepStore.getState().createEntry({ entryType: "algorithm" });
 
     expect(usePrepStore.getState().entries).toEqual([existing]);
-    expect(usePrepStore.getState().error).toBe(
-      "Something went wrong, please try again later.",
-    );
+    expect(usePrepStore.getState().error).toBe("offline");
     expect(emitMock).not.toHaveBeenCalled();
   });
 

@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
-import { BehavioralStories } from "@/src/modules/prep/components/BehavioralStories";
-import { PrepEntryForm } from "@/src/modules/prep/components/PrepEntryForm";
-import { PrepEntryList } from "@/src/modules/prep/components/PrepEntryList";
-import { PrepScorecard } from "@/src/modules/prep/components/PrepScorecard";
-import { usePrepStore } from "@/src/modules/prep/usePrepStore";
+import * as CompanyRepository from "@/src/modules/jobApplications/CompanyRepository";
+import type { Company } from "@/src/modules/jobApplications/types";
+import { OutreachEntryForm } from "@/src/modules/outreach/components/OutreachEntryForm";
+import { OutreachEntryList } from "@/src/modules/outreach/components/OutreachEntryList";
+import { useOutreachStore } from "@/src/modules/outreach/useOutreachStore";
 
-export function PrepTracker() {
+export function OutreachLog() {
   const {
     entries,
-    stories,
     isLoading,
     isCreating,
     pendingIds,
@@ -21,31 +19,42 @@ export function PrepTracker() {
     fetchEntries,
     createEntry,
     deleteEntry,
-    fetchStories,
-    createStory,
-    updateStory,
-    deleteStory,
-    scorecard,
-    weakestTopics,
-  } = usePrepStore();
-  const [month, setMonth] = useState(() => format(new Date(), "yyyy-MM"));
+  } = useOutreachStore();
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companyError, setCompanyError] = useState<string | null>(null);
   const pending = useMemo(() => new Set(pendingIds), [pendingIds]);
-  const monthlyScorecard = scorecard(month);
-  const topics = weakestTopics(3, month);
 
   useEffect(() => {
-    void Promise.all([fetchEntries(), fetchStories()]);
-  }, [fetchEntries, fetchStories]);
+    void fetchEntries();
+  }, [fetchEntries]);
 
-  function confirmEntryDelete(id: string, topic: string) {
-    if (window.confirm(`Delete prep session "${topic}"?`)) {
-      void deleteEntry(id);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCompanies() {
+      try {
+        const nextCompanies = await CompanyRepository.getCompanies();
+        if (!cancelled) {
+          setCompanies(nextCompanies);
+          setCompanyError(null);
+        }
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) {
+          setCompanies([]);
+          setCompanyError("Something went wrong, please try again later.");
+        }
+      }
     }
-  }
 
-  function confirmStoryDelete(id: string, title: string) {
-    if (window.confirm(`Delete behavioral story "${title}"?`)) {
-      void deleteStory(id);
+    void loadCompanies();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function confirmDelete(id: string, label: string) {
+    if (window.confirm(`Delete outreach conversation "${label}"?`)) {
+      void deleteEntry(id);
     }
   }
 
@@ -56,7 +65,7 @@ export function PrepTracker() {
           <div>
             <p className="text-sm font-semibold text-accent-strong">MyHub</p>
             <h1 className="mt-2 text-2xl font-semibold text-foreground">
-              Prep Tracker
+              Outreach Log
             </h1>
             <nav aria-label="MyHub modules" className="mt-6 grid gap-2 text-sm">
               <Link
@@ -66,8 +75,7 @@ export function PrepTracker() {
                 Task Engine
               </Link>
               <Link
-                aria-current="page"
-                className="rounded-md bg-surface-subtle px-3 py-2 font-medium text-foreground"
+                className="rounded-md px-3 py-2 text-body hover:bg-surface-subtle"
                 href="/prep"
               >
                 Prep Tracker
@@ -79,7 +87,8 @@ export function PrepTracker() {
                 Job CRM
               </Link>
               <Link
-                className="rounded-md px-3 py-2 text-body hover:bg-surface-subtle"
+                aria-current="page"
+                className="rounded-md bg-surface-subtle px-3 py-2 font-medium text-foreground"
                 href="/outreach"
               >
                 Outreach Log
@@ -95,16 +104,16 @@ export function PrepTracker() {
           <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-muted">
-                Interview preparation
+                Referral and outreach tracking
               </p>
               <h2 className="mt-1 text-3xl font-semibold text-foreground">
-                Build measurable reps
+                Keep conversations countable
               </h2>
             </div>
             <button
               className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
               disabled={isLoading}
-              onClick={() => void Promise.all([fetchEntries(), fetchStories()])}
+              onClick={() => void fetchEntries()}
               type="button"
             >
               Refresh
@@ -117,31 +126,24 @@ export function PrepTracker() {
             </p>
           ) : null}
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div className="grid content-start gap-6">
-              <PrepEntryForm disabled={isCreating} onCreate={createEntry} />
-              <PrepEntryList
-                entries={entries}
-                onDelete={confirmEntryDelete}
-                pendingIds={pending}
-              />
-            </div>
-            <div className="grid content-start gap-6">
-              <PrepScorecard
-                month={month}
-                onMonthChange={setMonth}
-                scorecard={monthlyScorecard}
-                topics={topics}
-              />
-              <BehavioralStories
-                disabled={isCreating}
-                onCreate={createStory}
-                onDelete={confirmStoryDelete}
-                onUpdate={updateStory}
-                pendingIds={pending}
-                stories={stories}
-              />
-            </div>
+          {companyError ? (
+            <p className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger">
+              {companyError}
+            </p>
+          ) : null}
+
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            <OutreachEntryForm
+              companies={companies}
+              disabled={isCreating}
+              onCreate={createEntry}
+            />
+            <OutreachEntryList
+              companies={companies}
+              entries={entries}
+              onDelete={confirmDelete}
+              pendingIds={pending}
+            />
           </div>
         </section>
       </div>

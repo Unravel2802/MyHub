@@ -65,6 +65,12 @@ export function JobApplicationCrm() {
               >
                 Job CRM
               </Link>
+              <Link
+                className="rounded-md px-3 py-2 text-body hover:bg-surface-subtle"
+                href="/outreach"
+              >
+                Outreach Log
+              </Link>
             </nav>
           </div>
           <div className="lg:mt-auto">

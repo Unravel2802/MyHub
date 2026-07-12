@@ -31,6 +31,12 @@ export function Sidebar() {
           >
             Job CRM
           </Link>
+          <Link
+            className="rounded-md px-3 py-2 text-body hover:bg-surface-subtle"
+            href="/outreach"
+          >
+            Outreach Log
+          </Link>
         </nav>
       </div>
 

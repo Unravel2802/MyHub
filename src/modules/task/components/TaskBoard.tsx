@@ -30,7 +30,7 @@ import {
   toggleColumnFilter,
 } from "@/src/modules/task/taskBoardUtils";
 import { canAddSubtask, taskDepth } from "@/src/modules/task/taskTree";
-import type { Task, TaskStatus } from "@/src/modules/task/types";
+import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
 import { useTaskStore } from "@/src/modules/task/useTaskStore";
 
 // Prefer whatever droppable the pointer is actually inside (so empty columns
@@ -44,13 +44,16 @@ const boardCollisionDetection: CollisionDetection = (args) => {
 export function TaskBoard() {
   const {
     tasks,
+    templates,
     isLoading,
     isCreating,
     pendingIds,
     error,
     columnFilters,
     fetchTasks,
+    fetchTemplates,
     createTask,
+    deleteTemplate,
     updateTask,
     updateStatus,
     moveTask,
@@ -58,6 +61,10 @@ export function TaskBoard() {
     setColumnFilters,
   } = useTaskStore();
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskRecursWeekly, setNewTaskRecursWeekly] = useState(false);
+  const [newTaskWeekday, setNewTaskWeekday] = useState<Weekday>(
+    () => new Date().getDay() as Weekday,
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const sensors = useSensors(
@@ -70,8 +77,8 @@ export function TaskBoard() {
   );
 
   useEffect(() => {
-    void fetchTasks();
-  }, [fetchTasks]);
+    void Promise.all([fetchTasks(), fetchTemplates()]);
+  }, [fetchTasks, fetchTemplates]);
 
   const visibleTasks = useMemo(
     () => filterVisibleTasks(tasks, searchTerm),
@@ -135,7 +142,14 @@ export function TaskBoard() {
     if (!title) return;
 
     setNewTaskTitle("");
-    await createTask({ title });
+    setNewTaskRecursWeekly(false);
+    await createTask({
+      title,
+      ...(newTaskRecursWeekly && {
+        recursWeekly: true,
+        weekday: newTaskWeekday,
+      }),
+    });
   }
 
   function handleUpdateTitle(id: string, title: string) {
@@ -156,6 +170,12 @@ export function TaskBoard() {
 
   function handleDeleteTask(id: string) {
     void deleteTask(id);
+  }
+
+  function handleDeleteTemplate(id: string, title: string) {
+    if (window.confirm(`Stop repeating "${title}" every week?`)) {
+      void deleteTemplate(id);
+    }
   }
 
   function handleToggleColumn(status: TaskStatus) {
@@ -208,13 +228,20 @@ export function TaskBoard() {
             error={error}
             isBusy={isBusy}
             newTaskTitle={newTaskTitle}
+            newTaskRecursWeekly={newTaskRecursWeekly}
+            newTaskWeekday={newTaskWeekday}
+            disabledTemplateIds={pendingTaskIds}
             onCreateTask={handleCreateTask}
+            onDeleteTemplate={handleDeleteTemplate}
             onRefresh={() => void fetchTasks()}
+            onRecursWeeklyChange={setNewTaskRecursWeekly}
             onSearchChange={setSearchTerm}
             onTitleChange={setNewTaskTitle}
             onToggleColumn={handleToggleColumn}
+            onWeekdayChange={setNewTaskWeekday}
             searchTerm={searchTerm}
             stats={stats}
+            templates={templates}
           />
 
           <div className="flex-1 overflow-x-auto p-4 sm:p-6">

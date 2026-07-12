@@ -32,6 +32,59 @@ test("creates a task into the inbox column", async ({ page }) => {
   ).toHaveCount(1);
 });
 
+test("creates and displays a weekly task rule", async ({ page }) => {
+  const db = await loadBoard(page);
+
+  await page.getByPlaceholder("New inbox task").fill("Practice system design");
+  await page.getByRole("checkbox", { name: "Repeats weekly" }).check();
+  await page.getByLabel("Weekday").selectOption("2");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  const weeklyTasks = page.getByLabel("Weekly tasks");
+  await expect(weeklyTasks).toContainText("Practice system design");
+  await expect(weeklyTasks).toContainText("Tuesday");
+  await expect(card(page, "Practice system design")).toHaveCount(0);
+  await expect
+    .poll(() => db.rows.find((task) => task.title === "Practice system design"))
+    .toMatchObject({ recurs_weekly: true, weekday: 2 });
+});
+
+test("generates a weekly instance and keeps it after stopping the rule", async ({
+  page,
+}) => {
+  const db = await loadBoard(page, [
+    row({
+      id: "weekly-template",
+      title: "Solve graph problems",
+      recurs_weekly: true,
+      weekday: 0,
+    }),
+  ]);
+
+  const instance = card(page, "Solve graph problems");
+  await expect(instance).toBeVisible();
+  await expect(instance).toContainText("Weekly instance");
+  await expect(
+    page.getByRole("region", { name: "Todo" }).getByRole("article"),
+  ).toHaveCount(1);
+
+  page.on("dialog", (dialog) => void dialog.accept());
+  await page
+    .getByLabel("Weekly tasks")
+    .getByRole("button", { name: "Stop" })
+    .click();
+
+  await expect(page.getByLabel("Weekly tasks")).toContainText(
+    "No weekly tasks yet.",
+  );
+  await expect(instance).toBeVisible();
+  await expect
+    .poll(
+      () => db.rows.find((task) => task.id === "weekly-template")?.deleted_at,
+    )
+    .not.toBeNull();
+});
+
 test("creates a subtask nested one level below its parent", async ({
   page,
 }) => {

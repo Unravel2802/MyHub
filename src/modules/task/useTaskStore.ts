@@ -141,9 +141,17 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
     fetchTasks: async () => {
       set({ isLoading: true, error: null });
+      let recurrenceError: string | null = null;
+
+      try {
+        await TaskRepository.regenerateWeeklyInstances();
+      } catch (err) {
+        recurrenceError = toUserMessage(err);
+      }
+
       try {
         const tasks = await TaskRepository.getTasks();
-        set({ tasks, isLoading: false });
+        set({ tasks, isLoading: false, error: recurrenceError });
       } catch (err) {
         set({ isLoading: false, error: toUserMessage(err) });
       }

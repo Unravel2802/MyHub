@@ -5,7 +5,10 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // the recursive cascade logic runs for real.
 const h = vi.hoisted(() => {
   type Row = Record<string, unknown>;
-  const store: { rows: Row[] } = { rows: [] };
+  const store: { rows: Row[]; uniqueViolationOnce: boolean } = {
+    rows: [],
+    uniqueViolationOnce: false,
+  };
 
   const matches = (
     row: Row,
@@ -59,10 +62,15 @@ const h = vi.hoisted(() => {
         const inserted = payloads.map((p) => ({
           id: p.id ?? crypto.randomUUID(),
           title: p.title ?? null,
+          description: p.description ?? null,
           status: p.status ?? "inbox",
           position: p.position ?? 0,
           due_date: p.due_date ?? null,
           parent_task_id: p.parent_task_id ?? null,
+          recurs_weekly: p.recurs_weekly ?? false,
+          weekday: p.weekday ?? null,
+          recurrence_template_id: p.recurrence_template_id ?? null,
+          occurrence_date: p.occurrence_date ?? null,
           deleted_at: null,
           created_at: now,
           updated_at: now,
@@ -82,6 +90,13 @@ const h = vi.hoisted(() => {
     }
 
     single() {
+      if (this.op === "insert" && store.uniqueViolationOnce) {
+        store.uniqueViolationOnce = false;
+        return Promise.resolve({
+          data: null,
+          error: { code: "23505", message: "duplicate key" },
+        });
+      }
       const rows = this.run();
       return Promise.resolve({ data: rows[0] ?? null, error: null });
     }
@@ -102,6 +117,10 @@ const h = vi.hoisted(() => {
     seed: (rows: Row[]) => store.rows.push(...rows.map((r) => ({ ...r }))),
     reset: () => {
       store.rows = [];
+      store.uniqueViolationOnce = false;
+    },
+    failNextInsertWithUniqueViolation: () => {
+      store.uniqueViolationOnce = true;
     },
   };
 });
@@ -110,7 +129,7 @@ vi.mock("@/src/lib/supabaseClient", () => ({ supabase: { from: h.from } }));
 
 import * as TaskRepository from "@/src/modules/task/TaskRepository";
 import { MaxDepthError } from "@/src/modules/task/TaskRepository";
-import type { TaskStatus } from "@/src/modules/task/types";
+import type { TaskStatus, Weekday } from "@/src/modules/task/types";
 
 type SeedTask = {
   id: string;
@@ -118,16 +137,27 @@ type SeedTask = {
   parent_task_id?: string | null;
   deleted_at?: string | null;
   position?: number;
+  title?: string;
+  description?: string | null;
+  recurs_weekly?: boolean;
+  weekday?: Weekday | null;
+  recurrence_template_id?: string | null;
+  occurrence_date?: string | null;
 };
 
 function task(o: SeedTask) {
   return {
     id: o.id,
-    title: o.id,
+    title: o.title ?? o.id,
+    description: o.description ?? null,
     status: o.status ?? "inbox",
     position: o.position ?? 0,
     due_date: null,
     parent_task_id: o.parent_task_id ?? null,
+    recurs_weekly: o.recurs_weekly ?? false,
+    weekday: o.weekday ?? null,
+    recurrence_template_id: o.recurrence_template_id ?? null,
+    occurrence_date: o.occurrence_date ?? null,
     deleted_at: o.deleted_at ?? null,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
@@ -288,6 +318,85 @@ describe("createTask", () => {
     const created = await TaskRepository.createTask({ title: "c" });
 
     expect(created.position).toBe(2);
+  });
+});
+
+describe("weekly recurrence", () => {
+  it("loads only active recurrence templates", async () => {
+    h.seed([
+      task({ id: "ordinary" }),
+      task({ id: "active", recurs_weekly: true, weekday: 2 }),
+      task({
+        id: "deleted",
+        recurs_weekly: true,
+        weekday: 4,
+        deleted_at: "2026-07-01T00:00:00.000Z",
+      }),
+    ]);
+
+    const templates = await TaskRepository.getTemplates();
+
+    expect(templates.map((template) => template.id)).toEqual(["active"]);
+  });
+
+  it("generates a todo instance for each missing occurrence", async () => {
+    h.seed([
+      task({
+        id: "template",
+        title: "System design practice",
+        description: "One case",
+        recurs_weekly: true,
+        weekday: 2,
+      }),
+      task({ id: "existing-todo", status: "todo", position: 3 }),
+    ]);
+
+    const created = await TaskRepository.regenerateWeeklyInstances(
+      new Date("2026-07-15T12:00:00.000Z"),
+    );
+
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({
+      title: "System design practice",
+      description: "One case",
+      status: "todo",
+      position: 4,
+      dueDate: "2026-07-14",
+      recursWeekly: false,
+      weekday: null,
+      recurrenceTemplateId: "template",
+      occurrenceDate: "2026-07-14",
+    });
+  });
+
+  it("does not regenerate an existing soft-deleted occurrence", async () => {
+    h.seed([
+      task({ id: "template", recurs_weekly: true, weekday: 2 }),
+      task({
+        id: "dismissed",
+        recurrence_template_id: "template",
+        occurrence_date: "2026-07-14",
+        deleted_at: "2026-07-14T08:00:00.000Z",
+      }),
+    ]);
+
+    const created = await TaskRepository.regenerateWeeklyInstances(
+      new Date("2026-07-15T12:00:00.000Z"),
+    );
+
+    expect(created).toEqual([]);
+    expect(h.store.rows).toHaveLength(2);
+  });
+
+  it("treats a concurrent unique violation as successful regeneration", async () => {
+    h.seed([task({ id: "template", recurs_weekly: true, weekday: 2 })]);
+    h.failNextInsertWithUniqueViolation();
+
+    await expect(
+      TaskRepository.regenerateWeeklyInstances(
+        new Date("2026-07-15T12:00:00.000Z"),
+      ),
+    ).resolves.toEqual([]);
   });
 });
 

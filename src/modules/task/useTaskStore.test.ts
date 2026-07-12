@@ -10,6 +10,8 @@ vi.mock("@/src/modules/task/TaskRepository", () => ({
     }
   },
   getTasks: vi.fn(),
+  getTemplates: vi.fn(),
+  regenerateWeeklyInstances: vi.fn(),
   createTask: vi.fn(),
   updateTask: vi.fn(),
   updateTaskStatus: vi.fn(),
@@ -51,6 +53,7 @@ function task(overrides: Partial<Task> & { id: string }): Task {
 function resetStore(tasks: Task[] = []) {
   useTaskStore.setState({
     tasks,
+    templates: [],
     isLoading: false,
     error: null,
     columnFilters: [],
@@ -63,6 +66,44 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
   resetStore();
+  repository.regenerateWeeklyInstances.mockResolvedValue([]);
+});
+
+describe("useTaskStore fetchTasks", () => {
+  it("regenerates weekly instances before loading the board", async () => {
+    const tasks = [task({ id: "weekly-instance" })];
+    repository.getTasks.mockResolvedValue(tasks);
+
+    await useTaskStore.getState().fetchTasks();
+
+    expect(repository.regenerateWeeklyInstances).toHaveBeenCalledOnce();
+    expect(repository.getTasks).toHaveBeenCalledOnce();
+    expect(
+      repository.regenerateWeeklyInstances.mock.invocationCallOrder[0],
+    ).toBeLessThan(repository.getTasks.mock.invocationCallOrder[0]);
+    expect(useTaskStore.getState()).toMatchObject({
+      tasks,
+      isLoading: false,
+      error: null,
+    });
+  });
+
+  it("still loads tasks when weekly regeneration fails", async () => {
+    const tasks = [task({ id: "existing" })];
+    repository.regenerateWeeklyInstances.mockRejectedValue(
+      new Error("regeneration failed"),
+    );
+    repository.getTasks.mockResolvedValue(tasks);
+
+    await useTaskStore.getState().fetchTasks();
+
+    expect(repository.getTasks).toHaveBeenCalledOnce();
+    expect(useTaskStore.getState()).toMatchObject({
+      tasks,
+      isLoading: false,
+      error: "Something went wrong, please try again later.",
+    });
+  });
 });
 
 describe("useTaskStore createTask", () => {
@@ -121,6 +162,59 @@ describe("useTaskStore createTask", () => {
     );
     expect(useTaskStore.getState().isCreating).toBe(false);
     expect(emitMock).not.toHaveBeenCalled();
+  });
+
+  it("stores a new recurrence template outside the board tasks", async () => {
+    const template = task({
+      id: "template",
+      title: "Weekly practice",
+      recursWeekly: true,
+      weekday: 2,
+    });
+    repository.createTask.mockResolvedValue(template);
+
+    await useTaskStore.getState().createTask({
+      title: "Weekly practice",
+      recursWeekly: true,
+      weekday: 2,
+    });
+
+    expect(useTaskStore.getState().tasks).toEqual([]);
+    expect(useTaskStore.getState().templates).toEqual([template]);
+  });
+});
+
+describe("useTaskStore recurrence templates", () => {
+  it("loads templates through the repository", async () => {
+    const templates = [
+      task({ id: "template", recursWeekly: true, weekday: 1 }),
+    ];
+    repository.getTemplates.mockResolvedValue(templates);
+
+    await useTaskStore.getState().fetchTemplates();
+
+    expect(useTaskStore.getState().templates).toEqual(templates);
+  });
+
+  it("removes a template without removing generated board instances", async () => {
+    const template = task({
+      id: "template",
+      recursWeekly: true,
+      weekday: 1,
+    });
+    const instance = task({
+      id: "instance",
+      recurrenceTemplateId: "template",
+      occurrenceDate: "2026-07-13",
+    });
+    resetStore([instance]);
+    useTaskStore.setState({ templates: [template] });
+    repository.deleteTask.mockResolvedValue();
+
+    await useTaskStore.getState().deleteTemplate("template");
+
+    expect(useTaskStore.getState().templates).toEqual([]);
+    expect(useTaskStore.getState().tasks).toEqual([instance]);
   });
 });
 

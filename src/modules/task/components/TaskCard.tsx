@@ -135,6 +135,11 @@ export function TaskCard({
             <span>{formatDueDate(task.dueDate)}</span>
             <span>Level {depth}</span>
             {childCount > 0 ? <span>{childCount} subtasks</span> : null}
+            {task.recurrenceTemplateId ? (
+              <span className="rounded-full border border-accent px-2 py-0.5 text-accent-strong">
+                Weekly instance
+              </span>
+            ) : null}
           </div>
         </div>
         <span

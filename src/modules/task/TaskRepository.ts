@@ -1,4 +1,9 @@
 import { supabase } from "@/src/lib/supabaseClient";
+import {
+  missingOccurrences,
+  occurrenceKey,
+  toTemplate,
+} from "@/src/modules/task/taskRecurrence";
 import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
 import { MAX_TASK_DEPTH } from "@/src/modules/task/taskTree";
 
@@ -118,7 +123,15 @@ export async function createTask(input: {
 // The recurrence rules themselves (recurs_weekly = true). Not board tasks — use
 // this for a "manage recurring blocks" surface.
 export async function getTemplates(): Promise<Task[]> {
-  throw new Error("not implemented");
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("recurs_weekly", true)
+    .is("deleted_at", null)
+    .order("weekday", { ascending: true });
+
+  if (error) throw error;
+  return data.map(fromRow);
 }
 
 // Ensure every template has an instance for the Monday-start week containing
@@ -141,8 +154,70 @@ export async function getTemplates(): Promise<Task[]> {
 export async function regenerateWeeklyInstances(
   today: Date = new Date(),
 ): Promise<Task[]> {
-  void today;
-  throw new Error("not implemented");
+  const templateTasks = await getTemplates();
+  const templates = templateTasks.flatMap((task) => {
+    const template = toTemplate(task);
+    return template ? [template] : [];
+  });
+  if (templates.length === 0) return [];
+
+  const templateIds = templates.map((template) => template.id);
+  const { data: existingRows, error: existingError } = (await supabase
+    .from("tasks")
+    .select("recurrence_template_id, occurrence_date")
+    .in("recurrence_template_id", templateIds)) as {
+    data:
+      | {
+          recurrence_template_id: string | null;
+          occurrence_date: string | null;
+        }[]
+      | null;
+    error: unknown;
+  };
+
+  if (existingError) throw existingError;
+  const existingKeys = new Set(
+    (existingRows ?? []).flatMap((row) =>
+      row.recurrence_template_id && row.occurrence_date
+        ? [occurrenceKey(row.recurrence_template_id, row.occurrence_date)]
+        : [],
+    ),
+  );
+  const pending = missingOccurrences(templates, existingKeys, today);
+  if (pending.length === 0) return [];
+
+  const templateById = new Map(templateTasks.map((task) => [task.id, task]));
+  const firstPosition = await nextPosition("todo");
+  const created: Task[] = [];
+
+  for (const [index, occurrence] of pending.entries()) {
+    const template = templateById.get(occurrence.templateId);
+    if (!template) continue;
+
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert({
+        title: template.title,
+        description: template.description,
+        status: "todo" satisfies TaskStatus,
+        position: firstPosition + index,
+        due_date: occurrence.occurrenceDate,
+        recurs_weekly: false,
+        weekday: null,
+        recurrence_template_id: occurrence.templateId,
+        occurrence_date: occurrence.occurrenceDate,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "23505") continue;
+      throw error;
+    }
+    created.push(fromRow(data));
+  }
+
+  return created;
 }
 
 // The next position at the end of a column: one past the current max among

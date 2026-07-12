@@ -1,20 +1,37 @@
 import type { FormEvent } from "react";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import type { TaskStats } from "@/src/modules/task/taskBoardUtils";
-import type { TaskStatus } from "@/src/modules/task/types";
+import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
+
+const weekdays: { value: Weekday; label: string }[] = [
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
+  { value: 0, label: "Sunday" },
+];
 
 type BoardHeaderProps = {
   columnFilters: TaskStatus[];
   error: string | null;
   isBusy: boolean;
   newTaskTitle: string;
+  newTaskRecursWeekly: boolean;
+  newTaskWeekday: Weekday;
   searchTerm: string;
   stats: TaskStats[];
+  templates: Task[];
+  disabledTemplateIds: ReadonlySet<string>;
   onCreateTask: (event: FormEvent<HTMLFormElement>) => void;
+  onDeleteTemplate: (id: string, title: string) => void;
   onRefresh: () => void;
+  onRecursWeeklyChange: (value: boolean) => void;
   onSearchChange: (value: string) => void;
   onTitleChange: (value: string) => void;
   onToggleColumn: (status: TaskStatus) => void;
+  onWeekdayChange: (value: Weekday) => void;
 };
 
 export function BoardHeader({
@@ -22,17 +39,24 @@ export function BoardHeader({
   error,
   isBusy,
   newTaskTitle,
+  newTaskRecursWeekly,
+  newTaskWeekday,
   searchTerm,
   stats,
+  templates,
+  disabledTemplateIds,
   onCreateTask,
+  onDeleteTemplate,
   onRefresh,
+  onRecursWeeklyChange,
   onSearchChange,
   onTitleChange,
   onToggleColumn,
+  onWeekdayChange,
 }: BoardHeaderProps) {
   return (
     <header className="border-b border-border bg-surface px-6 py-5">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
         <div>
           <p className="text-sm font-medium text-muted">
             Personal productivity
@@ -54,7 +78,10 @@ export function BoardHeader({
             type="search"
             value={searchTerm}
           />
-          <form className="flex gap-2" onSubmit={onCreateTask}>
+          <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={onCreateTask}
+          >
             <label className="sr-only" htmlFor="new-task-title">
               New task title
             </label>
@@ -63,9 +90,42 @@ export function BoardHeader({
               className="h-10 min-w-0 rounded-md border border-input bg-surface px-3 text-sm text-foreground outline-none transition-colors placeholder:text-subtle focus:border-accent sm:w-56"
               disabled={isBusy}
               onChange={(event) => onTitleChange(event.target.value)}
-              placeholder="New inbox task"
+              placeholder={
+                newTaskRecursWeekly ? "New weekly task" : "New inbox task"
+              }
               value={newTaskTitle}
             />
+            <label className="flex h-10 items-center gap-2 rounded-md border border-input bg-surface px-3 text-xs font-medium text-body">
+              <input
+                checked={newTaskRecursWeekly}
+                disabled={isBusy}
+                onChange={(event) => onRecursWeeklyChange(event.target.checked)}
+                type="checkbox"
+              />
+              Repeats weekly
+            </label>
+            {newTaskRecursWeekly ? (
+              <label className="sr-only" htmlFor="new-task-weekday">
+                Weekday
+              </label>
+            ) : null}
+            {newTaskRecursWeekly ? (
+              <select
+                className="h-10 rounded-md border border-input bg-surface px-3 text-sm text-foreground outline-none focus:border-accent"
+                disabled={isBusy}
+                id="new-task-weekday"
+                onChange={(event) =>
+                  onWeekdayChange(Number(event.target.value) as Weekday)
+                }
+                value={newTaskWeekday}
+              >
+                {weekdays.map((weekday) => (
+                  <option key={weekday.value} value={weekday.value}>
+                    {weekday.label}
+                  </option>
+                ))}
+              </select>
+            ) : null}
             <button
               className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-disabled"
               disabled={isBusy || !newTaskTitle.trim()}
@@ -129,6 +189,61 @@ export function BoardHeader({
             </p>
           </div>
         ))}
+      </div>
+
+      <div
+        aria-label="Weekly tasks"
+        aria-labelledby="recurring-rules-heading"
+        className="mt-5 rounded-lg border border-border bg-surface-subtle p-4"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3
+              className="text-sm font-semibold text-foreground"
+              id="recurring-rules-heading"
+            >
+              Weekly tasks
+            </h3>
+            <p className="mt-1 text-xs text-muted">
+              Rules generate a fresh Todo task each week.
+            </p>
+          </div>
+          <span className="text-xs font-medium text-muted">
+            {templates.length} active
+          </span>
+        </div>
+
+        {templates.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">No weekly tasks yet.</p>
+        ) : (
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {templates.map((template) => (
+              <li
+                className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2"
+                key={template.id}
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {template.title}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {weekdays.find(
+                      (weekday) => weekday.value === template.weekday,
+                    )?.label ?? "Unknown weekday"}
+                  </p>
+                </div>
+                <button
+                  className="shrink-0 rounded-md border border-danger-border px-2 py-1 text-xs font-medium text-danger hover:bg-danger-surface disabled:cursor-not-allowed disabled:text-danger-subtle"
+                  disabled={disabledTemplateIds.has(template.id)}
+                  onClick={() => onDeleteTemplate(template.id, template.title)}
+                  type="button"
+                >
+                  Stop
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </header>
   );

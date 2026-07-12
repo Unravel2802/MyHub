@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
 
 export function Sidebar() {
@@ -10,6 +11,21 @@ export function Sidebar() {
         <h1 className="mt-2 text-2xl font-semibold tracking-normal text-foreground">
           Task Engine
         </h1>
+        <nav aria-label="MyHub modules" className="mt-6 grid gap-2 text-sm">
+          <Link
+            aria-current="page"
+            className="rounded-md bg-surface-subtle px-3 py-2 font-medium text-foreground"
+            href="/"
+          >
+            Task Engine
+          </Link>
+          <Link
+            className="rounded-md px-3 py-2 text-body hover:bg-surface-subtle"
+            href="/prep"
+          >
+            Prep Tracker
+          </Link>
+        </nav>
       </div>
 
       <div className="lg:mt-auto">

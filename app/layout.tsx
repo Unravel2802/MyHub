@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { THEME_STORAGE_KEY } from "@/src/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,6 +18,22 @@ export const metadata: Metadata = {
   description: "Personal productivity hub",
 };
 
+// Runs before first paint so a dark-theme load never flashes the light palette.
+// Kept as a string literal because it must execute ahead of hydration.
+const themeScript = `
+(function () {
+  try {
+    var stored = localStorage.getItem("${THEME_STORAGE_KEY}");
+    var theme = stored === "light" || stored === "dark" ? stored : "system";
+    var isDark =
+      theme === "dark" ||
+      (theme === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.classList.toggle("dark", isDark);
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,8 +43,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }

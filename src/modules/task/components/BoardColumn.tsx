@@ -43,20 +43,22 @@ export function BoardColumn({
   return (
     <section
       aria-label={column.title}
-      className="flex min-h-[520px] min-w-0 flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white"
+      className="flex min-h-[520px] min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface"
       ref={setNodeRef}
     >
-      <div className="border-b border-zinc-200 p-4">
+      <div className="border-b border-border p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <span className={`h-2.5 w-2.5 rounded-full ${column.accent}`} />
-            <h3 className="truncate text-sm font-semibold">{column.title}</h3>
+            <h3 className="truncate text-sm font-semibold text-foreground">
+              {column.title}
+            </h3>
           </div>
-          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+          <span className="rounded-full bg-surface-subtle px-2 py-0.5 text-xs font-medium text-muted">
             {tasks.length}
           </span>
         </div>
-        <p className="mt-2 text-xs leading-5 text-zinc-500">
+        <p className="mt-2 text-xs leading-5 text-muted">
           {column.description}
         </p>
       </div>
@@ -67,10 +69,8 @@ export function BoardColumn({
       >
         <div className="flex min-w-0 flex-1 flex-col gap-3 p-3">
           {isLoading ? (
-            <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-stone-50 p-6 text-center">
-              <p className="text-sm leading-6 text-zinc-500">
-                Loading tasks...
-              </p>
+            <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-input bg-surface-subtle p-6 text-center">
+              <p className="text-sm leading-6 text-muted">Loading tasks...</p>
             </div>
           ) : tasks.length > 0 ? (
             tasks.map((task) => (
@@ -89,8 +89,8 @@ export function BoardColumn({
               />
             ))
           ) : (
-            <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-zinc-300 bg-stone-50 p-6 text-center">
-              <p className="max-w-40 text-sm leading-6 text-zinc-500">
+            <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-input bg-surface-subtle p-6 text-center">
+              <p className="max-w-40 text-sm leading-6 text-muted">
                 {column.emptyCopy}
               </p>
             </div>

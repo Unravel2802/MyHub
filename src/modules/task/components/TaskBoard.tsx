@@ -198,7 +198,7 @@ export function TaskBoard() {
   }
 
   return (
-    <main className="min-h-screen bg-stone-50 text-zinc-950">
+    <main className="min-h-screen bg-canvas text-foreground">
       <div className="grid min-h-screen lg:grid-cols-[260px_1fr]">
         <Sidebar />
 
@@ -254,11 +254,11 @@ export function TaskBoard() {
 
               <DragOverlay>
                 {activeTask ? (
-                  <div className="rounded-md border border-teal-500 bg-white p-4 shadow-lg">
-                    <p className="text-sm font-semibold text-zinc-950">
+                  <div className="rounded-md border border-accent bg-surface p-4 shadow-lg">
+                    <p className="text-sm font-semibold text-foreground">
                       {activeTask.title}
                     </p>
-                    <p className="mt-1 text-xs text-zinc-500">
+                    <p className="mt-1 text-xs text-muted">
                       {formatDueDate(activeTask.dueDate)}
                     </p>
                   </div>

@@ -108,8 +108,8 @@ export function TaskCard({
   return (
     <article
       aria-label={`Task: ${task.title}`}
-      className={`min-w-0 overflow-hidden rounded-md border border-zinc-200 bg-white p-3 shadow-sm transition-colors hover:border-zinc-300 ${
-        disabled ? "opacity-70" : "hover:border-zinc-300"
+      className={`min-w-0 overflow-hidden rounded-md border border-border bg-surface p-3 shadow-sm transition-colors hover:border-input-hover ${
+        disabled ? "opacity-70" : "hover:border-input-hover"
       } ${isDragging ? "opacity-40" : ""}`}
       ref={setNodeRef}
       style={{
@@ -128,10 +128,10 @@ export function TaskCard({
         {...listeners}
       >
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-sm font-semibold leading-5 text-zinc-950">
+          <p className="line-clamp-2 text-sm font-semibold leading-5 text-foreground">
             {task.title}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-medium text-zinc-500">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted">
             <span>{formatDueDate(task.dueDate)}</span>
             <span>Level {depth}</span>
             {childCount > 0 ? <span>{childCount} subtasks</span> : null}
@@ -139,7 +139,7 @@ export function TaskCard({
         </div>
         <span
           className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${
-            currentColumn?.accent ?? "bg-zinc-300"
+            currentColumn?.accent ?? "bg-input"
           }`}
         />
       </div>
@@ -154,7 +154,7 @@ export function TaskCard({
             Status
           </label>
           <select
-            className="h-8 min-w-0 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium text-zinc-700 outline-none transition-colors focus:border-teal-600 disabled:cursor-not-allowed disabled:bg-zinc-100"
+            className="h-8 min-w-0 rounded-md border border-input bg-surface px-2 text-xs font-medium text-body outline-none transition-colors focus:border-accent disabled:cursor-not-allowed disabled:bg-surface-subtle"
             disabled={disabled}
             id={statusInputId}
             onChange={(event) =>
@@ -172,7 +172,7 @@ export function TaskCard({
 
         <div className="grid grid-cols-3 gap-2">
           <button
-            className="h-8 min-w-0 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-400"
+            className="h-8 min-w-0 rounded-md border border-input bg-surface px-2 text-xs font-medium text-body transition-colors hover:border-input-hover hover:text-foreground disabled:cursor-not-allowed disabled:text-subtle"
             disabled={disabled}
             onClick={toggleTitleEdit}
             type="button"
@@ -180,7 +180,7 @@ export function TaskCard({
             Edit
           </button>
           <button
-            className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-400"
+            className="h-8 rounded-md border border-input bg-surface px-2 text-xs font-medium text-body transition-colors hover:border-input-hover hover:text-foreground disabled:cursor-not-allowed disabled:text-subtle"
             disabled={disabled}
             onClick={toggleDueDateEdit}
             type="button"
@@ -188,7 +188,7 @@ export function TaskCard({
             Date
           </button>
           <button
-            className="h-8 min-w-0 rounded-md border border-red-200 bg-white px-2 text-xs font-medium text-red-700 transition-colors hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-red-300"
+            className="h-8 min-w-0 rounded-md border border-danger-border bg-surface px-2 text-xs font-medium text-danger transition-colors hover:border-danger-border-hover hover:bg-danger-surface disabled:cursor-not-allowed disabled:text-danger-subtle"
             disabled={disabled}
             onClick={handleDelete}
             type="button"
@@ -206,14 +206,14 @@ export function TaskCard({
               Task title
             </label>
             <input
-              className="h-8 min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-2 text-sm outline-none transition-colors focus:border-teal-600"
+              className="h-8 min-w-0 flex-1 rounded-md border border-input bg-surface px-2 text-sm outline-none transition-colors focus:border-accent"
               disabled={disabled}
               id={titleInputId}
               onChange={(event) => setTitleDraft(event.target.value)}
               value={titleDraft}
             />
             <button
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-400"
+              className="h-8 rounded-md border border-input bg-surface px-2 text-xs font-medium text-body transition-colors hover:border-input-hover hover:text-foreground disabled:cursor-not-allowed disabled:text-subtle"
               disabled={disabled || !titleChanged || !titleDraft.trim()}
             >
               Save
@@ -230,7 +230,7 @@ export function TaskCard({
               Due date
             </label>
             <input
-              className="h-8 min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-2 text-sm outline-none transition-colors focus:border-teal-600"
+              className="h-8 min-w-0 flex-1 rounded-md border border-input bg-surface px-2 text-sm outline-none transition-colors focus:border-accent"
               disabled={disabled}
               id={dueDateInputId}
               onChange={(event) => setDueDateDraft(event.target.value)}
@@ -238,7 +238,7 @@ export function TaskCard({
               value={dueDateDraft}
             />
             <button
-              className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-400"
+              className="h-8 rounded-md border border-input bg-surface px-2 text-xs font-medium text-body transition-colors hover:border-input-hover hover:text-foreground disabled:cursor-not-allowed disabled:text-subtle"
               disabled={disabled || !dueDateChanged}
             >
               Save
@@ -254,7 +254,7 @@ export function TaskCard({
             New subtask title
           </label>
           <input
-            className="h-8 min-w-0 flex-1 rounded-md border border-zinc-300 bg-white px-2 text-xs outline-none transition-colors placeholder:text-zinc-400 focus:border-teal-600 disabled:bg-zinc-100"
+            className="h-8 min-w-0 flex-1 rounded-md border border-input bg-surface px-2 text-xs outline-none transition-colors placeholder:text-subtle focus:border-accent disabled:bg-surface-subtle"
             disabled={disabled || !canCreateSubtask}
             id={subtaskInputId}
             onChange={(event) => setSubtaskTitle(event.target.value)}
@@ -262,7 +262,7 @@ export function TaskCard({
             value={subtaskTitle}
           />
           <button
-            className="h-8 rounded-md border border-zinc-300 bg-white px-2 text-xs font-medium text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:text-zinc-400"
+            className="h-8 rounded-md border border-input bg-surface px-2 text-xs font-medium text-body transition-colors hover:border-input-hover hover:text-foreground disabled:cursor-not-allowed disabled:text-subtle"
             disabled={disabled || !canCreateSubtask || !subtaskTitle.trim()}
           >
             Add

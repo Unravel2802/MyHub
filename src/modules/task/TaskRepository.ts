@@ -356,7 +356,8 @@ export async function updateTaskStatus(
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  const idsToDelete = await collectDescendantIds([id]);
+  const descendants = await getDescendantIds(id);
+  const idsToDelete = [id, ...descendants];
   const { error } = await supabase
     .from("tasks")
     .update({ deleted_at: new Date().toISOString() })
@@ -365,31 +366,20 @@ export async function deleteTask(id: string): Promise<void> {
   if (error) throw error;
 }
 
-async function collectDescendantIds(rootIds: string[]): Promise<string[]> {
-  const allIds = [...rootIds];
-  let frontier = rootIds;
+// One round trip via a recursive CTE (migration 0005), not a level-by-level
+// application-side walk. Excludes `id` itself — every caller adds it back in
+// if it needs it, mirroring how each call site actually uses the result.
+async function getDescendantIds(id: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc("task_descendant_ids", {
+    root_id: id,
+  });
 
-  while (frontier.length > 0) {
-    const { data, error } = await supabase
-      .from("tasks")
-      .select("id")
-      .in("parent_task_id", frontier)
-      .is("deleted_at", null);
-
-    if (error) throw error;
-    if (data.length === 0) break;
-
-    const childIds = data.map((row) => row.id);
-    allIds.push(...childIds);
-    frontier = childIds;
-  }
-
-  return allIds;
+  if (error) throw error;
+  return (data as { id: string }[]).map((row) => row.id);
 }
 
 async function completeDescendants(taskId: string): Promise<void> {
-  const subtreeIds = await collectDescendantIds([taskId]);
-  const descendantIds = subtreeIds.filter((id) => id !== taskId);
+  const descendantIds = await getDescendantIds(taskId);
   if (descendantIds.length === 0) return;
 
   const { error } = await supabase

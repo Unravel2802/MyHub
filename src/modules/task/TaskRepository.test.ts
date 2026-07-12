@@ -111,9 +111,40 @@ const h = vi.hoisted(() => {
     }
   }
 
+  // Mirrors migration 0005's task_descendant_ids recursive CTE: walks the tree
+  // from root_id, level by level, honoring the same deleted_at is null filter
+  // the SQL function applies at every level. Excludes root_id itself.
+  function taskDescendantIds(rootId: string): { id: unknown }[] {
+    const result: Row[] = [];
+    let frontier = [rootId];
+
+    while (frontier.length > 0) {
+      const children = store.rows.filter(
+        (r) => frontier.includes(r.parent_task_id as string) && !r.deleted_at,
+      );
+      if (children.length === 0) break;
+      result.push(...children);
+      frontier = children.map((r) => r.id as string);
+    }
+
+    return result.map((r) => ({ id: r.id }));
+  }
+
   return {
     store,
     from: () => new FakeQuery(),
+    rpc: (fn: string, args: { root_id: string }) => {
+      if (fn !== "task_descendant_ids") {
+        return Promise.resolve({
+          data: null,
+          error: { message: `unmocked rpc: ${fn}` },
+        });
+      }
+      return Promise.resolve({
+        data: taskDescendantIds(args.root_id),
+        error: null,
+      });
+    },
     seed: (rows: Row[]) => store.rows.push(...rows.map((r) => ({ ...r }))),
     reset: () => {
       store.rows = [];
@@ -125,7 +156,9 @@ const h = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/src/lib/supabaseClient", () => ({ supabase: { from: h.from } }));
+vi.mock("@/src/lib/supabaseClient", () => ({
+  supabase: { from: h.from, rpc: h.rpc },
+}));
 
 import * as TaskRepository from "@/src/modules/task/TaskRepository";
 import { MaxDepthError } from "@/src/modules/task/TaskRepository";

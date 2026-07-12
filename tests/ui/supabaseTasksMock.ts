@@ -103,7 +103,50 @@ function selectRows(db: FakeTaskDb, url: URL): TaskRow[] {
   return matched;
 }
 
+// Mirrors migration 0005's task_descendant_ids recursive CTE: walks the tree
+// from rootId, honoring the same `deleted_at is null` filter the SQL function
+// applies at every level. Excludes rootId itself.
+function descendantIds(db: FakeTaskDb, rootId: string): string[] {
+  const result: string[] = [];
+  let frontier = [rootId];
+
+  while (frontier.length > 0) {
+    const children = db.rows.filter(
+      (row) =>
+        row.parent_task_id !== null &&
+        frontier.includes(row.parent_task_id) &&
+        row.deleted_at === null,
+    );
+    if (children.length === 0) break;
+    result.push(...children.map((row) => row.id));
+    frontier = children.map((row) => row.id);
+  }
+
+  return result;
+}
+
 export async function mockSupabaseTasks(page: Page, db: FakeTaskDb) {
+  await page.route("**/rest/v1/rpc/task_descendant_ids*", async (route) => {
+    const request = route.request();
+    if (db.takeFailure("POST")) {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Simulated database failure" }),
+      });
+      return;
+    }
+
+    const { root_id: rootId } = request.postDataJSON() as {
+      root_id: string;
+    };
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(descendantIds(db, rootId).map((id) => ({ id }))),
+    });
+  });
+
   await page.route("**/rest/v1/tasks*", async (route) => {
     const request = route.request();
     const method = request.method();

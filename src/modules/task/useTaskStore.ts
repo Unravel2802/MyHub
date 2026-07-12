@@ -157,8 +157,9 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       try {
         const created = await TaskRepository.createTask(input);
         set({
-          tasks: get().tasks.map((t) =>
-            t.id === optimisticTask.id ? created : t,
+          tasks: revertDoneAncestors(
+            get().tasks.map((t) => (t.id === optimisticTask.id ? created : t)),
+            created.parentTaskId,
           ),
         });
         emit({

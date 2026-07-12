@@ -76,6 +76,33 @@ describe("useTaskStore createTask", () => {
     });
   });
 
+  it("reverts completed ancestors after creating a subtask", async () => {
+    const root = task({ id: "root", status: "done" });
+    const parent = task({
+      id: "parent",
+      parentTaskId: "root",
+      status: "done",
+    });
+    const created = task({
+      id: "created",
+      title: "Created",
+      parentTaskId: "parent",
+    });
+    resetStore([root, parent]);
+    repository.createTask.mockResolvedValue(created);
+
+    await useTaskStore
+      .getState()
+      .createTask({ title: "Created", parentTaskId: "parent" });
+
+    expect(useTaskStore.getState().tasks).toEqual([
+      { ...root, status: "todo" },
+      { ...parent, status: "todo" },
+      created,
+    ]);
+    expect(repository.getTasks).not.toHaveBeenCalled();
+  });
+
   it("rolls back the optimistic task and exposes a user-facing error on failure", async () => {
     const existing = task({ id: "existing" });
     resetStore([existing]);

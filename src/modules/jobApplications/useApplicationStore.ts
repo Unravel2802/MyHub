@@ -1,4 +1,9 @@
 import { create } from "zustand";
+import { format } from "date-fns";
+import * as ApplicationRepository from "@/src/modules/jobApplications/ApplicationRepository";
+import * as CompanyRepository from "@/src/modules/jobApplications/CompanyRepository";
+import * as InterviewRepository from "@/src/modules/jobApplications/InterviewRepository";
+import { emit } from "@/src/lib/events";
 import type {
   CreateApplicationInput,
   UpdateApplicationInput,
@@ -79,32 +84,364 @@ export interface ApplicationStore {
   deleteInterview: (id: string) => Promise<void>;
 }
 
-const NOT_IMPLEMENTED = () => {
-  throw new Error("not implemented");
-};
+const FAILURE_MESSAGE = "Something went wrong, please try again later.";
 
-export const useApplicationStore = create<ApplicationStore>(() => ({
-  companies: [],
-  applications: [],
-  interviews: [],
-  isLoading: false,
-  error: null,
-  isCreating: false,
-  pendingIds: [],
+function toUserMessage(error: unknown) {
+  console.error(error);
+  return FAILURE_MESSAGE;
+}
 
-  fetchAll: NOT_IMPLEMENTED,
+function updateCompanyLocally(
+  company: Company,
+  updates: Partial<UpsertCompanyInput>,
+): Company {
+  return { ...company, ...updates };
+}
 
-  createCompany: NOT_IMPLEMENTED,
-  updateCompany: NOT_IMPLEMENTED,
-  deleteCompany: NOT_IMPLEMENTED,
+function updateApplicationLocally(
+  application: Application,
+  updates: Partial<UpdateApplicationInput>,
+): Application {
+  return {
+    ...application,
+    ...updates,
+    lastUpdateDate: format(new Date(), "yyyy-MM-dd"),
+  };
+}
 
-  createApplication: NOT_IMPLEMENTED,
-  updateApplication: NOT_IMPLEMENTED,
-  updateApplicationStage: NOT_IMPLEMENTED,
-  deleteApplication: NOT_IMPLEMENTED,
+function updateInterviewLocally(
+  interview: Interview,
+  updates: Partial<UpdateInterviewInput>,
+): Interview {
+  return { ...interview, ...updates };
+}
 
-  createInterview: NOT_IMPLEMENTED,
-  updateInterview: NOT_IMPLEMENTED,
-  markInterviewCompleted: NOT_IMPLEMENTED,
-  deleteInterview: NOT_IMPLEMENTED,
-}));
+export const useApplicationStore = create<ApplicationStore>((set, get) => {
+  const addPending = (id: string) =>
+    set({ pendingIds: [...get().pendingIds, id] });
+  const removePending = (id: string) =>
+    set({ pendingIds: get().pendingIds.filter((pending) => pending !== id) });
+
+  return {
+    companies: [],
+    applications: [],
+    interviews: [],
+    isLoading: false,
+    error: null,
+    isCreating: false,
+    pendingIds: [],
+
+    fetchAll: async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const [companies, applications, interviews] = await Promise.all([
+          CompanyRepository.getCompanies(),
+          ApplicationRepository.getApplications(),
+          InterviewRepository.getInterviews(),
+        ]);
+        set({ companies, applications, interviews, isLoading: false });
+      } catch (error) {
+        set({ isLoading: false, error: toUserMessage(error) });
+      }
+    },
+
+    createCompany: async (input) => {
+      const previous = get().companies;
+      const now = new Date().toISOString();
+      const optimistic: Company = {
+        id: `optimistic-${crypto.randomUUID()}`,
+        name: input.name,
+        tier: input.tier,
+        notes: input.notes ?? null,
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      set({
+        companies: [...previous, optimistic],
+        isCreating: true,
+        error: null,
+      });
+      try {
+        const created = await CompanyRepository.createCompany(input);
+        set({
+          companies: get().companies.map((company) =>
+            company.id === optimistic.id ? created : company,
+          ),
+        });
+      } catch (error) {
+        set({ companies: previous, error: toUserMessage(error) });
+      } finally {
+        set({ isCreating: false });
+      }
+    },
+
+    updateCompany: async (id, updates) => {
+      const previous = get().companies;
+      set({
+        companies: previous.map((company) =>
+          company.id === id ? updateCompanyLocally(company, updates) : company,
+        ),
+        error: null,
+      });
+      addPending(id);
+      try {
+        const updated = await CompanyRepository.updateCompany(id, updates);
+        set({
+          companies: get().companies.map((company) =>
+            company.id === id ? updated : company,
+          ),
+        });
+      } catch (error) {
+        set({ companies: previous, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    deleteCompany: async (id) => {
+      const previous = get().companies;
+      set({
+        companies: previous.filter((company) => company.id !== id),
+        error: null,
+      });
+      addPending(id);
+      try {
+        await CompanyRepository.deleteCompany(id);
+      } catch (error) {
+        set({ companies: previous, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    createApplication: async (input) => {
+      const previous = get().applications;
+      const now = new Date().toISOString();
+      const optimistic: Application = {
+        id: `optimistic-${crypto.randomUUID()}`,
+        companyId: input.companyId,
+        roleTitle: input.roleTitle,
+        resumeVariant: input.resumeVariant,
+        stage: input.stage ?? "researching",
+        appliedDate: input.appliedDate ?? null,
+        lastUpdateDate: format(new Date(), "yyyy-MM-dd"),
+        referralSource: input.referralSource ?? null,
+        followUpDate: input.followUpDate ?? null,
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      set({
+        applications: [optimistic, ...previous],
+        isCreating: true,
+        error: null,
+      });
+      try {
+        const created = await ApplicationRepository.createApplication(input);
+        set({
+          applications: get().applications.map((application) =>
+            application.id === optimistic.id ? created : application,
+          ),
+        });
+      } catch (error) {
+        set({ applications: previous, error: toUserMessage(error) });
+      } finally {
+        set({ isCreating: false });
+      }
+    },
+
+    updateApplication: async (id, updates) => {
+      const previous = get().applications;
+      set({
+        applications: previous.map((application) =>
+          application.id === id
+            ? updateApplicationLocally(application, updates)
+            : application,
+        ),
+        error: null,
+      });
+      addPending(id);
+      try {
+        const updated = await ApplicationRepository.updateApplication(
+          id,
+          updates,
+        );
+        set({
+          applications: get().applications.map((application) =>
+            application.id === id ? updated : application,
+          ),
+        });
+      } catch (error) {
+        set({ applications: previous, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    updateApplicationStage: async (id, stage) => {
+      const previous = get().applications;
+      const current = previous.find((application) => application.id === id);
+      if (current?.stage === stage) return;
+      set({
+        applications: previous.map((application) =>
+          application.id === id
+            ? updateApplicationLocally(application, { stage })
+            : application,
+        ),
+        error: null,
+      });
+      addPending(id);
+      try {
+        const updated = await ApplicationRepository.updateApplication(id, {
+          stage,
+        });
+        set({
+          applications: get().applications.map((application) =>
+            application.id === id ? updated : application,
+          ),
+        });
+        if (current && current.stage !== updated.stage) {
+          emit({
+            type: "application.stage_changed",
+            payload: {
+              applicationId: id,
+              fromStage: current.stage,
+              toStage: updated.stage,
+            },
+            timestamp: Date.now(),
+          });
+        }
+      } catch (error) {
+        set({ applications: previous, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    deleteApplication: async (id) => {
+      const previous = get().applications;
+      set({
+        applications: previous.filter((application) => application.id !== id),
+        error: null,
+      });
+      addPending(id);
+      try {
+        await ApplicationRepository.deleteApplication(id);
+      } catch (error) {
+        set({ applications: previous, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    createInterview: async (input) => {
+      const previous = get().interviews;
+      const now = new Date().toISOString();
+      const optimistic: Interview = {
+        id: `optimistic-${crypto.randomUUID()}`,
+        applicationId: input.applicationId,
+        roundType: input.roundType,
+        scheduledAt: input.scheduledAt,
+        completed: false,
+        outcome: input.outcome ?? null,
+        postMortemNotes: input.postMortemNotes ?? null,
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      set({
+        interviews: [optimistic, ...previous],
+        isCreating: true,
+        error: null,
+      });
+      try {
+        const created = await InterviewRepository.createInterview(input);
+        set({
+          interviews: get().interviews.map((interview) =>
+            interview.id === optimistic.id ? created : interview,
+          ),
+        });
+      } catch (error) {
+        set({ interviews: previous, error: toUserMessage(error) });
+      } finally {
+        set({ isCreating: false });
+      }
+    },
+
+    updateInterview: async (id, updates) => {
+      const previous = get().interviews;
+      set({
+        interviews: previous.map((interview) =>
+          interview.id === id
+            ? updateInterviewLocally(interview, updates)
+            : interview,
+        ),
+        error: null,
+      });
+      addPending(id);
+      try {
+        const updated = await InterviewRepository.updateInterview(id, updates);
+        set({
+          interviews: get().interviews.map((interview) =>
+            interview.id === id ? updated : interview,
+          ),
+        });
+      } catch (error) {
+        set({ interviews: previous, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    markInterviewCompleted: async (id) => {
+      const previous = get().interviews;
+      const current = previous.find((interview) => interview.id === id);
+      if (current?.completed) return;
+      set({
+        interviews: previous.map((interview) =>
+          interview.id === id ? { ...interview, completed: true } : interview,
+        ),
+        error: null,
+      });
+      addPending(id);
+      try {
+        const updated = await InterviewRepository.updateInterview(id, {
+          completed: true,
+        });
+        set({
+          interviews: get().interviews.map((interview) =>
+            interview.id === id ? updated : interview,
+          ),
+        });
+        if (current && !current.completed && updated.completed) {
+          emit({
+            type: "interview.completed",
+            payload: { interviewId: id, applicationId: updated.applicationId },
+            timestamp: Date.now(),
+          });
+        }
+      } catch (error) {
+        set({ interviews: previous, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    deleteInterview: async (id) => {
+      const previous = get().interviews;
+      set({
+        interviews: previous.filter((interview) => interview.id !== id),
+        error: null,
+      });
+      addPending(id);
+      try {
+        await InterviewRepository.deleteInterview(id);
+      } catch (error) {
+        set({ interviews: previous, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+  };
+});

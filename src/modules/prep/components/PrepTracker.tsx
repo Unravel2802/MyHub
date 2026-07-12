@@ -72,6 +72,12 @@ export function PrepTracker() {
               >
                 Prep Tracker
               </Link>
+              <Link
+                className="rounded-md px-3 py-2 text-body hover:bg-surface-subtle"
+                href="/applications"
+              >
+                Job CRM
+              </Link>
             </nav>
           </div>
           <div className="lg:mt-auto">

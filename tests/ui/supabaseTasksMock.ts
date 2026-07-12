@@ -8,10 +8,15 @@ import type { Page } from "@playwright/test";
 export type TaskRow = {
   id: string;
   title: string;
+  description: string | null;
   status: "inbox" | "todo" | "in_progress" | "done";
   position: number;
   due_date: string | null;
   parent_task_id: string | null;
+  recurs_weekly: boolean;
+  weekday: number | null;
+  recurrence_template_id: string | null;
+  occurrence_date: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -19,14 +24,22 @@ export type TaskRow = {
 
 const TIMESTAMP = "2026-07-12T00:00:00.000Z";
 
+// Every column the repository filters on must exist here. `getTasks` sends
+// `recurs_weekly=eq.false` to keep templates off the board, and a row missing the
+// column stringifies to "undefined" and silently matches nothing.
 export function row(
   overrides: Partial<TaskRow> & Pick<TaskRow, "id" | "title">,
 ): TaskRow {
   return {
+    description: null,
     status: "inbox",
     position: 0,
     due_date: null,
     parent_task_id: null,
+    recurs_weekly: false,
+    weekday: null,
+    recurrence_template_id: null,
+    occurrence_date: null,
     deleted_at: null,
     created_at: TIMESTAMP,
     updated_at: TIMESTAMP,
@@ -128,10 +141,15 @@ export async function mockSupabaseTasks(page: Page, db: FakeTaskDb) {
       const created = row({
         id: crypto.randomUUID(),
         title: payload.title ?? "",
+        description: payload.description ?? null,
         status: payload.status ?? "inbox",
         position: payload.position ?? 0,
         due_date: payload.due_date ?? null,
         parent_task_id: payload.parent_task_id ?? null,
+        recurs_weekly: payload.recurs_weekly ?? false,
+        weekday: payload.weekday ?? null,
+        recurrence_template_id: payload.recurrence_template_id ?? null,
+        occurrence_date: payload.occurrence_date ?? null,
       });
       db.rows.push(created);
       await respond([created]);

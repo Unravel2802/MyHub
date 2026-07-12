@@ -7,15 +7,24 @@ Everything below is decided. If it's wrong or missing, **flag it — do not patc
 
 ## What's already landed
 
-| File                                        | State                                                  |
-| ------------------------------------------- | ------------------------------------------------------ |
-| `supabase/migrations/0003_prep_tracker.sql` | Done — apply in the Supabase SQL editor before testing |
-| `src/modules/prep/types.ts`                 | Done — `PrepEntry`, `BehavioralStory`, outcome unions  |
-| `src/modules/prep/prepScorecard.ts`         | Done — pure aggregation, no DB                         |
-| `src/modules/prep/prepScorecard.test.ts`    | Done — 12 unit tests, all passing                      |
-| `src/lib/events.ts`                         | Done — `prep.logged` added to the union                |
-| `src/modules/prep/PrepRepository.ts`        | **Stubs — yours**                                      |
-| `src/modules/prep/usePrepStore.ts`          | **Stubs — yours**                                      |
+| File                                        | State                                                          |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| `supabase/migrations/0003_prep_tracker.sql` | Done — apply in the Supabase SQL editor before testing         |
+| `src/modules/prep/types.ts`                 | Done — `PrepEntry`, `BehavioralStory`, outcome unions           |
+| `src/modules/prep/prepScorecard.ts`         | Done — pure aggregation, no DB, includes `cumulativeCountsByType` |
+| `src/modules/prep/prepScorecard.test.ts`    | Done — 16 unit tests, all passing                               |
+| `src/modules/prep/prepTargets.ts`           | Done (2026-07-13) — roadmap checkpoint targets, see below       |
+| `src/modules/prep/prepTargets.test.ts`      | Done — 6 unit tests, all passing                                 |
+| `src/lib/events.ts`                         | Done — `prep.logged` added to the union                         |
+| `src/modules/prep/PrepRepository.ts`        | **Done — implemented and merged**                                |
+| `src/modules/prep/usePrepStore.ts`          | **Done — implemented and merged**                                |
+
+## New (2026-07-13): checkpoint-progress UI
+
+The repository and store are done. What's new is `prepTargets.ts` — now that
+`engineering_first_roadmap_v2.md` is in the repo, the "deliberately not built: targets" section
+below is out of date for two checkpoints specifically. Read the new section further down before
+starting this piece.
 
 ## Your work
 
@@ -54,11 +63,32 @@ Same shape as `useTaskStore`: optimistic insert, roll back and set `error` on fa
 
 Unit tests for the repository/store wiring. **Don't re-test the scorecard maths** — it's covered.
 
-## Deliberately not built: targets
+## Targets — partially unblocked (2026-07-13)
 
-`scorecardFor` computes the _actual_ numbers only. The monthly targets to compare them against
-live in `engineering_first_roadmap_v2.md` (§15), which **is not in this repo**. Render actuals now;
-the target comparison is a Dashboard concern once that file exists. Do not invent target numbers.
+`engineering_first_roadmap_v2.md` is now in the repo. `prepTargets.ts` encodes exactly two
+checkpoints with unambiguous, schema-mappable numbers — a December 2026 "semester review" and a
+February 2027 target set — as cumulative (since-July) counts by `entry_type`, not monthly totals.
+Read the doc comment at the top of `prepTargets.ts`: it also explains two things from the roadmap
+that were deliberately **not** encoded (interview-prep time-allocation percentages, and per-month
+mock-interview subtypes) because they don't map cleanly onto the current schema — don't try to
+force those in without flagging it first.
+
+### Your work: checkpoint-progress display
+
+- `prepTargets.activeCheckpoint(todayString)` picks the relevant checkpoint (December until it
+  passes, then February).
+- `prepTargets.progressTowardCheckpoint(entries, checkpoint)` returns `{ algorithm, systemDesign,
+  mlSystemDesign, mockInterview }`, each an `{ actual, target, progress }` — `entries` is just
+  `usePrepStore().entries`, already in state, no new store action needed.
+- **`progress` is uncapped** — it can exceed `1` once a target is beaten. Render that as "beat the
+  target" (e.g. "160/150 — target met"), not as a progress bar stuck at 100%; the whole point of
+  not capping it is so the UI can tell "just met" from "well past."
+- Behavioral story count target (`FEBRUARY_2027_BEHAVIORAL_STORY_TARGET`, currently `8`) compares
+  against `BehavioralStories` row count from `usePrepStore().stories`, **not** against
+  `PrepEntries` — a written story and an `entry_type: "behavioral"` practice-session log are
+  different things. Don't conflate them.
+- This is a small addition to the existing scorecard UI, not a new page — put it near the
+  existing scorecard-progress components.
 
 ## Two API notes
 

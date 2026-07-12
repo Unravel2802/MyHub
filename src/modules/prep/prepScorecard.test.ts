@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cumulativeCountsByType,
   entriesInMonth,
   monthOf,
   scorecardFor,
@@ -177,5 +178,54 @@ describe("weakestTopics", () => {
     ];
 
     expect(weakestTopics(entries, 2)).toHaveLength(2);
+  });
+});
+
+describe("cumulativeCountsByType", () => {
+  it("counts everything on or before throughDate, across months", () => {
+    const entries = [
+      entry({ id: "jul", entryType: "algorithm", date: "2026-07-08" }),
+      entry({ id: "aug", entryType: "algorithm", date: "2026-08-15" }),
+      entry({ id: "sep", entryType: "algorithm", date: "2026-09-01" }),
+    ];
+
+    expect(cumulativeCountsByType(entries, "2026-08-31").algorithm).toBe(2);
+  });
+
+  it("excludes entries after throughDate", () => {
+    const entries = [
+      entry({ id: "in", entryType: "algorithm", date: "2026-08-31" }),
+      entry({ id: "out", entryType: "algorithm", date: "2026-09-01" }),
+    ];
+
+    expect(cumulativeCountsByType(entries, "2026-08-31").algorithm).toBe(1);
+  });
+
+  it("excludes soft-deleted entries", () => {
+    const entries = [
+      entry({
+        id: "deleted",
+        entryType: "algorithm",
+        date: "2026-07-08",
+        deletedAt: "2026-07-09T00:00:00.000Z",
+      }),
+    ];
+
+    expect(cumulativeCountsByType(entries, "2026-12-31").algorithm).toBe(0);
+  });
+
+  it("buckets by type independently", () => {
+    const entries = [
+      entry({ id: "a", entryType: "algorithm", date: "2026-07-01" }),
+      entry({ id: "b", entryType: "system_design", date: "2026-07-01" }),
+      entry({ id: "c", entryType: "mock_interview", date: "2026-07-01" }),
+    ];
+
+    const counts = cumulativeCountsByType(entries, "2026-12-31");
+    expect(counts.algorithm).toBe(1);
+    expect(counts.system_design).toBe(1);
+    expect(counts.mock_interview).toBe(1);
+    expect(counts.ml_system_design).toBe(0);
+    expect(counts.behavioral).toBe(0);
   });
 });

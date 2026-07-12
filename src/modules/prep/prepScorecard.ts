@@ -74,6 +74,24 @@ export function scorecardFor(entries: PrepEntry[], month: string): Scorecard {
   };
 }
 
+// Counts across ALL entries up to and including `throughDate` (yyyy-MM-dd),
+// not scoped to a single month. Roadmap checkpoints (§6.5's December and
+// February gates) are cumulative-since-July targets, not monthly ones — this
+// is scorecardFor's monthly scoping's counterpart for that use, not a
+// duplicate of it.
+export function cumulativeCountsByType(
+  entries: PrepEntry[],
+  throughDate: string,
+): CountsByType {
+  const counts = { ...EMPTY_COUNTS };
+  for (const entry of entries) {
+    if (entry.deletedAt) continue;
+    if (entry.date > throughDate) continue;
+    counts[entry.entryType] += 1;
+  }
+  return counts;
+}
+
 export interface TopicStat {
   topic: string;
   attempted: number;

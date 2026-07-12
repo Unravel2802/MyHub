@@ -6,12 +6,15 @@ import {
   gateChecklistTitleFor,
   interviewsNeedingPostMortem,
   thisWeeksScheduleBlocks,
+  weeklyCadence,
 } from "@/src/modules/dashboard/dashboardSelectors";
 import type { Task } from "@/src/modules/task/types";
 import type {
   Application,
   Interview,
 } from "@/src/modules/jobApplications/types";
+import type { OutreachEntry } from "@/src/modules/outreach/types";
+import type { PrepEntry } from "@/src/modules/prep/types";
 
 // 2026-07-08 is a Wednesday in the Mon 2026-07-06 .. Sun 2026-07-12 week.
 const WEDNESDAY = new Date("2026-07-08T09:00:00");
@@ -65,6 +68,38 @@ function interview(overrides: Partial<Interview> & { id: string }): Interview {
     deletedAt: null,
     createdAt: "2026-07-08T15:00:00.000Z",
     updatedAt: "2026-07-08T15:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function outreachEntry(
+  overrides: Partial<OutreachEntry> & { id: string },
+): OutreachEntry {
+  return {
+    contactName: null,
+    companyId: null,
+    channel: "linkedin",
+    date: "2026-07-08",
+    notes: null,
+    deletedAt: null,
+    createdAt: "2026-07-08T00:00:00.000Z",
+    updatedAt: "2026-07-08T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function prepEntry(overrides: Partial<PrepEntry> & { id: string }): PrepEntry {
+  return {
+    entryType: "algorithm",
+    topic: null,
+    date: "2026-07-08",
+    durationMin: null,
+    timeToSolveMin: null,
+    outcome: null,
+    notes: null,
+    deletedAt: null,
+    createdAt: "2026-07-08T00:00:00.000Z",
+    updatedAt: "2026-07-08T00:00:00.000Z",
     ...overrides,
   };
 }
@@ -320,5 +355,65 @@ describe("gate checklist", () => {
     const progress = gateChecklistProgress(tasks, gate);
     expect(progress.total).toBe(2);
     expect(progress.completed).toBe(1);
+  });
+});
+
+describe("weeklyCadence", () => {
+  it("counts applications by createdAt within the current week", () => {
+    const applications = [
+      application({ id: "in", createdAt: "2026-07-08T00:00:00.000Z" }),
+      application({ id: "monday", createdAt: "2026-07-06T00:00:00.000Z" }),
+      application({ id: "before", createdAt: "2026-06-29T00:00:00.000Z" }),
+      application({ id: "after", createdAt: "2026-07-13T00:00:00.000Z" }),
+    ];
+
+    const cadence = weeklyCadence(applications, [], [], WEDNESDAY);
+
+    expect(cadence.applications.count).toBe(2);
+    expect(cadence.applications.target).toEqual({ min: 5, max: 10 });
+  });
+
+  it("excludes soft-deleted applications from the weekly count", () => {
+    const applications = [
+      application({
+        id: "deleted",
+        createdAt: "2026-07-08T00:00:00.000Z",
+        deletedAt: "2026-07-09T00:00:00.000Z",
+      }),
+    ];
+
+    expect(weeklyCadence(applications, [], [], WEDNESDAY).applications.count).toBe(
+      0,
+    );
+  });
+
+  it("counts outreach entries by date within the current week", () => {
+    const outreach = [
+      outreachEntry({ id: "in", date: "2026-07-08" }),
+      outreachEntry({ id: "sunday", date: "2026-07-12" }),
+      outreachEntry({ id: "next-week", date: "2026-07-13" }),
+    ];
+
+    const cadence = weeklyCadence([], outreach, [], WEDNESDAY);
+
+    expect(cadence.outreach.count).toBe(2);
+    expect(cadence.outreach.target).toEqual({ min: 2, max: 3 });
+  });
+
+  it("counts only mock_interview prep entries within the current week", () => {
+    const entries = [
+      prepEntry({ id: "mock", entryType: "mock_interview", date: "2026-07-08" }),
+      prepEntry({ id: "algo", entryType: "algorithm", date: "2026-07-08" }),
+      prepEntry({
+        id: "mock-next-week",
+        entryType: "mock_interview",
+        date: "2026-07-13",
+      }),
+    ];
+
+    const cadence = weeklyCadence([], [], entries, WEDNESDAY);
+
+    expect(cadence.mockInterviews.count).toBe(1);
+    expect(cadence.mockInterviews.target).toEqual({ min: 1 });
   });
 });

@@ -5,26 +5,28 @@ import type {
   Interview,
 } from "@/src/modules/jobApplications/types";
 import type { Scorecard, TopicStat } from "@/src/modules/prep/prepScorecard";
+import type { CheckpointProgress } from "@/src/modules/prep/prepTargets";
 import type {
   GateChecklistProgress,
   PostMortemReminder,
+  WeeklyCadence,
 } from "@/src/modules/dashboard/dashboardSelectors";
 
 // Published store contract for the Daily Dashboard (myhub_plan.md §2.3). No new
 // table, no new repository — this store's job is pure aggregation over the
-// other three modules' already-published repositories, kept current by
-// subscribing to their Event Bus events. See docs/handoff/daily-dashboard.md
+// other three (now five) modules' already-published repositories, kept current
+// by subscribing to their Event Bus events. See docs/handoff/daily-dashboard.md
 // for the fetch/subscribe wiring, which is Codex's to implement.
 //
 // Boundary rule (an explicit assumption, since §2.3 doesn't spell out HOW the
 // aggregation reads other modules' data — see the handoff doc): this store may
 // call TaskRepository / PrepRepository / ApplicationRepository /
-// InterviewRepository directly, the same way any module calls its own
-// repository, because myhub_plan.md's Repository Pattern rule makes each
-// Repository the sanctioned data-access boundary for its module, not something
-// private to it. What it must NOT do is import another module's Zustand store,
-// its components, or any non-exported internals — cross-module UI/state stays
-// off limits; only the Repository read path is shared.
+// InterviewRepository / OutreachRepository directly, the same way any module
+// calls its own repository, because myhub_plan.md's Repository Pattern rule
+// makes each Repository the sanctioned data-access boundary for its module,
+// not something private to it. What it must NOT do is import another module's
+// Zustand store, its components, or any non-exported internals — cross-module
+// UI/state stays off limits; only the Repository read path is shared.
 export interface DashboardStore {
   scheduleBlocks: Task[];
   followUps: Application[];
@@ -32,11 +34,16 @@ export interface DashboardStore {
   gateChecklist: GateChecklistProgress | null;
   prepScorecard: Scorecard | null;
   weakestTopics: TopicStat[];
+  // New 2026-07-13, now that engineering_first_roadmap_v2.md's numbers exist.
+  checkpointProgress: CheckpointProgress | null;
+  behavioralStoryProgress: { actual: number; target: number } | null;
+  weeklyCadence: WeeklyCadence | null;
   isLoading: boolean;
   error: string | null;
 
-  // Fetches from all four repositories, runs the dashboardSelectors.ts
-  // aggregations, and populates the fields above. Call once on mount.
+  // Fetches from all five repositories, runs the dashboardSelectors.ts /
+  // prepScorecard.ts / prepTargets.ts aggregations, and populates the fields
+  // above. Call once on mount.
   fetchAll: () => Promise<void>;
 
   // Subscribes to task.completed, application.stage_changed,
@@ -45,6 +52,12 @@ export interface DashboardStore {
   // unmount. Deliberately coarse (refetch everything on any relevant event)
   // rather than patching individual fields: the panels are cheap reads and a
   // full refetch can't drift out of sync the way incremental patching can.
+  //
+  // Outreach Log has no Event Bus type (myhub_plan.md §2.3) — a logged
+  // conversation doesn't trigger a refetch on its own. That's fine: whichever
+  // of the four existing events fires next will refresh the weekly-cadence
+  // panel anyway, and outreach entries change slowly enough that this doesn't
+  // need to be instant.
   subscribeToUpdates: () => () => void;
 }
 
@@ -59,6 +72,9 @@ export const useDashboardStore = create<DashboardStore>(() => ({
   gateChecklist: null,
   prepScorecard: null,
   weakestTopics: [],
+  checkpointProgress: null,
+  behavioralStoryProgress: null,
+  weeklyCadence: null,
   isLoading: false,
   error: null,
 

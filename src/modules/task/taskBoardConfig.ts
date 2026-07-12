@@ -38,5 +38,3 @@ export const columns: ColumnConfig[] = [
     emptyCopy: "Completed tasks will show up here.",
   },
 ];
-
-export const navItems = ["Board", "Inbox", "Calendar", "Archive"];

@@ -1,4 +1,4 @@
-import { columns } from "@/src/modules/task/taskBoardConfig";
+import { columns, type ColumnConfig } from "@/src/modules/task/taskBoardConfig";
 import { positionBetween } from "@/src/modules/task/taskTree";
 import type { Task, TaskStatus } from "@/src/modules/task/types";
 
@@ -6,6 +6,21 @@ export type TaskStats = {
   label: string;
   value: number;
 };
+
+// An empty filter list means "no filter applied" — show the whole board.
+export function getVisibleColumns(columnFilters: TaskStatus[]): ColumnConfig[] {
+  if (columnFilters.length === 0) return columns;
+  return columns.filter((column) => columnFilters.includes(column.status));
+}
+
+export function toggleColumnFilter(
+  columnFilters: TaskStatus[],
+  status: TaskStatus,
+): TaskStatus[] {
+  return columnFilters.includes(status)
+    ? columnFilters.filter((value) => value !== status)
+    : [...columnFilters, status];
+}
 
 export function formatStatus(status: TaskStatus) {
   return columns.find((column) => column.status === status)?.title ?? status;

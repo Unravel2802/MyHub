@@ -18,15 +18,16 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { BoardColumn } from "@/src/modules/task/components/BoardColumn";
 import { BoardHeader } from "@/src/modules/task/components/BoardHeader";
 import { Sidebar } from "@/src/modules/task/components/Sidebar";
-import { columns } from "@/src/modules/task/taskBoardConfig";
 import {
   filterVisibleTasks,
   formatDueDate,
   getDropPosition,
   getTaskStats,
   getTaskStatus,
+  getVisibleColumns,
   groupTasksByStatus,
   isTaskStatus,
+  toggleColumnFilter,
 } from "@/src/modules/task/taskBoardUtils";
 import { canAddSubtask, taskDepth } from "@/src/modules/task/taskTree";
 import type { Task, TaskStatus } from "@/src/modules/task/types";
@@ -47,12 +48,14 @@ export function TaskBoard() {
     isCreating,
     pendingIds,
     error,
+    columnFilters,
     fetchTasks,
     createTask,
     updateTask,
     updateStatus,
     moveTask,
     deleteTask,
+    setColumnFilters,
   } = useTaskStore();
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -88,6 +91,11 @@ export function TaskBoard() {
   const stats = useMemo(
     () => getTaskStats(tasks, new Date().toISOString().slice(0, 10)),
     [tasks],
+  );
+
+  const visibleColumns = useMemo(
+    () => getVisibleColumns(columnFilters),
+    [columnFilters],
   );
 
   const childCounts = useMemo(() => {
@@ -150,6 +158,10 @@ export function TaskBoard() {
     void deleteTask(id);
   }
 
+  function handleToggleColumn(status: TaskStatus) {
+    setColumnFilters(toggleColumnFilter(columnFilters, status));
+  }
+
   function handleDragStart(event: DragStartEvent) {
     setActiveTask(tasks.find((task) => task.id === event.active.id) ?? null);
   }
@@ -192,6 +204,7 @@ export function TaskBoard() {
 
         <section className="flex min-w-0 flex-col">
           <BoardHeader
+            columnFilters={columnFilters}
             error={error}
             isBusy={isBusy}
             newTaskTitle={newTaskTitle}
@@ -199,6 +212,7 @@ export function TaskBoard() {
             onRefresh={() => void fetchTasks()}
             onSearchChange={setSearchTerm}
             onTitleChange={setNewTaskTitle}
+            onToggleColumn={handleToggleColumn}
             searchTerm={searchTerm}
             stats={stats}
           />
@@ -211,8 +225,14 @@ export function TaskBoard() {
               onDragStart={handleDragStart}
               sensors={sensors}
             >
-              <div className="grid min-w-[1120px] grid-cols-4 gap-4">
-                {columns.map((column) => (
+              <div
+                className="grid gap-4"
+                style={{
+                  gridTemplateColumns: `repeat(${visibleColumns.length}, minmax(0, 1fr))`,
+                  minWidth: `${visibleColumns.length * 280}px`,
+                }}
+              >
+                {visibleColumns.map((column) => (
                   <BoardColumn
                     key={column.status}
                     canAddSubtaskIds={canAddSubtaskIds}

@@ -5,8 +5,10 @@ import {
   formatStatus,
   getDropPosition,
   getTaskStats,
+  getVisibleColumns,
   groupTasksByStatus,
   isTaskStatus,
+  toggleColumnFilter,
 } from "@/src/modules/task/taskBoardUtils";
 import type { Task } from "@/src/modules/task/types";
 
@@ -81,6 +83,27 @@ describe("task board helpers", () => {
   it("identifies valid task statuses", () => {
     expect(isTaskStatus("todo")).toBe(true);
     expect(isTaskStatus("blocked")).toBe(false);
+  });
+
+  it("shows every column when no filter is selected", () => {
+    expect(getVisibleColumns([]).map((c) => c.status)).toEqual([
+      "inbox",
+      "todo",
+      "in_progress",
+      "done",
+    ]);
+  });
+
+  it("shows only filtered columns, in board order", () => {
+    expect(getVisibleColumns(["done", "inbox"]).map((c) => c.status)).toEqual([
+      "inbox",
+      "done",
+    ]);
+  });
+
+  it("toggles a status in and out of the filter list", () => {
+    expect(toggleColumnFilter([], "todo")).toEqual(["todo"]);
+    expect(toggleColumnFilter(["todo", "done"], "todo")).toEqual(["done"]);
   });
 
   it("calculates sparse positions for drag/drop ordering", () => {

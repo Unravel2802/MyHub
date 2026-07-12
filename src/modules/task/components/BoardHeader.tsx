@@ -1,7 +1,10 @@
 import type { FormEvent } from "react";
+import { columns } from "@/src/modules/task/taskBoardConfig";
 import type { TaskStats } from "@/src/modules/task/taskBoardUtils";
+import type { TaskStatus } from "@/src/modules/task/types";
 
 type BoardHeaderProps = {
+  columnFilters: TaskStatus[];
   error: string | null;
   isBusy: boolean;
   newTaskTitle: string;
@@ -11,9 +14,11 @@ type BoardHeaderProps = {
   onRefresh: () => void;
   onSearchChange: (value: string) => void;
   onTitleChange: (value: string) => void;
+  onToggleColumn: (status: TaskStatus) => void;
 };
 
 export function BoardHeader({
+  columnFilters,
   error,
   isBusy,
   newTaskTitle,
@@ -23,6 +28,7 @@ export function BoardHeader({
   onRefresh,
   onSearchChange,
   onTitleChange,
+  onToggleColumn,
 }: BoardHeaderProps) {
   return (
     <header className="border-b border-zinc-200 bg-white px-6 py-5">
@@ -82,6 +88,32 @@ export function BoardHeader({
           {error}
         </p>
       ) : null}
+
+      <div
+        aria-label="Filter columns"
+        className="mt-4 flex flex-wrap gap-2"
+        role="group"
+      >
+        {columns.map((column) => {
+          const isActive = columnFilters.includes(column.status);
+          return (
+            <button
+              key={column.status}
+              aria-pressed={isActive}
+              className={`flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-medium transition-colors ${
+                isActive
+                  ? "border-zinc-950 bg-zinc-950 text-white"
+                  : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-400 hover:text-zinc-950"
+              }`}
+              onClick={() => onToggleColumn(column.status)}
+              type="button"
+            >
+              <span className={`h-2 w-2 rounded-full ${column.accent}`} />
+              {column.title}
+            </button>
+          );
+        })}
+      </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {stats.map((stat) => (

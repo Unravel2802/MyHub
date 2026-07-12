@@ -42,6 +42,7 @@ export function BoardColumn({
 
   return (
     <section
+      aria-label={column.title}
       className="flex min-h-[520px] min-w-0 flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white"
       ref={setNodeRef}
     >

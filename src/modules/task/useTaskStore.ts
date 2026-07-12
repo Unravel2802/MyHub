@@ -7,6 +7,10 @@ import { emit } from "@/src/lib/events";
 
 interface TaskStore {
   tasks: Task[];
+  // Recurrence rules, kept separate from `tasks` on purpose: a template is not a
+  // work item and must never reach the board. This backs the "manage recurring
+  // rules" surface — components can't call the repository directly.
+  templates: Task[];
   isLoading: boolean;
   error: string | null;
   columnFilters: TaskStatus[];
@@ -14,6 +18,11 @@ interface TaskStore {
   isCreating: boolean;
   pendingIds: string[];
   fetchTasks: () => Promise<void>;
+  fetchTemplates: () => Promise<void>;
+  // Stops future generation. Instances already generated are left alone — they're
+  // real work you may still intend to do, and silently deleting last Tuesday's
+  // completed block would rewrite history.
+  deleteTemplate: (id: string) => Promise<void>;
   setColumnFilters: (statuses: TaskStatus[]) => void;
   // Passing recursWeekly + weekday creates a recurrence template rather than a
   // board task: it generates a fresh instance each week and never appears on the
@@ -123,6 +132,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
   return {
     tasks: [],
+    templates: [],
     isLoading: false,
     error: null,
     columnFilters: [],
@@ -136,6 +146,37 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         set({ tasks, isLoading: false });
       } catch (err) {
         set({ isLoading: false, error: toUserMessage(err) });
+      }
+    },
+
+    fetchTemplates: async () => {
+      try {
+        const templates = await TaskRepository.getTemplates();
+        set({ templates });
+      } catch (err) {
+        set({ error: toUserMessage(err) });
+      }
+    },
+
+    deleteTemplate: async (id) => {
+      const previousTemplates = get().templates;
+      set({
+        templates: previousTemplates.filter((t) => t.id !== id),
+        error: null,
+      });
+      addPending(id);
+
+      try {
+        await TaskRepository.deleteTask(id);
+        emit({
+          type: "task.deleted",
+          payload: { taskId: id },
+          timestamp: Date.now(),
+        });
+      } catch (err) {
+        set({ templates: previousTemplates, error: toUserMessage(err) });
+      } finally {
+        removePending(id);
       }
     },
 
@@ -171,7 +212,11 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
       try {
         const created = await TaskRepository.createTask(input);
-        if (!isTemplate) {
+        if (isTemplate) {
+          // The rule itself belongs in `templates`, not on the board. Its first
+          // instance appears on the next fetch, via regeneration.
+          set({ templates: [...get().templates, created] });
+        } else {
           set({
             tasks: revertDoneAncestors(
               get().tasks.map((t) =>

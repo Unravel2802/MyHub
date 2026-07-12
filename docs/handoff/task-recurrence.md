@@ -49,6 +49,15 @@ Call `regenerateWeeklyInstances()` before `getTasks()`. Regeneration failing sho
 the board: log it, set `error`, and still render whatever `getTasks()` returns. A missing weekly
 block is an annoyance; an empty board looks like data loss.
 
+> **Contract gap closed (Codex flagged this — correctly).** The store exposed no way to read or
+> delete templates, so the "manage recurring rules" surface below was unbuildable without a
+> component reaching into the repository, which the architecture forbids. `useTaskStore` now has
+> `templates: Task[]`, `fetchTemplates()`, and `deleteTemplate(id)`, and `createTask` with
+> `recursWeekly` now files the new rule into `templates` instead of dropping it. Those three are
+> **implemented, not stubs** — they only need `TaskRepository.getTemplates()` underneath them.
+> **Rebase onto this commit before you start**; it touches `useTaskStore.ts`, which your plan also
+> edits.
+
 ### 4. UI (yours by default)
 
 - Quick-capture form: a "repeats weekly" checkbox plus a weekday select (0 = Sunday, matching

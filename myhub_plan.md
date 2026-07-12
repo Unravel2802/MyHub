@@ -300,6 +300,24 @@ Do not build microservices. For a solo developer, build a **Modular Monolith**.
   Tracker, entry_type `mock_interview`) are practice reps. Keep the two tables separate — don't
   conflate a mock with a real interview round.
 
+**Outreach Log — `OutreachLog` table (new, added 2026-07-13, fifth MVP module):**
+
+- `id` (uuid, pk), `contact_name` (text, nullable), `company_id` (uuid, FK → Companies, nullable —
+  a conversation doesn't always map to a target company), `channel` (enum: `linkedin` / `email` /
+  `alumni_network` / `professor_referral` / `other`), `date` (date, default today), `notes` (text,
+  nullable), `deleted_at` (timestamptz, nullable, default `NULL`), `created_at`/`updated_at`.
+- Own table, own tiny store (`useOutreachStore`) — small enough to look like it belongs inside Job
+  CRM, but it isn't one: a conversation can exist with no application yet, and "No God Tables"
+  means it doesn't get bolted onto `Applications` as an optional field. Follows the same
+  contract-first split as the other modules: Claude Code publishes
+  `OutreachRepository.ts`/`useOutreachStore.ts`/migration, Codex implements behind the contract.
+- No new Event Bus type needed — nothing downstream reacts to a logged conversation the way the
+  Dashboard reacts to `interview.completed`; the Dashboard's weekly-cadence panel reads this
+  table directly, the same "no new repository, aggregate via the others'" rule Daily Dashboard
+  already follows.
+- Exists specifically to make roadmap §11.2's "2–3 outreach conversations/week" a countable
+  number instead of an untracked habit.
+
 **Daily Dashboard (promoted to MVP, 2026-07-12):**
 
 - No new tables — pure read-aggregation, per the original V2 rationale ("cheap to add once the
@@ -309,8 +327,18 @@ Do not build microservices. For a solo developer, build a **Modular Monolith**.
   `follow_up_date` today-or-earlier or no update in >7 days (Job CRM), running totals for the
   current month vs. the roadmap's monthly targets from Section 15 (Prep Tracker), current
   month's "gate" checklist — modeled as a parent Task with subtasks, per Task Engine above.
-- Build this last among the four MVP modules; it has nothing to aggregate until the other three
-  have real data.
+- **Target comparison is now unblocked (2026-07-13).** `engineering_first_roadmap_v2.md` §6.5/§15
+  gave the actual monthly numbers this panel needed. Encode them as constants (not user-editable
+  data — they're the roadmap's numbers, not something the Dashboard invents or lets drift) next to
+  `prepScorecard.ts`, and compare against `scorecardFor`'s actuals.
+- **Weekly-cadence panel (new, 2026-07-13):** applications created/updated this week vs. 5–10
+  (§11.2, active from September), outreach conversations this week vs. 2–3 (§11.2, reads the new
+  Outreach Log), mock-interview `PrepEntries` this week vs. 1 ramping to full loops by January
+  (§6.5). Distinct from the existing monthly-scorecard panel — weekly cadence and monthly totals
+  are different targets from different roadmap sections and shouldn't be conflated into one number.
+- Build this last among the four original MVP modules; it has nothing to aggregate until the
+  other three have real data. The Outreach Log (added 2026-07-13) can land alongside or after it,
+  since the weekly-cadence panel depends on that table existing.
 
 ---
 
@@ -349,6 +377,71 @@ are not part of the current build.**
   date-fns"; "React Hook Form or nothing"). Keep both files in sync — otherwise each tool will
   independently pick a "reasonable" library, and you'll end up with two competing date libraries
   by week three.
+
+---
+
+### 2.5 Roadmap-Derived Targets and Gaps (added 2026-07-13)
+
+`engineering_first_roadmap_v2.md` landed in the repo root on 2026-07-13. This section is what
+changed once the actual document (not fragments quoted secondhand) was available.
+
+**Scope boundary — read this first.** The roadmap's actual engineering substance is two
+standalone projects: an independent RAG retrieval/evaluation system (§6.3, §7) and an RL sidecar
+policy (§6.4, §7), each with its own repo and stack (not this one). **MyHub does not contain
+either project.** MyHub's job is unchanged: track the schedule, prep reps, and job search that
+surround them. Nothing below adds RAG or RL code to this app — it adds tracking for roadmap
+numbers that weren't available when Prep Tracker, Job CRM, and the Dashboard were first spec'd.
+
+**What's already correctly covered, now confirmed word-for-word against the source:**
+
+- Task Engine's weekly recurrence → §14's weekly schedule.
+- Prep Tracker's five `entry_type`s and post-mortem notes → §6.1/§11.2's diagnostics and the
+  24-hour post-mortem habit.
+- Job CRM's company tiers, pipeline stages, and interview tracking → §6.2/§11's reach/match/safety
+  tiers and application funnel.
+- The Dashboard's gate-checklist panel → §6.5's monthly gates.
+- Finance Tracker staying V2 → §2/§5 explicitly assume no income and "preserve liquidity" during
+  the Master's year; this becomes relevant at graduation (Jun 2027+), not now. No change needed.
+
+**Real gaps — genuinely missing, not previously buildable without these numbers:**
+
+1. **Prep Tracker had no targets to compare against — now it does.** §6.5/§15/§18 give concrete
+   numbers: 150+ algorithm problems, 10+ system-design cases, 5+ ML-system-design cases, and 8
+   behavioral stories (concise + extended) by end of February 2027, plus a month-by-month
+   build-up (e.g. August: 12–15 problems + 1 mock; September: 15 problems + 2 system-design cases
+   - 1 mock; November: 2 coding mocks + 2 system-design mocks + 1 ML-system-design mock). §11.3
+     also gives a prep-time allocation to track against logged `duration_min`: Algorithms 35%,
+     System design 25%, Behavioral 15%, ML systems 15%, Resume/deep-dive 10%.
+2. **No weekly-cadence tracking exists anywhere.** §11.2 sets three _weekly_, not monthly, targets
+   starting September: 5–10 applications/week, 2–3 outreach/referral conversations/week, and 1
+   mock interview/week (ramping to full loops by January). Job CRM tracks applications but nothing
+   currently answers "how many this week" against a target, and nothing tracks outreach
+   conversations at all.
+3. **No table tracks outreach/referral conversations.** §11.1/§11.2 explicitly budget 2–3
+   conversations/week (UMass alumni, professors, LinkedIn outreach) as a distinct, trackable
+   activity — separate from an `Applications.referral_source` field, since a conversation can
+   happen before any application exists or without corresponding to one at all. This needs a small
+   new table.
+4. **No bulk-seed path for the weekly schedule or the gate checklists.** §14 gives an exact sample
+   week (9 named blocks across Mon–Sun); §6.5 gives an exact month-by-month gate for July through
+   May. Both fit patterns MyHub already has (recurring tasks; gate-checklist parent tasks), but
+   creating ~9 recurring tasks and 11 months of gate checklists by hand through the quick-capture
+   form is real, repetitive, roadmap-copying work. A one-time seed script for each removes that.
+
+**Explicitly NOT adding, and why:**
+
+- **No Quant/Finance tracking module.** §13 explicitly wants this _unstructured_ — "no scheduled
+  study blocks, no project deliverables tied to it" — specifically so it can't compete with the
+  primary plan for time. Instrumenting it in the app would work against the roadmap's own intent.
+  §15's quarterly review question ("is the quant hobby quietly eating planned time?") is a
+  self-check, not a data requirement.
+- **No Blog/External-Credibility CMS module.** §6.5's March 2027 gate needs _one_ item completed
+  (a PR, a post, a talk, or a benchmark) — a single subtask under that month's gate checklist
+  covers it. Building a CMS for one checkbox contradicts the roadmap's own "two projects, not
+  three" discipline (§7, §16.3), which applies just as much to this app's own scope.
+- **No RAG/RL project code, dashboards, or experiment tracking inside MyHub.** See the scope
+  boundary above. If the flagship project wants its own metrics dashboard later, that's a separate
+  repo's concern, not a MyHub module.
 
 ---
 

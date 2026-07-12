@@ -58,14 +58,22 @@ both files in the same commit so the two agents never diverge on tooling.
    (`task-module-spec.md` §7, since folded in here) and applies to every module's store, not just
    Task's.
 
-## MVP Modules — Full Delegation, Reprioritized (2026-07-12)
+## MVP Modules — Full Delegation, Reprioritized (2026-07-12, extended 2026-07-13)
 
 The MVP is no longer Task Engine / Knowledge Base / Command Palette. It's now **Task Engine,
-Prep Tracker, Job Application CRM, and Daily Dashboard** — chosen because they directly serve
-`engineering_first_roadmap_v2.md` (see `myhub_plan.md` Phase 1.2 for the full rationale).
-Knowledge Base and Command Palette are demoted to V2 — don't start those until the four above
-are done. None of the four current MVP modules are gated: scaffold directly from spec, same as
-any V2 module would be. Do not ask whether the human wants to write a first pass — assume no.
+Prep Tracker, Job Application CRM, Daily Dashboard, and Outreach Log** — chosen because they
+directly serve `engineering_first_roadmap_v2.md` (see `myhub_plan.md` §1.2 and §2.5 for the full
+rationale; §2.5 covers what changed once the actual roadmap file, not fragments, was available).
+Knowledge Base and Command Palette are demoted to V2 — don't start those until the five above are
+done. None of the five current MVP modules are gated: scaffold directly from spec, same as any V2
+module would be. Do not ask whether the human wants to write a first pass — assume no.
+
+**Status as of 2026-07-13:** Task Engine, Prep Tracker, Job Application CRM, and Daily Dashboard
+all have published contracts AND working implementations merged to `main`. What's left in this
+wave is entirely new: the Outreach Log module (schema + contract + implementation, all
+unstarted), roadmap-target constants for Prep Tracker's scorecard and the Dashboard's
+target-comparison panel (§2.5, now unblocked), the Dashboard's new weekly-cadence panel, and two
+one-time seed scripts (weekly schedule, gate checklists — see below the table).
 
 ## Working Concurrently with Codex
 
@@ -106,12 +114,22 @@ Task Engine's interface is published, feel free to move on to publishing Prep Tr
 CRM's interface rather than waiting on Codex to finish Task Engine's UI first. Dashboard is last
 regardless since it only aggregates data the other three already produce.
 
-| Module              | You (Claude Code)                                                                                                                                                                           | Codex                                                                                                    | Antigravity                                                                                                                     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Task Engine         | `TaskRepository.ts` (recursive CTE for cascade, 3-level nesting cap, weekly-recurrence regeneration), `useTaskStore.ts` (optimistic update + rollback-on-failure), `task.*` Event Bus types | Kanban board UI, quick-capture inbox form, task card components, unit tests for repository/store         | Edge-case list for optimistic-UI + nesting-cap before you build; dummy task JSON (incl. nested subtasks) after                  |
-| Prep Tracker        | `PrepRepository.ts`, `usePrepStore.ts`, `prep.logged` Event Bus type                                                                                                                        | Entry-logging forms per `entry_type`, behavioral-story editor, scorecard-progress components, unit tests | Edge cases for outcome handling across entry types before you build; dummy prep-log data after                                  |
-| Job Application CRM | `ApplicationRepository.ts` / `CompanyRepository.ts` / `InterviewRepository.ts`, `useApplicationStore.ts`, `application.stage_changed` + `interview.completed` Event Bus types               | Pipeline/kanban-by-stage UI, company/application/interview forms, unit tests                             | Edge cases for stage transitions (e.g. reopening a rejected application) before you build; dummy company/application data after |
-| Daily Dashboard     | Aggregation queries/hooks subscribing to the Event Bus types above — no new repository                                                                                                      | Dashboard layout and panel components (schedule, follow-ups, scorecard progress, gate checklist)         | Not needed for this one                                                                                                         |
+| Module                         | You (Claude Code)                                                                                                                                                                           | Codex                                                                                                    | Antigravity                                                                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Task Engine                    | `TaskRepository.ts` (recursive CTE for cascade, 3-level nesting cap, weekly-recurrence regeneration), `useTaskStore.ts` (optimistic update + rollback-on-failure), `task.*` Event Bus types | Kanban board UI, quick-capture inbox form, task card components, unit tests for repository/store         | Edge-case list for optimistic-UI + nesting-cap before you build; dummy task JSON (incl. nested subtasks) after                  |
+| Prep Tracker                   | `PrepRepository.ts`, `usePrepStore.ts`, `prep.logged` Event Bus type                                                                                                                        | Entry-logging forms per `entry_type`, behavioral-story editor, scorecard-progress components, unit tests | Edge cases for outcome handling across entry types before you build; dummy prep-log data after                                  |
+| Job Application CRM            | `ApplicationRepository.ts` / `CompanyRepository.ts` / `InterviewRepository.ts`, `useApplicationStore.ts`, `application.stage_changed` + `interview.completed` Event Bus types               | Pipeline/kanban-by-stage UI, company/application/interview forms, unit tests                             | Edge cases for stage transitions (e.g. reopening a rejected application) before you build; dummy company/application data after |
+| Daily Dashboard                | Aggregation queries/hooks subscribing to the Event Bus types above — no new repository                                                                                                      | Dashboard layout and panel components (schedule, follow-ups, scorecard progress, gate checklist)         | Not needed for this one                                                                                                         |
+| Outreach Log (new, 2026-07-13) | `OutreachRepository.ts`, `useOutreachStore.ts`, migration — no Event Bus type needed (see §2.5)                                                                                             | Outreach-log form + list (contact, company, channel, date, notes), unit tests                            | Not needed for this one                                                                                                         |
+
+**Two one-time seed scripts (2026-07-13), not per-module deliverables:**
+
+- **Weekly schedule seed:** roadmap §14's sample week as ~9 recurring Task Engine rules
+  (`recursWeekly: true`), generated from a pure data function you (Claude Code) write, run once
+  by Codex (or a setup script) rather than the human hand-creating each block through the UI.
+- **Gate checklist seed:** roadmap §6.5's month-by-month gates (July through May) as the
+  `"Gate: <Month> <Year>"` parent tasks the Dashboard already looks for, with the correct subtask
+  checklist per month — same pattern, same split.
 
 Knowledge Base and Command Palette are V2 — same split as before once they're scheduled, but
 don't start either until the four above are done.

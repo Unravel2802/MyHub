@@ -101,7 +101,7 @@ describe("useTaskStore fetchTasks", () => {
     expect(useTaskStore.getState()).toMatchObject({
       tasks,
       isLoading: false,
-      error: "regeneration failed",
+      error: "Something went wrong, please try again later.",
     });
   });
 });
@@ -157,7 +157,9 @@ describe("useTaskStore createTask", () => {
     await useTaskStore.getState().createTask({ title: "New" });
 
     expect(useTaskStore.getState().tasks).toEqual([existing]);
-    expect(useTaskStore.getState().error).toBe("database unavailable");
+    expect(useTaskStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
     expect(useTaskStore.getState().isCreating).toBe(false);
     expect(emitMock).not.toHaveBeenCalled();
   });
@@ -383,7 +385,9 @@ describe("useTaskStore moveTask", () => {
 
     expect(useTaskStore.getState().tasks).toEqual([original]);
     expect(useTaskStore.getState().pendingIds).toEqual([]);
-    expect(useTaskStore.getState().error).toBe("move failed");
+    expect(useTaskStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
     expect(emitMock).not.toHaveBeenCalled();
   });
 });
@@ -419,6 +423,8 @@ describe("useTaskStore deleteTask", () => {
 
     expect(useTaskStore.getState().tasks).toEqual(tasks);
     expect(useTaskStore.getState().pendingIds).toEqual([]);
-    expect(useTaskStore.getState().error).toBe("delete failed");
+    expect(useTaskStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
   });
 });

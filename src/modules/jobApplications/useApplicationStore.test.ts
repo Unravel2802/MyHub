@@ -121,7 +121,9 @@ describe("fetch and optimistic rollback", () => {
       resumeVariant: "swe_backend",
     });
     expect(useApplicationStore.getState().applications).toEqual([existing]);
-    expect(useApplicationStore.getState().error).toBe("offline");
+    expect(useApplicationStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
   });
 });
 

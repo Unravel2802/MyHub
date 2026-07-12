@@ -183,6 +183,8 @@ test("a failed create rolls back the card and surfaces an error", async ({
   await page.getByPlaceholder("New inbox task").fill("Doomed task");
   await page.getByRole("button", { name: "Add", exact: true }).click();
 
-  await expect(page.getByText("Simulated database failure")).toBeVisible();
+  await expect(
+    page.getByText("Something went wrong, please try again later."),
+  ).toBeVisible();
   await expect(card(page, "Doomed task")).toHaveCount(0);
 });

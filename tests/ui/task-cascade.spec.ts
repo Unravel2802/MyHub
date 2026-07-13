@@ -118,6 +118,43 @@ test("a parent stays open while any sibling subtask is outstanding", async ({
   await expect.poll(() => statusIn(db, "parent")).toBe("todo");
 });
 
+test("completion status changes carry completed_at in the PATCH body", async ({
+  page,
+}) => {
+  await loadBoard(page, [
+    row({
+      id: "task",
+      title: "Timestamp this task",
+      status: "todo",
+      position: 1000,
+    }),
+  ]);
+
+  const completionRequest = page.waitForRequest(
+    (request) =>
+      request.method() === "PATCH" && request.url().includes("/rest/v1/tasks"),
+  );
+  await statusOf(page, "Timestamp this task").selectOption("done");
+  const completionBody = completionRequest.then(
+    (request) => request.postDataJSON() as Partial<TaskRow>,
+  );
+  const completed = await completionBody;
+
+  expect(completed.status).toBe("done");
+  expect(typeof completed.completed_at).toBe("string");
+  expect(Number.isNaN(Date.parse(completed.completed_at ?? ""))).toBe(false);
+
+  const revertRequest = page.waitForRequest(
+    (request) =>
+      request.method() === "PATCH" && request.url().includes("/rest/v1/tasks"),
+  );
+  await statusOf(page, "Timestamp this task").selectOption("todo");
+  const reverted = (await revertRequest).postDataJSON() as Partial<TaskRow>;
+
+  expect(reverted.status).toBe("todo");
+  expect(reverted.completed_at).toBeNull();
+});
+
 test("adding a subtask reopens a completed parent", async ({ page }) => {
   const db = await loadBoard(page, [
     row({

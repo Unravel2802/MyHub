@@ -18,6 +18,7 @@ export type TaskRow = {
   recurrence_template_id: string | null;
   occurrence_date: string | null;
   deleted_at: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -41,6 +42,7 @@ export function row(
     recurrence_template_id: null,
     occurrence_date: null,
     deleted_at: null,
+    completed_at: null,
     created_at: TIMESTAMP,
     updated_at: TIMESTAMP,
     ...overrides,

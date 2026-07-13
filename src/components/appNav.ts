@@ -21,4 +21,5 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/outreach", label: "Outreach Log" },
   { href: "/achievements", label: "Achievements" },
   { href: "/review", label: "Weekly Review" },
+  { href: "/offers", label: "Offer Evaluator" },
 ];

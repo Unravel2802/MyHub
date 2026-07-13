@@ -24,14 +24,14 @@ export type AppEvent =
   | { type: "task.completed"; payload: { taskId: string }; timestamp: number }
   | { type: "task.deleted"; payload: { taskId: string }; timestamp: number }
   // Fired on every new prep entry so the Dashboard can update running scorecard
-  // totals without querying Prep Tracker's tables directly (myhub_plan.md §2.3).
+  // totals without querying Prep Tracker's tables directly (myhub_plan.md Part A §A.2).
   | {
       type: "prep.logged";
       payload: { entryId: string; prepType: PrepType };
       timestamp: number;
     }
   // Fired on every Applications.stage transition — not on every update, only when
-  // `stage` actually changes value (myhub_plan.md §2.3).
+  // `stage` actually changes value (myhub_plan.md Part A §A.2).
   | {
       type: "application.stage_changed";
       payload: {

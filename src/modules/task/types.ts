@@ -11,7 +11,7 @@ export interface Task {
   position: number;
   dueDate: string | null;
   parentTaskId: string | null;
-  // Recurrence (myhub_plan.md §2.3). A task is exactly one of three things:
+  // Recurrence (myhub_plan.md Part A §A.2). A task is exactly one of three things:
   //   - an ordinary task: recursWeekly false, both recurrence fields null
   //   - a template:       recursWeekly true, weekday set — a rule, never shown
   //                       on the board, never completed

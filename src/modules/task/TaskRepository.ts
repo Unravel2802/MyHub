@@ -114,7 +114,7 @@ export async function createTask(input: {
 }
 
 // ---------------------------------------------------------------------------
-// Weekly recurrence — published contract (myhub_plan.md §2.3)
+// Weekly recurrence — published contract (myhub_plan.md Part A §A.2)
 //
 // The pure decision logic lives in taskRecurrence.ts and is already unit-tested;
 // what's left below is the Supabase wiring. See docs/handoff/task-recurrence.md.

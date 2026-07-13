@@ -1,4 +1,4 @@
-// One-time (well — run-whenever-you-want) safety net, per myhub_plan.md §2.4:
+// One-time (well — run-whenever-you-want) safety net, per myhub_plan.md Part A §A.4:
 // "A 'dump everything to JSON/Markdown' script before trusting the app with
 // real data." Dumps every module's active (non-deleted_at) rows to JSON, one
 // file per table, into a gitignored backups/<timestamp>/ directory.

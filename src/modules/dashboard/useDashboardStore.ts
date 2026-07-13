@@ -36,7 +36,7 @@ import {
   weeklyCadence as weeklyCadenceFor,
 } from "@/src/modules/dashboard/dashboardSelectors";
 
-// Published store contract for the Daily Dashboard (myhub_plan.md §2.3). No new
+// Published store contract for the Daily Dashboard (myhub_plan.md Part A §A.2). No new
 // table, no new repository — this store's job is pure aggregation over the
 // other four modules' already-published repositories, kept current by
 // subscribing to their Event Bus events. See docs/handoff/daily-dashboard.md

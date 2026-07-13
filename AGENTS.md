@@ -90,32 +90,27 @@ is genuinely hiding something you need for a task, flag it instead of patching i
 4. Small commits, one component/feature per task, so your diffs and Claude Code's diffs stay
    easy to tell apart in review.
 
-## Per-Module Task Split (reprioritized 2026-07-12, extended 2026-07-13 — build order: Task Engine → Prep Tracker → Job Application CRM → Daily Dashboard → Outreach Log)
+## MVP Status — Wave 1 Complete (2026-07-13), Wave 2 Next
 
-The MVP changed: it's no longer Task Engine / Knowledge Base / Command Palette. Prep Tracker and
-Job Application CRM are new/promoted because they directly serve the human's external roadmap
-(`engineering_first_roadmap_v2.md`, added to the repo root 2026-07-13) — see `myhub_plan.md`
-§1.2 and §2.5 if you want the full rationale. Outreach Log is a new fifth module, added 2026-07-13
-once the actual roadmap file (not fragments) showed a weekly-tracked activity — outreach/referral
-conversations — that nothing in the app captured. Knowledge Base and Command Palette are still V2
-— don't start on those.
+**Wave 1 is done.** All five MVP modules — Task Engine, Prep Tracker, Job Application CRM,
+Outreach Log, and Daily Dashboard — shipped: interfaces published, real implementations wired,
+UI built, merged to `main` (commit `98d3ed8`; 136 unit / 30 E2E tests green). They exist because
+they directly serve the human's external roadmap (`engineering_first_roadmap_v2.md`, at the repo
+root) — see `myhub_plan.md` Part A §A.1 for the full rationale. Knowledge Base and Command
+Palette remain V2 — don't start on those.
 
-**Status:** Task Engine, Prep Tracker, Job Application CRM, and Daily Dashboard are all built and
-merged to `main`. Outreach Log is new/unstarted. Prep Tracker and Daily Dashboard both get a
-small addition on top of what's built — roadmap-target constants and a weekly-cadence panel,
-respectively — once Claude Code publishes them.
+**What's next is Wave 2** ("Momentum, Rituals, and Roadmap Depth" — `myhub_plan.md` Part B): a
+shared UI shell + primitives, task completion timestamps, Prep/CRM depth features, a
+streaks-and-achievements module, a weekly review ritual, single-user auth + RLS, and an offer
+evaluator, in 8 sequenced phases. **Part B's own "Sequencing & workload" table has your
+deliverables per phase — that's the current task split, not a table in this file.** Wave 1's
+per-module table lived here; it's been removed since everything in it shipped, rather than left
+as something you might mistake for still-open work.
 
-| Module                             | Your deliverables                                                                                                                                                                     | Depends on (from Claude Code)                                                                                               |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **Task Engine**                    | Kanban board UI, quick-capture inbox form, task card components, unit tests for `TaskRepository`/`useTaskStore` (now including weekly-recurrence behavior)                            | Published `TaskRepository.ts` / `useTaskStore.ts` interface stubs — **done, merged**                                        |
-| **Prep Tracker**                   | Entry-logging forms per `entry_type` (algorithm/system_design/ml_system_design/behavioral/mock_interview), behavioral-story editor, scorecard-progress display components, unit tests | Published `PrepRepository.ts` / `usePrepStore.ts` interface stubs — **done, merged**; roadmap-target constants pending      |
-| **Job Application CRM**            | Pipeline/kanban-by-stage UI, company/application/interview forms, unit tests                                                                                                          | Published `ApplicationRepository.ts` / `CompanyRepository.ts` / `InterviewRepository.ts` interface stubs — **done, merged** |
-| **Daily Dashboard**                | Dashboard layout and panel components: this week's schedule, applications needing follow-up, scorecard progress vs. monthly targets, current month's gate checklist                   | Event Bus types from the three modules above — **done, merged**; target comparison + weekly-cadence panel pending           |
-| **Outreach Log (new, 2026-07-13)** | Outreach-log form + list (contact name, company, channel, date, notes), unit tests                                                                                                    | Published `OutreachRepository.ts` / `useOutreachStore.ts` interface stubs — not started                                     |
-
-Task Engine, Prep Tracker, and Job Application CRM share no files with each other, so you don't
-need to wait for one module's UI to be done before starting the next one's — just wait for
-Claude Code to publish that module's interface first.
+Task Engine, Prep Tracker, and Job Application CRM shared no files with each other during Wave
+1, and the same "no shared files, work whichever's ready" pattern holds across Wave 2's phases
+— check Part B's dependency graph for which phases are parallel-safe before assuming you need to
+wait on Claude Code to finish an earlier phase.
 
 ## Checks Before Finishing Any Task
 

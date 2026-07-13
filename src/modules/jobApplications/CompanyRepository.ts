@@ -31,7 +31,7 @@ function toRow(input: Partial<UpsertCompanyInput>) {
   };
 }
 
-// Published contract (myhub_plan.md §2.3). Soft deletes only — `deleted_at`,
+// Published contract (myhub_plan.md Part A §A.2). Soft deletes only — `deleted_at`,
 // never a SQL DELETE. See docs/handoff/job-application-crm.md for the wiring
 // brief.
 

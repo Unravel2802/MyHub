@@ -26,7 +26,7 @@ interface TaskStore {
   setColumnFilters: (statuses: TaskStatus[]) => void;
   // Passing recursWeekly + weekday creates a recurrence template rather than a
   // board task: it generates a fresh instance each week and never appears on the
-  // board itself (myhub_plan.md §2.3).
+  // board itself (myhub_plan.md Part A §A.2).
   createTask: (input: {
     title: string;
     description?: string | null;

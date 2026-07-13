@@ -6,7 +6,7 @@ import type { OutreachEntry } from "@/src/modules/outreach/types";
 
 // Published store contract for the Outreach Log. Own tiny store, not folded
 // into useApplicationStore — a conversation can exist with no application, so
-// it isn't a Job CRM concern even though it's related (myhub_plan.md §2.3).
+// it isn't a Job CRM concern even though it's related (myhub_plan.md Part A §A.2).
 // Action bodies are Codex's; the shape below is not.
 export interface OutreachStore {
   entries: OutreachEntry[];

@@ -1,7 +1,7 @@
 import { addDays, format, startOfWeek } from "date-fns";
 import type { Task, Weekday } from "@/src/modules/task/types";
 
-// Pure domain logic for minimal weekly recurrence (myhub_plan.md §2.3).
+// Pure domain logic for minimal weekly recurrence (myhub_plan.md Part A §A.2).
 // No DB access: the repository supplies the templates and the set of occurrences
 // that already exist, and this decides which ones are missing.
 

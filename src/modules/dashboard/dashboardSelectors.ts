@@ -7,7 +7,7 @@ import type {
 import type { PrepEntry } from "@/src/modules/prep/types";
 import type { OutreachEntry } from "@/src/modules/outreach/types";
 
-// Pure aggregation for the Daily Dashboard (myhub_plan.md §2.3). No DB access —
+// Pure aggregation for the Daily Dashboard (myhub_plan.md Part A §A.2). No DB access —
 // callers (the store) fetch each module's data via that module's own
 // Repository, and this turns it into what the four panels render. No new table,
 // no new repository, per the plan: this module owns aggregation logic only.
@@ -193,7 +193,10 @@ export interface WeeklyCadenceTarget {
   max?: number;
 }
 
-export const WEEKLY_APPLICATION_TARGET: WeeklyCadenceTarget = { min: 5, max: 10 };
+export const WEEKLY_APPLICATION_TARGET: WeeklyCadenceTarget = {
+  min: 5,
+  max: 10,
+};
 export const WEEKLY_OUTREACH_TARGET: WeeklyCadenceTarget = { min: 2, max: 3 };
 export const WEEKLY_MOCK_INTERVIEW_TARGET: WeeklyCadenceTarget = { min: 1 };
 

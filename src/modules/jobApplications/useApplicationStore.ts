@@ -19,7 +19,7 @@ import type {
   Interview,
 } from "@/src/modules/jobApplications/types";
 
-// Published store contract for the Job Application CRM (myhub_plan.md §2.3). One
+// Published store contract for the Job Application CRM (myhub_plan.md Part A §A.2). One
 // store, three entities — they share a pipeline view and don't need separate
 // stores the way Task and Prep do. Action bodies are Codex's; the shape below is
 // not. Flag it if the UI needs something this doesn't expose.

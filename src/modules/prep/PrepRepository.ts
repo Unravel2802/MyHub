@@ -90,7 +90,7 @@ function storyWrite(input: Partial<UpsertStoryInput>) {
   };
 }
 
-// Published contract for the Prep Tracker (myhub_plan.md §2.3). Tables land in
+// Published contract for the Prep Tracker (myhub_plan.md Part A §A.2). Tables land in
 // migration 0003; the scorecard maths lives in prepScorecard.ts and is already
 // unit-tested. What's left is the Supabase wiring — see
 // docs/handoff/prep-tracker.md.

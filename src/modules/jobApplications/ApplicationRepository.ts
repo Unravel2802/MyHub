@@ -56,7 +56,7 @@ function toRow(input: Partial<CreateApplicationInput>) {
   };
 }
 
-// Published contract (myhub_plan.md §2.3). Soft deletes only. See
+// Published contract (myhub_plan.md Part A §A.2). Soft deletes only. See
 // docs/handoff/job-application-crm.md for the wiring brief — in particular, note
 // that `application.stage_changed` is emitted by the STORE (which knows the
 // previous stage from its own state, same pattern as Task's status cascades),

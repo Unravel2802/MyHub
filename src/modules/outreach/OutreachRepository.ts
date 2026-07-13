@@ -41,7 +41,7 @@ function toRow(input: Partial<CreateOutreachEntryInput>) {
   };
 }
 
-// Published contract for the Outreach Log (myhub_plan.md §2.3, §2.5). Soft
+// Published contract for the Outreach Log (myhub_plan.md Part A §A.2, §A.3). Soft
 // deletes only. See docs/handoff/outreach-log.md for the wiring brief.
 //
 // No Event Bus type for this module: nothing downstream reacts to a logged

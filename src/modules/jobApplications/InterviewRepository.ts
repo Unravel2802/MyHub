@@ -49,7 +49,7 @@ function toRow(input: Partial<CreateInterviewInput & UpdateInterviewInput>) {
   };
 }
 
-// Published contract (myhub_plan.md §2.3). Soft deletes only. Same event-emission
+// Published contract (myhub_plan.md Part A §A.2). Soft deletes only. Same event-emission
 // note as ApplicationRepository: `interview.completed` is emitted by the STORE
 // when it observes `completed` flip false -> true, not by this repository.
 //

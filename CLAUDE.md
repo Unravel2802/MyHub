@@ -61,94 +61,73 @@ both files in the same commit so the two agents never diverge on tooling.
    (`task-module-spec.md` §7, since folded in here) and applies to every module's store, not just
    Task's.
 
-## MVP Modules — Full Delegation, Reprioritized (2026-07-12, extended 2026-07-13)
+## MVP Status — Wave 1 Complete (2026-07-13), Wave 2 Next
 
-The MVP is no longer Task Engine / Knowledge Base / Command Palette. It's now **Task Engine,
-Prep Tracker, Job Application CRM, Daily Dashboard, and Outreach Log** — chosen because they
-directly serve `engineering_first_roadmap_v2.md` (see `myhub_plan.md` §1.2 and §2.5 for the full
-rationale; §2.5 covers what changed once the actual roadmap file, not fragments, was available).
-Knowledge Base and Command Palette are demoted to V2 — don't start those until the five above are
-done. None of the five current MVP modules are gated: scaffold directly from spec, same as any V2
-module would be. Do not ask whether the human wants to write a first pass — assume no.
+**Wave 1 is done.** All five MVP modules — Task Engine, Prep Tracker, Job Application CRM,
+Outreach Log, and Daily Dashboard — have published contracts, working implementations, and UI
+merged to `main` (commit `98d3ed8`; 136 unit / 30 E2E tests green). They exist because they
+directly serve `engineering_first_roadmap_v2.md` — see `myhub_plan.md` Part A §A.1 for the full
+"why these five modules" rationale and Part A §A.3 for what changed once the actual roadmap file
+(not fragments) landed. Knowledge Base and Command Palette remain V2 — don't start those.
 
-**Status as of 2026-07-13:** Task Engine, Prep Tracker, Job Application CRM, and Daily Dashboard
-all have published contracts AND working implementations merged to `main`. What's left in this
-wave is entirely new: the Outreach Log module (schema + contract + implementation, all
-unstarted), roadmap-target constants for Prep Tracker's scorecard and the Dashboard's
-target-comparison panel (§2.5, now unblocked), the Dashboard's new weekly-cadence panel, and two
-one-time seed scripts (weekly schedule, gate checklists — see below the table).
+**What's next is Wave 2** ("Momentum, Rituals, and Roadmap Depth" — `myhub_plan.md` Part B): an
+8-phase plan covering a shared UI shell, task completion timestamps, Prep/CRM depth features,
+a streaks-and-achievements module, a weekly review ritual, single-user auth + RLS, and an offer
+evaluator. Part B has its own per-phase Claude/Codex split and sequencing table — don't
+duplicate that split here; read it there.
 
 ## Working Concurrently with Codex
 
-With no human writing code, you and Codex need to work in parallel without stepping on each
-other's files. The split is **contract-first**:
+The split is **contract-first**, and applies to every wave, not just Wave 1:
 
-1. **You publish the interface before either of you writes the feature.** For each module, your
-   first deliverable is the TypeScript surface Codex will build against: the Repository class
-   signature, the Zustand store's state/actions shape, and any new Event Bus event types. Commit
-   this as a small, standalone diff (interfaces + stub implementations that throw
-   `not implemented` or return typed mocks) so it compiles immediately.
+1. **You publish the interface before either of you writes the feature.** For each module (or
+   phase, in Wave 2), your first deliverable is the TypeScript surface Codex will build against:
+   the Repository class signature, the Zustand store's state/actions shape, migrations, and any
+   new Event Bus event types. Commit this as a small, standalone diff (interfaces + stub
+   implementations that throw `not implemented`, plus correctness-critical domain logic with
+   tests) so it compiles immediately.
 2. **Codex builds UI, forms, and unit tests against that published interface**, in parallel with
-   you filling in the real implementation (recursive CTEs, self-join queries, optimistic-update
-   rollback logic, registry wiring). Neither of you touches the other's files.
-3. **You own:** `*Repository.ts` files, `use*Store.ts` files, `src/lib/events.ts`, the Command
-   Palette registry core, and all Supabase migrations.
-   **Codex owns:** module UI components, forms, boilerplate types, and unit tests
-   (`*.test.ts`/`*.spec.ts`) for the interfaces you publish.
+   you filling in anything you didn't already finish. Neither of you touches the other's files.
+3. **You own:** migrations, `*Repository.ts` / `use*Store.ts` published interfaces,
+   `src/lib/events.ts`, and correctness-critical domain logic (cascades, date math, rules
+   engines).
+   **Codex owns:** UI components, mechanical repository/store wiring behind your published
+   contract, and unit/E2E tests.
 
    **Capacity amendment (2026-07-12):** Claude Code's usage budget is the scarce resource on this
    project; Codex's is not. So ownership of the files above means _design_ ownership, not a
    monopoly on typing. Spend your budget on the parts only you can do — the schema, the published
-   TypeScript contract, the correctness-critical domain logic (cascades, recursive CTEs, date
-   math, rollback semantics), and review. Once those are published and unit-tested, **Codex may
-   implement the mechanical wiring inside `*Repository.ts` and `use*Store.ts`** — Supabase
-   round-trips, optimistic-set-then-rollback plumbing, event emission — against your contract,
-   and you review the diff rather than writing it. Codex still may not change a published
-   interface, invent a schema, or alter domain logic: if the contract looks wrong, it flags,
-   you fix.
+   TypeScript contract, the correctness-critical domain logic, and review. Once those are
+   published and unit-tested, **Codex may implement the mechanical wiring inside
+   `*Repository.ts` and `use*Store.ts`** — Supabase round-trips, optimistic-set-then-rollback
+   plumbing, event emission — against your contract, and you review the diff rather than writing
+   it. Codex still may not change a published interface, invent a schema, or alter domain logic:
+   if the contract looks wrong, it flags, you fix.
 
 4. If a module's interface needs to change mid-build, you own the change — update the interface
    file and flag it, don't let Codex patch around a stale contract.
 
-### Per-module split (current build order: Task Engine → Prep Tracker → Job Application CRM → Daily Dashboard)
+**Wave 1's per-module split table lived here; it's now stale (everything in it shipped) and has
+been removed rather than left as dead reference.** Wave 2's per-phase split lives in
+`myhub_plan.md` Part B's "Sequencing & workload" table — read it there when starting a Wave 2
+phase, don't recreate it here.
 
-Prep Tracker and Job Application CRM share no files with each other or with Task Engine — once
-Task Engine's interface is published, feel free to move on to publishing Prep Tracker's or Job
-CRM's interface rather than waiting on Codex to finish Task Engine's UI first. Dashboard is last
-regardless since it only aggregates data the other three already produce.
-
-| Module                         | You (Claude Code)                                                                                                                                                                           | Codex                                                                                                    | Antigravity                                                                                                                     |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Task Engine                    | `TaskRepository.ts` (recursive CTE for cascade, 3-level nesting cap, weekly-recurrence regeneration), `useTaskStore.ts` (optimistic update + rollback-on-failure), `task.*` Event Bus types | Kanban board UI, quick-capture inbox form, task card components, unit tests for repository/store         | Edge-case list for optimistic-UI + nesting-cap before you build; dummy task JSON (incl. nested subtasks) after                  |
-| Prep Tracker                   | `PrepRepository.ts`, `usePrepStore.ts`, `prep.logged` Event Bus type                                                                                                                        | Entry-logging forms per `entry_type`, behavioral-story editor, scorecard-progress components, unit tests | Edge cases for outcome handling across entry types before you build; dummy prep-log data after                                  |
-| Job Application CRM            | `ApplicationRepository.ts` / `CompanyRepository.ts` / `InterviewRepository.ts`, `useApplicationStore.ts`, `application.stage_changed` + `interview.completed` Event Bus types               | Pipeline/kanban-by-stage UI, company/application/interview forms, unit tests                             | Edge cases for stage transitions (e.g. reopening a rejected application) before you build; dummy company/application data after |
-| Daily Dashboard                | Aggregation queries/hooks subscribing to the Event Bus types above — no new repository                                                                                                      | Dashboard layout and panel components (schedule, follow-ups, scorecard progress, gate checklist)         | Not needed for this one                                                                                                         |
-| Outreach Log (new, 2026-07-13) | `OutreachRepository.ts`, `useOutreachStore.ts`, migration — no Event Bus type needed (see §2.5)                                                                                             | Outreach-log form + list (contact, company, channel, date, notes), unit tests                            | Not needed for this one                                                                                                         |
-
-**Two one-time seed scripts (2026-07-13), not per-module deliverables:**
-
-- **Weekly schedule seed:** roadmap §14's sample week as ~9 recurring Task Engine rules
-  (`recursWeekly: true`), generated from a pure data function you (Claude Code) write, run once
-  by Codex (or a setup script) rather than the human hand-creating each block through the UI.
-- **Gate checklist seed:** roadmap §6.5's month-by-month gates (July through May) as the
-  `"Gate: <Month> <Year>"` parent tasks the Dashboard already looks for, with the correct subtask
-  checklist per month — same pattern, same split.
-
-Knowledge Base and Command Palette are V2 — same split as before once they're scheduled, but
-don't start either until the four above are done.
+Knowledge Base and Command Palette are V2 — same contract-first split once they're scheduled,
+but don't start either until Wave 2 is done.
 
 ## Workflow
 
 1. **Plan before code.** For any multi-file task, first output a step-by-step plan and a
    file-by-file diff outline. Wait for approval before writing code — but "approval" may now be
    the automated check gate below rather than a human reading the diff line by line.
-2. **The spec source is `myhub_plan.md`, Phase 2.3 ("Specific Module Designs") plus the
-   architecture rules in this file — there is no separate `/specs/` folder, and no one is
-   available to write one.** Read that section before touching a module. If a detail you need
-   isn't covered there, don't stop and ask a human — apply the architecture rules above (Repository
-   pattern, soft deletes, discriminated-union events, no God Tables) and make the smallest
-   reasonable extension consistent with the rest of the plan, then note the assumption in your
-   commit message so it's visible later.
+2. **The spec source is `myhub_plan.md`** — Part A §A.2 ("Module Designs (as built)") for
+   Wave 1's shipped schemas, Part B for Wave 2's phase-by-phase plan — plus the architecture
+   rules in this file. There is no separate `/specs/` folder, and no one is available to write
+   one. Read the relevant section before touching a module. If a detail you need isn't covered
+   there, don't stop and ask a human — apply the architecture rules above (Repository pattern,
+   soft deletes, discriminated-union events, no God Tables) and make the smallest reasonable
+   extension consistent with the rest of the plan, then note the assumption in your commit
+   message so it's visible later.
 3. **Small commits.** One feature or fix per task. Don't bundle unrelated changes — this matters
    more now since diffs aren't getting a human line-by-line read.
 4. **Automated checks are the real merge gate, not a formality.** With no human reviewing

@@ -1,15 +1,11 @@
 export type OutreachChannel =
-  | "linkedin"
-  | "email"
-  | "alumni_network"
-  | "professor_referral"
-  | "other";
+  "linkedin" | "email" | "alumni_network" | "professor_referral" | "other";
 
 export interface OutreachEntry {
   id: string;
   contactName: string | null;
   // Nullable: a conversation doesn't always map to a specific target company
-  // (myhub_plan.md §2.3).
+  // (myhub_plan.md Part A §A.2).
   companyId: string | null;
   channel: OutreachChannel;
   // yyyy-MM-dd. The day the conversation happened, not the day it was logged.

@@ -6,9 +6,9 @@ import {
   type TaskRow,
 } from "./supabaseTasksMock";
 
-// Browser-level coverage for the subtask cascades in specs/task-module-spec.md
-// section 4: completing a task completes its whole subtree, and completing the
-// last outstanding subtask auto-completes the ancestors above it.
+// Browser-level coverage for the subtask cascades in myhub_plan.md Part A §A.2
+// (Task Engine): completing a task completes its whole subtree, and completing
+// the last outstanding subtask auto-completes the ancestors above it.
 
 function card(page: Page, title: string) {
   return page.getByRole("article", { name: `Task: ${title}` });

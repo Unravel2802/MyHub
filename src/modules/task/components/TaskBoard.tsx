@@ -15,9 +15,9 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { AppShell } from "@/src/components/AppShell";
 import { BoardColumn } from "@/src/modules/task/components/BoardColumn";
 import { BoardHeader } from "@/src/modules/task/components/BoardHeader";
-import { Sidebar } from "@/src/modules/task/components/Sidebar";
 import {
   filterVisibleTasks,
   formatDueDate,
@@ -218,83 +218,79 @@ export function TaskBoard() {
   }
 
   return (
-    <main className="min-h-screen bg-canvas text-foreground">
-      <div className="grid min-h-screen lg:grid-cols-[260px_1fr]">
-        <Sidebar />
+    <AppShell activeHref="/" title="Task Engine">
+      <section className="flex min-w-0 flex-col">
+        <BoardHeader
+          columnFilters={columnFilters}
+          error={error}
+          isBusy={isBusy}
+          newTaskTitle={newTaskTitle}
+          newTaskRecursWeekly={newTaskRecursWeekly}
+          newTaskWeekday={newTaskWeekday}
+          disabledTemplateIds={pendingTaskIds}
+          onCreateTask={handleCreateTask}
+          onDeleteTemplate={handleDeleteTemplate}
+          onRefresh={() => void fetchTasks()}
+          onRecursWeeklyChange={setNewTaskRecursWeekly}
+          onSearchChange={setSearchTerm}
+          onTitleChange={setNewTaskTitle}
+          onToggleColumn={handleToggleColumn}
+          onWeekdayChange={setNewTaskWeekday}
+          searchTerm={searchTerm}
+          stats={stats}
+          templates={templates}
+        />
 
-        <section className="flex min-w-0 flex-col">
-          <BoardHeader
-            columnFilters={columnFilters}
-            error={error}
-            isBusy={isBusy}
-            newTaskTitle={newTaskTitle}
-            newTaskRecursWeekly={newTaskRecursWeekly}
-            newTaskWeekday={newTaskWeekday}
-            disabledTemplateIds={pendingTaskIds}
-            onCreateTask={handleCreateTask}
-            onDeleteTemplate={handleDeleteTemplate}
-            onRefresh={() => void fetchTasks()}
-            onRecursWeeklyChange={setNewTaskRecursWeekly}
-            onSearchChange={setSearchTerm}
-            onTitleChange={setNewTaskTitle}
-            onToggleColumn={handleToggleColumn}
-            onWeekdayChange={setNewTaskWeekday}
-            searchTerm={searchTerm}
-            stats={stats}
-            templates={templates}
-          />
-
-          <div className="flex-1 overflow-x-auto p-4 sm:p-6">
-            <DndContext
-              collisionDetection={boardCollisionDetection}
-              onDragCancel={() => setActiveTask(null)}
-              onDragEnd={(event) => void handleDragEnd(event)}
-              onDragStart={handleDragStart}
-              sensors={sensors}
+        <div className="flex-1 overflow-x-auto p-4 sm:p-6">
+          <DndContext
+            collisionDetection={boardCollisionDetection}
+            onDragCancel={() => setActiveTask(null)}
+            onDragEnd={(event) => void handleDragEnd(event)}
+            onDragStart={handleDragStart}
+            sensors={sensors}
+          >
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: `repeat(${visibleColumns.length}, minmax(0, 1fr))`,
+                minWidth: `${visibleColumns.length * 280}px`,
+              }}
             >
-              <div
-                className="grid gap-4"
-                style={{
-                  gridTemplateColumns: `repeat(${visibleColumns.length}, minmax(0, 1fr))`,
-                  minWidth: `${visibleColumns.length * 280}px`,
-                }}
-              >
-                {visibleColumns.map((column) => (
-                  <BoardColumn
-                    key={column.status}
-                    canAddSubtaskIds={canAddSubtaskIds}
-                    childCounts={childCounts}
-                    column={column}
-                    depths={depths}
-                    disabledTaskIds={pendingTaskIds}
-                    isCreating={isCreating}
-                    isLoading={isLoading}
-                    onCreateSubtask={handleCreateSubtask}
-                    onDeleteTask={handleDeleteTask}
-                    onUpdateDueDate={handleUpdateDueDate}
-                    onUpdateStatus={handleUpdateStatus}
-                    onUpdateTitle={handleUpdateTitle}
-                    tasks={tasksByStatus[column.status]}
-                  />
-                ))}
-              </div>
+              {visibleColumns.map((column) => (
+                <BoardColumn
+                  key={column.status}
+                  canAddSubtaskIds={canAddSubtaskIds}
+                  childCounts={childCounts}
+                  column={column}
+                  depths={depths}
+                  disabledTaskIds={pendingTaskIds}
+                  isCreating={isCreating}
+                  isLoading={isLoading}
+                  onCreateSubtask={handleCreateSubtask}
+                  onDeleteTask={handleDeleteTask}
+                  onUpdateDueDate={handleUpdateDueDate}
+                  onUpdateStatus={handleUpdateStatus}
+                  onUpdateTitle={handleUpdateTitle}
+                  tasks={tasksByStatus[column.status]}
+                />
+              ))}
+            </div>
 
-              <DragOverlay>
-                {activeTask ? (
-                  <div className="rounded-md border border-accent bg-surface p-4 shadow-lg">
-                    <p className="text-sm font-semibold text-foreground">
-                      {activeTask.title}
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
-                      {formatDueDate(activeTask.dueDate)}
-                    </p>
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          </div>
-        </section>
-      </div>
-    </main>
+            <DragOverlay>
+              {activeTask ? (
+                <div className="rounded-md border border-accent bg-surface p-4 shadow-lg">
+                  <p className="text-sm font-semibold text-foreground">
+                    {activeTask.title}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {formatDueDate(activeTask.dueDate)}
+                  </p>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </div>
+      </section>
+    </AppShell>
   );
 }

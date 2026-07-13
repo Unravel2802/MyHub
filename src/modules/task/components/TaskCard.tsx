@@ -1,6 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { type FormEvent, type SyntheticEvent, useId, useState } from "react";
+import { Badge } from "@/src/components/ui/Badge";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import { formatDueDate } from "@/src/modules/task/taskBoardUtils";
 import type { Task, TaskStatus } from "@/src/modules/task/types";
@@ -136,9 +137,7 @@ export function TaskCard({
             <span>Level {depth}</span>
             {childCount > 0 ? <span>{childCount} subtasks</span> : null}
             {task.recurrenceTemplateId ? (
-              <span className="rounded-full border border-accent px-2 py-0.5 text-accent-strong">
-                Weekly instance
-              </span>
+              <Badge tone="accent">Weekly instance</Badge>
             ) : null}
           </div>
         </div>

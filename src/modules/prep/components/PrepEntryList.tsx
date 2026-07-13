@@ -1,3 +1,4 @@
+import { Badge } from "@/src/components/ui/Badge";
 import type { PrepEntry } from "@/src/modules/prep/types";
 
 type PrepEntryListProps = {
@@ -44,9 +45,7 @@ export function PrepEntryList({
                   <p className="font-medium text-foreground">
                     {entry.topic ?? labels[entry.entryType]}
                   </p>
-                  <span className="rounded-full border border-accent px-2 py-0.5 text-xs text-accent-strong">
-                    {labels[entry.entryType]}
-                  </span>
+                  <Badge tone="accent">{labels[entry.entryType]}</Badge>
                 </div>
                 <p className="mt-1 text-xs text-muted">
                   {entry.date}

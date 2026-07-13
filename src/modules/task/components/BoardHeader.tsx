@@ -1,4 +1,5 @@
 import type { FormEvent } from "react";
+import { StatCard } from "@/src/components/ui/StatCard";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import type { TaskStats } from "@/src/modules/task/taskBoardUtils";
 import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
@@ -177,17 +178,7 @@ export function BoardHeader({
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-lg border border-border bg-surface-subtle px-4 py-3"
-          >
-            <p className="text-xs font-medium uppercase text-muted">
-              {stat.label}
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">
-              {stat.value}
-            </p>
-          </div>
+          <StatCard key={stat.label} label={stat.label} value={stat.value} />
         ))}
       </div>
 

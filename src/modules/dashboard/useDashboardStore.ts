@@ -42,7 +42,7 @@ import {
 // subscribing to their Event Bus events. See docs/handoff/daily-dashboard.md
 // for the fetch/subscribe wiring.
 //
-// Boundary rule (an explicit assumption, since §2.3 doesn't spell out HOW the
+// Boundary rule (an explicit assumption, since myhub_plan.md Part A §A.2 doesn't spell out HOW the
 // aggregation reads other modules' data — see the handoff doc): this store may
 // call TaskRepository / PrepRepository / ApplicationRepository /
 // InterviewRepository / OutreachRepository directly, the same way any module

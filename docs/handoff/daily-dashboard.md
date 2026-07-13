@@ -15,12 +15,12 @@ changed, so `fetchAll()` needs updating, not just extending.
 | `src/modules/outreach/*`                            | Contract published, separate handoff doc      |
 | `src/modules/dashboard/useDashboardStore.ts`        | **Stub — yours**                              |
 
-No migration, no repository for this module — §2.3 is explicit that Daily Dashboard owns no
-table of its own.
+No migration, no repository for this module — myhub_plan.md Part A §A.2 is explicit that Daily
+Dashboard owns no table of its own.
 
 ## The one architecture call this module needed
 
-§2.3 says the Dashboard aggregates the other modules' data but doesn't say _how_ it's allowed to
+myhub_plan.md Part A §A.2 says the Dashboard aggregates the other modules' data but doesn't say _how_ it's allowed to
 read it, and the architecture rules forbid importing another module's internals. The assumption
 made here (documented in `useDashboardStore.ts`'s doc comment, flag it to the Lead Architect if
 it looks wrong): **this store may call the other modules' Repository functions directly**

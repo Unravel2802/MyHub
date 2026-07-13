@@ -53,7 +53,7 @@ function toRow(input: Partial<CreateInterviewInput & UpdateInterviewInput>) {
 // note as ApplicationRepository: `interview.completed` is emitted by the STORE
 // when it observes `completed` flip false -> true, not by this repository.
 //
-// Reminder from §2.3: these are REAL interviews tied to a specific application.
+// Reminder from myhub_plan.md Part A §A.2: these are REAL interviews tied to a specific application.
 // A mock/practice rep is a PrepEntries row (Prep Tracker, entry_type
 // "mock_interview") in a different module entirely. Don't let this repository
 // or its UI drift into practice-session territory.

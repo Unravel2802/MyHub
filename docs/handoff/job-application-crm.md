@@ -2,7 +2,7 @@
 
 Published contract. Module 3 of the MVP build order. No dependency on
 `engineering_first_roadmap_v2.md` — everything here is fully specified in
-`myhub_plan.md` §2.3, so start whenever you're free.
+`myhub_plan.md` Part A §A.2, so start whenever you're free.
 
 ## What's already landed
 

@@ -104,7 +104,7 @@ export async function createApplication(
 }
 
 // Every update — stage change or not — must bump `last_update_date` to today.
-// The Dashboard's "no update in >7 days" panel (§2.3) reads that column, and a
+// The Dashboard's "no update in >7 days" panel (myhub_plan.md Part A §A.2) reads that column, and a
 // stale value there would hide an application that's actually being worked.
 export async function updateApplication(
   id: string,

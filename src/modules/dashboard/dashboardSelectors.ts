@@ -130,7 +130,7 @@ export function interviewsNeedingPostMortem(
 
 // --- Panel 5: current month's gate checklist ----------------------------------
 //
-// "Modeled as a parent Task with subtasks" (§2.3) — no schema change, no FK
+// "Modeled as a parent Task with subtasks" (myhub_plan.md Part A §A.2) — no schema change, no FK
 // linking a task to "the current gate". That means SOMETHING has to identify
 // which top-level task IS this month's gate, and the plan doesn't say what.
 //

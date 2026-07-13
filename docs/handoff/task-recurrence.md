@@ -75,6 +75,6 @@ don't re-test the date math). Extend `tests/ui/supabaseTasksMock.ts` for the ins
 ## Not yours (Claude Code is doing these)
 
 - Migration `0003`: replacing the application-side descendant loop in `collectDescendantIds` with
-  a recursive CTE, per `myhub_plan.md` §2.3.
+  a recursive CTE, per `myhub_plan.md` Part A §A.2.
 - Row Level Security. There is none today, and the anon key currently grants public read/write to
   `tasks`. This gets worse the moment Job CRM stores rejections and interview notes.

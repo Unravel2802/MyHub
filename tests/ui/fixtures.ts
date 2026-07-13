@@ -24,13 +24,13 @@ const fakeSession = {
 };
 
 export const test = base.extend({
-  page: async ({ page }, use) => {
-    await page.addInitScript(
+  context: async ({ context }, use) => {
+    await context.addInitScript(
       ({ key, session }) =>
         window.localStorage.setItem(key, JSON.stringify(session)),
       { key: authStorageKey, session: fakeSession },
     );
-    await page.route("**/auth/v1/**", async (route) => {
+    await context.route("**/auth/v1/**", async (route) => {
       if (route.request().url().includes("/token")) {
         await route.fulfill({
           status: 200,
@@ -45,6 +45,12 @@ export const test = base.extend({
         body: JSON.stringify({}),
       });
     });
+    // Playwright's fixture callback is not a React component, despite the
+    // callback parameter using the same name as a hook.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    await use(context);
+  },
+  page: async ({ page }, use) => {
     await page.route("**/rest/v1/**", async (route) => {
       const method = route.request().method();
       if (method === "GET") {

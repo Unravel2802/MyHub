@@ -91,11 +91,10 @@ test("the theme is applied before first paint", async ({ page }) => {
 });
 
 test("the OS colour scheme does not override the saved choice", async ({
-  browser,
+  page,
 }) => {
   // A light OS must not drag the app out of its (default) dark theme.
-  const context = await browser.newContext({ colorScheme: "light" });
-  const page = await context.newPage();
+  await page.emulateMedia({ colorScheme: "light" });
   await mockSupabaseTasks(page, new FakeTaskDb([]));
   await page.goto("/");
   await expect(
@@ -103,7 +102,6 @@ test("the OS colour scheme does not override the saved choice", async ({
   ).toBeVisible();
 
   expect(await isDark(page)).toBe(true);
-  await context.close();
 });
 
 test("the theme control stays on screen when a column is long", async ({

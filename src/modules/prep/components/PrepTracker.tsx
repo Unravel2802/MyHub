@@ -61,6 +61,12 @@ export function PrepTracker() {
             <nav aria-label="MyHub modules" className="mt-6 grid gap-2 text-sm">
               <Link
                 className="rounded-md px-3 py-2 text-body hover:bg-surface-subtle"
+                href="/dashboard"
+              >
+                Dashboard
+              </Link>
+              <Link
+                className="rounded-md px-3 py-2 text-body hover:bg-surface-subtle"
                 href="/"
               >
                 Task Engine

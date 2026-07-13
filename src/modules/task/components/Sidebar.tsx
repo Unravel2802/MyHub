@@ -13,6 +13,12 @@ export function Sidebar() {
         </h1>
         <nav aria-label="MyHub modules" className="mt-6 grid gap-2 text-sm">
           <Link
+            className="rounded-md px-3 py-2 text-body hover:bg-surface-subtle"
+            href="/dashboard"
+          >
+            Dashboard
+          </Link>
+          <Link
             aria-current="page"
             className="rounded-md bg-surface-subtle px-3 py-2 font-medium text-foreground"
             href="/"

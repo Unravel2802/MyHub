@@ -61,10 +61,14 @@ cp .env.local.example .env.local
 ```dotenv
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+# Optional for backup/seed scripts once RLS is enabled. Keep this in .env.local only.
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-Do not commit `.env.local` or service-role credentials. There is currently no Row Level
-Security and no auth (single-user, anon-key access) — Wave 2 Phase 7 addresses this.
+Do not commit `.env.local` or service-role credentials. The app requires authentication; apply
+`supabase/migrations/0012_enable_rls.sql` only after confirming login works locally. Backup and
+seed scripts use `SUPABASE_SERVICE_ROLE_KEY` when present and print a warning when falling back
+to the anon key.
 
 ### 3. Start the app
 

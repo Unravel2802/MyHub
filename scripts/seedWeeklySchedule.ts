@@ -19,6 +19,11 @@ process.loadEnvFile(".env.local");
 
 async function main() {
   const { WEEKLY_SCHEDULE_SEED } = await import("./seedData/weeklySchedule");
+  const { prepareScriptClientAuth } = await import("./supabaseScriptClient");
+  prepareScriptClientAuth();
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY)
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
+      process.env.SUPABASE_SERVICE_ROLE_KEY;
   const TaskRepository = await import("../src/modules/task/TaskRepository");
 
   const dryRun = process.argv.includes("--dry-run");
@@ -44,7 +49,9 @@ async function main() {
       recursWeekly: true,
       weekday: entry.weekday,
     });
-    console.log(`  created "${created.title}" (${weekdayLabel}, id=${created.id})`);
+    console.log(
+      `  created "${created.title}" (${weekdayLabel}, id=${created.id})`,
+    );
   }
 
   console.log("Done.");

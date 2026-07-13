@@ -28,7 +28,8 @@ const TABLES = [
 
 async function main() {
   const { mkdir, writeFile } = await import("node:fs/promises");
-  const { supabase } = await import("../src/lib/supabaseClient");
+  const { scriptSupabaseClient } = await import("./supabaseScriptClient");
+  const supabase = scriptSupabaseClient();
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const dir = `backups/${timestamp}`;

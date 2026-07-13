@@ -18,10 +18,14 @@ process.loadEnvFile(".env.local");
 
 async function main() {
   const { GATE_CHECKLIST_SEED } = await import("./seedData/gateChecklists");
+  const { prepareScriptClientAuth } = await import("./supabaseScriptClient");
+  prepareScriptClientAuth();
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY)
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY =
+      process.env.SUPABASE_SERVICE_ROLE_KEY;
   const TaskRepository = await import("../src/modules/task/TaskRepository");
-  const { gateChecklistTitleFor } = await import(
-    "../src/modules/dashboard/dashboardSelectors"
-  );
+  const { gateChecklistTitleFor } =
+    await import("../src/modules/dashboard/dashboardSelectors");
 
   const dryRun = process.argv.includes("--dry-run");
 

@@ -6,12 +6,11 @@ const projectRef = new URL(
 const authStorageKey = `sb-${projectRef}-auth-token`;
 
 test("redirects unauthenticated users to login", async ({ page }) => {
-  await page.goto("/");
-  await page.evaluate(
+  await page.addInitScript(
     (key) => window.localStorage.removeItem(key),
     authStorageKey,
   );
-  await page.reload();
+  await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 });

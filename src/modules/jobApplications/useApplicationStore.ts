@@ -18,6 +18,9 @@ import type {
   Company,
   Interview,
 } from "@/src/modules/jobApplications/types";
+import { postMortemLoggedAtFor } from "@/src/modules/jobApplications/interviewTimestamps";
+import { funnelStats } from "@/src/modules/jobApplications/funnelStats";
+import type { FunnelStats } from "@/src/modules/jobApplications/funnelStats";
 
 // Published store contract for the Job Application CRM (myhub_plan.md Part A §A.2). One
 // store, three entities — they share a pipeline view and don't need separate
@@ -82,6 +85,11 @@ export interface ApplicationStore {
   // does not re-emit.
   markInterviewCompleted: (id: string) => Promise<void>;
   deleteInterview: (id: string) => Promise<void>;
+
+  // Derived, not stored: computed from `applications` + `interviews` via
+  // funnelStats.ts. Rates are null (never 0) before anything has been sent —
+  // the UI must render that as "—", not "0%".
+  funnel: () => FunnelStats;
 }
 
 const FAILURE_MESSAGE = "Something went wrong, please try again later.";
@@ -228,6 +236,7 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => {
         lastUpdateDate: format(new Date(), "yyyy-MM-dd"),
         referralSource: input.referralSource ?? null,
         followUpDate: input.followUpDate ?? null,
+        notes: input.notes ?? null,
         deletedAt: null,
         createdAt: now,
         updatedAt: now,
@@ -346,6 +355,8 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => {
         completed: false,
         outcome: input.outcome ?? null,
         postMortemNotes: input.postMortemNotes ?? null,
+        completedAt: null,
+        postMortemLoggedAt: null,
         deletedAt: null,
         createdAt: now,
         updatedAt: now,
@@ -371,17 +382,31 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => {
 
     updateInterview: async (id, updates) => {
       const previous = get().interviews;
+      const current = previous.find((interview) => interview.id === id);
+      // Stamp the post-mortem's first write. Computed here, not in the
+      // repository, which has no previous state to compare against.
+      const postMortemLoggedAt = current
+        ? postMortemLoggedAtFor(
+            current,
+            updates.postMortemNotes,
+            new Date().toISOString(),
+          )
+        : undefined;
+      const payload: UpdateInterviewInput = {
+        ...updates,
+        ...(postMortemLoggedAt !== undefined && { postMortemLoggedAt }),
+      };
       set({
         interviews: previous.map((interview) =>
           interview.id === id
-            ? updateInterviewLocally(interview, updates)
+            ? updateInterviewLocally(interview, payload)
             : interview,
         ),
         error: null,
       });
       addPending(id);
       try {
-        const updated = await InterviewRepository.updateInterview(id, updates);
+        const updated = await InterviewRepository.updateInterview(id, payload);
         set({
           interviews: get().interviews.map((interview) =>
             interview.id === id ? updated : interview,
@@ -398,9 +423,12 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => {
       const previous = get().interviews;
       const current = previous.find((interview) => interview.id === id);
       if (current?.completed) return;
+      const completedAt = new Date().toISOString();
       set({
         interviews: previous.map((interview) =>
-          interview.id === id ? { ...interview, completed: true } : interview,
+          interview.id === id
+            ? { ...interview, completed: true, completedAt }
+            : interview,
         ),
         error: null,
       });
@@ -408,6 +436,7 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => {
       try {
         const updated = await InterviewRepository.updateInterview(id, {
           completed: true,
+          completedAt,
         });
         set({
           interviews: get().interviews.map((interview) =>
@@ -443,5 +472,7 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => {
         removePending(id);
       }
     },
+
+    funnel: () => funnelStats(get().applications, get().interviews),
   };
 });

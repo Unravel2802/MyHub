@@ -16,6 +16,7 @@ interface ApplicationRow {
   last_update_date: string;
   referral_source: string | null;
   follow_up_date: string | null;
+  notes: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -32,6 +33,7 @@ function fromRow(row: ApplicationRow): Application {
     lastUpdateDate: row.last_update_date,
     referralSource: row.referral_source,
     followUpDate: row.follow_up_date,
+    notes: row.notes,
     deletedAt: row.deleted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -53,6 +55,7 @@ function toRow(input: Partial<CreateApplicationInput>) {
     ...(input.followUpDate !== undefined && {
       follow_up_date: input.followUpDate,
     }),
+    ...(input.notes !== undefined && { notes: input.notes }),
   };
 }
 
@@ -70,6 +73,7 @@ export interface CreateApplicationInput {
   appliedDate?: string | null;
   referralSource?: string | null;
   followUpDate?: string | null;
+  notes?: string | null;
 }
 
 export interface UpdateApplicationInput {
@@ -79,6 +83,7 @@ export interface UpdateApplicationInput {
   appliedDate?: string | null;
   referralSource?: string | null;
   followUpDate?: string | null;
+  notes?: string | null;
 }
 
 export async function getApplications(): Promise<Application[]> {

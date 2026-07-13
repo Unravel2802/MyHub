@@ -12,6 +12,8 @@ interface InterviewRow {
   completed: boolean;
   outcome: string | null;
   post_mortem_notes: string | null;
+  completed_at: string | null;
+  post_mortem_logged_at: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -26,6 +28,8 @@ function fromRow(row: InterviewRow): Interview {
     completed: row.completed,
     outcome: row.outcome,
     postMortemNotes: row.post_mortem_notes,
+    completedAt: row.completed_at,
+    postMortemLoggedAt: row.post_mortem_logged_at,
     deletedAt: row.deleted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -45,6 +49,12 @@ function toRow(input: Partial<CreateInterviewInput & UpdateInterviewInput>) {
     ...(input.outcome !== undefined && { outcome: input.outcome }),
     ...(input.postMortemNotes !== undefined && {
       post_mortem_notes: input.postMortemNotes,
+    }),
+    ...(input.completedAt !== undefined && {
+      completed_at: input.completedAt,
+    }),
+    ...(input.postMortemLoggedAt !== undefined && {
+      post_mortem_logged_at: input.postMortemLoggedAt,
     }),
   };
 }
@@ -72,6 +82,11 @@ export interface UpdateInterviewInput {
   completed?: boolean;
   outcome?: string | null;
   postMortemNotes?: string | null;
+  // Both are computed by useApplicationStore, which is the only layer that
+  // knows the previous state to diff against — this repository stays a dumb
+  // writer and never derives them itself. Don't set these from the UI.
+  completedAt?: string | null;
+  postMortemLoggedAt?: string | null;
 }
 
 export async function getInterviews(): Promise<Interview[]> {

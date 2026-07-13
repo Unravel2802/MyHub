@@ -49,6 +49,15 @@ export type AppEvent =
       type: "interview.completed";
       payload: { interviewId: string; applicationId: string };
       timestamp: number;
+    }
+  // Fired on every new outreach entry. Added in Wave 2 Phase 5: Momentum needs
+  // to know an outreach conversation happened today (it counts as an active day
+  // for the streak), and the Dashboard's weekly cadence panel had been reading
+  // outreach without an event to refresh on.
+  | {
+      type: "outreach.logged";
+      payload: { entryId: string };
+      timestamp: number;
     };
 
 type Listener = (event: AppEvent) => void;

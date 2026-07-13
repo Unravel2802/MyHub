@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import * as OutreachRepository from "@/src/modules/outreach/OutreachRepository";
 import type { CreateOutreachEntryInput } from "@/src/modules/outreach/OutreachRepository";
 import type { OutreachEntry } from "@/src/modules/outreach/types";
+import { emit } from "@/src/lib/events";
 
 // Published store contract for the Outreach Log. Own tiny store, not folded
 // into useApplicationStore — a conversation can exist with no application, so
@@ -81,6 +82,11 @@ export const useOutreachStore = create<OutreachStore>((set, get) => {
           entries: get().entries.map((entry) =>
             entry.id === optimistic.id ? created : entry,
           ),
+        });
+        emit({
+          type: "outreach.logged",
+          payload: { entryId: created.id },
+          timestamp: Date.now(),
         });
       } catch (error) {
         set({ entries: previousEntries, error: toUserMessage(error) });

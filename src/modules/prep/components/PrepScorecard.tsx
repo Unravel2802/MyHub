@@ -1,9 +1,15 @@
 import type { Scorecard, TopicStat } from "@/src/modules/prep/prepScorecard";
+import {
+  activeCheckpoint,
+  mockSubtypeProgress,
+} from "@/src/modules/prep/prepTargets";
+import type { PrepEntry } from "@/src/modules/prep/types";
 
 type PrepScorecardProps = {
   month: string;
   scorecard: Scorecard;
   topics: TopicStat[];
+  entries: PrepEntry[];
   onMonthChange: (month: string) => void;
 };
 
@@ -23,8 +29,11 @@ export function PrepScorecard({
   month,
   scorecard,
   topics,
+  entries,
   onMonthChange,
 }: PrepScorecardProps) {
+  const checkpoint = activeCheckpoint(new Date().toISOString().slice(0, 10));
+  const subtypeProgress = mockSubtypeProgress(entries, checkpoint);
   return (
     <section
       aria-labelledby="scorecard-heading"
@@ -112,6 +121,36 @@ export function PrepScorecard({
           </ul>
         )}
       </div>
+
+      {subtypeProgress ? (
+        <div className="mt-5 rounded-md border border-border p-3">
+          <h3 className="text-sm font-semibold text-foreground">
+            {subtypeProgress.checkpoint.label} mock breakdown
+          </h3>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {(
+              [
+                ["coding", "Coding"],
+                ["system_design", "System design"],
+                ["ml_system_design", "ML system design"],
+              ] as const
+            ).map(([key, label]) => (
+              <div className="rounded-md bg-surface-subtle p-3" key={key}>
+                <p className="text-xs text-muted">{label}</p>
+                <p className="mt-1 font-semibold text-foreground">
+                  {subtypeProgress.bySubtype[key].actual}/
+                  {subtypeProgress.bySubtype[key].target}
+                </p>
+              </div>
+            ))}
+          </div>
+          {subtypeProgress.unclassified > 0 ? (
+            <p className="mt-3 text-xs text-muted">
+              {subtypeProgress.unclassified} unclassified mocks
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

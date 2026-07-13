@@ -7,12 +7,14 @@ export type PrepEntryRow = {
     | "system_design"
     | "ml_system_design"
     | "behavioral"
-    | "mock_interview";
+    | "mock_interview"
+    | "resume_deep_dive";
   topic: string | null;
   date: string;
   duration_min: number | null;
   time_to_solve_min: number | null;
   outcome: "solved" | "partial" | "failed" | "pass" | "needs_work" | null;
+  mock_subtype: "coding" | "system_design" | "ml_system_design" | null;
   notes: string | null;
   deleted_at: string | null;
   created_at: string;
@@ -42,6 +44,7 @@ export function prepEntryRow(
     duration_min: null,
     time_to_solve_min: null,
     outcome: null,
+    mock_subtype: null,
     notes: null,
     deleted_at: null,
     created_at: TIMESTAMP,

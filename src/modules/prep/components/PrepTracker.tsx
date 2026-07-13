@@ -7,6 +7,7 @@ import { BehavioralStories } from "@/src/modules/prep/components/BehavioralStori
 import { PrepEntryForm } from "@/src/modules/prep/components/PrepEntryForm";
 import { PrepEntryList } from "@/src/modules/prep/components/PrepEntryList";
 import { PrepScorecard } from "@/src/modules/prep/components/PrepScorecard";
+import { TimeAllocationPanel } from "@/src/modules/prep/components/TimeAllocationPanel";
 import { usePrepStore } from "@/src/modules/prep/usePrepStore";
 
 export function PrepTracker() {
@@ -87,11 +88,13 @@ export function PrepTracker() {
           </div>
           <div className="grid content-start gap-6">
             <PrepScorecard
+              entries={entries}
               month={month}
               onMonthChange={setMonth}
               scorecard={monthlyScorecard}
               topics={topics}
             />
+            <TimeAllocationPanel entries={entries} />
             <BehavioralStories
               disabled={isCreating}
               onCreate={createStory}

@@ -16,6 +16,12 @@ const labels = {
   resume_deep_dive: "Resume deep-dive",
 };
 
+const subtypeLabels = {
+  coding: "Coding",
+  system_design: "System design",
+  ml_system_design: "ML system design",
+} as const;
+
 export function PrepEntryList({
   entries,
   pendingIds,
@@ -47,6 +53,13 @@ export function PrepEntryList({
                     {entry.topic ?? labels[entry.entryType]}
                   </p>
                   <Badge tone="accent">{labels[entry.entryType]}</Badge>
+                  {entry.entryType === "mock_interview" ? (
+                    <Badge tone="neutral">
+                      {entry.mockSubtype
+                        ? subtypeLabels[entry.mockSubtype]
+                        : "Unclassified"}
+                    </Badge>
+                  ) : null}
                 </div>
                 <p className="mt-1 text-xs text-muted">
                   {entry.date}

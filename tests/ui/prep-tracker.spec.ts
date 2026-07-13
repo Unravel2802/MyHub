@@ -28,6 +28,45 @@ test("entry form only offers fields and outcomes valid for its type", async ({
   await expect(page.getByLabel("Outcome")).not.toContainText("Solved");
 });
 
+test("logs mock subtypes, resume deep-dives, and renders time allocation", async ({
+  page,
+}) => {
+  const db = await loadPrep(page);
+
+  await page.getByLabel("Practice type").selectOption("mock_interview");
+  await expect(page.getByLabel("Mock subtype")).toBeVisible();
+  await page.getByLabel("Mock subtype").selectOption("coding");
+  await page.getByLabel("Topic").fill("coding mock");
+  await page.getByLabel("Duration (minutes)").fill("60");
+  await page.getByRole("button", { name: "Log session" }).click();
+
+  await expect
+    .poll(() => db.entries.find((entry) => entry.topic === "coding mock"))
+    .toMatchObject({
+      entry_type: "mock_interview",
+      mock_subtype: "coding",
+    });
+
+  await page.getByLabel("Practice type").selectOption("resume_deep_dive");
+  await expect(page.getByLabel("Mock subtype")).toHaveCount(0);
+  await page.getByLabel("Topic").fill("resume walkthrough");
+  await page.getByLabel("Duration (minutes)").fill("30");
+  await page.getByRole("button", { name: "Log session" }).click();
+
+  await expect
+    .poll(() =>
+      db.entries.find((entry) => entry.topic === "resume walkthrough"),
+    )
+    .toMatchObject({ entry_type: "resume_deep_dive" });
+
+  const allocation = page.getByRole("region", {
+    name: "Prep time allocation",
+  });
+  await expect(allocation).toContainText("Algorithms");
+  await expect(allocation).toContainText("Resume deep-dive");
+  await expect(allocation).toContainText("Mock-interview time excluded");
+});
+
 test("logs an algorithm rep and updates the monthly scorecard", async ({
   page,
 }) => {

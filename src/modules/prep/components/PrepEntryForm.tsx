@@ -1,7 +1,11 @@
 import { format } from "date-fns";
 import { type FormEvent, useState } from "react";
 import type { CreatePrepEntryInput } from "@/src/modules/prep/PrepRepository";
-import type { PrepEntryType, PrepOutcome } from "@/src/modules/prep/types";
+import type {
+  MockSubtype,
+  PrepEntryType,
+  PrepOutcome,
+} from "@/src/modules/prep/types";
 
 const entryTypes: { value: PrepEntryType; label: string }[] = [
   { value: "algorithm", label: "Algorithm" },
@@ -9,6 +13,13 @@ const entryTypes: { value: PrepEntryType; label: string }[] = [
   { value: "ml_system_design", label: "ML system design" },
   { value: "behavioral", label: "Behavioral practice" },
   { value: "mock_interview", label: "Mock interview" },
+  { value: "resume_deep_dive", label: "Resume deep-dive" },
+];
+
+const mockSubtypes: { value: MockSubtype; label: string }[] = [
+  { value: "coding", label: "Coding" },
+  { value: "system_design", label: "System design" },
+  { value: "ml_system_design", label: "ML system design" },
 ];
 
 const algorithmOutcomes: { value: PrepOutcome; label: string }[] = [
@@ -37,6 +48,7 @@ export function PrepEntryForm({ disabled, onCreate }: PrepEntryFormProps) {
   const [date, setDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [durationMin, setDurationMin] = useState("");
   const [timeToSolveMin, setTimeToSolveMin] = useState("");
+  const [mockSubtype, setMockSubtype] = useState<MockSubtype | "">("");
   const [outcome, setOutcome] = useState<PrepOutcome | "">("");
   const [notes, setNotes] = useState("");
 
@@ -47,6 +59,7 @@ export function PrepEntryForm({ disabled, onCreate }: PrepEntryFormProps) {
     setEntryType(nextType);
     setOutcome("");
     if (nextType !== "algorithm") setTimeToSolveMin("");
+    if (nextType !== "mock_interview") setMockSubtype("");
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -60,11 +73,13 @@ export function PrepEntryForm({ disabled, onCreate }: PrepEntryFormProps) {
         entryType === "algorithm" ? optionalNumber(timeToSolveMin) : null,
       outcome: outcome || null,
       notes: notes.trim() || null,
+      ...(entryType === "mock_interview" && mockSubtype ? { mockSubtype } : {}),
     });
     setTopic("");
     setDurationMin("");
     setTimeToSolveMin("");
     setOutcome("");
+    setMockSubtype("");
     setNotes("");
   }
 
@@ -154,6 +169,27 @@ export function PrepEntryForm({ disabled, onCreate }: PrepEntryFormProps) {
               type="number"
               value={timeToSolveMin}
             />
+          </label>
+        ) : null}
+
+        {entryType === "mock_interview" ? (
+          <label className="grid gap-1.5 text-sm font-medium text-body">
+            Mock subtype
+            <select
+              className={inputClass}
+              disabled={disabled}
+              onChange={(event) =>
+                setMockSubtype(event.target.value as MockSubtype | "")
+              }
+              value={mockSubtype}
+            >
+              <option value="">Unclassified</option>
+              {mockSubtypes.map((subtype) => (
+                <option key={subtype.value} value={subtype.value}>
+                  {subtype.label}
+                </option>
+              ))}
+            </select>
           </label>
         ) : null}
 

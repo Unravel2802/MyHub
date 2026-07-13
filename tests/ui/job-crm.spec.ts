@@ -123,5 +123,5 @@ test("shows funnel counts and null-safe conversion rates", async ({ page }) => {
     page.getByRole("heading", { name: "Funnel snapshot" }),
   ).toBeVisible();
   await expect(page.getByText("—")).toHaveCount(3);
-  await expect(page.getByText("researching")).toBeVisible();
+  await expect(page.getByText("researching", { exact: true })).toBeVisible();
 });

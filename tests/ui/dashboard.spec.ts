@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import type { Page } from "@playwright/test";
 
 const timestamp = "2026-07-13T08:00:00.000Z";

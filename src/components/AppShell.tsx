@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
 import { NAV_ITEMS } from "@/src/components/appNav";
+import { StreakIndicator } from "@/src/modules/momentum/components/StreakIndicator";
+import { UnlockToaster } from "@/src/modules/momentum/components/UnlockToaster";
+import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 
 interface AppShellProps {
   title: string;
@@ -11,6 +15,18 @@ interface AppShellProps {
 }
 
 export function AppShell({ title, activeHref, children }: AppShellProps) {
+  const streak = useMomentumStore((state) => state.streak);
+  const refresh = useMomentumStore((state) => state.refresh);
+  const subscribeToUpdates = useMomentumStore(
+    (state) => state.subscribeToUpdates,
+  );
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (mounted.current) return;
+    mounted.current = true;
+    void refresh();
+    return subscribeToUpdates();
+  }, [refresh, subscribeToUpdates]);
   return (
     <main className="min-h-screen bg-canvas text-foreground">
       <div className="grid min-h-screen lg:grid-cols-[260px_1fr]">
@@ -41,13 +57,16 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
             </nav>
           </div>
           <div className="lg:mt-auto">
-            {/* Phase 5: StreakIndicator; Phase 7: sign-out */}
-            <ThemeToggle />
+            <StreakIndicator streak={streak} />
+            <div className="mt-4">
+              <ThemeToggle />
+            </div>
           </div>
         </aside>
 
         {children}
       </div>
+      <UnlockToaster />
     </main>
   );
 }

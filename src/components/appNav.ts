@@ -19,4 +19,5 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/prep", label: "Prep Tracker" },
   { href: "/applications", label: "Job CRM" },
   { href: "/outreach", label: "Outreach Log" },
+  { href: "/achievements", label: "Achievements" },
 ];

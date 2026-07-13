@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { FakePrepDb, mockSupabasePrep, prepEntryRow } from "./supabasePrepMock";
 
 async function loadPrep(

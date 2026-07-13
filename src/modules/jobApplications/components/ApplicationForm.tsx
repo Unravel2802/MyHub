@@ -25,6 +25,7 @@ export function ApplicationForm({
   const [appliedDate, setAppliedDate] = useState("");
   const [referralSource, setReferralSource] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
+  const [notes, setNotes] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,10 +37,12 @@ export function ApplicationForm({
       appliedDate: appliedDate || null,
       referralSource: referralSource.trim() || null,
       followUpDate: followUpDate || null,
+      notes: notes.trim() || null,
     });
     setRoleTitle("");
     setReferralSource("");
     setFollowUpDate("");
+    setNotes("");
   }
 
   const field =
@@ -151,6 +154,15 @@ export function ApplicationForm({
           disabled={disabled}
           onChange={(event) => setReferralSource(event.target.value)}
           value={referralSource}
+        />
+      </label>
+      <label className="grid gap-1.5 text-sm font-medium text-body">
+        Notes
+        <textarea
+          className="min-h-20 w-full rounded-md border border-input bg-surface px-3 py-2 text-sm"
+          disabled={disabled}
+          onChange={(event) => setNotes(event.target.value)}
+          value={notes}
         />
       </label>
       <button

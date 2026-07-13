@@ -3,7 +3,11 @@
 import { useEffect, useMemo } from "react";
 import { AppShell } from "@/src/components/AppShell";
 import { ApplicationForm } from "@/src/modules/jobApplications/components/ApplicationForm";
-import { ApplicationPipeline } from "@/src/modules/jobApplications/components/ApplicationPipeline";
+import {
+  ApplicationPipeline,
+  REJECTION_TAKEAWAY_PREFIX,
+} from "@/src/modules/jobApplications/components/ApplicationPipeline";
+import { FunnelPanel } from "@/src/modules/jobApplications/components/FunnelPanel";
 import { CompanyPanel } from "@/src/modules/jobApplications/components/CompanyPanel";
 import { InterviewPanel } from "@/src/modules/jobApplications/components/InterviewPanel";
 import type { ApplicationStage } from "@/src/modules/jobApplications/types";
@@ -35,6 +39,16 @@ export function JobApplicationCrm() {
   }
   function changeStage(id: string, stage: ApplicationStage) {
     void store.updateApplicationStage(id, stage);
+  }
+  function saveRejectionTakeaway(id: string, takeaway: string) {
+    const application = store.applications.find((item) => item.id === id);
+    if (!application) return;
+    const notes = application.notes?.trim();
+    void store.updateApplication(id, {
+      notes: notes
+        ? `${notes}\n${REJECTION_TAKEAWAY_PREFIX} ${takeaway}`
+        : `${REJECTION_TAKEAWAY_PREFIX} ${takeaway}`,
+    });
   }
 
   return (
@@ -91,14 +105,18 @@ export function JobApplicationCrm() {
           />
         </div>
 
-        <div className="mt-8 overflow-x-auto px-4 pb-6 sm:px-6 lg:px-8">
-          <ApplicationPipeline
-            applications={store.applications}
-            companies={store.companies}
-            onDelete={deleteApplication}
-            onStageChange={changeStage}
-            pendingIds={pending}
-          />
+        <div className="mt-8 grid gap-8 px-4 pb-6 sm:px-6 lg:px-8">
+          <FunnelPanel funnel={store.funnel()} />
+          <div className="overflow-x-auto">
+            <ApplicationPipeline
+              applications={store.applications}
+              companies={store.companies}
+              onDelete={deleteApplication}
+              onStageChange={changeStage}
+              pendingIds={pending}
+              onSaveRejectionTakeaway={saveRejectionTakeaway}
+            />
+          </div>
         </div>
       </section>
     </AppShell>

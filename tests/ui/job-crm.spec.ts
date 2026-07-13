@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import {
   applicationRow,
   companyRow,
@@ -83,4 +83,45 @@ test("rolls back a failed application create", async ({ page }) => {
     page.getByText("Something went wrong, please try again later."),
   ).toBeVisible();
   await expect(page.getByText("Doomed role")).toHaveCount(0);
+});
+
+test("prompts for a rejection takeaway and saves it to notes", async ({
+  page,
+}) => {
+  const db = await load(
+    page,
+    new FakeJobDb([companyRow()], [applicationRow({ stage: "applied" })]),
+  );
+  const card = page.getByRole("article", {
+    name: "Application: Backend Engineer at Acme",
+  });
+  await card.getByLabel("Application stage").selectOption("rejected");
+  await expect(
+    page.getByText(
+      "§11.2: log one specific, actionable takeaway from this rejection.",
+    ),
+  ).toBeVisible();
+  await page
+    .getByLabel("Rejection takeaway")
+    .fill("Ask for a concrete API example");
+  await page.getByRole("button", { name: "Save takeaway" }).click();
+  await expect(page.getByLabel("Rejection takeaway")).toHaveCount(0);
+  await expect
+    .poll(() => db.applications[0].notes)
+    .toContain("Rejection takeaway: Ask for a concrete API example");
+});
+
+test("shows funnel counts and null-safe conversion rates", async ({ page }) => {
+  await load(
+    page,
+    new FakeJobDb(
+      [companyRow()],
+      [applicationRow({ id: "researching", stage: "researching" })],
+    ),
+  );
+  await expect(
+    page.getByRole("heading", { name: "Funnel snapshot" }),
+  ).toBeVisible();
+  await expect(page.getByText("—")).toHaveCount(3);
+  await expect(page.getByText("researching")).toBeVisible();
 });

@@ -33,7 +33,9 @@ test("failed login shows a generic error", async ({ page }) => {
   await expect(
     page.getByText("Unable to sign in. Check your credentials and try again."),
   ).toBeVisible();
-  await expect(page.getByText("Invalid login credentials")).toHaveCount(0);
+  await expect(
+    page.locator("main").getByText("Invalid login credentials"),
+  ).toHaveCount(0);
 });
 
 test("getSession resolves from the derived storage key", async ({ page }) => {

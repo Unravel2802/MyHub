@@ -28,6 +28,18 @@
 
   --accent: #0d9488;
   --accent-strong: #0f766e;
+  /* Tinted backdrop for accent-on-accent surfaces (pills, stat tiles). Without
+     it, a badge painting `accent` text on an `accent` fill is teal-on-teal and
+     effectively unreadable — `danger` already had this pair, `accent` didn't. */
+  --accent-surface: #f0fdfa;
+  --accent-border: #99f6e4;
+
+  /* Success is its own hue, not an alias of accent: accent is "this is the
+     active/primary thing", success is "this went well". Reusing accent for both
+     made a passed mock and a selected tab look identical. */
+  --success: #15803d;
+  --success-surface: #f0fdf4;
+  --success-border: #bbf7d0;
 
   --danger: #b91c1c;
   --danger-subtle: #fca5a5;
@@ -57,6 +69,14 @@
 
   --accent: #2dd4bf;
   --accent-strong: #5eead4;
+  /* Deep-tinted, not light: a pale surface here would glow against the near
+     black canvas. Mirrors how --danger-surface goes to #2a0a0a in dark. */
+  --accent-surface: #042f2e;
+  --accent-border: #115e59;
+
+  --success: #4ade80;
+  --success-surface: #052e16;
+  --success-border: #166534;
 
   --danger: #f87171;
   --danger-subtle: #991b1b;
@@ -88,6 +108,12 @@
 
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  --color-accent-surface: var(--accent-surface);
+  --color-accent-border: var(--accent-border);
+
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-success-border: var(--success-border);
 
   --color-danger: var(--danger);
   --color-danger-subtle: var(--danger-subtle);

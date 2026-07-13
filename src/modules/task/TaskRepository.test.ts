@@ -16,6 +16,7 @@ const h = vi.hoisted(() => {
   ) =>
     filters.every((f) => {
       if (f.type === "in") return (f.val as unknown[]).includes(row[f.col]);
+      if (f.type === "neq") return row[f.col] !== f.val;
       return row[f.col] === f.val; // eq + is(null)
     });
 
@@ -52,6 +53,10 @@ const h = vi.hoisted(() => {
       this.filters.push({ type: "is", col, val });
       return this;
     }
+    neq(col: string, val: unknown) {
+      this.filters.push({ type: "neq", col, val });
+      return this;
+    }
 
     private run(): Row[] {
       if (this.op === "insert") {
@@ -71,6 +76,7 @@ const h = vi.hoisted(() => {
           weekday: p.weekday ?? null,
           recurrence_template_id: p.recurrence_template_id ?? null,
           occurrence_date: p.occurrence_date ?? null,
+          completed_at: p.completed_at ?? null,
           deleted_at: null,
           created_at: now,
           updated_at: now,
@@ -176,6 +182,7 @@ type SeedTask = {
   weekday?: Weekday | null;
   recurrence_template_id?: string | null;
   occurrence_date?: string | null;
+  completed_at?: string | null;
 };
 
 function task(o: SeedTask) {
@@ -191,6 +198,7 @@ function task(o: SeedTask) {
     weekday: o.weekday ?? null,
     recurrence_template_id: o.recurrence_template_id ?? null,
     occurrence_date: o.occurrence_date ?? null,
+    completed_at: o.completed_at ?? null,
     deleted_at: o.deleted_at ?? null,
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
@@ -200,6 +208,8 @@ function task(o: SeedTask) {
 const statusOf = (id: string) => h.store.rows.find((r) => r.id === id)?.status;
 const deletedAtOf = (id: string) =>
   h.store.rows.find((r) => r.id === id)?.deleted_at;
+const completedAtOf = (id: string) =>
+  h.store.rows.find((r) => r.id === id)?.completed_at;
 
 beforeEach(() => h.reset());
 
@@ -282,6 +292,37 @@ describe("updateTaskStatus auto-complete", () => {
 
     expect(statusOf("root")).toBe("inbox");
   });
+
+  it("stamps completed_at on descendants and ancestors when a task is completed", async () => {
+    h.seed([
+      task({ id: "root" }),
+      task({ id: "parent", parent_task_id: "root" }),
+      task({ id: "child", parent_task_id: "parent" }),
+    ]);
+
+    await TaskRepository.updateTaskStatus("parent", "done");
+
+    expect(completedAtOf("parent")).not.toBeNull();
+    expect(completedAtOf("child")).not.toBeNull();
+    expect(completedAtOf("root")).not.toBeNull();
+  });
+
+  it("keeps an already-done descendant's original completed_at untouched", async () => {
+    h.seed([
+      task({ id: "root" }),
+      task({
+        id: "already-done",
+        parent_task_id: "root",
+        status: "done",
+        completed_at: "2026-01-01T00:00:00.000Z",
+      }),
+      task({ id: "sibling", parent_task_id: "root" }),
+    ]);
+
+    await TaskRepository.updateTaskStatus("sibling", "done");
+
+    expect(completedAtOf("already-done")).toBe("2026-01-01T00:00:00.000Z");
+  });
 });
 
 describe("updateTaskStatus revert-to-incomplete", () => {
@@ -296,6 +337,27 @@ describe("updateTaskStatus revert-to-incomplete", () => {
 
     expect(statusOf("parent")).toBe("todo");
     expect(statusOf("grandparent")).toBe("in_progress");
+  });
+
+  it("clears completed_at on the task and its reverted ancestors", async () => {
+    h.seed([
+      task({
+        id: "parent",
+        status: "done",
+        completed_at: "2026-01-01T00:00:00.000Z",
+      }),
+      task({
+        id: "child",
+        parent_task_id: "parent",
+        status: "done",
+        completed_at: "2026-01-01T00:00:00.000Z",
+      }),
+    ]);
+
+    await TaskRepository.updateTaskStatus("child", "todo");
+
+    expect(completedAtOf("child")).toBeNull();
+    expect(completedAtOf("parent")).toBeNull();
   });
 });
 

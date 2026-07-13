@@ -82,7 +82,9 @@ function completeDoneAncestors(tasks: Task[], parentId: string | null): Task[] {
     if (!parent) break;
 
     nextTasks = nextTasks.map((task) =>
-      task.id === currentParentId ? { ...task, status: "done" } : task,
+      task.id === currentParentId
+        ? { ...task, status: "done", completedAt: new Date().toISOString() }
+        : task,
     );
     currentParentId = parent.parentTaskId;
   }
@@ -99,7 +101,9 @@ function revertDoneAncestors(tasks: Task[], parentId: string | null): Task[] {
     if (!parent || parent.status !== "done") break;
 
     nextTasks = nextTasks.map((task) =>
-      task.id === currentParentId ? { ...task, status: "todo" } : task,
+      task.id === currentParentId
+        ? { ...task, status: "todo", completedAt: null }
+        : task,
     );
     currentParentId = parent.parentTaskId;
   }
@@ -109,8 +113,9 @@ function revertDoneAncestors(tasks: Task[], parentId: string | null): Task[] {
 
 function completeTaskDescendants(tasks: Task[], taskId: string): Task[] {
   const idsToComplete = new Set(descendantIds(tasks, taskId));
+  const completedAt = new Date().toISOString();
   return tasks.map((task) =>
-    idsToComplete.has(task.id) ? { ...task, status: "done" } : task,
+    idsToComplete.has(task.id) ? { ...task, status: "done", completedAt } : task,
   );
 }
 
@@ -204,6 +209,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         weekday: input.weekday ?? null,
         recurrenceTemplateId: null,
         occurrenceDate: null,
+        completedAt: null,
         deletedAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

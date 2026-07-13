@@ -21,6 +21,12 @@ export interface Task {
   weekday: Weekday | null;
   recurrenceTemplateId: string | null;
   occurrenceDate: string | null;
+  // Set the instant status transitions TO "done" (directly, or via a cascade
+  // completing a descendant/ancestor); cleared the instant it leaves "done".
+  // Added for Momentum's streak tracking (myhub_plan.md Part B, Phase 2) —
+  // updatedAt isn't usable for this since any later edit overwrites it, not
+  // just a completion.
+  completedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;

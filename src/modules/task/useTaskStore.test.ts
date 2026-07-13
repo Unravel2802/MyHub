@@ -44,6 +44,7 @@ function task(overrides: Partial<Task> & { id: string }): Task {
     weekday: overrides.weekday ?? null,
     recurrenceTemplateId: overrides.recurrenceTemplateId ?? null,
     occurrenceDate: overrides.occurrenceDate ?? null,
+    completedAt: overrides.completedAt ?? null,
     deletedAt: overrides.deletedAt ?? null,
     createdAt: overrides.createdAt ?? "2026-01-01T00:00:00.000Z",
     updatedAt: overrides.updatedAt ?? "2026-01-01T00:00:00.000Z",
@@ -233,7 +234,7 @@ describe("useTaskStore updateStatus", () => {
     await useTaskStore.getState().updateStatus("child", "done");
 
     expect(useTaskStore.getState().tasks).toEqual([
-      { ...parent, status: "done" },
+      { ...parent, status: "done", completedAt: expect.any(String) },
       updated,
     ]);
     expect(repository.getTasks).not.toHaveBeenCalled();
@@ -263,9 +264,9 @@ describe("useTaskStore updateStatus", () => {
     await useTaskStore.getState().updateStatus("parent", "done");
 
     expect(useTaskStore.getState().tasks).toEqual([
-      { ...root, status: "done" },
+      { ...root, status: "done", completedAt: expect.any(String) },
       updated,
-      { ...child, status: "done" },
+      { ...child, status: "done", completedAt: expect.any(String) },
     ]);
   });
 });
@@ -306,7 +307,7 @@ describe("useTaskStore moveTask", () => {
       .moveTask("child", { status: "done", position: 1 });
 
     expect(useTaskStore.getState().tasks).toEqual([
-      { ...parent, status: "done" },
+      { ...parent, status: "done", completedAt: expect.any(String) },
       moved,
     ]);
     expect(repository.getTasks).not.toHaveBeenCalled();
@@ -339,9 +340,9 @@ describe("useTaskStore moveTask", () => {
       .moveTask("parent", { status: "done", position: 1 });
 
     expect(useTaskStore.getState().tasks).toEqual([
-      { ...root, status: "done" },
+      { ...root, status: "done", completedAt: expect.any(String) },
       moved,
-      { ...child, status: "done" },
+      { ...child, status: "done", completedAt: expect.any(String) },
     ]);
   });
 

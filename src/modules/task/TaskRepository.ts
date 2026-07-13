@@ -29,6 +29,7 @@ interface TaskRow {
   weekday: Weekday | null;
   recurrence_template_id: string | null;
   occurrence_date: string | null;
+  completed_at: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -47,6 +48,7 @@ function fromRow(row: TaskRow): Task {
     weekday: row.weekday,
     recurrenceTemplateId: row.recurrence_template_id,
     occurrenceDate: row.occurrence_date,
+    completedAt: row.completed_at,
     deletedAt: row.deleted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -292,6 +294,10 @@ export async function moveTask(
     .update({
       position: changes.position,
       ...(changes.status !== undefined && { status: changes.status }),
+      ...(changes.status !== undefined && {
+        completed_at:
+          changes.status === "done" ? new Date().toISOString() : null,
+      }),
     })
     .eq("id", id)
     .select()
@@ -334,7 +340,10 @@ export async function updateTaskStatus(
 ): Promise<Task> {
   const { data, error } = await supabase
     .from("tasks")
-    .update({ status })
+    .update({
+      status,
+      completed_at: status === "done" ? new Date().toISOString() : null,
+    })
     .eq("id", id)
     .select()
     .single();
@@ -384,8 +393,12 @@ async function completeDescendants(taskId: string): Promise<void> {
 
   const { error } = await supabase
     .from("tasks")
-    .update({ status: "done" satisfies TaskStatus })
-    .in("id", descendantIds);
+    .update({
+      status: "done" satisfies TaskStatus,
+      completed_at: new Date().toISOString(),
+    })
+    .in("id", descendantIds)
+    .neq("status", "done" satisfies TaskStatus);
 
   if (error) throw error;
 }
@@ -406,7 +419,10 @@ async function autoCompleteAncestors(parentId: string): Promise<void> {
 
     const response = await supabase
       .from("tasks")
-      .update({ status: "done" satisfies TaskStatus })
+      .update({
+        status: "done" satisfies TaskStatus,
+        completed_at: new Date().toISOString(),
+      })
       .eq("id", currentParentId)
       .select("parent_task_id")
       .single();
@@ -436,7 +452,7 @@ async function revertAncestorsToIncomplete(parentId: string): Promise<void> {
 
     const { error: updateError } = await supabase
       .from("tasks")
-      .update({ status: "todo" satisfies TaskStatus })
+      .update({ status: "todo" satisfies TaskStatus, completed_at: null })
       .eq("id", currentParentId);
 
     if (updateError) throw updateError;

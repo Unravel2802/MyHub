@@ -63,6 +63,7 @@ function task(overrides: Partial<Task> & { id: string }): Task {
     weekday: overrides.weekday ?? null,
     recurrenceTemplateId: overrides.recurrenceTemplateId ?? null,
     occurrenceDate: overrides.occurrenceDate ?? null,
+    completedAt: overrides.completedAt ?? null,
     deletedAt: overrides.deletedAt ?? null,
     createdAt: overrides.createdAt ?? "2026-07-01T00:00:00.000Z",
     updatedAt: overrides.updatedAt ?? "2026-07-01T00:00:00.000Z",

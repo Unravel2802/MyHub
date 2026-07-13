@@ -4,6 +4,9 @@ Two small, independent, mechanical tasks. Neither touches a published contract o
 requires a schema decision, so both are safe to pick up whenever you have a gap
 between the module work above.
 
+**Update (2026-07-13): the backup script is done — see §2 below.** The query
+audit (§1) is still open and still yours.
+
 ## 1. Query audit (read-only — report, don't fix silently)
 
 There is currently **no Row Level Security** on any table, and no auth in the app
@@ -31,20 +34,23 @@ Output: a short markdown list (file, line, issue, one-line why) in
 `docs/handoff/query-audit-findings.md`. No code changes from this task — just the
 list. Claude Code will triage it against the eventual RLS/auth work.
 
-## 2. Backup/export script
+## 2. Backup/export script — done (2026-07-13)
 
-From `myhub_plan.md` §2.4: _"A 'dump everything to JSON/Markdown' script before
-trusting the app with real data."_ Pure I/O, no schema decisions, safe to build
-now even though most tables don't exist yet.
+`npm run backup` → `scripts/exportData.ts`. Dumps every module's active
+(non-`deleted_at`) rows to JSON, one file per table, into a gitignored
+`backups/<timestamp>/` directory. Skips a table gracefully (`PGRST205`) rather
+than failing the whole export if a migration hasn't been applied in a given
+environment yet. Smoke-tested against the real Supabase project.
 
-- A Node script (`scripts/export-data.ts` or similar — match whatever script
-  runner convention `package.json` already uses, don't invent a new one) that
-  connects with the Supabase client already in `src/lib/supabaseClient.ts` and
-  dumps every module's active (non-`deleted_at`) rows to JSON, one file per table,
-  into a gitignored `backups/<timestamp>/` directory.
-- Only export tables that exist at the time you run it — don't hardcode a table
-  list that breaks when Prep Tracker or Job CRM haven't been migrated in a given
-  environment yet. Introspect or just try/catch per table and skip missing ones.
-- Add an npm script (`"backup": "..."`) so it's a one-command habit, not a thing
-  that has to be remembered as a raw command.
-- No restore path needed yet — this is a safety net, not a migration tool.
+**Established, not "whatever convention already existed" — there wasn't one.**
+This was the first script in the repo, so it set the convention the two seed
+scripts (`docs/handoff/seed-scripts.md`) also use: `tsx` (added as a
+devDependency — flagging this since it's new, not previously on the approved
+list), `process.loadEnvFile(".env.local")` for env vars, dynamic `import()`
+inside `main()` rather than static top-level imports (needed so the env file
+loads *before* `src/lib/supabaseClient.ts` is evaluated — a static import
+would be hoisted ahead of the `loadEnvFile` call), and `export {};` at the
+bottom of every script file (otherwise TypeScript treats a file with no
+top-level import/export as a global script, and multiple scripts' top-level
+`main()` collide as duplicate global declarations). Follow this pattern for
+any future script rather than picking something new.

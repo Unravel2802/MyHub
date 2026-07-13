@@ -30,6 +30,9 @@ a "reasonable" alternative.
   anything you notice untested
 - Drag-and-drop: `@dnd-kit/*` (core, sortable, utilities) — approved and already load-bearing in
   the Kanban board; don't add a second DnD library
+- One-off scripts (`scripts/*.ts`, not application code): `tsx` — added 2026-07-13 for the seed
+  and backup scripts. Follow the convention those scripts already establish (see
+  `docs/handoff/rls-audit-and-backup-script.md`) rather than picking a different runner.
 
 ## What You Own
 

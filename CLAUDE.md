@@ -32,6 +32,9 @@ rather than picking a "reasonable" alternative.
 - Testing: Playwright (E2E), Vitest (unit)
 - Drag-and-drop: `@dnd-kit/*` (core, sortable, utilities) — approved and already load-bearing in
   the Kanban board; don't add a second DnD library
+- One-off scripts (`scripts/*.ts`, not application code): `tsx` — added 2026-07-13 for the seed
+  and backup scripts. Follow the convention those scripts already establish (see
+  `docs/handoff/rls-audit-and-backup-script.md`) rather than picking a different runner.
 
 This list is shared with Codex via `AGENTS.md`. If you need to approve a new dependency, update
 both files in the same commit so the two agents never diverge on tooling.

@@ -7,12 +7,12 @@ test("updates offer scores and highlights a unique leader", async ({
   const offers = page.getByRole("article");
   await expect(offers).toHaveCount(2);
   await expect(page.getByText("Don't choose on salary alone.")).toBeVisible();
-  await expect(offers.nth(0).getByText("5.0", { exact: true })).toBeVisible();
+  await expect(offers.nth(0).locator("p").first()).toContainText("5.0");
   await offers
     .nth(0)
     .getByRole("combobox", { name: "Learning rate" })
     .selectOption("10");
-  await expect(offers.nth(0).getByText("6.0", { exact: true })).toBeVisible();
+  await expect(offers.nth(0).locator("p").first()).toContainText("6.0");
   await expect(
     offers.nth(0).getByText("Leader", { exact: true }),
   ).toBeVisible();

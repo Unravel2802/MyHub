@@ -65,8 +65,15 @@ export function WeeklyReview() {
   const [quarterlyAnswers, setQuarterlyAnswers] = useState<QuarterlyAnswers>(
     {},
   );
-  const today = new Date();
-  const currentWeek = weekStartKeyOf(today);
+  const [today, setToday] = useState<Date | null>(null);
+  useEffect(() => {
+    // Read the browser clock after hydration so boundary-week rendering is
+    // deterministic when the UI test freezes time.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setToday(new Date());
+  }, []);
+  const effectiveToday = today ?? new Date();
+  const currentWeek = weekStartKeyOf(effectiveToday);
   const existingReview = store.reviewForWeek(currentWeek);
   const { fetchReviews } = store;
 
@@ -88,11 +95,11 @@ export function WeeklyReview() {
 
   async function save() {
     await store.saveReview({
-      today: new Date(),
+      today: effectiveToday,
       wentWell: wentWell.trim() || null,
       needsWork: needsWork.trim() || null,
       nextWeekFix: nextWeekFix.trim() || null,
-      quarterlyAnswers: store.isQuarterBoundary(new Date())
+      quarterlyAnswers: store.isQuarterBoundary(effectiveToday)
         ? quarterlyAnswers
         : null,
     });
@@ -155,7 +162,7 @@ export function WeeklyReview() {
             />
           </label>
 
-          {store.isQuarterBoundary(new Date()) ? (
+          {today && store.isQuarterBoundary(today) ? (
             <fieldset className="grid gap-4 border-t border-border pt-4">
               <legend className="text-lg font-semibold">
                 Quarterly questions

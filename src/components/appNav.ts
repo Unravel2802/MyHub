@@ -20,4 +20,5 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/applications", label: "Job CRM" },
   { href: "/outreach", label: "Outreach Log" },
   { href: "/achievements", label: "Achievements" },
+  { href: "/review", label: "Weekly Review" },
 ];

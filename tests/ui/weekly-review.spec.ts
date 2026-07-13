@@ -28,7 +28,14 @@ test("saves a review and upserts the same week", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Week of 2026-07-13" }),
   ).toHaveCount(1);
-  await expect(page.getByText("Shipped it and documented it")).toBeVisible();
+  // Scope to the saved-review article. An unscoped getByText also matches the
+  // form's <textarea>, whose re-hydrated value holds the same string — and
+  // whether both are in the DOM when this runs is a timing race, so unscoped
+  // this passes alone and fails intermittently under full-suite load. What we
+  // actually mean to assert is that the PERSISTED review shows the new text.
+  await expect(
+    page.getByRole("article").filter({ hasText: "Week of 2026-07-13" }),
+  ).toContainText("Shipped it and documented it");
 });
 
 // Assert on a question's own text, not on the "Quarterly questions" caption.

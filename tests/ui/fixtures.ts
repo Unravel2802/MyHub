@@ -2,6 +2,7 @@ import { test as base } from "@playwright/test";
 
 export { expect } from "@playwright/test";
 
+process.loadEnvFile(".env.local");
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 if (!supabaseUrl)
   throw new Error("NEXT_PUBLIC_SUPABASE_URL is required for UI auth fixtures");

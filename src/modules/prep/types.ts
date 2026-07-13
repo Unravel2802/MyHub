@@ -3,7 +3,8 @@ export type PrepEntryType =
   | "system_design"
   | "ml_system_design"
   | "behavioral"
-  | "mock_interview";
+  | "mock_interview"
+  | "resume_deep_dive";
 
 // Outcomes are scoped to the entry type they describe, and the DB enforces it
 // (see migration 0003): algorithm entries are solved/partial/failed, everything
@@ -11,6 +12,13 @@ export type PrepEntryType =
 export type AlgorithmOutcome = "solved" | "partial" | "failed";
 export type SessionOutcome = "pass" | "needs_work";
 export type PrepOutcome = AlgorithmOutcome | SessionOutcome;
+
+// Which kind of mock interview (roadmap §6.5's month-by-month targets are
+// per-subtype). Only meaningful on entryType: "mock_interview" (migration 0008
+// CHECKs this); null means "logged before subtypes existed, or logged without
+// picking one" — it still counts toward the combined mock target, never
+// silently dropped (see prepTargets.ts's mockSubtypeProgress).
+export type MockSubtype = "coding" | "system_design" | "ml_system_design";
 
 export interface PrepEntry {
   id: string;
@@ -22,6 +30,7 @@ export interface PrepEntry {
   // Algorithm entries only — the roadmap tracks average time-to-solve (§6.1).
   timeToSolveMin: number | null;
   outcome: PrepOutcome | null;
+  mockSubtype: MockSubtype | null;
   // The post-mortem / reflection.
   notes: string | null;
   deletedAt: string | null;

@@ -78,6 +78,9 @@ function applyEntryUpdates(
       timeToSolveMin: updates.timeToSolveMin,
     }),
     ...(updates.outcome !== undefined && { outcome: updates.outcome }),
+    ...(updates.mockSubtype !== undefined && {
+      mockSubtype: updates.mockSubtype,
+    }),
     ...(updates.notes !== undefined && { notes: updates.notes }),
   };
 }
@@ -134,6 +137,7 @@ export const usePrepStore = create<PrepStore>((set, get) => {
         durationMin: input.durationMin ?? null,
         timeToSolveMin: input.timeToSolveMin ?? null,
         outcome: input.outcome ?? null,
+        mockSubtype: input.mockSubtype ?? null,
         notes: input.notes ?? null,
         deletedAt: null,
         createdAt: now,

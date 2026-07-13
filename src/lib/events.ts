@@ -6,7 +6,8 @@ type PrepType =
   | "system_design"
   | "ml_system_design"
   | "behavioral"
-  | "mock_interview";
+  | "mock_interview"
+  | "resume_deep_dive";
 
 type ApplicationStage =
   | "researching"

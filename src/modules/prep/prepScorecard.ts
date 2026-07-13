@@ -28,6 +28,7 @@ const EMPTY_COUNTS: CountsByType = {
   ml_system_design: 0,
   behavioral: 0,
   mock_interview: 0,
+  resume_deep_dive: 0,
 };
 
 // yyyy-MM of a yyyy-MM-dd date string. String-sliced rather than parsed: these

@@ -13,6 +13,7 @@ const labels = {
   ml_system_design: "ML system design",
   behavioral: "Behavioral",
   mock_interview: "Mock interview",
+  resume_deep_dive: "Resume deep-dive",
 };
 
 export function PrepEntryList({

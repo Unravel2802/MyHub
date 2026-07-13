@@ -16,6 +16,7 @@ function entry(overrides: Partial<PrepEntry> & { id: string }): PrepEntry {
     durationMin: null,
     timeToSolveMin: null,
     outcome: null,
+    mockSubtype: null,
     notes: null,
     deletedAt: null,
     createdAt: "2026-07-08T00:00:00.000Z",
@@ -60,6 +61,7 @@ describe("scorecardFor", () => {
       ml_system_design: 0,
       behavioral: 0,
       mock_interview: 1,
+      resume_deep_dive: 0,
     });
   });
 

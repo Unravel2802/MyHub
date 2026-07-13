@@ -3,6 +3,7 @@ import {
   activeCheckpoint,
   DECEMBER_2026_CHECKPOINT,
   FEBRUARY_2027_CHECKPOINT,
+  mockSubtypeProgress,
   progressTowardCheckpoint,
 } from "@/src/modules/prep/prepTargets";
 import type { PrepEntry } from "@/src/modules/prep/types";
@@ -16,6 +17,7 @@ function entry(
     durationMin: null,
     timeToSolveMin: null,
     outcome: null,
+    mockSubtype: null,
     notes: null,
     deletedAt: null,
     createdAt: "2026-08-01T00:00:00.000Z",
@@ -86,5 +88,72 @@ describe("progressTowardCheckpoint", () => {
     const progress = progressTowardCheckpoint(entries, DECEMBER_2026_CHECKPOINT);
 
     expect(progress.algorithm.actual).toBe(40);
+  });
+});
+
+describe("mockSubtypeProgress", () => {
+  it("returns null when the checkpoint has no per-subtype targets", () => {
+    expect(mockSubtypeProgress([], FEBRUARY_2027_CHECKPOINT)).toBeNull();
+  });
+
+  it("splits mock counts by subtype against December's per-subtype targets", () => {
+    const entries = [
+      ...Array.from({ length: 4 }, (_, i) =>
+        entry({
+          id: `coding-${i}`,
+          entryType: "mock_interview",
+          mockSubtype: "coding",
+        }),
+      ),
+      ...Array.from({ length: 2 }, (_, i) =>
+        entry({
+          id: `system-design-${i}`,
+          entryType: "mock_interview",
+          mockSubtype: "system_design",
+        }),
+      ),
+      entry({
+        id: "ml-1",
+        entryType: "mock_interview",
+        mockSubtype: "ml_system_design",
+      }),
+    ];
+
+    const progress = mockSubtypeProgress(entries, DECEMBER_2026_CHECKPOINT);
+
+    expect(progress).not.toBeNull();
+    expect(progress!.bySubtype.coding).toEqual({
+      actual: 4,
+      target: 6,
+      progress: 4 / 6,
+    });
+    expect(progress!.bySubtype.system_design).toEqual({
+      actual: 2,
+      target: 6,
+      progress: 2 / 6,
+    });
+    expect(progress!.bySubtype.ml_system_design).toEqual({
+      actual: 1,
+      target: 2,
+      progress: 0.5,
+    });
+    expect(progress!.unclassified).toBe(0);
+  });
+
+  it("counts legacy NULL-subtype mocks as unclassified, not silently toward a subtype", () => {
+    const entries = [
+      entry({
+        id: "classified",
+        entryType: "mock_interview",
+        mockSubtype: "coding",
+      }),
+      entry({ id: "legacy-1", entryType: "mock_interview", mockSubtype: null }),
+      entry({ id: "legacy-2", entryType: "mock_interview", mockSubtype: null }),
+    ];
+
+    const progress = mockSubtypeProgress(entries, DECEMBER_2026_CHECKPOINT);
+
+    expect(progress!.bySubtype.coding.actual).toBe(1);
+    expect(progress!.unclassified).toBe(2);
   });
 });

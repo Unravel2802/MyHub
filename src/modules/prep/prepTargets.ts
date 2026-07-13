@@ -1,27 +1,16 @@
 import { cumulativeCountsByType } from "@/src/modules/prep/prepScorecard";
-import type { PrepEntry } from "@/src/modules/prep/types";
+import type { MockSubtype, PrepEntry } from "@/src/modules/prep/types";
 
 // Roadmap checkpoint targets (engineering_first_roadmap_v2.md §6.5, §18),
 // added 2026-07-13 once the actual file — not fragments — landed in the repo.
 //
-// Scope note: only the two checkpoints with UNAMBIGUOUS, directly-schema-
-// mappable numbers are encoded here. Two things from the roadmap are
-// deliberately NOT encoded, and this is a judgment call worth flagging rather
-// than silently forcing a fit:
-//   - §11.3's interview-prep time allocation (Algorithms 35% / System design
-//     25% / Behavioral 15% / ML systems 15% / Resume-deep-dive 10%) doesn't
-//     map cleanly onto PrepEntryType: "Resume/project deep-dive" isn't a
-//     logged entry type at all, and "mock_interview" entries aren't in the
-//     allocation table. Building this would mean inventing a mapping the
-//     roadmap doesn't specify — flag to the Lead Architect if this is wanted.
-//   - The roadmap's month-by-month "mock" targets (e.g. November: "two coding
-//     mocks, two system-design mocks, one ML-system-design mock") assume a
-//     mock-interview SUBTYPE (coding vs. system-design vs. ML-system-design)
-//     that PrepEntries doesn't capture — `entry_type: "mock_interview"` is one
-//     bucket with a free-text `topic`, not a structured subtype. The December
-//     checkpoint below uses a single COMBINED mock-interview target for this
-//     reason (6 + 6 + 2 from §6.5's semester review, summed) rather than
-//     three separate untrackable numbers.
+// Update (Wave 2 Phase 3, migration 0008): mock_interview entries can now
+// carry a MockSubtype (coding / system_design / ml_system_design), so the
+// per-subtype December targets below are trackable — see bySubtype and
+// mockSubtypeProgress. §11.3's time-allocation percentages are still handled
+// separately, in prepAllocation.ts, not here: allocation is a % of logged
+// time across ALL entry types (including the new resume_deep_dive), which is
+// a different shape of question than "how many of each thing have I done."
 
 export interface CumulativeCheckpoint {
   label: string;
@@ -30,8 +19,12 @@ export interface CumulativeCheckpoint {
   algorithm: { min: number; max?: number };
   systemDesign: { min: number };
   mlSystemDesign: { min: number };
-  // Combined across mock subtypes — see the scope note above.
+  // Combined across mock subtypes, kept for the pre-Phase-3 combined view.
   mockInterview: { min: number };
+  // Per-subtype breakdown of the same checkpoint. Optional: only December's
+  // checkpoint has a stated per-subtype split (§6.5's semester review); the
+  // February checkpoint doesn't restate the mocks, so it has none.
+  bySubtype?: Record<MockSubtype, number>;
 }
 
 // §6.5 December "semester review": target ranges/counts are as stated in the
@@ -43,6 +36,7 @@ export const DECEMBER_2026_CHECKPOINT: CumulativeCheckpoint = {
   systemDesign: { min: 6 },
   mlSystemDesign: { min: 2 },
   mockInterview: { min: 14 }, // 6 coding + 6 system-design + 2 ML-system-design
+  bySubtype: { coding: 6, system_design: 6, ml_system_design: 2 },
 };
 
 // §6.5 February "Technical targets by end of February".
@@ -113,4 +107,48 @@ export function activeCheckpoint(today: string): CumulativeCheckpoint {
     return DECEMBER_2026_CHECKPOINT;
   }
   return FEBRUARY_2027_CHECKPOINT;
+}
+
+export interface MockSubtypeProgress {
+  checkpoint: CumulativeCheckpoint;
+  bySubtype: Record<MockSubtype, TargetProgress>;
+  // Mocks logged with no subtype (pre-Phase-3 rows, or logged without picking
+  // one). They already count toward `mockInterview` in progressTowardCheckpoint
+  // — surfaced here separately so the UI can show "n unclassified mocks"
+  // instead of silently crediting them to a subtype they were never assigned
+  // to.
+  unclassified: number;
+}
+
+// Per-subtype counterpart to progressTowardCheckpoint's combined mockInterview
+// number. Returns null when the checkpoint has no per-subtype targets (only
+// December's does — see CumulativeCheckpoint.bySubtype).
+export function mockSubtypeProgress(
+  entries: PrepEntry[],
+  checkpoint: CumulativeCheckpoint,
+): MockSubtypeProgress | null {
+  if (!checkpoint.bySubtype) return null;
+
+  const mocks = entries.filter(
+    (entry) =>
+      !entry.deletedAt &&
+      entry.entryType === "mock_interview" &&
+      entry.date <= checkpoint.throughDate,
+  );
+
+  const countFor = (subtype: MockSubtype) =>
+    mocks.filter((entry) => entry.mockSubtype === subtype).length;
+
+  const bySubtype = Object.fromEntries(
+    (Object.keys(checkpoint.bySubtype) as MockSubtype[]).map((subtype) => [
+      subtype,
+      progressFor(countFor(subtype), checkpoint.bySubtype![subtype]),
+    ]),
+  ) as Record<MockSubtype, TargetProgress>;
+
+  const unclassified = mocks.filter(
+    (entry) => entry.mockSubtype === null,
+  ).length;
+
+  return { checkpoint, bySubtype, unclassified };
 }

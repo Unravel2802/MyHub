@@ -29,6 +29,7 @@ function entry(overrides: Partial<PrepEntry> & { id: string }): PrepEntry {
     durationMin: null,
     timeToSolveMin: null,
     outcome: null,
+    mockSubtype: null,
     notes: null,
     deletedAt: null,
     createdAt: "2026-07-12T00:00:00.000Z",

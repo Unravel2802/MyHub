@@ -113,6 +113,7 @@ function prepEntry(overrides: Partial<PrepEntry> & { id: string }): PrepEntry {
     durationMin: overrides.durationMin ?? 45,
     timeToSolveMin: overrides.timeToSolveMin ?? 30,
     outcome: overrides.outcome ?? "solved",
+    mockSubtype: overrides.mockSubtype ?? null,
     notes: overrides.notes ?? null,
     deletedAt: overrides.deletedAt ?? null,
     createdAt: overrides.createdAt ?? "2026-07-13T00:00:00.000Z",

@@ -1,5 +1,6 @@
 import type {
   BehavioralStory,
+  MockSubtype,
   PrepEntry,
   PrepEntryType,
   PrepOutcome,
@@ -15,6 +16,7 @@ interface PrepEntryRow {
   duration_min: number | null;
   time_to_solve_min: number | null;
   outcome: PrepOutcome | null;
+  mock_subtype: MockSubtype | null;
   notes: string | null;
   deleted_at: string | null;
   created_at: string;
@@ -41,6 +43,7 @@ function entryFromRow(row: PrepEntryRow): PrepEntry {
     durationMin: row.duration_min,
     timeToSolveMin: row.time_to_solve_min,
     outcome: row.outcome,
+    mockSubtype: row.mock_subtype,
     notes: row.notes,
     deletedAt: row.deleted_at,
     createdAt: row.created_at,
@@ -73,6 +76,9 @@ function entryWrite(input: Partial<CreatePrepEntryInput>) {
       time_to_solve_min: input.timeToSolveMin,
     }),
     ...(input.outcome !== undefined && { outcome: input.outcome }),
+    ...(input.mockSubtype !== undefined && {
+      mock_subtype: input.mockSubtype,
+    }),
     ...(input.notes !== undefined && { notes: input.notes }),
   };
 }
@@ -110,6 +116,10 @@ export interface CreatePrepEntryInput {
   // The DB rejects an outcome that doesn't match the entry type: algorithm entries
   // are solved/partial/failed, everything else is pass/needs_work.
   outcome?: PrepOutcome | null;
+  // mock_interview entries only. The DB rejects it on any other entry type
+  // (migration 0008). Legacy/undifferentiated mocks stay null on purpose —
+  // see MockSubtype's doc comment.
+  mockSubtype?: MockSubtype | null;
   notes?: string | null;
 }
 

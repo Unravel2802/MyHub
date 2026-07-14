@@ -3,12 +3,17 @@
 import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/src/components/AppShell";
+import { StatCard } from "@/src/components/ui/StatCard";
 import { BehavioralStories } from "@/src/modules/prep/components/BehavioralStories";
 import { PrepEntryForm } from "@/src/modules/prep/components/PrepEntryForm";
 import { PrepEntryList } from "@/src/modules/prep/components/PrepEntryList";
 import { PrepScorecard } from "@/src/modules/prep/components/PrepScorecard";
 import { TimeAllocationPanel } from "@/src/modules/prep/components/TimeAllocationPanel";
 import { usePrepStore } from "@/src/modules/prep/usePrepStore";
+import {
+  activeCheckpoint,
+  progressTowardCheckpoint,
+} from "@/src/modules/prep/prepTargets";
 
 export function PrepTracker() {
   const {
@@ -32,6 +37,8 @@ export function PrepTracker() {
   const pending = useMemo(() => new Set(pendingIds), [pendingIds]);
   const monthlyScorecard = scorecard(month);
   const topics = weakestTopics(3, month);
+  const checkpoint = activeCheckpoint(format(new Date(), "yyyy-MM-dd"));
+  const checkpointProgress = progressTowardCheckpoint(entries, checkpoint);
 
   useEffect(() => {
     void Promise.all([fetchEntries(), fetchStories()]);
@@ -72,12 +79,22 @@ export function PrepTracker() {
         </header>
 
         {error ? (
-          <p className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger">
+          <p
+            aria-live="assertive"
+            className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
 
         <div className="grid gap-6">
+          <StatCard
+            hint={`${checkpointProgress.algorithm.actual}/${checkpointProgress.algorithm.target} algorithms · ${checkpointProgress.systemDesign.actual}/${checkpointProgress.systemDesign.target} system design`}
+            label={checkpoint.label}
+            size="hero"
+            value={`${Math.round(Math.min(checkpointProgress.algorithm.progress, 1) * 100)}%`}
+          />
           <div className="grid content-start gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <PrepScorecard
               entries={entries}
@@ -96,7 +113,7 @@ export function PrepTracker() {
             pendingIds={pending}
             stories={stories}
           />
-          <details className="rounded-lg border border-border bg-surface" open>
+          <details className="rounded-lg border border-border bg-surface">
             <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
               Log a prep session
             </summary>

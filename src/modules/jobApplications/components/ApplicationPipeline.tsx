@@ -176,7 +176,7 @@ function Column({
   return (
     <section
       aria-label={stage.label}
-      className={`min-h-48 rounded-lg border border-border bg-surface-subtle p-3 ${isOver ? "border-accent" : ""}`}
+      className={`min-h-32 rounded-lg border border-border bg-surface-subtle p-3 ${isOver ? "border-accent" : ""}`}
       ref={setNodeRef}
     >
       <div className="mb-3 flex items-center justify-between">
@@ -184,6 +184,11 @@ function Column({
         <span className="text-xs text-muted">{applications.length}</span>
       </div>
       <div className="grid gap-3">
+        {applications.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border px-2 py-4 text-center text-xs text-muted">
+            Drag an application here when it reaches this stage.
+          </p>
+        ) : null}
         {applications.map((application) => (
           <Card
             application={application}
@@ -231,7 +236,7 @@ export function ApplicationPipeline({
         Application pipeline
       </h2>
       <DndContext onDragEnd={dragEnd} sensors={sensors}>
-        <div className="grid min-w-[1800px] grid-cols-8 gap-3">
+        <div className="grid w-max min-w-full grid-cols-8 gap-3">
           {stages.map((stage) => (
             <Column
               applications={applications.filter(

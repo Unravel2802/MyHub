@@ -19,6 +19,7 @@ export function UnlockToaster() {
   if (pendingToasts.length === 0) return null;
   return (
     <div
+      aria-live="polite"
       aria-label="Achievement unlocks"
       className="fixed bottom-4 right-4 z-50 grid w-80 gap-2"
     >

@@ -1,13 +1,13 @@
 "use client";
 
 import { AppShell } from "@/src/components/AppShell";
-import { Badge } from "@/src/components/ui/Badge";
 import { StatCard } from "@/src/components/ui/StatCard";
 import {
   ACHIEVEMENTS,
   ACHIEVEMENT_COUNT,
 } from "@/src/modules/momentum/achievementCatalog";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
+import { AchievementCard } from "@/src/modules/momentum/components/AchievementCard";
 
 const categories = ["prep", "career", "consistency"] as const;
 
@@ -29,6 +29,7 @@ export function AchievementsPage() {
               the eye to nothing and reads as celebrating it. */}
           <StatCard
             label="Current streak"
+            size="hero"
             tone={streak.current > 0 ? "accent" : "default"}
             value={`${streak.current} days`}
             hint={
@@ -61,38 +62,11 @@ export function AchievementsPage() {
                   (achievement) => {
                     const unlock = unlockedByKey.get(achievement.key);
                     return (
-                      <article
-                        className={`rounded-lg border p-4 transition-colors ${
-                          unlock
-                            ? "border-success-border bg-success-surface"
-                            : "border-border bg-surface-subtle"
-                        }`}
+                      <AchievementCard
+                        achievement={achievement}
                         key={achievement.key}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <h4
-                            className={
-                              unlock
-                                ? "font-semibold text-foreground"
-                                : "font-semibold text-body"
-                            }
-                          >
-                            {achievement.title}
-                          </h4>
-                          {/* The category badge was redundant — these cards are
-                              already grouped under a category heading. Only say
-                              something when there's something to say. */}
-                          {unlock ? <Badge tone="success">Unlocked</Badge> : null}
-                        </div>
-                        <p className="mt-2 text-sm text-muted">
-                          {achievement.description}
-                        </p>
-                        <p className="mt-3 text-xs text-muted">
-                          {unlock
-                            ? `Unlocked ${new Date(unlock.unlockedAt).toLocaleDateString()}`
-                            : achievement.source}
-                        </p>
-                      </article>
+                        unlock={unlock}
+                      />
                     );
                   },
                 )}

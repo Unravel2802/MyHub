@@ -71,7 +71,11 @@ export function JobApplicationCrm() {
           </button>
         </header>
         {store.error ? (
-          <p className="mx-4 mt-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger sm:mx-6 lg:mx-8">
+          <p
+            aria-live="assertive"
+            className="mx-4 mt-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger sm:mx-6 lg:mx-8"
+            role="alert"
+          >
             {store.error}
           </p>
         ) : null}
@@ -90,10 +94,7 @@ export function JobApplicationCrm() {
           </div>
         </div>
 
-        <details
-          className="mx-4 mb-6 rounded-lg border border-border bg-surface sm:mx-6 lg:mx-8"
-          open
-        >
+        <details className="mx-4 mb-6 rounded-lg border border-border bg-surface sm:mx-6 lg:mx-8">
           <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
             Add to your pipeline
           </summary>

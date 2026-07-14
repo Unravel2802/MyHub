@@ -2,58 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/src/components/AppShell";
-import { StatCard } from "@/src/components/ui/StatCard";
 import {
   QUARTERLY_QUESTIONS,
   weekStartKeyOf,
 } from "@/src/modules/review/reviewLogic";
 import type { QuarterlyAnswers } from "@/src/modules/review/types";
 import { useReviewStore } from "@/src/modules/review/useReviewStore";
-
-function targetLabel(target: { min: number; max?: number }) {
-  return target.max ? `${target.min}-${target.max}` : `${target.min}`;
-}
-
-function SnapshotStats({
-  snapshot,
-}: {
-  snapshot: ReturnType<typeof useReviewStore.getState>["currentSnapshot"];
-}) {
-  if (!snapshot) return null;
-  return (
-    <div className="grid gap-3 sm:grid-cols-3">
-      <StatCard
-        label="Applications"
-        value={snapshot.cadence.applications.count}
-        hint={`Target ${targetLabel(snapshot.cadence.applications.target)}`}
-      />
-      <StatCard
-        label="Outreach"
-        value={snapshot.cadence.outreach.count}
-        hint={`Target ${targetLabel(snapshot.cadence.outreach.target)}`}
-      />
-      <StatCard
-        label="Mock interviews"
-        value={snapshot.cadence.mockInterviews.count}
-        hint={`Target ${targetLabel(snapshot.cadence.mockInterviews.target)}`}
-      />
-      <StatCard
-        label="Algorithms"
-        value={snapshot.scorecard.solved}
-        hint={`${snapshot.scorecard.attempted} attempted`}
-      />
-      <StatCard
-        label="System design"
-        value={snapshot.scorecard.countsByType.system_design}
-      />
-      <StatCard
-        label="Checkpoint"
-        value={`${snapshot.checkpoint.algorithm.actual}/${snapshot.checkpoint.algorithm.target}`}
-        hint={snapshot.checkpoint.checkpoint.label}
-      />
-    </div>
-  );
-}
+import { ReviewSnapshotStats } from "@/src/modules/review/components/ReviewSnapshotStats";
 
 export function WeeklyReview() {
   const store = useReviewStore();
@@ -117,14 +72,18 @@ export function WeeklyReview() {
         </header>
 
         {store.error ? (
-          <p className="mt-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger">
+          <p
+            aria-live="assertive"
+            className="mt-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
+            role="alert"
+          >
             {store.error}
           </p>
         ) : null}
 
         <div className="mt-6 grid gap-3">
           <h3 className="text-xl font-semibold">This week</h3>
-          <SnapshotStats snapshot={store.currentSnapshot} />
+          <ReviewSnapshotStats snapshot={store.currentSnapshot} />
         </div>
 
         <form
@@ -211,7 +170,7 @@ export function WeeklyReview() {
               >
                 <div>
                   <h4 className="font-semibold">Week of {review.weekStart}</h4>
-                  <SnapshotStats snapshot={review.snapshot} />
+                  <ReviewSnapshotStats snapshot={review.snapshot} />
                 </div>
                 <div className="grid gap-2 text-sm">
                   {review.wentWell ? (

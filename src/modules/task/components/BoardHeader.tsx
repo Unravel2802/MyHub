@@ -145,7 +145,11 @@ export function BoardHeader({
       </div>
 
       {error ? (
-        <p className="mt-4 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger">
+        <p
+          aria-live="assertive"
+          className="mt-4 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
@@ -178,7 +182,12 @@ export function BoardHeader({
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {stats.map((stat) => (
-          <StatCard key={stat.label} label={stat.label} value={stat.value} />
+          <StatCard
+            key={stat.label}
+            label={stat.label}
+            size={stat.label === "Open tasks" ? "hero" : "default"}
+            value={stat.value}
+          />
         ))}
       </div>
 

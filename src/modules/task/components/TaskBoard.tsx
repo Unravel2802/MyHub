@@ -1,26 +1,18 @@
 "use client";
 
 import {
-  closestCorners,
-  CollisionDetection,
-  DndContext,
   DragEndEvent,
-  DragOverlay,
   DragStartEvent,
   KeyboardSensor,
   PointerSensor,
-  pointerWithin,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/src/components/AppShell";
-import { BoardColumn } from "@/src/modules/task/components/BoardColumn";
-import { BoardHeader } from "@/src/modules/task/components/BoardHeader";
 import {
   filterVisibleTasks,
-  formatDueDate,
   getDropPosition,
   getTaskStats,
   getTaskStatus,
@@ -33,16 +25,8 @@ import { canAddSubtask, taskDepth } from "@/src/modules/task/taskTree";
 import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
 import { useTaskStore } from "@/src/modules/task/useTaskStore";
 import { archivedTasks, boardTasks } from "@/src/modules/task/taskArchive";
-import { TaskArchive } from "@/src/modules/task/components/TaskArchive";
+import { TaskBoardCanvas } from "@/src/modules/task/components/TaskBoardCanvas";
 import { format } from "date-fns";
-
-// Prefer whatever droppable the pointer is actually inside (so empty columns
-// receive drops reliably); fall back to closest-corners for keyboard drags,
-// where there is no pointer position.
-const boardCollisionDetection: CollisionDetection = (args) => {
-  const withinPointer = pointerWithin(args);
-  return withinPointer.length > 0 ? withinPointer : closestCorners(args);
-};
 
 export function TaskBoard() {
   const {
@@ -244,88 +228,46 @@ export function TaskBoard() {
 
   return (
     <AppShell activeHref="/" title="Task Engine">
-      <section className="flex min-w-0 flex-col">
-        <BoardHeader
-          columnFilters={columnFilters}
-          error={error}
-          isBusy={isBusy}
-          newTaskTitle={newTaskTitle}
-          newTaskRecursWeekly={newTaskRecursWeekly}
-          newTaskWeekday={newTaskWeekday}
-          disabledTemplateIds={pendingTaskIds}
-          onCreateTask={handleCreateTask}
-          onDeleteTemplate={handleDeleteTemplate}
-          onRefresh={() => void fetchTasks()}
-          onRecursWeeklyChange={setNewTaskRecursWeekly}
-          onSearchChange={setSearchTerm}
-          onTitleChange={setNewTaskTitle}
-          onToggleColumn={handleToggleColumn}
-          onWeekdayChange={setNewTaskWeekday}
-          searchTerm={searchTerm}
-          stats={stats}
-          templates={templates}
-        />
-
-        <div className="flex-1 overflow-x-auto p-4 sm:p-6">
-          <DndContext
-            collisionDetection={boardCollisionDetection}
-            onDragCancel={() => setActiveTask(null)}
-            onDragEnd={(event) => void handleDragEnd(event)}
-            onDragStart={handleDragStart}
-            sensors={sensors}
-          >
-            <div
-              aria-label="Board columns"
-              className="grid gap-4"
-              role="group"
-              style={{
-                gridTemplateColumns: `repeat(${visibleColumns.length}, minmax(0, 1fr))`,
-                minWidth: `${visibleColumns.length * 280}px`,
-              }}
-            >
-              {visibleColumns.map((column) => (
-                <BoardColumn
-                  key={column.status}
-                  canAddSubtaskIds={canAddSubtaskIds}
-                  childCounts={childCounts}
-                  column={column}
-                  depths={depths}
-                  disabledTaskIds={pendingTaskIds}
-                  isCreating={isCreating}
-                  isLoading={isLoading}
-                  onCreateSubtask={handleCreateSubtask}
-                  onArchiveTask={handleArchiveTask}
-                  onDeleteTask={handleDeleteTask}
-                  onUpdateDueDate={handleUpdateDueDate}
-                  onUpdateStatus={handleUpdateStatus}
-                  onUpdateTitle={handleUpdateTitle}
-                  tasks={tasksByStatus[column.status]}
-                />
-              ))}
-            </div>
-
-            <DragOverlay>
-              {activeTask ? (
-                <div className="rounded-md border border-accent bg-surface p-4 shadow-lg">
-                  <p className="text-sm font-semibold text-foreground">
-                    {activeTask.title}
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    {formatDueDate(activeTask.dueDate)}
-                  </p>
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-
-          <TaskArchive
-            onDelete={handleDeleteTask}
-            onReopen={handleReopenTask}
-            pendingIds={pendingTaskIds}
-            tasks={archived}
-          />
-        </div>
-      </section>
+      <TaskBoardCanvas
+        activeTask={activeTask}
+        archived={archived}
+        canAddSubtaskIds={canAddSubtaskIds}
+        childCounts={childCounts}
+        columnFilters={columnFilters}
+        depths={depths}
+        error={error}
+        isBusy={isBusy}
+        isCreating={isCreating}
+        isLoading={isLoading}
+        newTaskRecursWeekly={newTaskRecursWeekly}
+        newTaskTitle={newTaskTitle}
+        newTaskWeekday={newTaskWeekday}
+        pendingTaskIds={pendingTaskIds}
+        searchTerm={searchTerm}
+        sensors={sensors}
+        stats={stats}
+        tasksByStatus={tasksByStatus}
+        templates={templates}
+        visibleColumns={visibleColumns}
+        onCreateSubtask={handleCreateSubtask}
+        onCreateTask={handleCreateTask}
+        onDeleteTask={handleDeleteTask}
+        onDeleteTemplate={handleDeleteTemplate}
+        onDragCancel={() => setActiveTask(null)}
+        onDragEnd={(event) => void handleDragEnd(event)}
+        onDragStart={handleDragStart}
+        onArchiveTask={handleArchiveTask}
+        onRefresh={() => void fetchTasks()}
+        onRecursWeeklyChange={setNewTaskRecursWeekly}
+        onReopenTask={handleReopenTask}
+        onSearchChange={setSearchTerm}
+        onTitleChange={setNewTaskTitle}
+        onToggleColumn={handleToggleColumn}
+        onUpdateDueDate={handleUpdateDueDate}
+        onUpdateStatus={handleUpdateStatus}
+        onUpdateTitle={handleUpdateTitle}
+        onWeekdayChange={setNewTaskWeekday}
+      />
     </AppShell>
   );
 }

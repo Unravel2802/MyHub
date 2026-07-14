@@ -133,6 +133,10 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+:where(a, button, input, select, textarea, summary) {
+  transition: all 200ms ease-in-out;
+}
+
 @keyframes momentum-toast-in {
   from {
     opacity: 0;
@@ -174,7 +178,9 @@ body {
 @utility floating {
   backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 0.5),
+    0 8px 10px -6px rgb(0 0 0 / 0.5);
 }
 
 @keyframes fade-up {
@@ -193,6 +199,10 @@ body {
 .fade-up {
   animation: fade-up 320ms ease-out both;
   animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+.stat-card-hover:hover {
+  transform: translateY(-2px);
 }
 
 /* The streak flame when it's actually lit. Only ever applied when activeToday —
@@ -220,5 +230,9 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .stat-card-hover:hover {
+    transform: none;
   }
 }

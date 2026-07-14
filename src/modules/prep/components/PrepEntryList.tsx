@@ -39,7 +39,9 @@ export function PrepEntryList({
         Recent sessions
       </h2>
       {entries.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">No prep sessions logged yet.</p>
+        <p className="mt-3 text-sm text-muted">
+          Your first rep starts the December count. Log one below to begin.
+        </p>
       ) : (
         <ul className="mt-4 grid gap-3">
           {entries.map((entry) => (

@@ -91,13 +91,21 @@ export function OutreachLog() {
         </header>
 
         {error ? (
-          <p className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger">
+          <p
+            aria-live="assertive"
+            className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
 
         {companyError ? (
-          <p className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger">
+          <p
+            aria-live="assertive"
+            className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
+            role="alert"
+          >
             {companyError}
           </p>
         ) : null}
@@ -132,7 +140,7 @@ export function OutreachLog() {
             onDelete={confirmDelete}
             pendingIds={pending}
           />
-          <details className="rounded-lg border border-border bg-surface" open>
+          <details className="rounded-lg border border-border bg-surface">
             <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
               Log a conversation
             </summary>

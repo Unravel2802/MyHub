@@ -49,7 +49,7 @@ export function OutreachEntryList({
       <ul className="mt-4 grid gap-3">
         {entries.length === 0 ? (
           <li className="rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted">
-            No outreach conversations logged yet.
+            Start the referral pipeline with one conversation. Log it below.
           </li>
         ) : null}
 

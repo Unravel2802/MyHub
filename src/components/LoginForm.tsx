@@ -42,7 +42,11 @@ export function LoginForm() {
           </p>
         </div>
         {error ? (
-          <p className="rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger">
+          <p
+            aria-live="assertive"
+            className="rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}

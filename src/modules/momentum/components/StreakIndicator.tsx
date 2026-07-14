@@ -10,7 +10,10 @@ export function StreakIndicator({ streak }: { streak: Streak }) {
       }
     >
       <p className="text-sm font-semibold">
-        {isAlive ? `🔥 ${streak.current}-day streak` : "🔥 Start a streak"}
+        <span className={isAlive && streak.activeToday ? "pulse-glow" : ""}>
+          🔥
+        </span>{" "}
+        {isAlive ? `${streak.current}-day streak` : "Start a streak"}
       </p>
       {isAlive && !streak.activeToday ? (
         <p className="mt-1 text-xs text-muted">Alive, not yet fed today</p>

@@ -15,6 +15,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/roadmap", label: "Roadmap" },
   { href: "/", label: "Task Engine" },
   { href: "/prep", label: "Prep Tracker" },
   { href: "/applications", label: "Job CRM" },

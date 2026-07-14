@@ -8,6 +8,7 @@ interface EmptyStateProps {
   // entire job is motivation. Say what logging one actually gets you.
   description: ReactNode;
   action?: ReactNode;
+  compact?: boolean;
 }
 
 export function EmptyState({
@@ -15,9 +16,12 @@ export function EmptyState({
   title,
   description,
   action,
+  compact = false,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-10 text-center">
+    <div
+      className={`flex flex-col items-center rounded-lg border border-dashed border-border text-center ${compact ? "px-3 py-4" : "px-6 py-10"}`}
+    >
       {icon ? (
         <div aria-hidden className="mb-3 text-3xl">
           {icon}

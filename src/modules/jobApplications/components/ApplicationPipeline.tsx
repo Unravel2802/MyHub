@@ -8,6 +8,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { useState } from "react";
+import { EmptyState } from "@/src/components/ui/EmptyState";
 import type {
   Application,
   ApplicationStage,
@@ -60,7 +61,7 @@ function Card({
   return (
     <article
       aria-label={`Application: ${application.roleTitle} at ${company?.name ?? "Unknown company"}`}
-      className="rounded-md border border-border bg-surface p-3 shadow-sm"
+      className={`rounded-md border p-3 shadow-sm ${application.stage === "offer" ? "border-success-border bg-success-surface" : "border-border bg-surface"}`}
       ref={setNodeRef}
       style={{
         transform: transform
@@ -185,9 +186,11 @@ function Column({
       </div>
       <div className="grid gap-3">
         {applications.length === 0 ? (
-          <p className="rounded-md border border-dashed border-border px-2 py-4 text-center text-xs text-muted">
-            Drag an application here when it reaches this stage.
-          </p>
+          <EmptyState
+            compact
+            description="Drag an application here when it reaches this stage."
+            title="No applications here"
+          />
         ) : null}
         {applications.map((application) => (
           <Card
@@ -236,7 +239,7 @@ export function ApplicationPipeline({
         Application pipeline
       </h2>
       <DndContext onDragEnd={dragEnd} sensors={sensors}>
-        <div className="grid w-max min-w-full grid-cols-8 gap-3">
+        <div className="grid w-max min-w-full grid-cols-[repeat(8,minmax(180px,1fr))] gap-3 pb-2">
           {stages.map((stage) => (
             <Column
               applications={applications.filter(

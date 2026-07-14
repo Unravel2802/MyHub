@@ -18,6 +18,7 @@ type BoardColumnProps = {
   tasks: Task[];
   onCreateSubtask: (id: string, title: string) => void;
   onDeleteTask: (id: string) => void;
+  onArchiveTask: (id: string) => void;
   onUpdateDueDate: (id: string, dueDate: string | null) => void;
   onUpdateStatus: (id: string, status: TaskStatus) => void;
   onUpdateTitle: (id: string, title: string) => void;
@@ -34,6 +35,7 @@ export function BoardColumn({
   tasks,
   onCreateSubtask,
   onDeleteTask,
+  onArchiveTask,
   onUpdateDueDate,
   onUpdateStatus,
   onUpdateTitle,
@@ -82,6 +84,7 @@ export function BoardColumn({
                 disabled={isCreating || disabledTaskIds.has(task.id)}
                 onCreateSubtask={onCreateSubtask}
                 onDelete={onDeleteTask}
+          onArchive={onArchiveTask}
                 onUpdateDueDate={onUpdateDueDate}
                 onUpdateStatus={onUpdateStatus}
                 onUpdateTitle={onUpdateTitle}

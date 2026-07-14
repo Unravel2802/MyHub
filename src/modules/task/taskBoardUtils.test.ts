@@ -26,6 +26,7 @@ function task(overrides: Partial<Task> & Pick<Task, "id" | "title">): Task {
     recurrenceTemplateId: overrides.recurrenceTemplateId ?? null,
     occurrenceDate: overrides.occurrenceDate ?? null,
     completedAt: overrides.completedAt ?? null,
+    archivedAt: overrides.archivedAt ?? null,
     deletedAt: overrides.deletedAt ?? null,
     createdAt: overrides.createdAt ?? "2026-01-01T00:00:00.000Z",
     updatedAt: overrides.updatedAt ?? "2026-01-01T00:00:00.000Z",

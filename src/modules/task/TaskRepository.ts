@@ -30,6 +30,7 @@ interface TaskRow {
   recurrence_template_id: string | null;
   occurrence_date: string | null;
   completed_at: string | null;
+  archived_at: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
@@ -49,6 +50,7 @@ function fromRow(row: TaskRow): Task {
     recurrenceTemplateId: row.recurrence_template_id,
     occurrenceDate: row.occurrence_date,
     completedAt: row.completed_at,
+    archivedAt: row.archived_at,
     deletedAt: row.deleted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -362,6 +364,57 @@ export async function updateTaskStatus(
   }
 
   return task;
+}
+
+// Hide a completed task from the board WITHOUT deleting it: the row stays live
+// and keeps its completed_at, so Momentum's streak still counts the day. This
+// is the difference between "I'm done looking at this" and "this never
+// happened" — deleteTask is the latter.
+export async function archiveTask(id: string): Promise<Task> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return fromRow(data);
+}
+
+// Clears the MANUAL archive flag only. A task whose completion week has passed
+// will still be archived by age (taskArchive.isArchived), so restoring an old
+// task to the board means reopening it, not just un-archiving it — which is why
+// the archive view offers "Reopen" rather than a bare "Unarchive".
+export async function unarchiveTask(id: string): Promise<Task> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ archived_at: null })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return fromRow(data);
+}
+
+// Put an archived task back into play: clears the archive flag AND the
+// completion, moving it back to `todo` so it reappears on the board regardless
+// of how old its completion was.
+export async function reopenTask(id: string): Promise<Task> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({
+      status: "todo" satisfies TaskStatus,
+      completed_at: null,
+      archived_at: null,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return fromRow(data);
 }
 
 export async function deleteTask(id: string): Promise<void> {

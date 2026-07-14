@@ -22,6 +22,7 @@ function task(id: string, parentTaskId: string | null = null): Task {
     recurrenceTemplateId: null,
     occurrenceDate: null,
     completedAt: null,
+    archivedAt: null,
     deletedAt: null,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",

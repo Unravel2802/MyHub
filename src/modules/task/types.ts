@@ -27,6 +27,12 @@ export interface Task {
   // updatedAt isn't usable for this since any later edit overwrites it, not
   // just a completion.
   completedAt: string | null;
+  // Set when you explicitly archive a task. Archiving hides it from the board
+  // but keeps the row and its completedAt alive, so the streak still counts it
+  // — unlike deleting, which means "this never happened". Done tasks ALSO leave
+  // the board automatically once their week passes; that half is derived from
+  // completedAt and writes nothing here (see taskArchive.ts).
+  archivedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;

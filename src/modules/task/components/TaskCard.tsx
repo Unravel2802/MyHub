@@ -14,6 +14,7 @@ type TaskCardProps = {
   task: Task;
   onCreateSubtask: (id: string, title: string) => void;
   onDelete: (id: string) => void;
+  onArchive: (id: string) => void;
   onUpdateDueDate: (id: string, dueDate: string | null) => void;
   onUpdateStatus: (id: string, status: TaskStatus) => void;
   onUpdateTitle: (id: string, title: string) => void;
@@ -31,6 +32,7 @@ export function TaskCard({
   task,
   onCreateSubtask,
   onDelete,
+  onArchive,
   onUpdateDueDate,
   onUpdateStatus,
   onUpdateTitle,
@@ -199,6 +201,19 @@ export function TaskCard({
           >
             Delete
           </button>
+          {/* Archive only makes sense for finished work. It's offered next to
+              Delete on purpose: deleting a done task used to be the only way to
+              clear the board, and that silently erased it from the streak. */}
+          {task.status === "done" ? (
+            <button
+              className="h-8 min-w-0 rounded-md border border-border bg-surface px-2 text-xs font-medium text-body transition-colors hover:bg-surface-subtle disabled:cursor-not-allowed disabled:text-muted"
+              disabled={disabled}
+              onClick={() => onArchive(task.id)}
+              type="button"
+            >
+              Archive
+            </button>
+          ) : null}
         </div>
 
         {isEditingTitle ? (

@@ -32,6 +32,9 @@ import {
 import { canAddSubtask, taskDepth } from "@/src/modules/task/taskTree";
 import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
 import { useTaskStore } from "@/src/modules/task/useTaskStore";
+import { archivedTasks, boardTasks } from "@/src/modules/task/taskArchive";
+import { TaskArchive } from "@/src/modules/task/components/TaskArchive";
+import { format } from "date-fns";
 
 // Prefer whatever droppable the pointer is actually inside (so empty columns
 // receive drops reliably); fall back to closest-corners for keyboard drags,
@@ -58,8 +61,13 @@ export function TaskBoard() {
     updateStatus,
     moveTask,
     deleteTask,
+    archiveTask,
+    reopenTask,
     setColumnFilters,
   } = useTaskStore();
+  // One `today` for the whole render, so the board can't disagree with itself
+  // if a render happens to straddle midnight.
+  const [today] = useState(() => new Date());
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskRecursWeekly, setNewTaskRecursWeekly] = useState(false);
   const [newTaskWeekday, setNewTaskWeekday] = useState<Weekday>(
@@ -80,9 +88,15 @@ export function TaskBoard() {
     void Promise.all([fetchTasks(), fetchTemplates()]);
   }, [fetchTasks, fetchTemplates]);
 
+  // Archived tasks stay in `tasks` (Momentum needs their completedAt) but leave
+  // the board. Done tasks age out automatically once their week passes, which is
+  // what finally makes the Done column's "Completed this week" label honest.
+  const onBoard = useMemo(() => boardTasks(tasks, today), [tasks, today]);
+  const archived = useMemo(() => archivedTasks(tasks, today), [tasks, today]);
+
   const visibleTasks = useMemo(
-    () => filterVisibleTasks(tasks, searchTerm),
-    [searchTerm, tasks],
+    () => filterVisibleTasks(onBoard, searchTerm),
+    [onBoard, searchTerm],
   );
 
   const tasksByStatus = useMemo(
@@ -91,13 +105,16 @@ export function TaskBoard() {
   );
 
   const allTasksByStatus = useMemo(
-    () => groupTasksByStatus(filterVisibleTasks(tasks, "")),
-    [tasks],
+    () => groupTasksByStatus(filterVisibleTasks(onBoard, "")),
+    [onBoard],
   );
 
+  // format(), not .toISOString().slice(0, 10) — the latter reads the UTC date,
+  // so "due today" was wrong for anyone not at UTC+0 (in UTC+7, everything
+  // before 07:00 local counted against yesterday).
   const stats = useMemo(
-    () => getTaskStats(tasks, new Date().toISOString().slice(0, 10)),
-    [tasks],
+    () => getTaskStats(onBoard, format(today, "yyyy-MM-dd")),
+    [onBoard, today],
   );
 
   const visibleColumns = useMemo(
@@ -170,6 +187,14 @@ export function TaskBoard() {
 
   function handleDeleteTask(id: string) {
     void deleteTask(id);
+  }
+
+  function handleArchiveTask(id: string) {
+    void archiveTask(id);
+  }
+
+  function handleReopenTask(id: string) {
+    void reopenTask(id);
   }
 
   function handleDeleteTemplate(id: string, title: string) {
@@ -267,6 +292,7 @@ export function TaskBoard() {
                   isCreating={isCreating}
                   isLoading={isLoading}
                   onCreateSubtask={handleCreateSubtask}
+                  onArchiveTask={handleArchiveTask}
                   onDeleteTask={handleDeleteTask}
                   onUpdateDueDate={handleUpdateDueDate}
                   onUpdateStatus={handleUpdateStatus}
@@ -289,6 +315,13 @@ export function TaskBoard() {
               ) : null}
             </DragOverlay>
           </DndContext>
+
+          <TaskArchive
+            onDelete={handleDeleteTask}
+            onReopen={handleReopenTask}
+            pendingIds={pendingTaskIds}
+            tasks={archived}
+          />
         </div>
       </section>
     </AppShell>

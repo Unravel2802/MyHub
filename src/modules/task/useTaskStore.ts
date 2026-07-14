@@ -46,6 +46,13 @@ interface TaskStore {
     changes: { status?: TaskStatus; position: number },
   ) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
+  // Hide a task from the board while KEEPING the row and its completedAt, so
+  // Momentum's streak still counts it. Distinct from deleteTask, which means
+  // "this never happened" and does erase the streak's evidence.
+  archiveTask: (id: string) => Promise<void>;
+  // Put an archived task back in play: clears the archive flag and the
+  // completion, returning it to `todo`.
+  reopenTask: (id: string) => Promise<void>;
 }
 
 const FAILURE_MESSAGE = "Something went wrong, please try again later.";
@@ -210,6 +217,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         recurrenceTemplateId: null,
         occurrenceDate: null,
         completedAt: null,
+        archivedAt: null,
         deletedAt: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -343,6 +351,59 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         });
         emit({
           type: changes.status === "done" ? "task.completed" : "task.updated",
+          payload: { taskId: id },
+          timestamp: Date.now(),
+        });
+      } catch (err) {
+        set({ tasks: previousTasks, error: toUserMessage(err) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    archiveTask: async (id) => {
+      const previousTasks = get().tasks;
+      const archivedAt = new Date().toISOString();
+      set({
+        tasks: previousTasks.map((t) =>
+          t.id === id ? { ...t, archivedAt } : t,
+        ),
+        error: null,
+      });
+      addPending(id);
+
+      try {
+        const updated = await TaskRepository.archiveTask(id);
+        set({ tasks: get().tasks.map((t) => (t.id === id ? updated : t)) });
+        emit({
+          type: "task.updated",
+          payload: { taskId: id },
+          timestamp: Date.now(),
+        });
+      } catch (err) {
+        set({ tasks: previousTasks, error: toUserMessage(err) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    reopenTask: async (id) => {
+      const previousTasks = get().tasks;
+      set({
+        tasks: previousTasks.map((t) =>
+          t.id === id
+            ? { ...t, status: "todo", completedAt: null, archivedAt: null }
+            : t,
+        ),
+        error: null,
+      });
+      addPending(id);
+
+      try {
+        const updated = await TaskRepository.reopenTask(id);
+        set({ tasks: get().tasks.map((t) => (t.id === id ? updated : t)) });
+        emit({
+          type: "task.updated",
           payload: { taskId: id },
           timestamp: Date.now(),
         });

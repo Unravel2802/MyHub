@@ -75,7 +75,7 @@ export function BoardColumn({
               <p className="text-sm leading-6 text-muted">Loading tasks...</p>
             </div>
           ) : tasks.length > 0 ? (
-            tasks.map((task) => (
+            tasks.map((task, index) => (
               <TaskCard
                 key={task.id}
                 canCreateSubtask={canAddSubtaskIds.has(task.id)}
@@ -84,11 +84,12 @@ export function BoardColumn({
                 disabled={isCreating || disabledTaskIds.has(task.id)}
                 onCreateSubtask={onCreateSubtask}
                 onDelete={onDeleteTask}
-          onArchive={onArchiveTask}
+                onArchive={onArchiveTask}
                 onUpdateDueDate={onUpdateDueDate}
                 onUpdateStatus={onUpdateStatus}
                 onUpdateTitle={onUpdateTitle}
                 task={task}
+                style={{ ["--i" as string]: index }}
               />
             ))
           ) : (

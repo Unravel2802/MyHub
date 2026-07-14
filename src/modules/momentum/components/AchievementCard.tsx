@@ -1,21 +1,25 @@
 import { Badge } from "@/src/components/ui/Badge";
+import type { CSSProperties } from "react";
 import type { Achievement } from "@/src/modules/momentum/achievementCatalog";
 import type { AchievementUnlock } from "@/src/modules/momentum/MomentumRepository";
 
 export function AchievementCard({
   achievement,
   unlock,
+  style,
 }: {
   achievement: Achievement;
   unlock?: AchievementUnlock;
+  style?: CSSProperties;
 }) {
   return (
     <article
-      className={`rounded-lg border p-4 transition-colors ${
+      className={`fade-up rounded-lg border p-4 transition-colors ${
         unlock
           ? "border-success-border bg-success-surface"
           : "border-border bg-surface-subtle"
       }`}
+      style={style}
       key={achievement.key}
     >
       <div className="flex items-start justify-between gap-3">

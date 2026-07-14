@@ -1,16 +1,22 @@
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
+import type { CSSProperties } from "react";
 import type { TargetProgress } from "@/src/modules/prep/prepTargets";
 
 export function TargetCard({
   label,
   target,
+  style,
 }: {
   label: string;
   target: TargetProgress;
+  style?: CSSProperties;
 }) {
   const met = target.actual >= target.target;
   return (
-    <div className="rounded-md border border-border bg-surface p-3">
+    <div
+      className="fade-up rounded-md border border-border bg-surface p-3"
+      style={style}
+    >
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-medium text-foreground">{label}</p>
         <p
@@ -33,10 +39,12 @@ export function CadenceCard({
   label,
   count,
   target,
+  style,
 }: {
   label: string;
   count: number;
   target: { min: number; max?: number };
+  style?: CSSProperties;
 }) {
   const targetText = target.max
     ? `${target.min}-${target.max}`
@@ -44,7 +52,10 @@ export function CadenceCard({
   const status =
     count >= target.min ? "On target" : `${target.min - count} to go`;
   return (
-    <div className="rounded-md border border-border bg-surface p-4">
+    <div
+      className="fade-up rounded-md border border-border bg-surface p-4"
+      style={style}
+    >
       <p className="text-xs font-medium uppercase tracking-wide text-muted">
         {label}
       </p>

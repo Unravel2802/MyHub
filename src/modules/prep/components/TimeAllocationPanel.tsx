@@ -29,10 +29,11 @@ export function TimeAllocationPanel({ entries }: { entries: PrepEntry[] }) {
         Target share of eligible practice time from roadmap §11.3.
       </p>
       <div className="mt-4 grid gap-3">
-        {allocation.map((area) => (
+        {allocation.map((area, index) => (
           <div
-            className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] sm:items-center"
+            className="fade-up grid gap-2 rounded-md border border-border p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] sm:items-center"
             key={area.area}
+            style={{ ["--i" as string]: index }}
           >
             <StatCard
               hint={`Target ${Math.round(area.targetPct * 100)}%`}

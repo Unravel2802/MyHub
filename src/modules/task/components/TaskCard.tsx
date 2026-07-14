@@ -1,6 +1,12 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { type FormEvent, type SyntheticEvent, useId, useState } from "react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  type SyntheticEvent,
+  useId,
+  useState,
+} from "react";
 import { Badge } from "@/src/components/ui/Badge";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import { formatDueDate } from "@/src/modules/task/taskBoardUtils";
@@ -12,6 +18,7 @@ type TaskCardProps = {
   depth: number;
   disabled: boolean;
   task: Task;
+  style?: CSSProperties;
   onCreateSubtask: (id: string, title: string) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
@@ -30,6 +37,7 @@ export function TaskCard({
   depth,
   disabled,
   task,
+  style,
   onCreateSubtask,
   onDelete,
   onArchive,
@@ -116,6 +124,7 @@ export function TaskCard({
       } ${isDragging ? "opacity-40" : ""}`}
       ref={setNodeRef}
       style={{
+        ...style,
         transform: CSS.Transform.toString(transform),
         transition,
         touchAction: "none",

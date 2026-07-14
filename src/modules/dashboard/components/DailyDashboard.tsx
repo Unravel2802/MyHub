@@ -112,16 +112,19 @@ export function DailyDashboard() {
             {dashboard.weeklyCadence ? (
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
                 <CadenceCard
+                  style={{ ["--i" as string]: 0 }}
                   label="Applications"
                   count={dashboard.weeklyCadence.applications.count}
                   target={dashboard.weeklyCadence.applications.target}
                 />
                 <CadenceCard
+                  style={{ ["--i" as string]: 1 }}
                   label="Outreach"
                   count={dashboard.weeklyCadence.outreach.count}
                   target={dashboard.weeklyCadence.outreach.target}
                 />
                 <CadenceCard
+                  style={{ ["--i" as string]: 2 }}
                   label="Mock interviews"
                   count={dashboard.weeklyCadence.mockInterviews.count}
                   target={dashboard.weeklyCadence.mockInterviews.target}
@@ -155,9 +158,10 @@ export function DailyDashboard() {
             </div>
             {dashboard.checkpointProgress ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {targetLabels.map(([key, label]) => (
+                {targetLabels.map(([key, label], index) => (
                   <TargetCard
                     key={key}
+                    style={{ ["--i" as string]: index }}
                     label={label}
                     target={dashboard.checkpointProgress![key]}
                   />

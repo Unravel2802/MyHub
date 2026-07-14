@@ -54,13 +54,14 @@ export function OfferEvaluator() {
           </p>
         </header>
         <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          {offers.map((offer) => {
+          {offers.map((offer, index) => {
             const isWinner = winner?.id === offer.id;
             return (
               <article
                 aria-label={offer.name || `Offer ${offer.id}`}
-                className={`rounded-lg border p-5 ${isWinner ? "border-accent bg-surface" : "border-border bg-surface-subtle"}`}
+                className={`fade-up rounded-lg border p-5 ${isWinner ? "border-accent bg-surface" : "border-border bg-surface-subtle"}`}
                 key={offer.id}
+                style={{ ["--i" as string]: index }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <label className="grid flex-1 gap-1.5 text-sm font-medium text-body">

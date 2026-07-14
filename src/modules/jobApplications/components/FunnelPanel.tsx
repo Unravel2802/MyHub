@@ -62,10 +62,11 @@ export function FunnelPanel({ funnel }: { funnel: FunnelStats }) {
       </div>
       <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4 lg:grid-cols-8">
         {(Object.entries(funnel.byStage) as [ApplicationStage, number][]).map(
-          ([stage, count]) => (
+          ([stage, count], index) => (
             <div
-              className="rounded-md border border-border bg-surface-subtle p-2 transition-colors duration-200 ease-in-out"
+              className="fade-up rounded-md border border-border bg-surface-subtle p-2 transition-colors duration-200 ease-in-out"
               key={stage}
+              style={{ ["--i" as string]: index }}
             >
               <p className="text-xs uppercase tracking-widest text-muted">
                 {STAGE_LABELS[stage]}

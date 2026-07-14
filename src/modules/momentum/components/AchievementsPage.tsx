@@ -59,12 +59,13 @@ export function AchievementsPage() {
               </h3>
               <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {ACHIEVEMENTS.filter((item) => item.category === category).map(
-                  (achievement) => {
+                  (achievement, index) => {
                     const unlock = unlockedByKey.get(achievement.key);
                     return (
                       <AchievementCard
                         achievement={achievement}
                         key={achievement.key}
+                        style={{ ["--i" as string]: index }}
                         unlock={unlock}
                       />
                     );

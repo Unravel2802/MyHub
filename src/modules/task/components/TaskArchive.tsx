@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Badge } from "@/src/components/ui/Badge";
+import { EmptyState } from "@/src/components/ui/EmptyState";
 import { formatDueDate } from "@/src/modules/task/taskBoardUtils";
 import type { Task } from "@/src/modules/task/types";
 
@@ -60,7 +61,10 @@ export function TaskArchive({
 
       {isOpen ? (
         tasks.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">Nothing archived yet.</p>
+          <EmptyState
+            description="Completed work stays visible here for streak history once it leaves the active board."
+            title="Your archive is clear"
+          />
         ) : (
           <ul className="mt-4 grid gap-2">
             {tasks.map((task) => (
@@ -77,7 +81,9 @@ export function TaskArchive({
                   </div>
                   <p className="mt-0.5 text-xs text-muted">
                     {completedOn(task)}
-                    {task.dueDate ? ` · Due ${formatDueDate(task.dueDate)}` : ""}
+                    {task.dueDate
+                      ? ` · Due ${formatDueDate(task.dueDate)}`
+                      : ""}
                   </p>
                 </div>
                 <div className="flex gap-2">

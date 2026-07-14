@@ -14,7 +14,7 @@ export function TargetCard({
   const met = target.actual >= target.target;
   return (
     <div
-      className="fade-up rounded-md border border-border bg-surface p-3"
+      className={`fade-up rounded-md border p-3 ${met && target.target > 0 ? "border-success-border bg-success-surface" : "border-border bg-surface"}`}
       style={style}
     >
       <div className="flex items-baseline justify-between gap-3">
@@ -53,7 +53,7 @@ export function CadenceCard({
     count >= target.min ? "On target" : `${target.min - count} to go`;
   return (
     <div
-      className="fade-up rounded-md border border-border bg-surface p-4"
+      className={`fade-up rounded-md border p-4 ${count >= target.min && target.min > 0 ? "border-success-border bg-success-surface" : "border-border bg-surface"}`}
       style={style}
     >
       <p className="text-xs font-medium uppercase tracking-wide text-muted">

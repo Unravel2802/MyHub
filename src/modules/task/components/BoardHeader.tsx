@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import { StatCard } from "@/src/components/ui/StatCard";
+import { EmptyState } from "@/src/components/ui/EmptyState";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import type { TaskStats } from "@/src/modules/task/taskBoardUtils";
 import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
@@ -214,7 +215,10 @@ export function BoardHeader({
         </div>
 
         {templates.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">No weekly tasks yet.</p>
+          <EmptyState
+            description="Turn a repeated commitment into a fresh Todo task every week."
+            title="No weekly rules yet"
+          />
         ) : (
           <ul className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {templates.map((template) => (

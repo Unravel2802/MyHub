@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/src/components/AppShell";
+import { EmptyState } from "@/src/components/ui/EmptyState";
 import {
   QUARTERLY_QUESTIONS,
   weekStartKeyOf,
@@ -161,7 +162,10 @@ export function WeeklyReview() {
             Past reviews
           </h3>
           {store.reviews.length === 0 ? (
-            <p className="text-sm text-muted">No saved reviews yet.</p>
+            <EmptyState
+              description="Save this week's reflection to create a frozen record you can trust later."
+              title="No past reviews yet"
+            />
           ) : (
             store.reviews.map((review) => (
               <article

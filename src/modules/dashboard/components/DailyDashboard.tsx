@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import { AppShell } from "@/src/components/AppShell";
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
+import { EmptyState } from "@/src/components/ui/EmptyState";
+import Link from "next/link";
 import {
   CadenceCard,
   TargetCard,
@@ -82,9 +84,11 @@ export function DailyDashboard() {
               This week&apos;s schedule
             </h3>
             {dashboard.scheduleBlocks.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">
-                No recurring blocks scheduled this week.
-              </p>
+              <EmptyState
+                description="Give the week a reliable shape by turning a recurring task into a scheduled block."
+                action={<Link href="/tasks">Create a recurring task</Link>}
+                title="No recurring blocks yet"
+              />
             ) : (
               <ul className="mt-3 grid gap-2">
                 {dashboard.scheduleBlocks.map((task) => (
@@ -178,7 +182,11 @@ export function DailyDashboard() {
               Applications needing follow-up
             </h3>
             {dashboard.followUps.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">Nothing is overdue.</p>
+              <EmptyState
+                description="Your pipeline is clear. Keep it that way by logging the next follow-up when a conversation happens."
+                action={<Link href="/applications">Review applications</Link>}
+                title="No follow-ups due"
+              />
             ) : (
               <ul className="mt-3 grid gap-2">
                 {dashboard.followUps.map((application) => (
@@ -206,9 +214,11 @@ export function DailyDashboard() {
               Interview post-mortems
             </h3>
             {dashboard.postMortemReminders.length === 0 ? (
-              <p className="mt-3 text-sm text-muted">
-                No completed interviews need notes.
-              </p>
+              <EmptyState
+                description="Complete an interview and capture what you learned while the details are still fresh."
+                action={<Link href="/applications">Open interview log</Link>}
+                title="No post-mortems due"
+              />
             ) : (
               <ul className="mt-3 grid gap-2">
                 {dashboard.postMortemReminders.map(
@@ -260,9 +270,11 @@ export function DailyDashboard() {
                 />
               </>
             ) : (
-              <p className="mt-3 text-sm text-muted">
-                No gate checklist found for this month.
-              </p>
+              <EmptyState
+                description="The monthly gate appears when its checklist task is created in Task Engine."
+                action={<Link href="/tasks">Open Task Engine</Link>}
+                title="No gate checklist yet"
+              />
             )}
           </section>
         </div>

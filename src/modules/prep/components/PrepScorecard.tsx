@@ -4,6 +4,7 @@ import {
   mockSubtypeProgress,
 } from "@/src/modules/prep/prepTargets";
 import type { PrepEntry } from "@/src/modules/prep/types";
+import { EmptyState } from "@/src/components/ui/EmptyState";
 
 type PrepScorecardProps = {
   month: string;
@@ -101,9 +102,10 @@ export function PrepScorecard({
           Weakest measured topics
         </h3>
         {topics.length === 0 ? (
-          <p className="mt-2 text-sm text-muted">
-            No judged algorithm topics yet.
-          </p>
+          <EmptyState
+            description="Judge one algorithm rep to turn your weakest topic into a targeted next step."
+            title="No measured topics yet"
+          />
         ) : (
           <ul className="mt-2 grid gap-2 sm:grid-cols-3">
             {topics.map((topic) => (

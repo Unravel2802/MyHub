@@ -1,5 +1,6 @@
 import type { Company } from "@/src/modules/jobApplications/types";
 import type { OutreachEntry } from "@/src/modules/outreach/types";
+import { EmptyState } from "@/src/components/ui/EmptyState";
 
 type OutreachEntryListProps = {
   entries: OutreachEntry[];
@@ -48,8 +49,11 @@ export function OutreachEntryList({
 
       <ul className="mt-4 grid gap-3">
         {entries.length === 0 ? (
-          <li className="rounded-md border border-dashed border-border px-3 py-4 text-sm text-muted">
-            Start the referral pipeline with one conversation. Log it below.
+          <li>
+            <EmptyState
+              description="Start the referral pipeline with one conversation. Log it below."
+              title="Start the referral pipeline"
+            />
           </li>
         ) : null}
 

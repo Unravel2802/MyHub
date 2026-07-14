@@ -4,6 +4,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { TaskCard } from "@/src/modules/task/components/TaskCard";
+import { EmptyState } from "@/src/components/ui/EmptyState";
 import type { ColumnConfig } from "@/src/modules/task/taskBoardConfig";
 import type { Task, TaskStatus } from "@/src/modules/task/types";
 
@@ -93,11 +94,10 @@ export function BoardColumn({
               />
             ))
           ) : (
-            <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-input bg-surface-subtle p-6 text-center">
-              <p className="max-w-40 text-sm leading-6 text-muted">
-                {column.emptyCopy}
-              </p>
-            </div>
+            <EmptyState
+              description={column.emptyCopy}
+              title="Ready for the next task"
+            />
           )}
         </div>
       </SortableContext>

@@ -1,4 +1,5 @@
 import { Badge } from "@/src/components/ui/Badge";
+import { EmptyState } from "@/src/components/ui/EmptyState";
 import type { PrepEntry } from "@/src/modules/prep/types";
 
 type PrepEntryListProps = {
@@ -39,9 +40,10 @@ export function PrepEntryList({
         Recent sessions
       </h2>
       {entries.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">
-          Your first rep starts the December count. Log one below to begin.
-        </p>
+        <EmptyState
+          description="Your first rep starts the December count. Log one below to begin."
+          title="Start the December count"
+        />
       ) : (
         <ul className="mt-4 grid gap-3">
           {entries.map((entry) => (
@@ -54,7 +56,15 @@ export function PrepEntryList({
                   <p className="font-medium text-foreground">
                     {entry.topic ?? labels[entry.entryType]}
                   </p>
-                  <Badge tone="accent">{labels[entry.entryType]}</Badge>
+                  <Badge
+                    tone={
+                      entry.outcome === "pass" || entry.outcome === "solved"
+                        ? "success"
+                        : "accent"
+                    }
+                  >
+                    {labels[entry.entryType]}
+                  </Badge>
                   {entry.entryType === "mock_interview" ? (
                     <Badge tone="neutral">
                       {entry.mockSubtype

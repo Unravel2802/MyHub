@@ -214,14 +214,13 @@ Shell-level, so it's mine.
 
 ### Codex
 
-**X1 — Information architecture flip** ★ *(do first; matters more than styling)*
-Every page goes data-first:
-- **Job CRM:** pipeline + funnel at the top; the three forms move behind an "Add" button (drawer or
-  modal — your call, but they must not own the viewport).
-- **Prep Tracker:** scorecard + checkpoint first; logging becomes a compact panel.
-- **Outreach Log:** lead with cadence (2–3/week) and recent conversations.
+**X1 — Information architecture flip** ✅ **DONE** — commit `0caf81d`, reviewed and gated (233 unit,
+43/43 E2E). Job CRM now opens on the funnel + pipeline with the forms collapsed below into "Add to
+your pipeline"; Prep and Outreach lead with progress rather than a form.
 
-**Stop for review after X1.** It's a bigger change than it looks.
+*Follow-ups spotted during that review, fold into X4:* the CRM pipeline columns overflow and clip
+the last stage; the `<details>` form section defaults to `open` (consider closed); empty pipeline
+columns are large dead boxes.
 
 **X2 — Presentational / container split**
 Extract the logic-free views (`TaskCard`, `FunnelPanel`, `AchievementCard`, scorecard tiles…) from
@@ -291,9 +290,14 @@ unlock toaster and error banners; verify AA against the new tokens; check 375px 
 ## Sequencing
 
 ```
-Claude  C1 (tokens + focus ring)  →  C2 (primitives)  →  C3 (responsive shell)
-                                          ↓
-Codex                              X1 (IA flip) ──review──▶ X2 (component split)
-                                          ↓
-                            X3 Dashboard ──review──▶ X3 rest  →  X4  →  X5
+Codex   X1 (IA flip) ✅ done — 0caf81d
+
+Claude  C1 (tokens + accent + focus ring)  →  C2 (primitives)  →  C3 (responsive shell)
+                                                    ↓
+                                        Codex is BLOCKED until C1 lands
+                                                    ↓
+Codex   X2 (component split)  →  X3 Dashboard ──review──▶ X3 rest  →  X4  →  X5
 ```
+
+**Next up: C1.** Everything visual is blocked on it — and because components already speak in
+semantic tokens (§2.0), C1 alone changes the entire app's appearance without touching a component.

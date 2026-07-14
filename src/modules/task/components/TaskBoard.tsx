@@ -275,7 +275,9 @@ export function TaskBoard() {
             sensors={sensors}
           >
             <div
+              aria-label="Board columns"
               className="grid gap-4"
+              role="group"
               style={{
                 gridTemplateColumns: `repeat(${visibleColumns.length}, minmax(0, 1fr))`,
                 minWidth: `${visibleColumns.length * 280}px`,

@@ -123,19 +123,26 @@ test("column filters narrow the board and restore it when cleared", async ({
 }) => {
   await loadBoard(page);
   const filters = page.getByRole("group", { name: "Filter columns" });
+  // Scoped to the board itself. A bare page.getByRole("region") counted EVERY
+  // landmark on the page, which only worked while the columns happened to be
+  // the only ones — the Archive section is a legitimate region too, and the
+  // count silently became a lie about what it was testing.
+  const columns = page
+    .getByRole("group", { name: "Board columns" })
+    .getByRole("region");
 
-  await expect(page.getByRole("region")).toHaveCount(4);
+  await expect(columns).toHaveCount(4);
 
   await filters.getByRole("button", { name: "Todo" }).click();
-  await expect(page.getByRole("region")).toHaveCount(1);
+  await expect(columns).toHaveCount(1);
   await expect(page.getByRole("region", { name: "Todo" })).toBeVisible();
 
   await filters.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByRole("region")).toHaveCount(2);
+  await expect(columns).toHaveCount(2);
 
   await filters.getByRole("button", { name: "Todo" }).click();
   await filters.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByRole("region")).toHaveCount(4);
+  await expect(columns).toHaveCount(4);
 });
 
 test("dragging a card from Inbox to Todo persists the new status", async ({

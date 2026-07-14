@@ -27,22 +27,44 @@ export function weekStartKey(today: Date): string {
 // tomorrow's completion and could hide it from the current week a day early.
 // Same trap the streak code documents.
 function completedDayKey(task: Task): string | null {
-  return task.completedAt === null
-    ? null
-    : format(new Date(task.completedAt), "yyyy-MM-dd");
+  // `== null` (loose) catches undefined as well as null. A row from a database
+  // that hasn't run migration 0013 yet — or any mock missing the column — maps
+  // to `undefined`, and a strict `=== null` check would sail past it into
+  // `new Date(undefined)`, which is an Invalid Date and makes format() throw
+  // RangeError. Defensive on purpose: the shape of a row is not something this
+  // function should be able to crash on.
+  if (task.completedAt == null) return null;
+
+  const completed = new Date(task.completedAt);
+  if (Number.isNaN(completed.getTime())) return null;
+  return format(completed, "yyyy-MM-dd");
 }
 
 export function isArchived(task: Task, today: Date): boolean {
-  if (task.archivedAt !== null) return true;
+  // Loose `!=` again, and it matters more here than anywhere: with a strict
+  // `!== null`, a task whose `archived_at` column doesn't exist arrives as
+  // `undefined`, reads as archived, and EVERY task silently vanishes from the
+  // board. That is exactly what happened — the board went blank against a mock
+  // that lacked the column, and would have done the same against the real
+  // database in the window before migration 0013 was applied.
+  if (task.archivedAt != null) return true;
   // Only DONE tasks can age out. An open task is never archived by time, no
   // matter how long it's been sitting there — that's a backlog, not an archive.
   if (task.status !== "done") return false;
 
   const completedDay = completedDayKey(task);
-  // A done task with no completedAt predates the timestamp column and can't be
-  // dated. Treat it as archived rather than pinning it to the board forever —
-  // it is, by definition, old.
-  if (completedDay === null) return true;
+  // A done task with NO usable completion date stays on the board.
+  //
+  // The tempting rule is the opposite — "undated means old, archive it" — and
+  // that's what this did first. It's wrong, and dangerously so: it makes a task
+  // the user can plainly see disappear from the board on nothing more than a
+  // GUESS that it's old, with no undo and no signal that it happened. Archiving
+  // must be something you did (`archivedAt`) or something provable (completed in
+  // an earlier week). "We don't know when this finished" is neither.
+  //
+  // Erring toward visible is the cheap mistake here: a stale card on the board is
+  // an annoyance, a silently vanished one is lost work.
+  if (completedDay === null) return false;
 
   return completedDay < weekStartKey(today);
 }

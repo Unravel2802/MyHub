@@ -22,6 +22,16 @@ export interface Streak {
 
 const dayKey = (date: Date) => format(date, "yyyy-MM-dd");
 
+// A timestamp from a row that may be missing the column entirely (undefined),
+// null, or malformed. format() throws RangeError on an Invalid Date, and this
+// runs inside the momentum refresh that every page mounts — one bad row would
+// take out the streak for the whole app. Return null and skip the row instead.
+function safeDayKey(timestamp: string | null | undefined): string | null {
+  if (timestamp == null) return null;
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? null : dayKey(date);
+}
+
 // A day counts as active if you did ANY of the four things that move the
 // roadmap forward: logged a prep rep, completed a task, logged an application,
 // or had an outreach conversation.
@@ -48,13 +58,15 @@ export function activityDates(snapshot: ActivitySnapshot): Set<string> {
   }
 
   for (const task of snapshot.tasks) {
-    if (task.deletedAt || task.completedAt === null) continue;
-    days.add(dayKey(new Date(task.completedAt)));
+    if (task.deletedAt) continue;
+    const day = safeDayKey(task.completedAt);
+    if (day !== null) days.add(day);
   }
 
   for (const application of snapshot.applications) {
     if (application.deletedAt) continue;
-    days.add(dayKey(new Date(application.createdAt)));
+    const day = safeDayKey(application.createdAt);
+    if (day !== null) days.add(day);
   }
 
   return days;

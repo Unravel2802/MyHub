@@ -225,3 +225,31 @@ describe("computeStreak", () => {
     expect(computeStreak(days, new Date("2026-07-01T09:00:00")).current).toBe(3);
   });
 });
+
+describe("activityDates — malformed and missing timestamps", () => {
+  // format() throws RangeError on an Invalid Date, and activityDates runs inside
+  // the momentum refresh that EVERY page mounts. One bad row was taking out the
+  // streak for the whole app ("RangeError: Invalid time value" in the console).
+  it("skips a task whose completedAt is undefined rather than throwing", () => {
+    const t = { ...task({ id: "t", status: "done" }) } as Task;
+    delete (t as Partial<Task>).completedAt;
+
+    expect(() => activityDates({ ...EMPTY, tasks: [t] })).not.toThrow();
+    expect(activityDates({ ...EMPTY, tasks: [t] }).size).toBe(0);
+  });
+
+  it("skips a malformed completedAt", () => {
+    const t = task({ id: "t", completedAt: "not-a-date" });
+
+    expect(() => activityDates({ ...EMPTY, tasks: [t] })).not.toThrow();
+    expect(activityDates({ ...EMPTY, tasks: [t] }).size).toBe(0);
+  });
+
+  it("still counts the good rows alongside a bad one", () => {
+    const bad = task({ id: "bad", completedAt: "garbage" });
+    const good = task({ id: "good", completedAt: "2026-07-10T12:00:00.000Z" });
+
+    const days = activityDates({ ...EMPTY, tasks: [bad, good] });
+    expect(days.size).toBe(1);
+  });
+});

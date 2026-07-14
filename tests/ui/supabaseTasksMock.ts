@@ -19,6 +19,7 @@ export type TaskRow = {
   occurrence_date: string | null;
   deleted_at: string | null;
   completed_at: string | null;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -43,6 +44,7 @@ export function row(
     occurrence_date: null,
     deleted_at: null,
     completed_at: null,
+    archived_at: null,
     created_at: TIMESTAMP,
     updated_at: TIMESTAMP,
     ...overrides,

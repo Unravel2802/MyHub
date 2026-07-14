@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 type ProgressBarProps = {
   progress: number;
 };
@@ -8,21 +12,43 @@ export function ProgressBar({ progress }: ProgressBarProps) {
   // differently). Clamping here only stops the bar overflowing its track.
   const percent = Math.min(100, Math.max(0, progress * 100));
 
+  // Mount at 0 and set the real width after paint, so the transition below
+  // actually FIRES. It never did: the bar mounted already at its final width,
+  // so there was nothing to animate from — a transition that had been dead code
+  // since it was written.
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setWidth(percent));
+    return () => cancelAnimationFrame(frame);
+  }, [percent]);
+
+  const started = percent > 0;
+
   return (
     <div
       aria-valuemax={100}
       aria-valuemin={0}
       aria-valuenow={Math.round(percent)}
-      className="h-2 overflow-hidden rounded-full bg-surface-subtle"
+      className="h-2 w-full overflow-hidden rounded-full bg-surface-subtle"
       role="progressbar"
     >
-      <div
-        // motion-reduce disables the sweep for anyone who's asked the OS for
-        // less animation — a bar animating on every keystroke is exactly the
-        // kind of motion that setting exists to suppress.
-        className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out motion-reduce:transition-none"
-        style={{ width: `${percent}%` }}
-      />
+      {started ? (
+        <div
+          // motion-reduce disables the sweep for anyone who's asked the OS for
+          // less animation.
+          className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out motion-reduce:transition-none"
+          style={{ width: `${width}%` }}
+        />
+      ) : (
+        // At 0% a plain empty track reads as BROKEN, not as "not started" —
+        // which on a fresh account is every progress bar on the page, on the one
+        // feature meant to motivate. A faint accent seed says "this is a bar,
+        // and it's waiting for you".
+        <div
+          aria-hidden
+          className="h-full w-1.5 rounded-full bg-accent/30"
+        />
+      )}
     </div>
   );
 }

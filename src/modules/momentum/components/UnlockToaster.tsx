@@ -27,7 +27,7 @@ export function UnlockToaster() {
         if (!achievement) return null;
         return (
           <div
-            className="momentum-toast-in rounded-lg border border-accent bg-surface p-4 shadow-lg"
+            className="momentum-toast-in rounded-lg border border-accent-border bg-surface/90 p-4 shadow-xl shadow-black/50 backdrop-blur-md"
             key={key}
             role="status"
           >

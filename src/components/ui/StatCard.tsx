@@ -5,13 +5,15 @@ interface StatCardProps {
   value: ReactNode;
   hint?: ReactNode;
   tone?: "default" | "accent" | "success" | "danger";
+  // "hero" is the page's single focal point. The app otherwise lives entirely
+  // between 12px and 24px, and size contrast is the cheapest hierarchy there is
+  // — exactly one of these per page.
+  size?: "default" | "hero";
+  // Lift on hover. Off by default: a card that moves when you're only reading it
+  // is noise. Turn it on where the card is actually interactive.
+  interactive?: boolean;
 }
 
-// Tone tints the container as well as the number. A dense grid of tiles is
-// scanned peripherally — a coloured digit alone is easy to miss, whereas a
-// tinted card reads at a glance, which is the whole job of a stat tile.
-// Kept SUBTLE: these sit many-to-a-screen, and a saturated fill would turn a
-// dashboard into a stoplight.
 const toneClasses = {
   default: "border-border bg-surface-subtle",
   accent: "border-accent-border bg-accent-surface",
@@ -31,21 +33,43 @@ export function StatCard({
   value,
   hint,
   tone = "default",
+  size = "default",
+  interactive = false,
 }: StatCardProps) {
+  const isHero = size === "hero";
+
   return (
     <div
-      className={`rounded-lg border px-4 py-3 transition-colors ${toneClasses[tone]}`}
+      className={[
+        "rounded-lg border transition-all duration-200 ease-in-out",
+        isHero ? "px-6 py-5" : "px-4 py-3",
+        toneClasses[tone],
+        interactive
+          ? "hover:scale-[1.02] hover:border-accent-border motion-reduce:hover:scale-100"
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-muted">
+      {/* The overline: uppercase, wide-tracked, muted. min-h keeps a two-line
+          label ("ML system design") from dropping its value a line below the
+          tiles beside it — the Prep scorecard row visibly broke because of this. */}
+      <p className="min-h-[2rem] text-xs font-medium uppercase leading-4 tracking-widest text-muted">
         {label}
       </p>
       {/* tabular-nums so a value ticking 9 -> 10 doesn't shift the tile's width */}
       <p
-        className={`mt-1 text-2xl font-semibold tabular-nums ${valueClasses[tone]}`}
+        className={[
+          "font-semibold tabular-nums tracking-tight",
+          isHero ? "mt-1 text-5xl" : "mt-1 text-2xl",
+          valueClasses[tone],
+        ].join(" ")}
       >
         {value}
       </p>
-      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+      {hint ? (
+        <p className="mt-1.5 text-xs leading-relaxed text-muted">{hint}</p>
+      ) : null}
     </div>
   );
 }

@@ -123,5 +123,12 @@ test("shows funnel counts and null-safe conversion rates", async ({ page }) => {
     page.getByRole("heading", { name: "Funnel snapshot" }),
   ).toBeVisible();
   await expect(page.getByText("—")).toHaveCount(3);
-  await expect(page.getByText("researching", { exact: true })).toBeVisible();
+  // Assert the RENDERED label, not the raw enum. This test used to read
+  // "researching" — the lowercase DOM text that CSS `capitalize` was prettifying
+  // — which is precisely why nobody noticed the funnel was rendering "oa" as
+  // "Oa". An acronym doesn't survive a text-transform; it needs a label map.
+  const funnel = page.getByRole("region", { name: "Funnel snapshot" });
+  await expect(funnel.getByText("Researching", { exact: true })).toBeVisible();
+  await expect(funnel.getByText("OA", { exact: true })).toBeVisible();
+  await expect(page.getByText("Oa", { exact: true })).toHaveCount(0);
 });

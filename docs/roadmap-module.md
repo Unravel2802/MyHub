@@ -109,23 +109,96 @@ surface, and it's the reason the skill tree earns its place next to the timeline
 
 ---
 
-## ★ Open decision: the existing gate-task convention overlaps this
+## ✅ Decided: the roadmap owns the truth
 
-`dashboardSelectors` already has a `Gate: <Month> <Year>` **task** convention (a parent task with
-subtasks), a `gateChecklistProgress` selector, a Dashboard panel, and a `npm run seed:gates` script.
+The Dashboard already tracked monthly gates via a `Gate: <Month> <Year>` task convention (parent
+task + subtasks), with its own selector, panel, and `seed:gates` script. That was a second, parallel
+system for the same information — and two sources of truth is how they drift. You'd tick the gate on
+the Kanban, the Roadmap page wouldn't know, and one of them would quietly become a lie.
 
-That is a *second*, parallel system for tracking exactly these monthly gates. **Two sources of truth
-for the same thing is how they drift.** Three options, and I'd want a call before building:
+**The roadmap catalog is now the single source of truth for gates.**
 
-1. **Roadmap module supersedes it (recommended).** The roadmap catalog becomes the source of truth;
-   the Dashboard's gate panel reads from the roadmap module instead of from tasks. Retire
-   `seed:gates`. One system.
-2. **Keep both, explicitly linked.** Roadmap items can *spawn* tasks ("add this to my board"), but the
-   roadmap owns completion. Tasks become a scratchpad, not a record.
-3. **Keep both, unlinked.** Simplest to build, worst to live with — they will disagree, and you won't
-   know which to believe.
+- The Dashboard's gate panel reads from the roadmap module instead of from tasks.
+- `seed:gates` is retired.
+- The roadmap can auto-fill criteria a task subtask never could ("20 algorithms — 12/20").
 
-I'd take (1), with (2) as a follow-up if you find you want roadmap items on the Kanban.
+Tasks stay what they're good at: today's work. The roadmap owns what the *month* means.
+
+---
+
+## Visualization — the point of the page
+
+Two constraints shape all of it: **no new dependencies** (the approved list has no chart or
+animation library) and **both themes**. Everything below is plain SVG plus the tokens and keyframes
+already shipped in `globals.css`.
+
+### The timeline is the lead: a metro line, not a progress bar
+
+Eleven months is too few for a sprawling flowchart and too many for a row of cards. What fits is a
+**transit line** — one track from July 2026 to graduation, a station per month.
+
+```
+Jul ●━━━━━● Aug ━━━━━● Sep ━━━━━◉ Oct ─ ─ ─ ○ Nov ─ ─ ─ ○ Dec ...
+    done    done      done    ┃ YOU ARE HERE   upcoming
+                              ┗━ pulse-glow, accent
+```
+
+The details are what make it feel alive:
+
+- **The track fills as you progress.** Solid accent behind you, dashed muted ahead, and the segment
+  you're *inside* fills proportionally to that month's completion. The line literally advances as you
+  tick things off.
+- **"You are here" reuses `pulse-glow`** — the same keyframe as the streak flame. Same signal: this
+  is live, this is now.
+- **A missed month keeps a red ring, permanently.** Not softened to grey, not rolled forward. This is
+  deliberate and it is the feature: a roadmap that hides an incomplete month lets you drift a whole
+  semester without noticing, which is exactly what §16 warns against. It should be uncomfortable to
+  look at when you're behind.
+- **Click a station** → it expands into its criteria. Auto ones as filled bars
+  (`20 algorithms ▓▓▓▓▓▓░░░░ 12/20`), manual ones as checkboxes. Tick the last one and the station
+  snaps to filled.
+
+### The radar chart, second panel
+
+§6.1's target is literally **"strong across the board"** — so make "across the board" a *shape*.
+~60 lines of SVG, no library.
+
+```
+              Algorithms
+   Recruiting     ╱╲      Backend
+            ╱  ·······  ╲
+           ╱ ·    ▲    · ╲
+ Portfolio ·     ╱ ╲     · Distributed
+           ╲ ·  ·····  · ╱
+   System   ╲___________╱  ML systems
+   design
+
+  ▬▬ target (Strong, all 7)   ▓▓ claimed   ┈┈ measured
+```
+
+Three layers. The outer heptagon is the goal. Your **claimed** levels fill a solid polygon. And the
+one that earns its keep: a **dashed polygon of measured evidence** drawn from real data.
+
+Claim Strong on Algorithms while averaging 38 minutes against a 20–30 target, and the dashed line
+pulls visibly inward from your claim. Same for Recruiting, drawn from your actual funnel. It's a
+picture of self-image versus reality — uncomfortable in the way that's useful.
+
+### Supporting elements
+
+- **Countdown hero** — "May 2027 · 289 days". The one number that never stops mattering, and it makes
+  the page feel like it's moving even on a day you do nothing.
+- **Gate completion reuses the achievement toaster.** Already built, already announces to screen
+  readers. Clearing a gate should *feel* like the milestone it is.
+- **Density strip** under the timeline — a tick per active day, so the streak has somewhere to live
+  visually and you can see the shape of the year.
+
+### Interaction
+
+Click **or arrow-key** along the stations — keyboard-navigable, no exceptions; we already have a focus
+ring and an a11y suite and I'm not shipping a viz that needs a mouse. Hover a radar vertex for the
+verbatim Minimum/Strong text. Ticks persist optimistically with rollback, like everything else.
+
+All motion behind `motion-reduce`, which `globals.css` already enforces globally.
 
 ---
 

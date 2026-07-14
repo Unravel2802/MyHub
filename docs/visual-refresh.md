@@ -35,10 +35,18 @@ reads as unfinished — **dark mode is carrying the entire product.**
 
 `--subtle` fails AA in **both** themes. It's used for secondary text throughout.
 
-### ★ 1.3 Not mobile-fluid (measured)
+### 1.3 ~~Not mobile-fluid~~ — **RETRACTED. This finding was wrong.**
 
-At a 375px viewport, `document.body.scrollWidth` is **472px** — the app overflows horizontally on a
-phone. The objective is mobile-first; today it isn't even mobile-*capable*.
+I originally reported a 472px horizontal overflow at 375px. **That was a measurement error** — I set
+`documentElement.style.width`, which does not reflow like a real viewport. Re-measured with proper
+viewport emulation, **no page overflows**, at 390px or anything else.
+
+`tests/ui/responsive.spec.ts` now pins this across all eight pages, so it's checked rather than
+asserted.
+
+The real mobile problem was different, and styling wouldn't have found it either: **the nav rail ate
+the entire first screen.** You scrolled past eight links, a theme toggle and sign-out before reaching
+any content. Fixed in C3 — collapsed behind a Menu disclosure below `lg`.
 
 ### ★ 1.4 Keyboard navigation is invisible
 
@@ -186,7 +194,7 @@ Codex owns the application of them.** Codex is blocked until Claude's commits la
 
 ### Claude Code
 
-**C1 — Token foundation** (`app/globals.css`) ★ *the whole spec lives or dies here*
+**C1 — Token foundation** ✅ **DONE** — `3a31087`
 Re-point every token at §2.1: zinc base, the fixed light ramp (canvas steps down to `zinc-100` so
 cards finally sit *on* something), **teal → indigo/violet accent**, and `--subtle` raised until it
 clears 4.5:1 in both themes — measured, not eyeballed. Add the display type step, the
@@ -196,7 +204,7 @@ clears 4.5:1 in both themes — measured, not eyeballed. Add the display type st
 Because components already speak in semantic names, this single file changes the app's entire
 appearance without touching a component. That's the payoff of §2.0.
 
-**C2 — Primitive contracts** (`src/components/ui/`)
+**C2 — Primitive contracts** ✅ **DONE** — `17f7d7f`
 - `ProgressBar` — mount at 0 so the transition actually fires; a visible "not started" treatment so
   0% stops looking broken.
 - `StatCard` — add `size?: "default" | "hero"`; hover lift (`hover:scale-[1.02]`, motion-reduce
@@ -208,7 +216,7 @@ appearance without touching a component. That's the payoff of §2.0.
 - `UnlockToaster` gets the **glass treatment** (§2.3): `backdrop-blur-md` + border +
   `shadow-xl shadow-black/50`. It's the one genuinely floating element in the app.
 
-**C3 — Responsive shell** (`AppShell`)
+**C3 — Responsive shell** ✅ **DONE** — `17f7d7f`
 Fix the 375px overflow (§1.3): sidebar becomes a drawer below `lg`, grid goes single-column.
 Shell-level, so it's mine.
 
@@ -222,7 +230,7 @@ your pipeline"; Prep and Outreach lead with progress rather than a form.
 the last stage; the `<details>` form section defaults to `open` (consider closed); empty pipeline
 columns are large dead boxes.
 
-**X2 — Presentational / container split**
+**X2 — Presentational / container split** ✅ **DONE** — merged in `737e0b0`
 Extract the logic-free views (`TaskCard`, `FunnelPanel`, `AchievementCard`, scorecard tiles…) from
 the store-connected containers. Containers call the Zustand stores; presentational components take
 props only and never import a store. This is the "reusable, modular" objective, and it makes X3
@@ -287,17 +295,59 @@ unlock toaster and error banners; verify AA against the new tokens; check 375px 
   breaks, the DOM changed in a way it shouldn't have — fix the component, not the test.
 - Full gate (`lint`, `typecheck`, `test`, `test:ui`) before every commit.
 
-## Sequencing
+## Sequencing — where we actually are
 
 ```
-Codex   X1 (IA flip) ✅ done — 0caf81d
+DONE  X1  IA flip                          0caf81d   (Codex)
+DONE  C1  tokens, indigo, AA, focus ring   3a31087   (Claude)
+DONE  C2  primitives                       17f7d7f   (Claude)
+DONE  C3  responsive shell                 17f7d7f   (Claude)
+DONE  X2  presentational/container split   737e0b0   (Codex, merged onto C2/C3)
 
-Claude  C1 (tokens + accent + focus ring)  →  C2 (primitives)  →  C3 (responsive shell)
-                                                    ↓
-                                        Codex is BLOCKED until C1 lands
-                                                    ↓
-Codex   X2 (component split)  →  X3 Dashboard ──review──▶ X3 rest  →  X4  →  X5
+NEXT  X4  motion, colour, empty states               (Codex)  ── in parallel ──
+NEXT  X5  accessibility sweep                        (Claude) ──     with    ──
 ```
 
-**Next up: C1.** Everything visual is blocked on it — and because components already speak in
-semantic tokens (§2.0), C1 alone changes the entire app's appearance without touching a component.
+X4 and X5 are independent and run in parallel. X5 is verification (measuring, tabbing, checking
+announcements); X4 is applied styling across six pages.
+
+**Note on collisions.** Codex started X2 before C2/C3 landed and had 20 files in flight against the
+old primitives. Nothing was lost — the work was stashed, replayed on top, and only two files
+conflicted (both *convergently*: Codex had independently reached the same `size="hero"` API and the
+same "don't tint a null rate" rule). But it cost a merge. **Pull before starting a task.**
+
+---
+
+## X4 — Codex: motion, colour, empty states
+
+The keyframes and primitives exist and are unused. This is the pass that spends them.
+
+- **Motion.** `fade-up` on card grids (set `--i` per index so they cascade rather than all landing at
+  once). `pulse-glow` on the streak flame — **only when `activeToday`**; a dead streak must never look
+  celebratory. `transition-all duration-200 ease-in-out` on every remaining interactive element.
+- **Colour.** `success` surfaces on anything genuinely good: a passed mock, a hit cadence target, an
+  unlocked achievement, an `offer` stage. Use the `text-xs uppercase tracking-widest` overline hard
+  to break up dense panels.
+- **Empty states.** `EmptyState` is built and waiting. Replace every grey shrug with something that
+  sells the next action, tied to the roadmap:
+
+  > **Before:** "No prep sessions logged yet."
+  > **After:** "Your first rep starts the December count. 75 to go." + the log button, right there.
+
+- **Leftovers from the X1 review:** the CRM pipeline clips its last stage; the `<details>` form
+  section defaults to `open` (consider closed); empty pipeline columns are large dead boxes.
+
+**The one rule that keeps biting:** never tint a card showing a zero or an em-dash. It highlights
+*absence*. Two components have already made this mistake and been fixed.
+
+## X5 — Claude: accessibility sweep
+
+The global `focus-visible` ring landed in C1, but nobody has actually keyboard-navigated the app.
+
+- Tab every flow end to end. The **Kanban drag needs a keyboard path** — `@dnd-kit` provides one, but
+  it has never been exercised.
+- **`aria-live` on the unlock toaster** — without it a screen reader never hears an achievement fire,
+  which is the entire feature.
+- `aria-live` on error banners.
+- Re-verify AA against the shipped tokens (C1 measured them; confirm nothing regressed).
+- Confirm the mobile nav disclosure is announced and focus-managed.

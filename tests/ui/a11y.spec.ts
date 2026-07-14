@@ -4,8 +4,15 @@ import { FakeTaskDb, mockSupabaseTasks, row } from "./supabaseTasksMock";
 // Accessibility guarantees, exercised rather than assumed. Every one of these
 // pins something a sighted mouse user would never notice breaking.
 
-test("every interactive element gets a visible focus ring", async ({ page }) => {
+test("every interactive element gets a visible focus ring", async ({
+  page,
+}) => {
   await page.goto("/dashboard");
+  // Wait for the page to be interactive before tabbing. Pressing Tab into a
+  // still-hydrating page focuses <body>, which has nothing to assert on — it
+  // passed alone and failed intermittently under full-suite load, which is the
+  // worst way for a test to fail.
+  await expect(page.getByRole("link", { name: "Task Engine" })).toBeVisible();
 
   // The app previously had exactly ONE :focus rule in the whole stylesheet, so
   // keyboard users could not tell where they were. This asserts the global
@@ -15,7 +22,11 @@ test("every interactive element gets a visible focus ring", async ({ page }) => 
     const el = document.activeElement;
     if (!el || el === document.body) return null;
     const s = getComputedStyle(el);
-    return { tag: el.tagName.toLowerCase(), width: s.outlineWidth, style: s.outlineStyle };
+    return {
+      tag: el.tagName.toLowerCase(),
+      width: s.outlineWidth,
+      style: s.outlineStyle,
+    };
   });
 
   expect(outline, "nothing received focus on Tab").not.toBeNull();
@@ -73,13 +84,16 @@ test("the mobile nav disclosure is announced and toggles", async ({ page }) => {
   await expect(toggle).toHaveAttribute("aria-controls", "app-nav");
 
   await toggle.click();
-  await expect(
-    page.getByRole("button", { name: "Close" }),
-  ).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("button", { name: "Close" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
   await expect(page.getByRole("link", { name: "Prep Tracker" })).toBeVisible();
 });
 
-test("achievement unlocks are announced to screen readers", async ({ page }) => {
+test("achievement unlocks are announced to screen readers", async ({
+  page,
+}) => {
   await page.goto("/dashboard");
 
   // Without a live region a screen reader never hears an achievement fire —

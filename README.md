@@ -82,7 +82,6 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 npm run seed:schedule -- --dry-run   # preview, then run without --dry-run to create
-npm run seed:gates -- --dry-run      # preview, then run without --dry-run to create
 npm run backup                       # dumps all tables to backups/<timestamp>/ as JSON
 ```
 

@@ -164,7 +164,6 @@ beforeEach(() => {
     scheduleBlocks: [],
     followUps: [],
     postMortemReminders: [],
-    gateChecklist: null,
     prepScorecard: null,
     weakestTopics: [],
     checkpointProgress: null,
@@ -221,9 +220,6 @@ describe("useDashboardStore", () => {
           interview: expect.objectContaining({ id: "interview" }),
         }),
       ],
-      gateChecklist: expect.objectContaining({
-        task: expect.objectContaining({ id: "gate" }),
-      }),
       prepScorecard: expect.objectContaining({ attempted: 1 }),
       weakestTopics: [expect.objectContaining({ topic: "graphs" })],
       checkpointProgress: expect.objectContaining({

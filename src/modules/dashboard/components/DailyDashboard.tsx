@@ -13,6 +13,7 @@ import {
 } from "@/src/modules/dashboard/components/DashboardCards";
 import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
+import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
 
 const targetLabels = [
   ["algorithm", "Algorithms"],
@@ -24,12 +25,22 @@ const targetLabels = [
 export function DailyDashboard() {
   const dashboard = useDashboardStore();
   const streak = useMomentumStore((state) => state.streak);
+  const roadmap = useRoadmapStore();
+  const fetchRoadmap = useRoadmapStore((state) => state.fetchRoadmap);
   const { fetchAll, subscribeToUpdates } = dashboard;
 
   useEffect(() => {
     void fetchAll();
     return subscribeToUpdates();
   }, [fetchAll, subscribeToUpdates]);
+
+  useEffect(() => {
+    void fetchRoadmap();
+  }, [fetchRoadmap]);
+
+  const currentGate = roadmap.months.find(
+    (month) => month.month.key === roadmap.currentMonth,
+  );
 
   return (
     <AppShell activeHref="/dashboard" title="Daily Dashboard">
@@ -249,31 +260,31 @@ export function DailyDashboard() {
             <h3 className="text-lg font-semibold" id="gate-heading">
               Current gate checklist
             </h3>
-            {dashboard.gateChecklist ? (
+            {currentGate ? (
               <>
                 <div className="mt-3 flex items-center justify-between text-sm">
                   <span>
-                    {dashboard.gateChecklist.completed}/
-                    {dashboard.gateChecklist.total} complete
+                    {currentGate.metCount}/{currentGate.totalCount} complete
                   </span>
-                  <span className="text-muted">
-                    {dashboard.gateChecklist.task.title}
-                  </span>
+                  <span className="text-muted">{currentGate.month.label}</span>
                 </div>
                 <ProgressBar
                   progress={
-                    dashboard.gateChecklist.total === 0
+                    currentGate.totalCount === 0
                       ? 0
-                      : dashboard.gateChecklist.completed /
-                        dashboard.gateChecklist.total
+                      : currentGate.metCount / currentGate.totalCount
                   }
                 />
+                <p className="mt-3 text-sm leading-relaxed text-muted">
+                  {currentGate.month.gate ||
+                    "No gate text is defined for this month."}
+                </p>
               </>
             ) : (
               <EmptyState
-                description="The monthly gate appears when its checklist task is created in Task Engine."
-                action={<Link href="/tasks">Open Task Engine</Link>}
-                title="No gate checklist yet"
+                description="The roadmap gate will appear once the current month is loaded."
+                action={<Link href="/roadmap">Open Roadmap</Link>}
+                title="Loading the current gate"
               />
             )}
           </section>

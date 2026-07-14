@@ -23,14 +23,11 @@ import type {
 import type { Scorecard, TopicStat } from "@/src/modules/prep/prepScorecard";
 import type { CheckpointProgress } from "@/src/modules/prep/prepTargets";
 import type {
-  GateChecklistProgress,
   PostMortemReminder,
   WeeklyCadence,
 } from "@/src/modules/dashboard/dashboardSelectors";
 import {
   applicationsNeedingFollowUp,
-  findGateChecklistTask,
-  gateChecklistProgress,
   interviewsNeedingPostMortem,
   thisWeeksScheduleBlocks,
   weeklyCadence as weeklyCadenceFor,
@@ -55,7 +52,6 @@ export interface DashboardStore {
   scheduleBlocks: Task[];
   followUps: Application[];
   postMortemReminders: PostMortemReminder[];
-  gateChecklist: GateChecklistProgress | null;
   prepScorecard: Scorecard | null;
   weakestTopics: TopicStat[];
   // Added 2026-07-13, now that engineering_first_roadmap_v2.md's numbers exist.
@@ -87,7 +83,6 @@ export const useDashboardStore = create<DashboardStore>(() => ({
   scheduleBlocks: [],
   followUps: [],
   postMortemReminders: [],
-  gateChecklist: null,
   prepScorecard: null,
   weakestTopics: [],
   checkpointProgress: null,
@@ -119,14 +114,12 @@ export const useDashboardStore = create<DashboardStore>(() => ({
       const now = new Date();
       const today = format(now, "yyyy-MM-dd");
       const currentMonth = format(now, "yyyy-MM");
-      const gateTask = findGateChecklistTask(tasks, now);
       const checkpoint = activeCheckpoint(today);
 
       useDashboardStore.setState({
         scheduleBlocks: thisWeeksScheduleBlocks(tasks, now),
         followUps: applicationsNeedingFollowUp(applications, today),
         postMortemReminders: interviewsNeedingPostMortem(interviews, now),
-        gateChecklist: gateTask ? gateChecklistProgress(tasks, gateTask) : null,
         prepScorecard: scorecardFor(prepEntries, currentMonth),
         weakestTopics: weakestTopicsFor(prepEntries),
         checkpointProgress: progressTowardCheckpoint(prepEntries, checkpoint),

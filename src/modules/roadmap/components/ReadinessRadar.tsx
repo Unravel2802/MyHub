@@ -175,7 +175,18 @@ export function ReadinessRadar({
 
                 {evidence ? (
                   <p
-                    className={`mt-1 text-xs font-medium ${contradicted ? "text-danger" : "text-success"}`}
+                    className={`mt-1 text-xs font-medium ${
+                      contradicted
+                        ? "text-danger"
+                        : evidence.supported === "not_started"
+                          ? // "No timed attempts yet" is ABSENCE, not success.
+                            // Painting it green congratulates you for having no
+                            // data — the same tint-on-nothing mistake already
+                            // fixed on the achievements streak card and the CRM
+                            // offer rate. Third time. Muted.
+                            "text-muted"
+                          : "text-success"
+                    }`}
                   >
                     {contradicted ? "Your data says: " : "Evidence: "}
                     {evidence.detail}

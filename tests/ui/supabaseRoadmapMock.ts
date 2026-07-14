@@ -47,8 +47,35 @@ export async function mockSupabaseRoadmap(page: Page, db: FakeRoadmapDb) {
       return;
     }
 
-    // Supabase upsert -> POST with Prefer: resolution=merge-duplicates
+    // Supabase upsert -> POST with Prefer: resolution=merge-duplicates.
+    //
+    // The mock used to accept any POST, which is why it never caught that the
+    // real database was rejecting every upsert with 42P10 ("no unique or
+    // exclusion constraint matching the ON CONFLICT specification") — the
+    // partial unique index in migration 0014 could not serve as an ON CONFLICT
+    // target. Ticks and readiness claims silently failed and rolled back, and
+    // the suite was green throughout.
+    //
+    // So the mock now insists on what Postgres insists on: an upsert must name
+    // its conflict target, and that target must be a plain unique constraint
+    // (migration 0015).
     if (method === "POST") {
+      const url = new URL(request.url());
+      const prefer = request.headers()["prefer"] ?? "";
+      if (prefer.includes("merge-duplicates")) {
+        if (url.searchParams.get("on_conflict") !== "item_key") {
+          await route.fulfill({
+            status: 400,
+            contentType: "application/json",
+            body: JSON.stringify({
+              code: "42P10",
+              message:
+                "there is no unique or exclusion constraint matching the ON CONFLICT specification",
+            }),
+          });
+          return;
+        }
+      }
       const payload = request.postDataJSON() as Partial<RoadmapRow>;
       const existing = db.rows.find(
         (r) => r.item_key === payload.item_key && r.deleted_at === null,

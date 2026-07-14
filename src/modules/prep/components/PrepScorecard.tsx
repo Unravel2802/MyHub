@@ -1,3 +1,4 @@
+import { StatCard } from "@/src/components/ui/StatCard";
 import type { Scorecard, TopicStat } from "@/src/modules/prep/prepScorecard";
 import {
   activeCheckpoint,
@@ -63,38 +64,48 @@ export function PrepScorecard({
         </label>
       </div>
 
+      {/* StatCard, not hand-rolled tiles. These were bespoke divs, which is why
+          "ML system design" wrapped to two lines and dropped its number a line
+          below the four tiles beside it — the row visibly broke. StatCard carries
+          the label min-height that keeps a wrapped label from shifting its value. */}
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
         {countLabels.map((item) => (
-          <div className="rounded-md bg-surface-subtle p-3" key={item.key}>
-            <p className="text-xs text-muted">{item.label}</p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">
-              {scorecard.countsByType[item.key]}
-            </p>
-          </div>
+          <StatCard
+            key={item.key}
+            label={item.label}
+            value={scorecard.countsByType[item.key]}
+          />
         ))}
       </div>
 
+      {/* No-data cases render as an em-dash with the explanation as a HINT.
+          "No judged attempts" and "No timing data" were previously set at value
+          size and weight — a sentence dressed up as a statistic, which reads as
+          noise in a row of numbers. Same null-vs-zero discipline as the funnel:
+          absence is "—", never a number. */}
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-md border border-border p-3">
-          <p className="text-xs text-muted">Solved / attempted</p>
-          <p className="mt-1 font-semibold text-foreground">
-            {scorecard.solved} / {scorecard.attempted}
-          </p>
-        </div>
-        <div className="rounded-md border border-border p-3">
-          <p className="text-xs text-muted">Solve rate</p>
-          <p className="mt-1 font-semibold text-foreground">
-            {percent(scorecard.solveRate)}
-          </p>
-        </div>
-        <div className="rounded-md border border-border p-3">
-          <p className="text-xs text-muted">Average solve time</p>
-          <p className="mt-1 font-semibold text-foreground">
-            {scorecard.averageTimeToSolveMin === null
-              ? "No timing data"
-              : `${Math.round(scorecard.averageTimeToSolveMin)} min`}
-          </p>
-        </div>
+        <StatCard
+          label="Solved / attempted"
+          value={`${scorecard.solved} / ${scorecard.attempted}`}
+        />
+        <StatCard
+          hint={scorecard.solveRate === null ? "No judged attempts yet" : undefined}
+          label="Solve rate"
+          value={scorecard.solveRate === null ? "—" : percent(scorecard.solveRate)}
+        />
+        <StatCard
+          hint={
+            scorecard.averageTimeToSolveMin === null
+              ? "No timed attempts yet"
+              : undefined
+          }
+          label="Average solve time"
+          value={
+            scorecard.averageTimeToSolveMin === null
+              ? "—"
+              : `${Math.round(scorecard.averageTimeToSolveMin)} min`
+          }
+        />
       </div>
 
       <div className="mt-5">

@@ -94,7 +94,12 @@ export function JobApplicationCrm() {
           </div>
         </div>
 
-        <details className="mx-4 mb-6 rounded-lg border border-border bg-surface sm:mx-6 lg:mx-8">
+        {/* `open` by default. Collapsing the form outright doesn't just fail the
+              specs — it hides the primary action from anyone tabbing through, and
+              a disclosure you must find before you can do anything is worse than a
+              form you can scroll past. Data-first is achieved by putting the form
+              BELOW the data, not by hiding it. */}
+          <details className="mx-4 mb-6 rounded-lg border border-border bg-surface sm:mx-6 lg:mx-8" open>
           <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
             Add to your pipeline
           </summary>

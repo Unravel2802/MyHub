@@ -113,17 +113,23 @@ export function PrepTracker() {
             pendingIds={pending}
             stories={stories}
           />
-          <details className="rounded-lg border border-border bg-surface">
-            <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
+          {/* The entry LIST is data — it belongs on the page, not hidden behind a
+              "Log a prep session" toggle. Burying your recent sessions under a
+              form is exactly the form-first pattern the IA flip was undoing. */}
+          <PrepEntryList
+            entries={entries}
+            onDelete={confirmEntryDelete}
+            pendingIds={pending}
+          />
+          {/* `open` by default, matching the CRM's "Add to your pipeline". The
+              form sits BELOW the data, which is the point — collapsing it
+              entirely also hid it from the keyboard and from the specs. */}
+          <details className="rounded-lg border border-border bg-surface" open>
+            <summary className="cursor-pointer px-5 py-4 text-lg font-semibold tracking-tight text-foreground">
               Log a prep session
             </summary>
-            <div className="grid gap-6 border-t border-border p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <div className="border-t border-border p-5">
               <PrepEntryForm disabled={isCreating} onCreate={createEntry} />
-              <PrepEntryList
-                entries={entries}
-                onDelete={confirmEntryDelete}
-                pendingIds={pending}
-              />
             </div>
           </details>
         </div>

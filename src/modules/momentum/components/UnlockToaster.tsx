@@ -16,19 +16,29 @@ export function UnlockToaster() {
     return () => timers.forEach(window.clearTimeout);
   }, [dismissToast, pendingToasts]);
 
-  if (pendingToasts.length === 0) return null;
+  // The live region is ALWAYS mounted, even with nothing to show.
+  //
+  // It used to `return null` when empty, which meant the aria-live container was
+  // created at the same moment the toast was inserted into it — and a live region
+  // that doesn't already exist announces nothing. Screen readers watch a region
+  // for CHANGES; if the region itself is the change, there's nothing to compare
+  // against and the announcement is silently dropped. So an achievement unlock —
+  // the whole point of the feature — was never announced to anyone using one.
+  //
+  // Mounting it empty (it's zero-height with no children) means the insertion is
+  // a change WITHIN an existing region, which is what actually gets spoken.
   return (
     <div
       aria-live="polite"
       aria-label="Achievement unlocks"
-      className="fixed bottom-4 right-4 z-50 grid w-80 gap-2"
+      className="pointer-events-none fixed bottom-4 right-4 z-50 grid w-80 gap-2"
     >
       {[...new Set(pendingToasts)].map((key) => {
         const achievement = ACHIEVEMENTS_BY_KEY[key];
         if (!achievement) return null;
         return (
           <div
-            className="momentum-toast-in rounded-lg border border-accent-border bg-surface/90 p-4 shadow-xl shadow-black/50 backdrop-blur-md"
+            className="momentum-toast-in pointer-events-auto rounded-lg border border-accent-border bg-surface/90 p-4 shadow-xl shadow-black/50 backdrop-blur-md"
             key={key}
             role="status"
           >

@@ -7,6 +7,7 @@ import type { Company } from "@/src/modules/jobApplications/types";
 import { OutreachEntryForm } from "@/src/modules/outreach/components/OutreachEntryForm";
 import { OutreachEntryList } from "@/src/modules/outreach/components/OutreachEntryList";
 import { useOutreachStore } from "@/src/modules/outreach/useOutreachStore";
+import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
 
 export function OutreachLog() {
   const {
@@ -21,11 +22,21 @@ export function OutreachLog() {
   } = useOutreachStore();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyError, setCompanyError] = useState<string | null>(null);
+  const {
+    weeklyCadence,
+    fetchAll: fetchDashboard,
+    subscribeToUpdates,
+  } = useDashboardStore();
   const pending = useMemo(() => new Set(pendingIds), [pendingIds]);
 
   useEffect(() => {
     void fetchEntries();
   }, [fetchEntries]);
+
+  useEffect(() => {
+    void fetchDashboard();
+    return subscribeToUpdates();
+  }, [fetchDashboard, subscribeToUpdates]);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,18 +102,48 @@ export function OutreachLog() {
           </p>
         ) : null}
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-          <OutreachEntryForm
-            companies={companies}
-            disabled={isCreating}
-            onCreate={createEntry}
-          />
+        <section
+          aria-labelledby="outreach-cadence-heading"
+          className="mb-6 rounded-lg border border-border bg-surface p-5"
+        >
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2
+                className="text-xl font-semibold text-foreground"
+                id="outreach-cadence-heading"
+              >
+                This week&apos;s cadence
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                Two to three conversations keeps the referral pipeline alive.
+              </p>
+            </div>
+            <p className="text-3xl font-semibold tabular-nums text-accent-strong">
+              {weeklyCadence?.outreach.count ?? 0}
+              <span className="text-base font-normal text-muted"> / 2–3</span>
+            </p>
+          </div>
+        </section>
+
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <OutreachEntryList
             companies={companies}
             entries={entries}
             onDelete={confirmDelete}
             pendingIds={pending}
           />
+          <details className="rounded-lg border border-border bg-surface" open>
+            <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
+              Log a conversation
+            </summary>
+            <div className="border-t border-border p-5">
+              <OutreachEntryForm
+                companies={companies}
+                disabled={isCreating}
+                onCreate={createEntry}
+              />
+            </div>
+          </details>
         </div>
       </section>
     </AppShell>

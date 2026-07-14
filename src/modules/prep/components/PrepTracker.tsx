@@ -77,16 +77,8 @@ export function PrepTracker() {
           </p>
         ) : null}
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <div className="grid content-start gap-6">
-            <PrepEntryForm disabled={isCreating} onCreate={createEntry} />
-            <PrepEntryList
-              entries={entries}
-              onDelete={confirmEntryDelete}
-              pendingIds={pending}
-            />
-          </div>
-          <div className="grid content-start gap-6">
+        <div className="grid gap-6">
+          <div className="grid content-start gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <PrepScorecard
               entries={entries}
               month={month}
@@ -95,15 +87,28 @@ export function PrepTracker() {
               topics={topics}
             />
             <TimeAllocationPanel entries={entries} />
-            <BehavioralStories
-              disabled={isCreating}
-              onCreate={createStory}
-              onDelete={confirmStoryDelete}
-              onUpdate={updateStory}
-              pendingIds={pending}
-              stories={stories}
-            />
           </div>
+          <BehavioralStories
+            disabled={isCreating}
+            onCreate={createStory}
+            onDelete={confirmStoryDelete}
+            onUpdate={updateStory}
+            pendingIds={pending}
+            stories={stories}
+          />
+          <details className="rounded-lg border border-border bg-surface" open>
+            <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
+              Log a prep session
+            </summary>
+            <div className="grid gap-6 border-t border-border p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+              <PrepEntryForm disabled={isCreating} onCreate={createEntry} />
+              <PrepEntryList
+                entries={entries}
+                onDelete={confirmEntryDelete}
+                pendingIds={pending}
+              />
+            </div>
+          </details>
         </div>
       </section>
     </AppShell>

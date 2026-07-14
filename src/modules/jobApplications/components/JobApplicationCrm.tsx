@@ -76,35 +76,6 @@ export function JobApplicationCrm() {
           </p>
         ) : null}
 
-        <div className="mt-6 grid gap-6 px-4 sm:px-6 lg:grid-cols-2 lg:px-8 xl:grid-cols-3">
-          <CompanyPanel
-            applications={store.applications}
-            companies={store.companies}
-            disabled={store.isCreating}
-            onCreate={store.createCompany}
-            onDelete={deleteCompany}
-            pendingIds={pending}
-          />
-          <ApplicationForm
-            companies={store.companies}
-            disabled={store.isCreating}
-            onCreate={store.createApplication}
-          />
-          <InterviewPanel
-            applications={store.applications}
-            companies={store.companies}
-            disabled={store.isCreating}
-            interviews={store.interviews}
-            onComplete={store.markInterviewCompleted}
-            onCreate={store.createInterview}
-            onDelete={deleteInterview}
-            onSavePostMortem={(id, notes) =>
-              store.updateInterview(id, { postMortemNotes: notes })
-            }
-            pendingIds={pending}
-          />
-        </div>
-
         <div className="mt-8 grid gap-8 px-4 pb-6 sm:px-6 lg:px-8">
           <FunnelPanel funnel={store.funnel()} />
           <div className="overflow-x-auto">
@@ -118,6 +89,43 @@ export function JobApplicationCrm() {
             />
           </div>
         </div>
+
+        <details
+          className="mx-4 mb-6 rounded-lg border border-border bg-surface sm:mx-6 lg:mx-8"
+          open
+        >
+          <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
+            Add to your pipeline
+          </summary>
+          <div className="grid gap-6 border-t border-border p-5 lg:grid-cols-2 xl:grid-cols-3">
+            <CompanyPanel
+              applications={store.applications}
+              companies={store.companies}
+              disabled={store.isCreating}
+              onCreate={store.createCompany}
+              onDelete={deleteCompany}
+              pendingIds={pending}
+            />
+            <ApplicationForm
+              companies={store.companies}
+              disabled={store.isCreating}
+              onCreate={store.createApplication}
+            />
+            <InterviewPanel
+              applications={store.applications}
+              companies={store.companies}
+              disabled={store.isCreating}
+              interviews={store.interviews}
+              onComplete={store.markInterviewCompleted}
+              onCreate={store.createInterview}
+              onDelete={deleteInterview}
+              onSavePostMortem={(id, notes) =>
+                store.updateInterview(id, { postMortemNotes: notes })
+              }
+              pendingIds={pending}
+            />
+          </div>
+        </details>
       </section>
     </AppShell>
   );

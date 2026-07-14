@@ -8,71 +8,72 @@
    rather than raw colors, so a theme is one block of overrides rather than a
    `dark:` variant on every utility. */
 :root {
-  --canvas: #fafaf9;
+  /* Light: the canvas steps DOWN so a white surface sits ON something. The old
+     ramp was canvas #fafaf9 / surface #ffffff — a 1.04:1 contrast ratio, i.e.
+     no figure/ground at all, with a 1px border doing 100% of the work. That is
+     why light mode read as unfinished. */
+  --canvas: #f4f4f5; /* zinc-100 */
   --surface: #ffffff;
-  --surface-subtle: #fafaf9;
+  --surface-subtle: #fafafa; /* zinc-50 */
+  --surface-raised: #ffffff;
 
-  --foreground: #09090b;
-  --body: #3f3f46;
-  --muted: #71717a;
-  --subtle: #a1a1aa;
+  --foreground: #09090b; /* zinc-950 */
+  --body: #3f3f46; /* zinc-700 */
+  --muted: #52525b; /* zinc-600 */
+  --subtle: #52525b; /* zinc-600 — was zinc-400 (#a1a1aa), 2.56:1, failed AA */
 
-  --border: #e4e4e7;
+  --border: #e4e4e7; /* zinc-200 */
   --input: #d4d4d8;
   --input-hover: #a1a1aa;
 
-  --primary: #09090b;
+  --primary: #4f46e5; /* indigo-600 */
   --primary-foreground: #ffffff;
-  --primary-hover: #27272a;
+  --primary-hover: #4338ca; /* indigo-700 */
   --disabled: #a1a1aa;
 
-  --accent: #0d9488;
-  --accent-strong: #0f766e;
-  /* Tinted backdrop for accent-on-accent surfaces (pills, stat tiles). Without
-     it, a badge painting `accent` text on an `accent` fill is teal-on-teal and
-     effectively unreadable — `danger` already had this pair, `accent` didn't. */
-  --accent-surface: #f0fdfa;
-  --accent-border: #99f6e4;
+  /* Single vibrant accent: indigo. Primary actions, active nav, focus ring, and
+     the streak flame. */
+  --accent: #4f46e5; /* indigo-600 */
+  --accent-strong: #4338ca; /* indigo-700 */
+  --accent-surface: #eef2ff; /* indigo-50 */
+  --accent-border: #c7d2fe; /* indigo-200 */
 
-  /* Success is its own hue, not an alias of accent: accent is "this is the
-     active/primary thing", success is "this went well". Reusing accent for both
-     made a passed mock and a selected tab look identical. */
   --success: #15803d;
   --success-surface: #f0fdf4;
   --success-border: #bbf7d0;
 
   --danger: #b91c1c;
-  --danger-subtle: #fca5a5;
+  --danger-subtle: #ef4444;
   --danger-surface: #fef2f2;
   --danger-border: #fecaca;
   --danger-border-hover: #fca5a5;
 }
 
 .dark {
-  --canvas: #09090b;
-  --surface: #18181b;
-  --surface-subtle: #27272a;
+  /* Deep greys, never pure black. */
+  --canvas: #09090b; /* zinc-950 */
+  --surface: #18181b; /* zinc-900 */
+  --surface-subtle: #27272a; /* zinc-800 */
+  --surface-raised: #1f1f23;
 
-  --foreground: #fafafa;
-  --body: #d4d4d8;
-  --muted: #a1a1aa;
-  --subtle: #71717a;
+  --foreground: #fafafa; /* zinc-50 */
+  --body: #d4d4d8; /* zinc-300 */
+  --muted: #a1a1aa; /* zinc-400 */
+  --subtle: #a1a1aa; /* zinc-400 — was zinc-500 (#71717a), 3.67:1, failed AA */
 
-  --border: #27272a;
+  --border: #27272a; /* zinc-800 */
   --input: #3f3f46;
   --input-hover: #52525b;
 
-  --primary: #fafafa;
-  --primary-foreground: #18181b;
-  --primary-hover: #e4e4e7;
+  --primary: #6366f1; /* indigo-500 */
+  --primary-foreground: #ffffff;
+  --primary-hover: #818cf8; /* indigo-400 */
   --disabled: #3f3f46;
 
-  --accent: #2dd4bf;
-  --accent-strong: #5eead4;
-  /* Deep-tinted, not light: a pale surface here would glow against the near
-     black canvas. Mirrors how --danger-surface goes to #2a0a0a in dark. */
-  --accent-surface: #042f2e;
-  --accent-border: #115e59;
+  --accent: #6366f1; /* indigo-500 */
+  --accent-strong: #a5b4fc; /* indigo-300 — must clear AA on --surface */
+  --accent-surface: #1e1b4b; /* indigo-950: deep, so a pill doesn't glow */
+  --accent-border: #3730a3; /* indigo-800 */
 
   --success: #4ade80;
   --success-surface: #052e16;
@@ -91,6 +92,7 @@
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-surface-subtle: var(--surface-subtle);
+  --color-surface-raised: var(--surface-raised);
 
   --color-foreground: var(--foreground);
   --color-body: var(--body);
@@ -144,4 +146,79 @@ body {
 
 .momentum-toast-in {
   animation: momentum-toast-in 220ms ease-out both;
+}
+
+/* Global focus ring. The app previously had exactly ONE :focus rule in the
+   whole stylesheet, so tabbing through it gave almost no indication of where
+   you were — a hard WCAG AA blocker. This fixes it everywhere at once.
+
+   :focus-visible, not :focus — a mouse click on a button shouldn't leave a ring
+   behind, only keyboard navigation should. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* Panels and cards separate by border + a background STEP, not by shadow.
+   Shadows are reserved for things that genuinely float. */
+@utility panel {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 0.5rem;
+}
+
+/* The one place a pronounced shadow is right: elements floating above the page
+   (unlock toaster, dropdowns, the drag overlay). Glass, not a drop shadow on a
+   flat card. */
+@utility floating {
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Staggered grid entrances: the caller sets --i per item, so cards cascade in
+   rather than all appearing at once. */
+.fade-up {
+  animation: fade-up 320ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+/* The streak flame when it's actually lit. Only ever applied when activeToday —
+   a dead streak must never look celebratory. */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px var(--accent));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px var(--accent));
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2.4s ease-in-out infinite;
+}
+
+/* Anyone who asked their OS for less motion gets none of it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -140,6 +140,16 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
     on((event) => {
       switch (event.type) {
         case "task.completed":
+        // A completion can be UNDONE, and the streak has to shrink when it is.
+        // Listening only to task.completed meant the streak could only ever
+        // grow: reopen the task behind a 1-day streak and the flame stayed lit
+        // until the next page load.
+        //
+        // Deliberately NOT task.updated — that fires on every title edit, due
+        // date change and reorder, and each one would trigger a full
+        // seven-repository refetch. task.uncompleted fires only on the
+        // transition that can actually change the answer.
+        case "task.uncompleted":
         case "prep.logged":
         case "application.stage_changed":
         case "interview.completed":

@@ -294,10 +294,17 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       addPending(id);
 
       try {
+        const wasDone =
+          previousTasks.find((t) => t.id === id)?.status === "done";
         const updated = await TaskRepository.updateTaskStatus(id, status);
         set({ tasks: applyStatusCascade(get().tasks, updated) });
         emit({
-          type: status === "done" ? "task.completed" : "task.updated",
+          type:
+            status === "done"
+              ? "task.completed"
+              : wasDone
+                ? "task.uncompleted"
+                : "task.updated",
           payload: { taskId: updated.id },
           timestamp: Date.now(),
         });
@@ -349,8 +356,15 @@ export const useTaskStore = create<TaskStore>((set, get) => {
               ? replaceTask(get().tasks, updated)
               : applyStatusCascade(get().tasks, updated),
         });
+        const wasDone =
+          previousTasks.find((t) => t.id === id)?.status === "done";
         emit({
-          type: changes.status === "done" ? "task.completed" : "task.updated",
+          type:
+            changes.status === "done"
+              ? "task.completed"
+              : wasDone && changes.status !== undefined
+                ? "task.uncompleted"
+                : "task.updated",
           payload: { taskId: id },
           timestamp: Date.now(),
         });
@@ -403,7 +417,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         const updated = await TaskRepository.reopenTask(id);
         set({ tasks: get().tasks.map((t) => (t.id === id ? updated : t)) });
         emit({
-          type: "task.updated",
+          type: "task.uncompleted",
           payload: { taskId: id },
           timestamp: Date.now(),
         });

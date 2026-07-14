@@ -23,6 +23,12 @@ export type AppEvent =
   | { type: "task.created"; payload: { taskId: string }; timestamp: number }
   | { type: "task.updated"; payload: { taskId: string }; timestamp: number }
   | { type: "task.completed"; payload: { taskId: string }; timestamp: number }
+  // Fired when a task leaves "done" — reopened from the archive, dragged out of
+  // the Done column, or its status set back. Distinct from task.updated (which
+  // fires on any edit) because this is the only transition that can REMOVE a
+  // day of activity, and Momentum has to recompute the streak when it happens.
+  // Without it the streak could only ever grow.
+  | { type: "task.uncompleted"; payload: { taskId: string }; timestamp: number }
   | { type: "task.deleted"; payload: { taskId: string }; timestamp: number }
   // Fired on every new prep entry so the Dashboard can update running scorecard
   // totals without querying Prep Tracker's tables directly (myhub_plan.md Part A §A.2).

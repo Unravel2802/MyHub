@@ -18,6 +18,8 @@ vi.mock("@/src/modules/task/TaskRepository", () => ({
   reorderTask: vi.fn(),
   moveTask: vi.fn(),
   deleteTask: vi.fn(),
+  archiveTask: vi.fn(),
+  reopenTask: vi.fn(),
 }));
 
 vi.mock("@/src/lib/events", () => ({
@@ -427,6 +429,84 @@ describe("useTaskStore deleteTask", () => {
     expect(useTaskStore.getState().pendingIds).toEqual([]);
     expect(useTaskStore.getState().error).toBe(
       "Something went wrong, please try again later.",
+    );
+  });
+});
+
+describe("useTaskStore un-completion events", () => {
+  // Momentum listens for task.uncompleted to shrink the streak. If leaving
+  // "done" only emitted task.updated, the streak could never go DOWN — it kept
+  // showing "1-day streak" after the task behind it was reopened.
+  it("emits task.uncompleted when a done task moves out of done", async () => {
+    const done = task({ id: "t", status: "done" });
+    const reverted = { ...done, status: "todo" as const, completedAt: null };
+    resetStore([done]);
+    repository.updateTaskStatus.mockResolvedValue(reverted);
+
+    await useTaskStore.getState().updateStatus("t", "todo");
+
+    expect(emitMock).toHaveBeenCalledWith({
+      type: "task.uncompleted",
+      payload: { taskId: "t" },
+      timestamp: expect.any(Number),
+    });
+  });
+
+  it("still emits task.updated when a NOT-done task changes status", async () => {
+    const open = task({ id: "t", status: "todo" });
+    const moved = { ...open, status: "in_progress" as const };
+    resetStore([open]);
+    repository.updateTaskStatus.mockResolvedValue(moved);
+
+    await useTaskStore.getState().updateStatus("t", "in_progress");
+
+    expect(emitMock).toHaveBeenCalledWith({
+      type: "task.updated",
+      payload: { taskId: "t" },
+      timestamp: expect.any(Number),
+    });
+  });
+
+  it("emits task.uncompleted when reopening an archived task", async () => {
+    const archived = task({
+      id: "t",
+      status: "done",
+      completedAt: "2026-07-01T00:00:00.000Z",
+      archivedAt: "2026-07-02T00:00:00.000Z",
+    });
+    resetStore([archived]);
+    repository.reopenTask.mockResolvedValue({
+      ...archived,
+      status: "todo",
+      completedAt: null,
+      archivedAt: null,
+    });
+
+    await useTaskStore.getState().reopenTask("t");
+
+    expect(emitMock).toHaveBeenCalledWith({
+      type: "task.uncompleted",
+      payload: { taskId: "t" },
+      timestamp: expect.any(Number),
+    });
+  });
+
+  it("archiving keeps the task and does NOT emit an un-completion", async () => {
+    // Archiving must not shrink the streak — that's the whole point.
+    const done = task({ id: "t", status: "done", completedAt: "2026-07-14T02:00:00.000Z" });
+    resetStore([done]);
+    repository.archiveTask.mockResolvedValue({
+      ...done,
+      archivedAt: "2026-07-14T03:00:00.000Z",
+    });
+
+    await useTaskStore.getState().archiveTask("t");
+
+    expect(emitMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "task.uncompleted" }),
+    );
+    expect(useTaskStore.getState().tasks[0].completedAt).toBe(
+      "2026-07-14T02:00:00.000Z",
     );
   });
 });

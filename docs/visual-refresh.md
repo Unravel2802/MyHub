@@ -79,31 +79,103 @@ app is the unlock toast.
 
 ---
 
-## Part 2 — Target design system
+## Part 2 — Visual system specification
 
-**Spacing** — 4px base, 8px rhythm. Tailwind's default scale already is this; the job is to *use it
-consistently* (today padding is ad-hoc: `p-4`, `p-5`, `px-3 py-1.5` with no system).
+**Design philosophy: "Premium Developer Tool"** — the Linear / Vercel register. Crisp, dense,
+high-contrast, quiet. Nothing decorative; everything earns its place. The feeling to chase is
+*precision*, not personality.
 
-**Type scale** — the app currently lives entirely between 12px and 24px. Add a display step:
+### 2.0 One architectural decision, made up front ★ read this
 
-| Role | Size |
+The spec below is written in raw Tailwind (`bg-zinc-900`, `border-zinc-800`). MyHub already has a
+**semantic token layer** — `bg-surface`, `border-border`, `text-muted` — that resolves to CSS
+variables and is what makes the light/dark switch a single block of overrides rather than a `dark:`
+variant on every utility in the codebase.
+
+**We keep the token layer and re-point its values at the palette below.** So a card is still
+`bg-surface border-border`; `--surface` simply *becomes* `zinc-900` in dark and its light-mode
+counterpart in light. This is not a deviation from the brief — it delivers exactly the specified
+look, and it's the only way to get it in **both themes** without hardcoding `dark:bg-zinc-900` on
+every element in the app.
+
+**Rule: components use semantic names. Only `globals.css` names a zinc.** A raw `bg-zinc-900` in a
+component is a bug — it will be invisible in light mode.
+
+### 2.1 Colour
+
+**Base — monochromatic, high contrast.** Dark mode uses deep greys, never pure black.
+
+| Token | Dark | Light |
+|---|---|---|
+| `--canvas` | `zinc-950` `#09090b` | `zinc-100` `#f4f4f5` |
+| `--surface` | `zinc-900` `#18181b` | `#ffffff` |
+| `--surface-subtle` | `zinc-800` `#27272a` | `zinc-50` `#fafafa` |
+| `--border` | `zinc-800` `#27272a` | `zinc-200` `#e4e4e7` |
+
+Note the light column: canvas steps **down** to `zinc-100` while surface stays white. That's what
+fixes the 1.04:1 figure/ground failure in §1.1 — cards finally sit *on* something.
+
+**Accent — a single vibrant colour.** Moving from the current teal to **Indigo/Violet**.
+
+| Token | Dark | Light |
+|---|---|---|
+| `--accent` | `indigo-500` `#6366f1` | `indigo-600` `#4f46e5` |
+| `--accent-strong` | `indigo-400` `#818cf8` | `indigo-700` `#4338ca` |
+| `--accent-surface` | `#1e1b4b` (deep, never pale) | `indigo-50` `#eef2ff` |
+| `--accent-border` | `indigo-900` | `indigo-200` |
+
+Used for: primary actions, active nav, focus rings, **and the streak flame**.
+
+**Text — hierarchy by contrast.**
+
+| Token | Dark | Light | Role |
+|---|---|---|---|
+| `--foreground` | `zinc-50` | `zinc-950` | Primary |
+| `--body` | `zinc-300` | `zinc-700` | Paragraph |
+| `--muted` | `zinc-400` | `zinc-500` | Secondary |
+| `--subtle` | `zinc-400` | `zinc-500` | **Raised to pass AA — see §1.2** |
+
+`--subtle` currently fails WCAG AA in both themes (2.56:1 / 3.67:1). It does not get to stay
+decorative; every value above must clear **4.5:1** on its own surface, verified, not assumed.
+
+### 2.2 Typography
+
+Font stack is already Geist — modern, keep it.
+
+| Role | Spec |
 |---|---|
-| Hero (one per page) | 48–60px, tight tracking, `tabular-nums` |
-| Page title | 30px |
-| Section | 20px |
-| Body | 14px |
-| Label | 12px, uppercase, wide tracking |
+| Hero (one per page) | `text-5xl`/`text-6xl`, `tracking-tight`, `tabular-nums` |
+| Page title | `text-3xl`, `tracking-tight` |
+| Section | `text-xl`, `tracking-tight` |
+| Body | `text-sm`, `leading-relaxed` |
+| **Overline / section header** | `text-xs uppercase tracking-widest text-muted` |
 
-**Colour** — keep the semantic token architecture (it's good). Rebuild the light ramp for real
-figure/ground, raise `--subtle` to pass AA, and finally *use* the `accent` and `success` surfaces
-that exist and are barely touched.
+`tracking-tight` on every heading; `leading-relaxed` on every paragraph. The uppercase, wide-tracked
+overline is the workhorse for breaking up dense data panels — use it hard.
 
-**Elevation** — two tiers. Page-level panels get a shadow and a lighter surface; tiles inside stay
-flat. Dark mode gets a top-highlight border (`border-t-white/5`) so cards stop reading as flat
-rectangles.
+### 2.3 Depth — "glass and border", not drop shadows
 
-**Motion** — CSS only, no new dependency. Micro-interactions on hover/press, `fade-up` on grids,
-`pulse-glow` on a live streak. Every animation `motion-reduce`-guarded.
+**Panels and cards: no heavy shadows.** Separation comes from a subtle border plus a slight
+background step (`bg-surface` on `bg-canvas`). That's the entire trick, and it's why §2.1's light
+ramp had to be fixed first — without background contrast, borders are doing 100% of the work and
+the result looks like a wireframe.
+
+**Floating elements only** (Unlock Toaster, dropdowns, drag overlay):
+
+```
+backdrop-blur-md  +  border border-border  +  shadow-xl shadow-black/50
+```
+
+### 2.4 Micro-interactions
+
+- **Every** interactive element: `transition-all duration-200 ease-in-out`.
+- Hover: a background shift (`hover:bg-surface-subtle`) or a gentle lift on cards
+  (`hover:scale-[1.02]`) — StatCards and achievement trophies especially.
+- **Focus (accessibility-critical, see §1.4):**
+  `focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
+  focus-visible:ring-offset-canvas`
+  The app currently has **one** focus rule in the entire stylesheet. This is a global fix.
+- All motion `motion-reduce:`-guarded. `scale` and `transition-all` both get suppressed.
 
 ---
 
@@ -114,24 +186,31 @@ Codex owns the application of them.** Codex is blocked until Claude's commits la
 
 ### Claude Code
 
-**C1 — Token foundation** (`app/globals.css`) ★
-Rebuild the light palette for figure/ground; raise `--subtle` to AA in both themes; add elevation,
-display-type, and the `fade-up` / `pulse-glow` keyframes. Add a **global `:focus-visible` ring**
-(fixes 1.4 in one rule). Highest-value change in this document.
+**C1 — Token foundation** (`app/globals.css`) ★ *the whole spec lives or dies here*
+Re-point every token at §2.1: zinc base, the fixed light ramp (canvas steps down to `zinc-100` so
+cards finally sit *on* something), **teal → indigo/violet accent**, and `--subtle` raised until it
+clears 4.5:1 in both themes — measured, not eyeballed. Add the display type step, the
+`fade-up` / `pulse-glow` keyframes, and the **global `focus-visible` ring** (§2.4 — one rule, fixes
+§1.4 across the entire app).
+
+Because components already speak in semantic names, this single file changes the app's entire
+appearance without touching a component. That's the payoff of §2.0.
 
 **C2 — Primitive contracts** (`src/components/ui/`)
-- `ProgressBar` — mount at 0 so the transition fires; a visible "not started" treatment so 0%
-  doesn't look broken.
-- `StatCard` — add `size?: "default" | "hero"`; fix the label-wrap misalignment (fixed label height
-  / bottom-aligned values).
-- New `Panel` — the standard elevated section container, so every page stops hand-rolling
+- `ProgressBar` — mount at 0 so the transition actually fires; a visible "not started" treatment so
+  0% stops looking broken.
+- `StatCard` — add `size?: "default" | "hero"`; hover lift (`hover:scale-[1.02]`, motion-reduce
+  guarded); fix the label-wrap misalignment (§1.6).
+- New `Panel` — the standard border-and-surface container, so pages stop hand-rolling
   `rounded-lg border border-border bg-surface p-5`.
 - New `EmptyState` — icon + motivating line + primary action, replacing the grey shrugs.
-- New `FormField` — label + control + error, with the `aria-describedby` wiring done once.
+- New `FormField` — label + control + error, with `aria-describedby` wired once.
+- `UnlockToaster` gets the **glass treatment** (§2.3): `backdrop-blur-md` + border +
+  `shadow-xl shadow-black/50`. It's the one genuinely floating element in the app.
 
 **C3 — Responsive shell** (`AppShell`)
-Fix the 375px overflow (1.3). The sidebar becomes a drawer below `lg`; the grid goes single-column.
-This is shell-level, so it's mine.
+Fix the 375px overflow (§1.3): sidebar becomes a drawer below `lg`, grid goes single-column.
+Shell-level, so it's mine.
 
 ### Codex
 
@@ -165,10 +244,19 @@ mechanical.
 discover it was wrong six times.
 
 **X4 — Micro-interactions, colour, empty states**
-Hover/press states on every interactive element; staggered `fade-up` on grids; `pulse-glow` on the
-flame **only when `activeToday`** (a dead streak must never look celebratory); `success` surfaces on
-anything genuinely good (passed mock, hit target, unlocked achievement, `offer` stage). Rewrite
-every empty state to sell the next action, tied to the roadmap:
+`transition-all duration-200 ease-in-out` on **every** interactive element (§2.4); hover shifts and
+card lifts; the `text-xs uppercase tracking-widest` overline used hard to break up dense panels
+(§2.2); staggered `fade-up` on grids; `pulse-glow` on the flame **only when `activeToday`** — a dead
+streak must never look celebratory; `success` surfaces on anything genuinely good (passed mock, hit
+target, unlocked achievement, `offer` stage).
+
+**Two traps already hit once each — don't repeat them.** Do not tint a card that shows a *zero* or a
+`—`: the "Current streak: 0 days" card was accent-tinted, drawing the eye to nothing, and the Job CRM
+"Offer rate" card still does it today while displaying `—`. Highlight state, not absence.
+
+Also: `capitalize` on the raw stage enum renders `oa` as **"Oa"** in the funnel. Map the labels.
+
+Rewrite every empty state to sell the next action, tied to the roadmap:
 
 > **Before:** "No prep sessions logged yet."
 > **After:** "Your first rep starts the December count. 75 to go." + the log button, right there.
@@ -186,8 +274,14 @@ unlock toaster and error banners; verify AA against the new tokens; check 375px 
 
 - **Tailwind + the existing semantic tokens only.** No new dependencies — the approved list has no
   animation library and plain CSS covers all of this. Do not reach for framer-motion.
+- ★ **No raw zinc/indigo in components.** `bg-zinc-900` in a component is a bug: it will be
+  *invisible in light mode*. Only `globals.css` names a colour; components say `bg-surface`,
+  `text-muted`, `ring-accent`. If a semantic token you need doesn't exist, **flag it — don't hardcode
+  around it.** (See §2.0. This is the rule the entire two-theme system rests on.)
 - **Both themes, every time.** Dark surfaces are deep-tinted, never pale (see `--danger-surface` →
-  `#2a0a0a`).
+  `#2a0a0a`, and `--accent-surface` → `#1e1b4b`).
+- **Contrast is measured, not eyeballed.** Every text token clears 4.5:1 on its own surface. `--subtle`
+  fails today in both themes; it does not get to stay decorative.
 - **`motion-reduce:` on every animation.**
 - **Don't break the 43 E2E specs.** They query by role, label, and accessible name. Adding wrappers
   and classes is free; renaming headings, changing `aria-label`s, or removing roles is not. If a spec

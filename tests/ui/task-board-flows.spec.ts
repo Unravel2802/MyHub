@@ -76,7 +76,8 @@ test("generates a weekly instance and keeps it after stopping the rule", async (
     .click();
 
   await expect(page.getByLabel("Weekly tasks")).toContainText(
-    "No weekly tasks yet.",
+    // Copy rewritten in X4: empty states now sell the next action.
+    "No weekly rules yet",
   );
   await expect(instance).toBeVisible();
   await expect
@@ -156,9 +157,24 @@ test("dragging a card from Inbox to Todo persists the new status", async ({
   // on the article's padding.
   const handle = card(page, "Triage me").getByText("Triage me");
   const target = page.getByRole("region", { name: "Todo" });
+
+  // Scroll the board into view before measuring. This test drove the mouse to
+  // absolute page coordinates, which silently stopped working the moment the
+  // page grew taller: the Todo column slid down, the drop point (y + 120) fell
+  // BELOW the 720px viewport, and the mouse simply couldn't go there. It read as
+  // "drag is broken" when the drag was fine and the test was pointing off-screen.
+  await handle.scrollIntoViewIfNeeded();
   const from = await handle.boundingBox();
   const to = await target.boundingBox();
   if (!from || !to) throw new Error("Expected card and column to be visible");
+
+  // Drop inside the column AND inside the viewport, whichever is tighter.
+  const viewport = page.viewportSize();
+  const dropY = Math.min(
+    to.y + 120,
+    (viewport?.height ?? to.y + 120) - 40,
+    to.y + to.height - 40,
+  );
 
   // dnd-kit's PointerSensor needs >6px of movement, and intermediate moves, to
   // start and track the drag.
@@ -171,7 +187,7 @@ test("dragging a card from Inbox to Todo persists the new status", async ({
       steps: 5,
     },
   );
-  await page.mouse.move(to.x + to.width / 2, to.y + 120, { steps: 12 });
+  await page.mouse.move(to.x + to.width / 2, dropY, { steps: 12 });
   await page.mouse.up();
 
   await expect(

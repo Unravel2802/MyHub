@@ -9,6 +9,9 @@ interface EmptyStateProps {
   description: ReactNode;
   action?: ReactNode;
   compact?: boolean;
+  // Layout is the caller's business — a Kanban column needs its empty state to
+  // FILL the column, not sit collapsed at the top of it.
+  className?: string;
 }
 
 export function EmptyState({
@@ -17,10 +20,11 @@ export function EmptyState({
   description,
   action,
   compact = false,
+  className = "",
 }: EmptyStateProps) {
   return (
     <div
-      className={`flex flex-col items-center rounded-lg border border-dashed border-border text-center ${compact ? "px-3 py-4" : "px-6 py-10"}`}
+      className={`flex flex-col items-center justify-center rounded-lg border border-dashed border-border text-center ${compact ? "px-3 py-4" : "px-6 py-10"} ${className}`}
     >
       {icon ? (
         <div aria-hidden className="mb-3 text-3xl">

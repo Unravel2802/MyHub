@@ -95,6 +95,7 @@ export function BoardColumn({
             ))
           ) : (
             <EmptyState
+              className="flex-1"
               description={column.emptyCopy}
               title="Ready for the next task"
             />

@@ -25,14 +25,22 @@ export function AchievementsPage() {
           </p>
         </header>
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          {/* Only tint the streak once there IS one. Highlighting a zero draws
+              the eye to nothing and reads as celebrating it. */}
           <StatCard
             label="Current streak"
+            tone={streak.current > 0 ? "accent" : "default"}
             value={`${streak.current} days`}
-            tone="accent"
+            hint={
+              streak.current > 0 && !streak.activeToday
+                ? "Log something today to keep it"
+                : undefined
+            }
           />
           <StatCard label="Longest streak" value={`${streak.longest} days`} />
           <StatCard
             label="Unlocked"
+            tone={unlocked.length > 0 ? "success" : "default"}
             value={`${unlocked.length}/${ACHIEVEMENT_COUNT}`}
           />
         </div>
@@ -54,14 +62,27 @@ export function AchievementsPage() {
                     const unlock = unlockedByKey.get(achievement.key);
                     return (
                       <article
-                        className={`rounded-lg border p-4 ${unlock ? "border-accent bg-surface" : "border-border bg-surface-subtle opacity-65"}`}
+                        className={`rounded-lg border p-4 transition-colors ${
+                          unlock
+                            ? "border-success-border bg-success-surface"
+                            : "border-border bg-surface-subtle"
+                        }`}
                         key={achievement.key}
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <h4 className="font-semibold text-foreground">
+                          <h4
+                            className={
+                              unlock
+                                ? "font-semibold text-foreground"
+                                : "font-semibold text-body"
+                            }
+                          >
                             {achievement.title}
                           </h4>
-                          <Badge>{unlock ? "Unlocked" : category}</Badge>
+                          {/* The category badge was redundant — these cards are
+                              already grouped under a category heading. Only say
+                              something when there's something to say. */}
+                          {unlock ? <Badge tone="success">Unlocked</Badge> : null}
                         </div>
                         <p className="mt-2 text-sm text-muted">
                           {achievement.description}
@@ -69,7 +90,7 @@ export function AchievementsPage() {
                         <p className="mt-3 text-xs text-muted">
                           {unlock
                             ? `Unlocked ${new Date(unlock.unlockedAt).toLocaleDateString()}`
-                            : "Locked"}
+                            : achievement.source}
                         </p>
                       </article>
                     );

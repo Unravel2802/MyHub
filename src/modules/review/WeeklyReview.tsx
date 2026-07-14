@@ -16,40 +16,38 @@ function targetLabel(target: { min: number; max?: number }) {
 
 function SnapshotStats({
   snapshot,
-  label,
 }: {
   snapshot: ReturnType<typeof useReviewStore.getState>["currentSnapshot"];
-  label: string;
 }) {
   if (!snapshot) return null;
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       <StatCard
-        label={`${label} applications`}
+        label="Applications"
         value={snapshot.cadence.applications.count}
         hint={`Target ${targetLabel(snapshot.cadence.applications.target)}`}
       />
       <StatCard
-        label={`${label} outreach`}
+        label="Outreach"
         value={snapshot.cadence.outreach.count}
         hint={`Target ${targetLabel(snapshot.cadence.outreach.target)}`}
       />
       <StatCard
-        label={`${label} mock interviews`}
+        label="Mock interviews"
         value={snapshot.cadence.mockInterviews.count}
         hint={`Target ${targetLabel(snapshot.cadence.mockInterviews.target)}`}
       />
       <StatCard
-        label={`${label} algorithms`}
+        label="Algorithms"
         value={snapshot.scorecard.solved}
         hint={`${snapshot.scorecard.attempted} attempted`}
       />
       <StatCard
-        label={`${label} system design`}
+        label="System design"
         value={snapshot.scorecard.countsByType.system_design}
       />
       <StatCard
-        label={`${label} checkpoint`}
+        label="Checkpoint"
         value={`${snapshot.checkpoint.algorithm.actual}/${snapshot.checkpoint.algorithm.target}`}
         hint={snapshot.checkpoint.checkpoint.label}
       />
@@ -126,7 +124,7 @@ export function WeeklyReview() {
 
         <div className="mt-6 grid gap-3">
           <h3 className="text-xl font-semibold">This week</h3>
-          <SnapshotStats label="Live" snapshot={store.currentSnapshot} />
+          <SnapshotStats snapshot={store.currentSnapshot} />
         </div>
 
         <form
@@ -213,7 +211,7 @@ export function WeeklyReview() {
               >
                 <div>
                   <h4 className="font-semibold">Week of {review.weekStart}</h4>
-                  <SnapshotStats label="Frozen" snapshot={review.snapshot} />
+                  <SnapshotStats snapshot={review.snapshot} />
                 </div>
                 <div className="grid gap-2 text-sm">
                   {review.wentWell ? (

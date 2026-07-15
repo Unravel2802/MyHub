@@ -2,6 +2,7 @@ import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { timeAllocation } from "@/src/modules/prep/prepAllocation";
 import type { PrepEntry } from "@/src/modules/prep/types";
+import { PREP_TYPE_HUES } from "@/src/modules/prep/prepTypeHues";
 
 const areaLabels = {
   algorithm: "Algorithms",
@@ -44,7 +45,14 @@ export function TimeAllocationPanel({ entries }: { entries: PrepEntry[] }) {
                   : `${Math.round(area.actualPct * 100)}%`
               }
             />
-            <ProgressBar progress={area.actualPct ?? 0} />
+            <ProgressBar
+              hue={
+                area.actualPct !== null && area.actualPct > 0
+                  ? PREP_TYPE_HUES[area.area]
+                  : undefined
+              }
+              progress={area.actualPct ?? 0}
+            />
           </div>
         ))}
       </div>

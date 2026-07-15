@@ -1,12 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { HueName } from "@/src/components/moduleHues";
 
 type ProgressBarProps = {
   progress: number;
+  hue?: HueName;
 };
 
-export function ProgressBar({ progress }: ProgressBarProps) {
+const hueClasses: Record<HueName, string> = {
+  accent: "bg-accent",
+  amber: "bg-hue-amber",
+  orange: "bg-hue-orange",
+  rose: "bg-hue-rose",
+  violet: "bg-hue-violet",
+  blue: "bg-hue-blue",
+  cyan: "bg-hue-cyan",
+  teal: "bg-hue-teal",
+  emerald: "bg-hue-emerald",
+};
+
+export function ProgressBar({ progress, hue }: ProgressBarProps) {
   // The FILL clamps to 0-100%, but `progress` itself is deliberately uncapped
   // upstream (prepTargets lets it exceed 1 so "180/150" and "150/150" read
   // differently). Clamping here only stops the bar overflowing its track.
@@ -36,7 +50,7 @@ export function ProgressBar({ progress }: ProgressBarProps) {
         <div
           // motion-reduce disables the sweep for anyone who's asked the OS for
           // less animation.
-          className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out motion-reduce:transition-none"
+          className={`h-full rounded-full ${hue ? hueClasses[hue] : "bg-accent"} transition-[width] duration-700 ease-out motion-reduce:transition-none`}
           style={{ width: `${width}%` }}
         />
       ) : (
@@ -44,10 +58,7 @@ export function ProgressBar({ progress }: ProgressBarProps) {
         // which on a fresh account is every progress bar on the page, on the one
         // feature meant to motivate. A faint accent seed says "this is a bar,
         // and it's waiting for you".
-        <div
-          aria-hidden
-          className="h-full w-1.5 rounded-full bg-accent/30"
-        />
+        <div aria-hidden className="h-full w-1.5 rounded-full bg-accent/30" />
       )}
     </div>
   );

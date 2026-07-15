@@ -2,6 +2,10 @@ import { StatCard } from "@/src/components/ui/StatCard";
 import type { FunnelStats } from "@/src/modules/jobApplications/funnelStats";
 import type { ApplicationStage } from "@/src/modules/jobApplications/types";
 import { hueFor } from "@/src/components/moduleHues";
+import {
+  STAGE_HUES,
+  type StageHue,
+} from "@/src/modules/jobApplications/stageHues";
 
 // `capitalize` on the raw enum rendered "oa" as "Oa". Acronyms don't survive a
 // CSS text-transform — they need a label map.
@@ -29,6 +33,26 @@ function toneFor(value: number | null) {
     ? ("success" as const)
     : ("default" as const);
 }
+
+const stageBorderClasses: Partial<Record<StageHue, string>> = {
+  muted: "border-t-border",
+  danger: "border-t-danger",
+  blue: "border-t-hue-blue-border",
+  cyan: "border-t-hue-cyan-border",
+  teal: "border-t-hue-teal-border",
+  violet: "border-t-hue-violet-border",
+  emerald: "border-t-hue-emerald-border",
+};
+
+const stageTextClasses: Partial<Record<StageHue, string>> = {
+  muted: "text-muted",
+  danger: "text-danger",
+  blue: "text-hue-blue",
+  cyan: "text-hue-cyan",
+  teal: "text-hue-teal",
+  violet: "text-hue-violet",
+  emerald: "text-hue-emerald",
+};
 
 export function FunnelPanel({ funnel }: { funnel: FunnelStats }) {
   return (
@@ -71,7 +95,7 @@ export function FunnelPanel({ funnel }: { funnel: FunnelStats }) {
         {(Object.entries(funnel.byStage) as [ApplicationStage, number][]).map(
           ([stage, count], index) => (
             <div
-              className="fade-up rounded-md border border-border bg-surface-subtle p-2 transition-colors duration-200 ease-in-out"
+              className={`fade-up rounded-md border border-border border-t-2 bg-surface-subtle p-2 transition-colors duration-200 ease-in-out ${count > 0 ? stageBorderClasses[STAGE_HUES[stage]] : "border-t-border"}`}
               key={stage}
               style={{ ["--i" as string]: index }}
             >
@@ -80,7 +104,7 @@ export function FunnelPanel({ funnel }: { funnel: FunnelStats }) {
               </p>
               <p
                 className={`mt-1 font-semibold tabular-nums ${
-                  count > 0 ? "text-foreground" : "text-muted"
+                  count > 0 ? stageTextClasses[STAGE_HUES[stage]] : "text-muted"
                 }`}
               >
                 {count}

@@ -14,6 +14,10 @@ import type {
   ApplicationStage,
   Company,
 } from "@/src/modules/jobApplications/types";
+import {
+  STAGE_HUES,
+  type StageHue,
+} from "@/src/modules/jobApplications/stageHues";
 
 export const REJECTION_TAKEAWAY_PREFIX = "Rejection takeaway:";
 
@@ -27,6 +31,16 @@ const stages: { value: ApplicationStage; label: string }[] = [
   { value: "rejected", label: "Rejected" },
   { value: "withdrawn", label: "Withdrawn" },
 ];
+
+const stageDotClasses: Partial<Record<StageHue, string>> = {
+  muted: "bg-surface-subtle",
+  danger: "bg-danger",
+  blue: "bg-hue-blue",
+  cyan: "bg-hue-cyan",
+  teal: "bg-hue-teal",
+  violet: "bg-hue-violet",
+  emerald: "bg-hue-emerald",
+};
 
 type PipelineProps = {
   applications: Application[];
@@ -181,7 +195,13 @@ function Column({
       ref={setNodeRef}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">{stage.label}</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <span
+            aria-hidden
+            className={`h-2 w-2 rounded-full ${stageDotClasses[STAGE_HUES[stage.value]]}`}
+          />
+          {stage.label}
+        </h3>
         <span className="text-xs text-muted">{applications.length}</span>
       </div>
       <div className="grid gap-3">

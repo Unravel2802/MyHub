@@ -9,8 +9,22 @@ import {
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 import { AchievementCard } from "@/src/modules/momentum/components/AchievementCard";
 import { hueFor, hueVar } from "@/src/components/moduleHues";
+import type { HueName } from "@/src/components/moduleHues";
+import { ACHIEVEMENT_CATEGORY_HUES } from "@/src/modules/momentum/achievementCategoryHues";
 
 const categories = ["prep", "career", "consistency"] as const;
+
+const categoryHeadingClasses: Record<HueName, string> = {
+  accent: "text-accent-strong",
+  amber: "text-hue-amber",
+  orange: "text-hue-orange",
+  rose: "text-hue-rose",
+  violet: "text-hue-violet",
+  blue: "text-hue-blue",
+  cyan: "text-hue-cyan",
+  teal: "text-hue-teal",
+  emerald: "text-hue-emerald",
+};
 
 export function AchievementsPage() {
   const { streak, unlocked } = useMomentumStore();
@@ -57,7 +71,7 @@ export function AchievementsPage() {
               key={category}
             >
               <h3
-                className="text-xl font-semibold capitalize"
+                className={`text-xl font-semibold capitalize ${categoryHeadingClasses[ACHIEVEMENT_CATEGORY_HUES[category]]}`}
                 id={`${category}-achievements`}
               >
                 {category}

@@ -1,6 +1,7 @@
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import type { PrepEntry } from "@/src/modules/prep/types";
+import { PREP_TYPE_HUES } from "@/src/modules/prep/prepTypeHues";
 
 type PrepEntryListProps = {
   entries: PrepEntry[];
@@ -56,13 +57,7 @@ export function PrepEntryList({
                   <p className="font-medium text-foreground">
                     {entry.topic ?? labels[entry.entryType]}
                   </p>
-                  <Badge
-                    tone={
-                      entry.outcome === "pass" || entry.outcome === "solved"
-                        ? "success"
-                        : "accent"
-                    }
-                  >
+                  <Badge hue={PREP_TYPE_HUES[entry.entryType]}>
                     {labels[entry.entryType]}
                   </Badge>
                   {entry.entryType === "mock_interview" ? (

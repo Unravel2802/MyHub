@@ -6,6 +6,8 @@ import {
 } from "@/src/modules/prep/prepTargets";
 import type { PrepEntry } from "@/src/modules/prep/types";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { PREP_TYPE_HUES } from "@/src/modules/prep/prepTypeHues";
+import type { HueName } from "@/src/components/moduleHues";
 
 type PrepScorecardProps = {
   month: string;
@@ -22,6 +24,18 @@ const countLabels: { key: keyof Scorecard["countsByType"]; label: string }[] = [
   { key: "behavioral", label: "Behavioral" },
   { key: "mock_interview", label: "Mocks" },
 ];
+
+const prepBorderClasses: Record<HueName, string> = {
+  accent: "border-t-accent-border",
+  amber: "border-t-hue-amber-border",
+  orange: "border-t-hue-orange-border",
+  rose: "border-t-hue-rose-border",
+  violet: "border-t-hue-violet-border",
+  blue: "border-t-hue-blue-border",
+  cyan: "border-t-hue-cyan-border",
+  teal: "border-t-hue-teal-border",
+  emerald: "border-t-hue-emerald-border",
+};
 
 function percent(value: number | null) {
   return value === null ? "No judged attempts" : `${Math.round(value * 100)}%`;
@@ -70,11 +84,15 @@ export function PrepScorecard({
           the label min-height that keeps a wrapped label from shifting its value. */}
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
         {countLabels.map((item) => (
-          <StatCard
+          <div
+            className={`rounded-lg border-t-2 ${scorecard.countsByType[item.key] > 0 ? prepBorderClasses[PREP_TYPE_HUES[item.key]] : "border-t-border"}`}
             key={item.key}
-            label={item.label}
-            value={scorecard.countsByType[item.key]}
-          />
+          >
+            <StatCard
+              label={item.label}
+              value={scorecard.countsByType[item.key]}
+            />
+          </div>
         ))}
       </div>
 
@@ -89,9 +107,13 @@ export function PrepScorecard({
           value={`${scorecard.solved} / ${scorecard.attempted}`}
         />
         <StatCard
-          hint={scorecard.solveRate === null ? "No judged attempts yet" : undefined}
+          hint={
+            scorecard.solveRate === null ? "No judged attempts yet" : undefined
+          }
           label="Solve rate"
-          value={scorecard.solveRate === null ? "—" : percent(scorecard.solveRate)}
+          value={
+            scorecard.solveRate === null ? "—" : percent(scorecard.solveRate)
+          }
         />
         <StatCard
           hint={

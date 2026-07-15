@@ -76,7 +76,7 @@ export function JobApplicationCrm() {
         {store.error ? (
           <p
             aria-live="assertive"
-            className="rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
+            className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
             role="alert"
           >
             {store.error}

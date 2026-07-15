@@ -28,6 +28,7 @@ const hueClasses: Record<HueName, string> = {
   cyan: "border-hue-cyan-border bg-hue-cyan-surface text-hue-cyan",
   teal: "border-hue-teal-border bg-hue-teal-surface text-hue-teal",
   emerald: "border-hue-emerald-border bg-hue-emerald-surface text-hue-emerald",
+  fuchsia: "border-hue-fuchsia-border bg-hue-fuchsia-surface text-hue-fuchsia",
 };
 
 export function Badge({ children, tone = "neutral", hue }: BadgeProps) {

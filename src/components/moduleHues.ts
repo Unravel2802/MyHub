@@ -16,6 +16,7 @@ export type HueName =
   | "cyan"
   | "teal"
   | "emerald"
+  | "fuchsia"
   | "accent"; // indigo, the brand hue — the hub keeps it
 
 export const MODULE_HUES: Record<string, HueName> = {
@@ -28,6 +29,7 @@ export const MODULE_HUES: Record<string, HueName> = {
   "/achievements": "orange", // the flame
   "/review": "teal", // calm, reflective
   "/offers": "emerald", // money and go-signals
+  "/notes": "fuchsia", // Knowledge Base — the one remaining unclaimed hue
 };
 
 // The default for anything not in the map: the brand accent.

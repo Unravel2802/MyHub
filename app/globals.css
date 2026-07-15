@@ -276,6 +276,13 @@ body {
 .hue-gradient-text {
   color: var(--hue, var(--accent));
 }
+.hue-progress {
+  background: linear-gradient(
+    90deg,
+    var(--hue, var(--accent)),
+    color-mix(in srgb, var(--hue, var(--accent)) 55%, white)
+  );
+}
 .dark .hue-gradient-text {
   background: linear-gradient(
     120deg,

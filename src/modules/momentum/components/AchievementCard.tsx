@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import type { Achievement } from "@/src/modules/momentum/achievementCatalog";
 import type { AchievementUnlock } from "@/src/modules/momentum/MomentumRepository";
 import { ACHIEVEMENT_CATEGORY_HUES } from "@/src/modules/momentum/achievementCategoryHues";
-import type { HueName } from "@/src/components/moduleHues";
+import { hueVar, type HueName } from "@/src/components/moduleHues";
 
 const categoryBorderClasses: Record<HueName, string> = {
   accent: "border-l-accent-border",
@@ -26,14 +26,22 @@ export function AchievementCard({
   unlock?: AchievementUnlock;
   style?: CSSProperties;
 }) {
+  const categoryHue = ACHIEVEMENT_CATEGORY_HUES[achievement.category];
+  const cardStyle = unlock
+    ? {
+        ...style,
+        ["--hue" as string]: hueVar(categoryHue),
+      }
+    : style;
+
   return (
     <article
-      className={`fade-up rounded-lg border border-l-4 p-4 transition-colors ${categoryBorderClasses[ACHIEVEMENT_CATEGORY_HUES[achievement.category]]} ${
+      className={`fade-up rounded-lg border border-l-4 p-4 transition-colors ${categoryBorderClasses[categoryHue]} ${
         unlock
           ? "border-success-border bg-success-surface hue-glow"
           : "border-border bg-surface-subtle"
       }`}
-      style={style}
+      style={cardStyle}
       key={achievement.key}
     >
       <div className="flex items-start justify-between gap-3">

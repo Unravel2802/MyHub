@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { HueName } from "@/src/components/moduleHues";
+import { hueVar } from "@/src/components/moduleHues";
 
 interface StatCardProps {
   label: string;
@@ -93,6 +94,7 @@ export function StatCard({
       ]
         .filter(Boolean)
         .join(" ")}
+      style={hue && isHero ? { ["--hue" as string]: hueVar(hue) } : undefined}
     >
       {/* The overline: uppercase, wide-tracked, muted. min-h keeps a two-line
           label ("ML system design") from dropping its value a line below the
@@ -105,6 +107,7 @@ export function StatCard({
         className={[
           "font-semibold tabular-nums tracking-tight",
           isHero ? "mt-1 text-5xl" : "mt-1 text-2xl",
+          isHero && hue ? "hue-gradient-text" : "",
           colors?.value ?? valueClasses[tone],
         ].join(" ")}
       >

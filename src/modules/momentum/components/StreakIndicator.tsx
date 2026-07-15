@@ -1,4 +1,5 @@
 import type { Streak } from "@/src/modules/momentum/streaks";
+import { hueFor, hueVar } from "@/src/components/moduleHues";
 
 export function StreakIndicator({ streak }: { streak: Streak }) {
   const isAlive = streak.current > 0;
@@ -10,7 +11,14 @@ export function StreakIndicator({ streak }: { streak: Streak }) {
       }
     >
       <p className="text-sm font-semibold">
-        <span className={isAlive && streak.activeToday ? "pulse-glow" : ""}>
+        <span
+          className={isAlive && streak.activeToday ? "pulse-glow hue-glow" : ""}
+          style={
+            isAlive && streak.activeToday
+              ? { ["--hue" as string]: hueVar(hueFor("/achievements")) }
+              : undefined
+          }
+        >
           🔥
         </span>{" "}
         {isAlive ? `${streak.current}-day streak` : "Start a streak"}

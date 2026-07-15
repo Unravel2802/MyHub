@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { HueName } from "@/src/components/moduleHues";
+import { hueVar, type HueName } from "@/src/components/moduleHues";
 
 type ProgressBarProps = {
   progress: number;
@@ -50,8 +50,11 @@ export function ProgressBar({ progress, hue }: ProgressBarProps) {
         <div
           // motion-reduce disables the sweep for anyone who's asked the OS for
           // less animation.
-          className={`h-full rounded-full ${hue ? hueClasses[hue] : "bg-accent"} transition-[width] duration-700 ease-out motion-reduce:transition-none`}
-          style={{ width: `${width}%` }}
+          className={`hue-progress h-full rounded-full ${hue ? hueClasses[hue] : "bg-accent"} transition-[width] duration-700 ease-out motion-reduce:transition-none`}
+          style={{
+            ["--hue" as string]: hueVar(hue ?? "accent"),
+            width: `${width}%`,
+          }}
         />
       ) : (
         // At 0% a plain empty track reads as BROKEN, not as "not started" —

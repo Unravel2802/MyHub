@@ -4,6 +4,7 @@ import { EmptyState } from "@/src/components/ui/EmptyState";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import type { TaskStats } from "@/src/modules/task/taskBoardUtils";
 import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
+import { hueFor, hueVar } from "@/src/components/moduleHues";
 
 const weekdays: { value: Weekday; label: string }[] = [
   { value: 1, label: "Monday" },
@@ -57,10 +58,13 @@ export function BoardHeader({
   onWeekdayChange,
 }: BoardHeaderProps) {
   return (
-    <header className="border-b border-border bg-surface px-6 py-5">
+    <header
+      className="hue-wash border-b border-border bg-surface px-6 py-5"
+      style={{ ["--hue" as string]: hueVar(hueFor("/")) }}
+    >
       <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
         <div>
-          <p className="text-sm font-medium text-muted">
+          <p className="text-sm font-medium text-hue-amber">
             Personal productivity
           </p>
           <h2 className="mt-1 text-3xl font-semibold tracking-normal text-foreground">
@@ -184,6 +188,11 @@ export function BoardHeader({
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {stats.map((stat) => (
           <StatCard
+            hue={
+              stat.label === "Open tasks" && stat.value > 0
+                ? hueFor("/")
+                : undefined
+            }
             key={stat.label}
             label={stat.label}
             size={stat.label === "Open tasks" ? "hero" : "default"}

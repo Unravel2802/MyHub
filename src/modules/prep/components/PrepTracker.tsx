@@ -14,6 +14,7 @@ import {
   activeCheckpoint,
   progressTowardCheckpoint,
 } from "@/src/modules/prep/prepTargets";
+import { hueFor, hueVar } from "@/src/components/moduleHues";
 
 export function PrepTracker() {
   const {
@@ -59,9 +60,12 @@ export function PrepTracker() {
   return (
     <AppShell activeHref="/prep" title="Prep Tracker">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <header
+          className="hue-wash mb-6 flex flex-wrap items-end justify-between gap-4 px-1 py-2"
+          style={{ ["--hue" as string]: hueVar(hueFor("/prep")) }}
+        >
           <div>
-            <p className="text-sm font-medium text-muted">
+            <p className="text-sm font-medium text-hue-cyan">
               Interview preparation
             </p>
             <h2 className="mt-1 text-3xl font-semibold text-foreground">
@@ -90,6 +94,11 @@ export function PrepTracker() {
 
         <div className="grid gap-6">
           <StatCard
+            hue={
+              checkpointProgress.algorithm.actual > 0
+                ? hueFor("/prep")
+                : undefined
+            }
             hint={`${checkpointProgress.algorithm.actual}/${checkpointProgress.algorithm.target} algorithms · ${checkpointProgress.systemDesign.actual}/${checkpointProgress.systemDesign.target} system design`}
             label={checkpoint.label}
             size="hero"

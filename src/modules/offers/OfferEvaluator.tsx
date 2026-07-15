@@ -11,6 +11,7 @@ import {
   RATING_MIN,
 } from "@/src/modules/offers/offerScore";
 import type { FactorKey, OfferRatings } from "@/src/modules/offers/offerScore";
+import { hueFor, hueVar } from "@/src/components/moduleHues";
 
 type Offer = { id: number; name: string; ratings: OfferRatings };
 
@@ -45,8 +46,11 @@ export function OfferEvaluator() {
   return (
     <AppShell activeHref="/offers" title="Offer Evaluator">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <header>
-          <p className="text-sm font-medium text-muted">Roadmap §12.1</p>
+        <header
+          className="hue-wash px-1 py-2"
+          style={{ ["--hue" as string]: hueVar(hueFor("/offers")) }}
+        >
+          <p className="text-sm font-medium text-hue-emerald">Roadmap §12.1</p>
           <h2 className="mt-1 text-3xl font-semibold">Offer Evaluator</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted">
             Score the whole opportunity, not just the number on the offer

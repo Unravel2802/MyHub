@@ -8,6 +8,7 @@ import {
 } from "@/src/modules/momentum/achievementCatalog";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 import { AchievementCard } from "@/src/modules/momentum/components/AchievementCard";
+import { hueFor, hueVar } from "@/src/components/moduleHues";
 
 const categories = ["prep", "career", "consistency"] as const;
 
@@ -17,8 +18,11 @@ export function AchievementsPage() {
   return (
     <AppShell activeHref="/achievements" title="Achievements">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <header>
-          <p className="text-sm font-medium text-muted">Momentum</p>
+        <header
+          className="hue-wash px-1 py-2"
+          style={{ ["--hue" as string]: hueVar(hueFor("/achievements")) }}
+        >
+          <p className="text-sm font-medium text-hue-orange">Momentum</p>
           <h2 className="mt-1 text-3xl font-semibold">Achievements</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted">
             Visible milestones tied to the roadmap, not points or levels.
@@ -29,6 +33,7 @@ export function AchievementsPage() {
               the eye to nothing and reads as celebrating it. */}
           <StatCard
             label="Current streak"
+            hue={streak.current > 0 ? hueFor("/achievements") : undefined}
             size="hero"
             tone={streak.current > 0 ? "accent" : "default"}
             value={`${streak.current} days`}

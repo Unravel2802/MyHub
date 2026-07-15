@@ -12,6 +12,7 @@ import { CompanyPanel } from "@/src/modules/jobApplications/components/CompanyPa
 import { InterviewPanel } from "@/src/modules/jobApplications/components/InterviewPanel";
 import type { ApplicationStage } from "@/src/modules/jobApplications/types";
 import { useApplicationStore } from "@/src/modules/jobApplications/useApplicationStore";
+import { hueFor, hueVar } from "@/src/components/moduleHues";
 
 export function JobApplicationCrm() {
   const store = useApplicationStore();
@@ -54,9 +55,14 @@ export function JobApplicationCrm() {
   return (
     <AppShell activeHref="/applications" title="Job CRM">
       <section className="min-w-0 py-6">
-        <header className="flex flex-wrap items-end justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <header
+          className="hue-wash flex flex-wrap items-end justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8"
+          style={{ ["--hue" as string]: hueVar(hueFor("/applications")) }}
+        >
           <div>
-            <p className="text-sm font-medium text-muted">Job search funnel</p>
+            <p className="text-sm font-medium text-hue-blue">
+              Job search funnel
+            </p>
             <h2 className="mt-1 text-3xl font-semibold">
               Applications and interviews
             </h2>
@@ -99,7 +105,10 @@ export function JobApplicationCrm() {
               a disclosure you must find before you can do anything is worse than a
               form you can scroll past. Data-first is achieved by putting the form
               BELOW the data, not by hiding it. */}
-          <details className="mx-4 mb-6 rounded-lg border border-border bg-surface sm:mx-6 lg:mx-8" open>
+        <details
+          className="mx-4 mb-6 rounded-lg border border-border bg-surface sm:mx-6 lg:mx-8"
+          open
+        >
           <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
             Add to your pipeline
           </summary>

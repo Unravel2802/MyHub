@@ -82,7 +82,7 @@ export function DailyDashboard() {
           <div className="mb-6">
             <StatCard
               label="Streak + this week's cadence"
-              hue={hueFor("/dashboard")}
+              hue={streak.current > 0 ? hueFor("/dashboard") : undefined}
               size="hero"
               tone={streak.current > 0 ? "accent" : "default"}
               value={`${streak.current} days · ${dashboard.weeklyCadence.applications.count} applications · ${dashboard.weeklyCadence.outreach.count} outreach`}

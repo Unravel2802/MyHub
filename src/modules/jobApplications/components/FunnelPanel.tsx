@@ -1,6 +1,7 @@
 import { StatCard } from "@/src/components/ui/StatCard";
 import type { FunnelStats } from "@/src/modules/jobApplications/funnelStats";
 import type { ApplicationStage } from "@/src/modules/jobApplications/types";
+import { hueFor } from "@/src/components/moduleHues";
 
 // `capitalize` on the raw enum rendered "oa" as "Oa". Acronyms don't survive a
 // CSS text-transform — they need a label map.
@@ -46,6 +47,12 @@ export function FunnelPanel({ funnel }: { funnel: FunnelStats }) {
               : `of ${funnel.pastApplied} sent`
           }
           label="Response rate"
+          hue={
+            funnel.responseRate !== null && funnel.responseRate > 0
+              ? hueFor("/applications")
+              : undefined
+          }
+          size="hero"
           tone={toneFor(funnel.responseRate)}
           value={rate(funnel.responseRate)}
         />

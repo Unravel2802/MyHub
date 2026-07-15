@@ -1,5 +1,6 @@
 import { StatCard } from "@/src/components/ui/StatCard";
 import type { WeeklyReviewSnapshot } from "@/src/modules/review/reviewLogic";
+import { hueFor } from "@/src/components/moduleHues";
 
 function targetLabel(target: { min: number; max?: number }) {
   return target.max ? `${target.min}-${target.max}` : `${target.min}`;
@@ -14,6 +15,11 @@ export function ReviewSnapshotStats({
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       <StatCard
+        hue={
+          snapshot.cadence.applications.count > 0
+            ? hueFor("/review")
+            : undefined
+        }
         label="Applications"
         size="hero"
         value={snapshot.cadence.applications.count}

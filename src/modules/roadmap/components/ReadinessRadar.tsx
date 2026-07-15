@@ -89,6 +89,16 @@ export function ReadinessRadar({
           viewBox={`0 0 ${SIZE} ${SIZE}`}
           width={SIZE}
         >
+          <defs>
+            {/* The claimed polygon fills with the brand indigo shifting toward
+                violet — the "meta pages" family. A flat fill read as inert; the
+                gradient gives the shape depth against the near-black canvas. */}
+            <linearGradient id="radar-claimed" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="var(--hue-violet)" stopOpacity="0.2" />
+            </linearGradient>
+          </defs>
+
           {/* Rings at minimum and strong. */}
           {[1, 2].map((level) => (
             <polygon
@@ -114,16 +124,21 @@ export function ReadinessRadar({
             );
           })}
 
-          {/* Claimed — solid accent fill. */}
+          {/* Claimed — gradient fill, accent stroke. */}
           <polygon
-            className="fill-accent/25 stroke-accent"
+            className="stroke-accent"
+            fill="url(#radar-claimed)"
             points={polygon(claimed)}
             strokeWidth={2}
           />
 
-          {/* Measured — dashed. Only visually distinct when it disagrees. */}
+          {/* Measured — dashed. Red ONLY when it contradicts a claim; muted zinc
+              when it merely agrees. Previously always red, which cried wolf even
+              when the data backed you. */}
           <polygon
-            className="fill-none stroke-danger"
+            className={
+              hasContradiction ? "fill-none stroke-danger" : "fill-none stroke-subtle"
+            }
             points={polygon(measured)}
             strokeDasharray="4 3"
             strokeWidth={2}

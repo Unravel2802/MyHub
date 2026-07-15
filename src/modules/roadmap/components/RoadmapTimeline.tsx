@@ -85,7 +85,7 @@ export function RoadmapTimeline({
           />
           <div
             aria-hidden
-            className="absolute left-4 top-10 h-0.5 bg-accent transition-[width] duration-700 ease-out motion-reduce:transition-none"
+            className="absolute left-4 top-10 h-0.5 bg-gradient-to-r from-accent to-hue-violet transition-[width] duration-700 ease-out motion-reduce:transition-none"
             style={{ width: `calc((100% - 2rem) * ${fillPercent / 100})` }}
           />
 

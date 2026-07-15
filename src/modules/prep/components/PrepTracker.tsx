@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/src/components/AppShell";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { BehavioralStories } from "@/src/modules/prep/components/BehavioralStories";
 import { PrepEntryForm } from "@/src/modules/prep/components/PrepEntryForm";
@@ -14,7 +15,7 @@ import {
   activeCheckpoint,
   progressTowardCheckpoint,
 } from "@/src/modules/prep/prepTargets";
-import { hueFor, hueVar } from "@/src/components/moduleHues";
+import { hueFor } from "@/src/components/moduleHues";
 
 export function PrepTracker() {
   const {
@@ -60,27 +61,23 @@ export function PrepTracker() {
   return (
     <AppShell activeHref="/prep" title="Prep Tracker">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <header
-          className="hue-wash mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-border bg-surface px-1 py-2"
-          style={{ ["--hue" as string]: hueVar(hueFor("/prep")) }}
-        >
-          <div>
-            <p className="text-sm font-medium text-hue-cyan">
-              Interview preparation
-            </p>
-            <h2 className="mt-1 text-3xl font-semibold text-foreground">
-              Build measurable reps
-            </h2>
-          </div>
-          <button
-            className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
-            disabled={isLoading}
-            onClick={() => void Promise.all([fetchEntries(), fetchStories()])}
-            type="button"
-          >
-            Refresh
-          </button>
-        </header>
+        <PageHeader
+          actions={
+            <button
+              className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
+              disabled={isLoading}
+              onClick={() => void Promise.all([fetchEntries(), fetchStories()])}
+              type="button"
+            >
+              Refresh
+            </button>
+          }
+          bleed
+          className="mb-6"
+          eyebrow="Interview preparation"
+          hue={hueFor("/prep")}
+          title="Build measurable reps"
+        />
 
         {error ? (
           <p

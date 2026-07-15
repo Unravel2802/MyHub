@@ -6,9 +6,10 @@ import { StatCard } from "@/src/components/ui/StatCard";
 import { RoadmapTimeline } from "@/src/modules/roadmap/components/RoadmapTimeline";
 import { ReadinessRadar } from "@/src/modules/roadmap/components/ReadinessRadar";
 import { ActivityHeatmap } from "@/src/modules/momentum/components/ActivityHeatmap";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
-import { hueFor, hueVar } from "@/src/components/moduleHues";
+import { hueFor } from "@/src/components/moduleHues";
 
 export function RoadmapPage() {
   const store = useRoadmapStore();
@@ -39,17 +40,12 @@ export function RoadmapPage() {
   return (
     <AppShell activeHref="/roadmap" title="Roadmap">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <header
-          className="hue-wash border-b border-border bg-surface px-1 py-2"
-          style={{ ["--hue" as string]: hueVar(hueFor("/roadmap")) }}
-        >
-          <p className="text-xs font-medium uppercase tracking-widest text-hue-violet">
-            Engineering-first roadmap
-          </p>
-          <h2 className="mt-1 text-3xl font-semibold tracking-tight">
-            Where you stand
-          </h2>
-        </header>
+        <PageHeader
+          bleed
+          eyebrow="Engineering-first roadmap"
+          hue={hueFor("/roadmap")}
+          title="Where you stand"
+        />
 
         {store.error ? (
           <p

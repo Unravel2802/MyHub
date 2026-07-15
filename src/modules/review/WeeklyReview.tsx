@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppShell } from "@/src/components/AppShell";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import {
   QUARTERLY_QUESTIONS,
@@ -10,7 +11,7 @@ import {
 import type { QuarterlyAnswers } from "@/src/modules/review/types";
 import { useReviewStore } from "@/src/modules/review/useReviewStore";
 import { ReviewSnapshotStats } from "@/src/modules/review/components/ReviewSnapshotStats";
-import { hueFor, hueVar } from "@/src/components/moduleHues";
+import { hueFor } from "@/src/components/moduleHues";
 
 export function WeeklyReview() {
   const store = useReviewStore();
@@ -65,16 +66,13 @@ export function WeeklyReview() {
   return (
     <AppShell activeHref="/review" title="Weekly Review">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <header
-          className="hue-wash border-b border-border bg-surface px-1 py-2"
-          style={{ ["--hue" as string]: hueVar(hueFor("/review")) }}
-        >
-          <p className="text-sm font-medium text-hue-teal">Sunday ritual</p>
-          <h2 className="mt-1 text-3xl font-semibold">Weekly Review</h2>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Look honestly at this week, then choose one fix for the next.
-          </p>
-        </header>
+        <PageHeader
+          bleed
+          description="Look honestly at this week, then choose one fix for the next."
+          eyebrow="Sunday ritual"
+          hue={hueFor("/review")}
+          title="Weekly Review"
+        />
 
         {store.error ? (
           <p

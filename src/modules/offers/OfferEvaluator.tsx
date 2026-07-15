@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AppShell } from "@/src/components/AppShell";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 import { Badge } from "@/src/components/ui/Badge";
 import {
   bestOffer,
@@ -11,7 +12,7 @@ import {
   RATING_MIN,
 } from "@/src/modules/offers/offerScore";
 import type { FactorKey, OfferRatings } from "@/src/modules/offers/offerScore";
-import { hueFor, hueVar } from "@/src/components/moduleHues";
+import { hueFor } from "@/src/components/moduleHues";
 
 type Offer = { id: number; name: string; ratings: OfferRatings };
 
@@ -46,17 +47,13 @@ export function OfferEvaluator() {
   return (
     <AppShell activeHref="/offers" title="Offer Evaluator">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <header
-          className="hue-wash border-b border-border bg-surface px-1 py-2"
-          style={{ ["--hue" as string]: hueVar(hueFor("/offers")) }}
-        >
-          <p className="text-sm font-medium text-hue-emerald">Roadmap §12.1</p>
-          <h2 className="mt-1 text-3xl font-semibold">Offer Evaluator</h2>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            Score the whole opportunity, not just the number on the offer
-            letter.
-          </p>
-        </header>
+        <PageHeader
+          bleed
+          description="Score the whole opportunity, not just the number on the offer letter."
+          eyebrow="Roadmap §12.1"
+          hue={hueFor("/offers")}
+          title="Offer Evaluator"
+        />
         <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           {offers.map((offer, index) => {
             const isWinner = winner?.id === offer.id;

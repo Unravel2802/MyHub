@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 import { useEffect } from "react";
 import { AppShell } from "@/src/components/AppShell";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { EmptyState } from "@/src/components/ui/EmptyState";
@@ -14,7 +15,7 @@ import {
 import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
-import { hueFor, hueVar } from "@/src/components/moduleHues";
+import { hueFor } from "@/src/components/moduleHues";
 
 const targetLabels = [
   ["algorithm", "Algorithms"],
@@ -46,27 +47,23 @@ export function DailyDashboard() {
   return (
     <AppShell activeHref="/dashboard" title="Daily Dashboard">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <header
-          className="hue-wash mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-border bg-surface px-1 py-2"
-          style={{ ["--hue" as string]: hueVar(hueFor("/dashboard")) }}
-        >
-          <div>
-            <p className="text-sm font-medium text-accent-strong">
-              {format(new Date(), "EEEE, MMMM d")}
-            </p>
-            <h2 className="mt-1 text-3xl font-semibold">
-              Keep the week honest
-            </h2>
-          </div>
-          <button
-            className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover disabled:opacity-60"
-            disabled={dashboard.isLoading}
-            onClick={() => void fetchAll()}
-            type="button"
-          >
-            Refresh
-          </button>
-        </header>
+        <PageHeader
+          actions={
+            <button
+              className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover disabled:opacity-60"
+              disabled={dashboard.isLoading}
+              onClick={() => void fetchAll()}
+              type="button"
+            >
+              Refresh
+            </button>
+          }
+          bleed
+          className="mb-6"
+          eyebrow={format(new Date(), "EEEE, MMMM d")}
+          hue={hueFor("/dashboard")}
+          title="Keep the week honest"
+        />
 
         {dashboard.error ? (
           <p

@@ -1,10 +1,11 @@
 import type { FormEvent } from "react";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import type { TaskStats } from "@/src/modules/task/taskBoardUtils";
 import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
-import { hueFor, hueVar } from "@/src/components/moduleHues";
+import { hueFor } from "@/src/components/moduleHues";
 
 const weekdays: { value: Weekday; label: string }[] = [
   { value: 1, label: "Monday" },
@@ -58,20 +59,8 @@ export function BoardHeader({
   onWeekdayChange,
 }: BoardHeaderProps) {
   return (
-    <header
-      className="hue-wash border-b border-border bg-surface px-6 py-5"
-      style={{ ["--hue" as string]: hueVar(hueFor("/")) }}
-    >
-      <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
-        <div>
-          <p className="text-sm font-medium text-hue-amber">
-            Personal productivity
-          </p>
-          <h2 className="mt-1 text-3xl font-semibold tracking-normal text-foreground">
-            Kanban board
-          </h2>
-        </div>
-
+    <PageHeader
+      actions={
         <div className="flex flex-col gap-3 sm:flex-row">
           <label className="sr-only" htmlFor="task-search">
             Search tasks
@@ -147,8 +136,11 @@ export function BoardHeader({
             Refresh
           </button>
         </div>
-      </div>
-
+      }
+      eyebrow="Personal productivity"
+      hue={hueFor("/")}
+      title="Kanban board"
+    >
       {error ? (
         <p
           aria-live="assertive"
@@ -258,6 +250,6 @@ export function BoardHeader({
           </ul>
         )}
       </div>
-    </header>
+    </PageHeader>
   );
 }

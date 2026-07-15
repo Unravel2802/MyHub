@@ -16,6 +16,7 @@ import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
 import { hueFor } from "@/src/components/moduleHues";
+import { register, unregister } from "@/src/lib/commandPalette";
 
 const targetLabels = [
   ["algorithm", "Algorithms"],
@@ -37,6 +38,18 @@ export function DailyDashboard() {
   }, [fetchAll, subscribeToUpdates]);
 
   useEffect(() => {
+    register("dashboard", [
+      {
+        id: "refresh",
+        label: "Refresh dashboard",
+        keywords: ["dashboard", "refresh", "reload"],
+        action: () => document.getElementById("dashboard-refresh")?.click(),
+      },
+    ]);
+    return () => unregister("dashboard");
+  }, []);
+
+  useEffect(() => {
     void fetchRoadmap();
   }, [fetchRoadmap]);
 
@@ -52,6 +65,7 @@ export function DailyDashboard() {
             <button
               className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover disabled:opacity-60"
               disabled={dashboard.isLoading}
+              id="dashboard-refresh"
               onClick={() => void fetchAll()}
               type="button"
             >

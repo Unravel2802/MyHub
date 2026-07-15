@@ -10,6 +10,7 @@ import { PageHeader } from "@/src/components/ui/PageHeader";
 import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 import { hueFor } from "@/src/components/moduleHues";
+import { register, unregister } from "@/src/lib/commandPalette";
 
 export function RoadmapPage() {
   const store = useRoadmapStore();
@@ -19,6 +20,18 @@ export function RoadmapPage() {
   useEffect(() => {
     void fetchRoadmap();
   }, [fetchRoadmap]);
+
+  useEffect(() => {
+    register("roadmap", [
+      {
+        id: "go-to-page",
+        label: "Go to Roadmap",
+        keywords: ["roadmap", "plan", "graduation"],
+        action: () => window.location.assign("/roadmap"),
+      },
+    ]);
+    return () => unregister("roadmap");
+  }, []);
 
   // Derived, not an effect: default to the month you're actually IN, so the page
   // lands on "what do I do now" rather than making you hunt for yourself on the

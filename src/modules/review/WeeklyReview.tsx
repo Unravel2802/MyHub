@@ -12,6 +12,7 @@ import type { QuarterlyAnswers } from "@/src/modules/review/types";
 import { useReviewStore } from "@/src/modules/review/useReviewStore";
 import { ReviewSnapshotStats } from "@/src/modules/review/components/ReviewSnapshotStats";
 import { hueFor } from "@/src/components/moduleHues";
+import { register, unregister } from "@/src/lib/commandPalette";
 
 export function WeeklyReview() {
   const store = useReviewStore();
@@ -36,6 +37,18 @@ export function WeeklyReview() {
   useEffect(() => {
     void fetchReviews();
   }, [fetchReviews]);
+
+  useEffect(() => {
+    register("weekly-review", [
+      {
+        id: "go-to-page",
+        label: "Go to Weekly Review",
+        keywords: ["review", "weekly", "ritual"],
+        action: () => window.location.assign("/review"),
+      },
+    ]);
+    return () => unregister("weekly-review");
+  }, []);
 
   useEffect(() => {
     if (!existingReview) return;

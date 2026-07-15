@@ -27,6 +27,7 @@ import { useTaskStore } from "@/src/modules/task/useTaskStore";
 import { archivedTasks, boardTasks } from "@/src/modules/task/taskArchive";
 import { TaskBoardCanvas } from "@/src/modules/task/components/TaskBoardCanvas";
 import { format } from "date-fns";
+import { register, unregister } from "@/src/lib/commandPalette";
 
 export function TaskBoard() {
   const {
@@ -70,6 +71,21 @@ export function TaskBoard() {
 
   useEffect(() => {
     void Promise.all([fetchTasks(), fetchTemplates()]);
+    register("task-engine", [
+      {
+        id: "new-task",
+        label: "New task",
+        keywords: ["task", "create", "inbox"],
+        action: () => document.getElementById("new-task-title")?.focus(),
+      },
+      {
+        id: "focus-search",
+        label: "Focus search",
+        keywords: ["task", "search", "filter"],
+        action: () => document.getElementById("task-search")?.focus(),
+      },
+    ]);
+    return () => unregister("task-engine");
   }, [fetchTasks, fetchTemplates]);
 
   // Archived tasks stay in `tasks` (Momentum needs their completedAt) but leave

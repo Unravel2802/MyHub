@@ -10,6 +10,7 @@ import { OutreachEntryList } from "@/src/modules/outreach/components/OutreachEnt
 import { useOutreachStore } from "@/src/modules/outreach/useOutreachStore";
 import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
 import { hueFor } from "@/src/components/moduleHues";
+import { register, unregister } from "@/src/lib/commandPalette";
 
 export function OutreachLog() {
   const {
@@ -34,6 +35,22 @@ export function OutreachLog() {
   useEffect(() => {
     void fetchEntries();
   }, [fetchEntries]);
+
+  useEffect(() => {
+    register("outreach", [
+      {
+        id: "new-entry",
+        label: "Log outreach",
+        keywords: ["outreach", "contact", "conversation", "referral"],
+        action: () => {
+          document
+            .getElementById("log-outreach-heading")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+      },
+    ]);
+    return () => unregister("outreach");
+  }, []);
 
   useEffect(() => {
     void fetchDashboard();

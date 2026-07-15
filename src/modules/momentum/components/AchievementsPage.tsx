@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { StatCard } from "@/src/components/ui/StatCard";
@@ -12,6 +13,7 @@ import { AchievementCard } from "@/src/modules/momentum/components/AchievementCa
 import { hueFor } from "@/src/components/moduleHues";
 import type { HueName } from "@/src/components/moduleHues";
 import { ACHIEVEMENT_CATEGORY_HUES } from "@/src/modules/momentum/achievementCategoryHues";
+import { register, unregister } from "@/src/lib/commandPalette";
 
 const categories = ["prep", "career", "consistency"] as const;
 
@@ -31,6 +33,18 @@ const categoryHeadingClasses: Record<HueName, string> = {
 export function AchievementsPage() {
   const { streak, unlocked } = useMomentumStore();
   const unlockedByKey = new Map(unlocked.map((item) => [item.key, item]));
+
+  useEffect(() => {
+    register("achievements", [
+      {
+        id: "go-to-page",
+        label: "Go to Achievements",
+        keywords: ["achievements", "momentum", "streaks"],
+        action: () => window.location.assign("/achievements"),
+      },
+    ]);
+    return () => unregister("achievements");
+  }, []);
   return (
     <AppShell activeHref="/achievements" title="Achievements">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">

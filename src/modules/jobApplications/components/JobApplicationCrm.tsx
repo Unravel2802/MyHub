@@ -14,6 +14,7 @@ import type { ApplicationStage } from "@/src/modules/jobApplications/types";
 import { useApplicationStore } from "@/src/modules/jobApplications/useApplicationStore";
 import { hueFor } from "@/src/components/moduleHues";
 import { PageHeader } from "@/src/components/ui/PageHeader";
+import { register, unregister } from "@/src/lib/commandPalette";
 
 export function JobApplicationCrm() {
   const store = useApplicationStore();
@@ -23,6 +24,22 @@ export function JobApplicationCrm() {
   useEffect(() => {
     void fetchAll();
   }, [fetchAll]);
+
+  useEffect(() => {
+    register("job-crm", [
+      {
+        id: "new-application",
+        label: "New application",
+        keywords: ["application", "job", "company", "pipeline"],
+        action: () => {
+          document
+            .getElementById("new-application-heading")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+      },
+    ]);
+    return () => unregister("job-crm");
+  }, []);
 
   function deleteCompany(id: string, name: string, hasApplications: boolean) {
     const warning = hasApplications

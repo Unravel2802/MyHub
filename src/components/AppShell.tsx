@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AuthGate } from "@/src/components/AuthGate";
+import { CommandPalette } from "@/src/components/CommandPalette";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
 import { NAV_ITEMS } from "@/src/components/appNav";
 import { hueFor, type HueName } from "@/src/components/moduleHues";
@@ -132,6 +133,7 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
 
           {children}
         </div>
+        <CommandPalette />
         <UnlockToaster />
       </main>
     </AuthGate>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { Badge } from "@/src/components/ui/Badge";
@@ -13,6 +13,7 @@ import {
 } from "@/src/modules/offers/offerScore";
 import type { FactorKey, OfferRatings } from "@/src/modules/offers/offerScore";
 import { hueFor } from "@/src/components/moduleHues";
+import { register, unregister } from "@/src/lib/commandPalette";
 
 type Offer = { id: number; name: string; ratings: OfferRatings };
 
@@ -27,6 +28,18 @@ export function OfferEvaluator() {
     { id: 2, name: "Offer 2", ratings: initialRatings() },
   ]);
   const winner = bestOffer(offers);
+
+  useEffect(() => {
+    register("offers", [
+      {
+        id: "go-to-page",
+        label: "Go to Offer Evaluator",
+        keywords: ["offers", "salary", "compare"],
+        action: () => window.location.assign("/offers"),
+      },
+    ]);
+    return () => unregister("offers");
+  }, []);
 
   function updateName(id: number, name: string) {
     setOffers((current) =>

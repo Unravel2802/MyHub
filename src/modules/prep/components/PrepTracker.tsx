@@ -16,6 +16,7 @@ import {
   progressTowardCheckpoint,
 } from "@/src/modules/prep/prepTargets";
 import { hueFor } from "@/src/components/moduleHues";
+import { register, unregister } from "@/src/lib/commandPalette";
 
 export function PrepTracker() {
   const {
@@ -45,6 +46,22 @@ export function PrepTracker() {
   useEffect(() => {
     void Promise.all([fetchEntries(), fetchStories()]);
   }, [fetchEntries, fetchStories]);
+
+  useEffect(() => {
+    register("prep", [
+      {
+        id: "new-entry",
+        label: "New prep entry",
+        keywords: ["prep", "practice", "log"],
+        action: () => {
+          document
+            .getElementById("log-prep-heading")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        },
+      },
+    ]);
+    return () => unregister("prep");
+  }, []);
 
   function confirmEntryDelete(id: string, topic: string) {
     if (window.confirm(`Delete prep session "${topic}"?`)) {

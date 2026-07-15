@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { EmptyState } from "@/src/components/ui/EmptyState";
@@ -15,6 +16,7 @@ import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 
 export function WeeklyReview() {
+  const router = useRouter();
   const store = useReviewStore();
   const [wentWell, setWentWell] = useState("");
   const [needsWork, setNeedsWork] = useState("");
@@ -44,11 +46,11 @@ export function WeeklyReview() {
         id: "go-to-page",
         label: "Go to Weekly Review",
         keywords: ["review", "weekly", "ritual"],
-        action: () => window.location.assign("/review"),
+        action: () => router.push("/review"),
       },
     ]);
     return () => unregister("weekly-review");
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (!existingReview) return;

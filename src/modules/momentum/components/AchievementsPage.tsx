@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { StatCard } from "@/src/components/ui/StatCard";
@@ -31,6 +32,7 @@ const categoryHeadingClasses: Record<HueName, string> = {
 };
 
 export function AchievementsPage() {
+  const router = useRouter();
   const { streak, unlocked } = useMomentumStore();
   const unlockedByKey = new Map(unlocked.map((item) => [item.key, item]));
 
@@ -40,11 +42,11 @@ export function AchievementsPage() {
         id: "go-to-page",
         label: "Go to Achievements",
         keywords: ["achievements", "momentum", "streaks"],
-        action: () => window.location.assign("/achievements"),
+        action: () => router.push("/achievements"),
       },
     ]);
     return () => unregister("achievements");
-  }, []);
+  }, [router]);
   return (
     <AppShell activeHref="/achievements" title="Achievements">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">

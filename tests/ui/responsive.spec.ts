@@ -1,6 +1,16 @@
 import { expect, test } from "./fixtures";
 
-const PAGES = ["/dashboard", "/", "/prep", "/applications", "/outreach", "/achievements", "/review", "/offers"];
+const PAGES = [
+  "/dashboard",
+  "/",
+  "/prep",
+  "/applications",
+  "/outreach",
+  "/achievements",
+  "/review",
+  "/offers",
+  "/notes",
+];
 
 test.use({ viewport: { width: 390, height: 844 } });
 
@@ -31,7 +41,11 @@ for (const path of PAGES) {
       };
     });
 
-    console.log(`${path} vw=${result.vw} scroll=${result.scrollWidth} ${JSON.stringify(result.culprits)}`);
-    expect(result.scrollWidth, `${path} overflows`).toBeLessThanOrEqual(result.vw + 1);
+    console.log(
+      `${path} vw=${result.vw} scroll=${result.scrollWidth} ${JSON.stringify(result.culprits)}`,
+    );
+    expect(result.scrollWidth, `${path} overflows`).toBeLessThanOrEqual(
+      result.vw + 1,
+    );
   });
 }

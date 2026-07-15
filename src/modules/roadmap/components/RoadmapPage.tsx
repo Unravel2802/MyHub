@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/src/components/AppShell";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { RoadmapTimeline } from "@/src/modules/roadmap/components/RoadmapTimeline";
@@ -13,6 +14,7 @@ import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 
 export function RoadmapPage() {
+  const router = useRouter();
   const store = useRoadmapStore();
   const { fetchRoadmap } = store;
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -27,11 +29,11 @@ export function RoadmapPage() {
         id: "go-to-page",
         label: "Go to Roadmap",
         keywords: ["roadmap", "plan", "graduation"],
-        action: () => window.location.assign("/roadmap"),
+        action: () => router.push("/roadmap"),
       },
     ]);
     return () => unregister("roadmap");
-  }, []);
+  }, [router]);
 
   // Derived, not an effect: default to the month you're actually IN, so the page
   // lands on "what do I do now" rather than making you hunt for yourself on the

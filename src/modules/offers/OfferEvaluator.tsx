@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { Badge } from "@/src/components/ui/Badge";
@@ -23,6 +24,7 @@ const initialRatings = (): OfferRatings =>
   ) as OfferRatings;
 
 export function OfferEvaluator() {
+  const router = useRouter();
   const [offers, setOffers] = useState<Offer[]>([
     { id: 1, name: "Offer 1", ratings: initialRatings() },
     { id: 2, name: "Offer 2", ratings: initialRatings() },
@@ -35,11 +37,11 @@ export function OfferEvaluator() {
         id: "go-to-page",
         label: "Go to Offer Evaluator",
         keywords: ["offers", "salary", "compare"],
-        action: () => window.location.assign("/offers"),
+        action: () => router.push("/offers"),
       },
     ]);
     return () => unregister("offers");
-  }, []);
+  }, [router]);
 
   function updateName(id: number, name: string) {
     setOffers((current) =>

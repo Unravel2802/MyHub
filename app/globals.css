@@ -47,6 +47,37 @@
   --danger-surface: #fef2f2;
   --danger-border: #fecaca;
   --danger-border-hover: #fca5a5;
+
+  /* --- The hue kit (docs/color-refresh.md K1) ---------------------------------
+     Eight module/data hues, each with three roles: text, surface (a tint for
+     fills/badges), and border. Light-mode TEXT roles are the 700-level shade so
+     they clear 4.5:1 on white — verified by src/lib/palette.test.ts, which fails
+     the unit suite if any of them drops below AA. Never name a raw color in a
+     component; go through these. */
+  --hue-amber: #b45309;
+  --hue-amber-surface: #fffbeb;
+  --hue-amber-border: #fde68a;
+  --hue-orange: #c2410c;
+  --hue-orange-surface: #fff7ed;
+  --hue-orange-border: #fed7aa;
+  --hue-rose: #be123c;
+  --hue-rose-surface: #fff1f2;
+  --hue-rose-border: #fecdd3;
+  --hue-violet: #6d28d9;
+  --hue-violet-surface: #f5f3ff;
+  --hue-violet-border: #ddd6fe;
+  --hue-blue: #1d4ed8;
+  --hue-blue-surface: #eff6ff;
+  --hue-blue-border: #bfdbfe;
+  --hue-cyan: #0e7490;
+  --hue-cyan-surface: #ecfeff;
+  --hue-cyan-border: #a5f3fc;
+  --hue-teal: #0f766e;
+  --hue-teal-surface: #f0fdfa;
+  --hue-teal-border: #99f6e4;
+  --hue-emerald: #047857;
+  --hue-emerald-surface: #ecfdf5;
+  --hue-emerald-border: #a7f3d0;
 }
 
 .dark {
@@ -84,6 +115,34 @@
   --danger-surface: #2a0a0a;
   --danger-border: #7f1d1d;
   --danger-border-hover: #991b1b;
+
+  /* Dark hue kit. TEXT roles are the 400-level shade (bright enough to clear AA
+     against zinc-900/800); SURFACE roles are deep-tinted — never pale, or a pill
+     glows against the near-black canvas, same rule as --danger-surface #2a0a0a. */
+  --hue-amber: #fbbf24;
+  --hue-amber-surface: #291a03;
+  --hue-amber-border: #78350f;
+  --hue-orange: #fb923c;
+  --hue-orange-surface: #2b1403;
+  --hue-orange-border: #7c2d12;
+  --hue-rose: #fb7185;
+  --hue-rose-surface: #2a0810;
+  --hue-rose-border: #881337;
+  --hue-violet: #a78bfa;
+  --hue-violet-surface: #1a0e33;
+  --hue-violet-border: #5b21b6;
+  --hue-blue: #60a5fa;
+  --hue-blue-surface: #0a1836;
+  --hue-blue-border: #1e40af;
+  --hue-cyan: #22d3ee;
+  --hue-cyan-surface: #062a35;
+  --hue-cyan-border: #155e75;
+  --hue-teal: #2dd4bf;
+  --hue-teal-surface: #042f2c;
+  --hue-teal-border: #115e59;
+  --hue-emerald: #34d399;
+  --hue-emerald-surface: #052e1a;
+  --hue-emerald-border: #065f46;
 }
 
 /* `inline` makes the generated utilities reference the variables directly, so
@@ -123,6 +182,33 @@
   --color-danger-border: var(--danger-border);
   --color-danger-border-hover: var(--danger-border-hover);
 
+  /* The hue kit, as Tailwind color utilities: text-hue-cyan, bg-hue-cyan-surface,
+     border-hue-cyan-border, and so on for all eight. */
+  --color-hue-amber: var(--hue-amber);
+  --color-hue-amber-surface: var(--hue-amber-surface);
+  --color-hue-amber-border: var(--hue-amber-border);
+  --color-hue-orange: var(--hue-orange);
+  --color-hue-orange-surface: var(--hue-orange-surface);
+  --color-hue-orange-border: var(--hue-orange-border);
+  --color-hue-rose: var(--hue-rose);
+  --color-hue-rose-surface: var(--hue-rose-surface);
+  --color-hue-rose-border: var(--hue-rose-border);
+  --color-hue-violet: var(--hue-violet);
+  --color-hue-violet-surface: var(--hue-violet-surface);
+  --color-hue-violet-border: var(--hue-violet-border);
+  --color-hue-blue: var(--hue-blue);
+  --color-hue-blue-surface: var(--hue-blue-surface);
+  --color-hue-blue-border: var(--hue-blue-border);
+  --color-hue-cyan: var(--hue-cyan);
+  --color-hue-cyan-surface: var(--hue-cyan-surface);
+  --color-hue-cyan-border: var(--hue-cyan-border);
+  --color-hue-teal: var(--hue-teal);
+  --color-hue-teal-surface: var(--hue-teal-surface);
+  --color-hue-teal-border: var(--hue-teal-border);
+  --color-hue-emerald: var(--hue-emerald);
+  --color-hue-emerald-surface: var(--hue-emerald-surface);
+  --color-hue-emerald-border: var(--hue-emerald-border);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -150,6 +236,56 @@ body {
 
 .momentum-toast-in {
   animation: momentum-toast-in 220ms ease-out both;
+}
+
+/* --- Color-refresh utilities (docs/color-refresh.md) -------------------------
+   Each takes its color from a `--hue` CSS variable the caller sets inline, so
+   one utility serves all eight module hues without a class per hue. */
+
+/* The header radial wash: the module hue bleeding down from the top-left of a
+   page header, fading to nothing. Makes a page feel colored while every card on
+   it stays zinc — the Linear trick. Alpha kept low on purpose. */
+.hue-wash {
+  position: relative;
+  isolation: isolate;
+}
+.hue-wash::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    120% 340px at 0% 0%,
+    color-mix(in srgb, var(--hue, var(--accent)) 12%, transparent),
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+/* A soft halo in the caller's hue — for the lit streak flame, the "you are
+   here" station, an unlocked achievement card. It's a static box-shadow, so
+   motion-reduce doesn't need to touch it. */
+.hue-glow {
+  box-shadow: 0 0 20px -2px
+    color-mix(in srgb, var(--hue, var(--accent)) 55%, transparent);
+}
+
+/* Gradient text: the module hue shifting toward its lighter self. Reads as a
+   glowing number against near-black. On white it looks washed, so light mode
+   collapses it to a solid hue — the fallback color below is what shows there. */
+.hue-gradient-text {
+  color: var(--hue, var(--accent));
+}
+.dark .hue-gradient-text {
+  background: linear-gradient(
+    120deg,
+    var(--hue, var(--accent)),
+    color-mix(in srgb, var(--hue, var(--accent)) 55%, white)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 /* Global focus ring. The app previously had exactly ONE :focus rule in the

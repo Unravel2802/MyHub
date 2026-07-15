@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { HueName } from "@/src/components/moduleHues";
 
 interface StatCardProps {
   label: string;
@@ -12,6 +13,7 @@ interface StatCardProps {
   // Lift on hover. Off by default: a card that moves when you're only reading it
   // is noise. Turn it on where the card is actually interactive.
   interactive?: boolean;
+  hue?: HueName;
 }
 
 const toneClasses = {
@@ -28,6 +30,45 @@ const valueClasses = {
   danger: "text-danger",
 } as const;
 
+const hueClasses: Record<HueName, { container: string; value: string }> = {
+  accent: {
+    container: "border-accent-border bg-accent-surface",
+    value: "text-accent-strong",
+  },
+  amber: {
+    container: "border-hue-amber-border bg-hue-amber-surface",
+    value: "text-hue-amber",
+  },
+  orange: {
+    container: "border-hue-orange-border bg-hue-orange-surface",
+    value: "text-hue-orange",
+  },
+  rose: {
+    container: "border-hue-rose-border bg-hue-rose-surface",
+    value: "text-hue-rose",
+  },
+  violet: {
+    container: "border-hue-violet-border bg-hue-violet-surface",
+    value: "text-hue-violet",
+  },
+  blue: {
+    container: "border-hue-blue-border bg-hue-blue-surface",
+    value: "text-hue-blue",
+  },
+  cyan: {
+    container: "border-hue-cyan-border bg-hue-cyan-surface",
+    value: "text-hue-cyan",
+  },
+  teal: {
+    container: "border-hue-teal-border bg-hue-teal-surface",
+    value: "text-hue-teal",
+  },
+  emerald: {
+    container: "border-hue-emerald-border bg-hue-emerald-surface",
+    value: "text-hue-emerald",
+  },
+};
+
 export function StatCard({
   label,
   value,
@@ -35,15 +76,17 @@ export function StatCard({
   tone = "default",
   size = "default",
   interactive = false,
+  hue,
 }: StatCardProps) {
   const isHero = size === "hero";
+  const colors = hue ? hueClasses[hue] : null;
 
   return (
     <div
       className={[
         "rounded-lg border transition-all duration-200 ease-in-out",
         isHero ? "px-6 py-5" : "px-4 py-3",
-        toneClasses[tone],
+        colors?.container ?? toneClasses[tone],
         interactive
           ? "hover:scale-[1.02] hover:border-accent-border motion-reduce:hover:scale-100"
           : "",
@@ -62,7 +105,7 @@ export function StatCard({
         className={[
           "font-semibold tabular-nums tracking-tight",
           isHero ? "mt-1 text-5xl" : "mt-1 text-2xl",
-          valueClasses[tone],
+          colors?.value ?? valueClasses[tone],
         ].join(" ")}
       >
         {value}

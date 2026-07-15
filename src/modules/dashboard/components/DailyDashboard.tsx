@@ -14,6 +14,7 @@ import {
 import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
+import { hueFor, hueVar } from "@/src/components/moduleHues";
 
 const targetLabels = [
   ["algorithm", "Algorithms"],
@@ -45,9 +46,12 @@ export function DailyDashboard() {
   return (
     <AppShell activeHref="/dashboard" title="Daily Dashboard">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <header
+          className="hue-wash mb-6 flex flex-wrap items-end justify-between gap-4 px-1 py-2"
+          style={{ ["--hue" as string]: hueVar(hueFor("/dashboard")) }}
+        >
           <div>
-            <p className="text-sm font-medium text-muted">
+            <p className="text-sm font-medium text-accent-strong">
               {format(new Date(), "EEEE, MMMM d")}
             </p>
             <h2 className="mt-1 text-3xl font-semibold">
@@ -78,6 +82,7 @@ export function DailyDashboard() {
           <div className="mb-6">
             <StatCard
               label="Streak + this week's cadence"
+              hue={hueFor("/dashboard")}
               size="hero"
               tone={streak.current > 0 ? "accent" : "default"}
               value={`${streak.current} days · ${dashboard.weeklyCadence.applications.count} applications · ${dashboard.weeklyCadence.outreach.count} outreach`}

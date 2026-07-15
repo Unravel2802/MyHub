@@ -8,6 +8,7 @@ import { ReadinessRadar } from "@/src/modules/roadmap/components/ReadinessRadar"
 import { ActivityHeatmap } from "@/src/modules/momentum/components/ActivityHeatmap";
 import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
+import { hueFor, hueVar } from "@/src/components/moduleHues";
 
 export function RoadmapPage() {
   const store = useRoadmapStore();
@@ -24,7 +25,10 @@ export function RoadmapPage() {
   // for no reason — the value is a pure function of what we already have.
   const activeMonth = selectedMonth ?? store.currentMonth;
 
-  const pending = useMemo(() => new Set(store.pendingKeys), [store.pendingKeys]);
+  const pending = useMemo(
+    () => new Set(store.pendingKeys),
+    [store.pendingKeys],
+  );
   const missed = store.months.filter((m) => m.status === "missed").length;
 
   // Activity data lives on the momentum store (it fetches all four sources every
@@ -35,8 +39,11 @@ export function RoadmapPage() {
   return (
     <AppShell activeHref="/roadmap" title="Roadmap">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <header>
-          <p className="text-xs font-medium uppercase tracking-widest text-muted">
+        <header
+          className="hue-wash px-1 py-2"
+          style={{ ["--hue" as string]: hueVar(hueFor("/roadmap")) }}
+        >
+          <p className="text-xs font-medium uppercase tracking-widest text-hue-violet">
             Engineering-first roadmap
           </p>
           <h2 className="mt-1 text-3xl font-semibold tracking-tight">
@@ -60,7 +67,7 @@ export function RoadmapPage() {
             hint="until graduation"
             label="May 2027"
             size="hero"
-            tone={store.daysLeft > 0 ? "accent" : "default"}
+            hue={hueFor("/roadmap")}
             value={`${store.daysLeft} days`}
           />
           <StatCard
@@ -72,7 +79,9 @@ export function RoadmapPage() {
           {/* Never tint a zero — a card highlighting the absence of misses would
               be celebrating nothing. Only turns red when there IS something. */}
           <StatCard
-            hint={missed > 0 ? "months you can't get back" : "nothing missed yet"}
+            hint={
+              missed > 0 ? "months you can't get back" : "nothing missed yet"
+            }
             label="Missed months"
             tone={missed > 0 ? "danger" : "default"}
             value={missed}
@@ -84,7 +93,9 @@ export function RoadmapPage() {
             currentMonth={store.currentMonth}
             months={store.months}
             onSelectMonth={setSelectedMonth}
-            onToggleCriterion={(key, next) => void store.toggleCriterion(key, next)}
+            onToggleCriterion={(key, next) =>
+              void store.toggleCriterion(key, next)
+            }
             pendingKeys={pending}
             selectedMonth={activeMonth}
           />

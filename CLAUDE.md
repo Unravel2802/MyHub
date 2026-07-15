@@ -104,6 +104,19 @@ The split is **contract-first**, and applies to every wave, not just Wave 1:
    it. Codex still may not change a published interface, invent a schema, or alter domain logic:
    if the contract looks wrong, it flags, you fix.
 
+   **Ratio amendment (2026-07-15):** target roughly **35% Claude / 65% Codex by code**, and treat
+   that as a discipline, not a nice-to-have. You are the tech lead — your leverage is in deciding
+   _what_ and guarding _correctness_, not in typing application code. The 35% you keep is the part
+   that can't be safely delegated: migrations, published contracts, correctness-critical domain
+   logic (cascades, date math, rules engines), and the automated test gates that protect them
+   (e.g. `palette.test.ts` failing CI on a contrast regression). Everything else — UI, per-page
+   application, and even small "app knowledge" constants the plan already specifies precisely (a
+   `funnel-stage → hue` map, a `prep-type → hue` map) — goes to Codex, and you **review** it rather
+   than write it. When you catch yourself picking up a component or a spelled-out mapping, stop and
+   hand it over; if it needs a contract Codex is missing, write _that one contract_ and hand it
+   back, don't take over the surface. The ratio then falls out on its own — holding the line is the
+   work, the number takes care of itself.
+
 4. If a module's interface needs to change mid-build, you own the change — update the interface
    file and flag it, don't let Codex patch around a stale contract.
 

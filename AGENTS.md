@@ -90,6 +90,16 @@ is genuinely hiding something you need for a task, flag it instead of patching i
 4. Small commits, one component/feature per task, so your diffs and Claude Code's diffs stay
    easy to tell apart in review.
 
+**Workload split (2026-07-15): you carry the majority — target roughly 65% Codex / 35% Claude
+Code by code.** Claude Code is the tech lead and deliberately writes less: migrations, published
+contracts, correctness-critical domain logic, and the automated test gates — then reviews. The
+bulk of the typing is yours: UI, per-page application, and even small "app knowledge" constants
+that a plan already specifies exactly (e.g. a `funnel-stage → hue` map, a `prep-type → hue` map)
+are for you to write against that spec, with Claude Code reviewing for fidelity rather than
+typing them. If a plan hands you a mapping or component spelled out in detail, that's yours to
+build. You still may not invent a schema, change a published interface, or alter domain logic —
+flag those back; everything else, expect to own.
+
 ## MVP Status — Wave 1 Complete (2026-07-13), Wave 2 Next
 
 **Wave 1 is done.** All five MVP modules — Task Engine, Prep Tracker, Job Application CRM,

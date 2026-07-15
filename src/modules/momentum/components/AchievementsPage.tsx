@@ -33,7 +33,7 @@ export function AchievementsPage() {
     <AppShell activeHref="/achievements" title="Achievements">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <header
-          className="hue-wash px-1 py-2"
+          className="hue-wash border-b border-border bg-surface px-1 py-2"
           style={{ ["--hue" as string]: hueVar(hueFor("/achievements")) }}
         >
           <p className="text-sm font-medium text-hue-orange">Momentum</p>

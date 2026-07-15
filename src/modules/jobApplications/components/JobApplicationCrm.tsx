@@ -56,7 +56,7 @@ export function JobApplicationCrm() {
     <AppShell activeHref="/applications" title="Job CRM">
       <section className="min-w-0 py-6">
         <header
-          className="hue-wash flex flex-wrap items-end justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8"
+          className="hue-wash flex flex-wrap items-end justify-between gap-4 border-b border-border bg-surface px-4 py-2 sm:px-6 lg:px-8"
           style={{ ["--hue" as string]: hueVar(hueFor("/applications")) }}
         >
           <div>

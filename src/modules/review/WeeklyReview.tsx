@@ -66,7 +66,7 @@ export function WeeklyReview() {
     <AppShell activeHref="/review" title="Weekly Review">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <header
-          className="hue-wash px-1 py-2"
+          className="hue-wash border-b border-border bg-surface px-1 py-2"
           style={{ ["--hue" as string]: hueVar(hueFor("/review")) }}
         >
           <p className="text-sm font-medium text-hue-teal">Sunday ritual</p>

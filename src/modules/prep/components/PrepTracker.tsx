@@ -61,7 +61,7 @@ export function PrepTracker() {
     <AppShell activeHref="/prep" title="Prep Tracker">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <header
-          className="hue-wash mb-6 flex flex-wrap items-end justify-between gap-4 px-1 py-2"
+          className="hue-wash mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-border bg-surface px-1 py-2"
           style={{ ["--hue" as string]: hueVar(hueFor("/prep")) }}
         >
           <div>

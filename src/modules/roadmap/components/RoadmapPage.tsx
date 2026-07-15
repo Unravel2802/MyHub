@@ -40,7 +40,7 @@ export function RoadmapPage() {
     <AppShell activeHref="/roadmap" title="Roadmap">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <header
-          className="hue-wash px-1 py-2"
+          className="hue-wash border-b border-border bg-surface px-1 py-2"
           style={{ ["--hue" as string]: hueVar(hueFor("/roadmap")) }}
         >
           <p className="text-xs font-medium uppercase tracking-widest text-hue-violet">

@@ -47,7 +47,7 @@ export function OfferEvaluator() {
     <AppShell activeHref="/offers" title="Offer Evaluator">
       <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <header
-          className="hue-wash px-1 py-2"
+          className="hue-wash border-b border-border bg-surface px-1 py-2"
           style={{ ["--hue" as string]: hueVar(hueFor("/offers")) }}
         >
           <p className="text-sm font-medium text-hue-emerald">Roadmap §12.1</p>

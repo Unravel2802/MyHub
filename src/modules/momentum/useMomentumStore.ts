@@ -10,7 +10,13 @@ import {
   evaluateAchievements,
   newUnlocks,
 } from "@/src/modules/momentum/achievementEngine";
-import { activityDates, computeStreak } from "@/src/modules/momentum/streaks";
+import {
+  activityCounts,
+  activityDates,
+  computeStreak,
+} from "@/src/modules/momentum/streaks";
+import { buildActivityGrid } from "@/src/modules/momentum/activityGrid";
+import type { ActivityGrid } from "@/src/modules/momentum/activityGrid";
 import type { Streak } from "@/src/modules/momentum/streaks";
 import type { AchievementKey } from "@/src/modules/momentum/achievementCatalog";
 import type { AchievementUnlock } from "@/src/modules/momentum/MomentumRepository";
@@ -22,8 +28,15 @@ import type { AchievementUnlock } from "@/src/modules/momentum/MomentumRepositor
 // store is mounted once, by AppShell, since the streak indicator lives in the
 // nav rail and is therefore on every page.
 
+// The roadmap begins here; the activity heatmap spans from this date to today.
+const ACTIVITY_FROM = new Date("2026-07-01T00:00:00");
+
 export interface MomentumStore {
   streak: Streak;
+  // The activity heatmap grid (docs/color-refresh.md K2). Lives here rather than
+  // on the roadmap store because momentum already fetches all four activity
+  // sources every refresh, and AppShell mounts this store on every page.
+  activityGrid: ActivityGrid;
   unlocked: AchievementUnlock[];
   // Achievements unlocked in THIS session that haven't been shown yet. The UI
   // pops a toast per entry and calls dismissToast.
@@ -51,8 +64,11 @@ function toUserMessage(error: unknown): string {
 // normal thing when two events fire together) would both pass the check.
 let refreshInFlight = false;
 
+const EMPTY_GRID: ActivityGrid = { weeks: [], total: 0, activeDays: 0 };
+
 export const useMomentumStore = create<MomentumStore>((set, get) => ({
   streak: EMPTY_STREAK,
+  activityGrid: EMPTY_GRID,
   unlocked: [],
   pendingToasts: [],
   isLoading: false,
@@ -83,8 +99,11 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
       ]);
 
       const today = new Date();
-      const streak = computeStreak(
-        activityDates({ tasks, prepEntries, applications, outreachEntries }),
+      const activityArgs = { tasks, prepEntries, applications, outreachEntries };
+      const streak = computeStreak(activityDates(activityArgs), today);
+      const activityGrid = buildActivityGrid(
+        activityCounts(activityArgs),
+        ACTIVITY_FROM,
         today,
       );
 
@@ -113,6 +132,7 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
       if (fresh.length > 0) {
         set({
           streak,
+          activityGrid,
           unlocked: persistedUnlocks,
           pendingToasts: [...get().pendingToasts, ...fresh],
           isLoading: false,
@@ -120,7 +140,7 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
         const inserted = await MomentumRepository.insertUnlocks(fresh);
         set({ unlocked: [...inserted, ...persistedUnlocks] });
       } else {
-        set({ streak, unlocked: persistedUnlocks, isLoading: false });
+        set({ streak, activityGrid, unlocked: persistedUnlocks, isLoading: false });
       }
     } catch (error) {
       set({ isLoading: false, error: toUserMessage(error) });

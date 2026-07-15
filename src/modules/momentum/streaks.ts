@@ -72,6 +72,36 @@ export function activityDates(snapshot: ActivitySnapshot): Set<string> {
   return days;
 }
 
+// The per-day COUNT variant, for the activity heatmap. activityDates answers
+// "was this day active?"; this answers "how active?" — the four sources summed
+// per local wall-clock day. Same timezone discipline (safeDayKey, never
+// .slice), same soft-delete filtering, deliberately kept as a sibling rather
+// than folded in so activityDates stays a cheap Set for the streak math.
+export function activityCounts(
+  snapshot: ActivitySnapshot,
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  const bump = (day: string | null) => {
+    if (day === null) return;
+    counts.set(day, (counts.get(day) ?? 0) + 1);
+  };
+
+  for (const entry of snapshot.prepEntries) {
+    if (!entry.deletedAt) bump(entry.date);
+  }
+  for (const entry of snapshot.outreachEntries) {
+    if (!entry.deletedAt) bump(entry.date);
+  }
+  for (const task of snapshot.tasks) {
+    if (!task.deletedAt) bump(safeDayKey(task.completedAt));
+  }
+  for (const application of snapshot.applications) {
+    if (!application.deletedAt) bump(safeDayKey(application.createdAt));
+  }
+
+  return counts;
+}
+
 // `current` counts the run of consecutive active days ending TODAY or
 // YESTERDAY. The yesterday grace is deliberate: at 9am, having not yet done
 // today's work, your streak should still read as alive — it hasn't been broken,

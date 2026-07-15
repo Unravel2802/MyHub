@@ -5,7 +5,9 @@ import { AppShell } from "@/src/components/AppShell";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { RoadmapTimeline } from "@/src/modules/roadmap/components/RoadmapTimeline";
 import { ReadinessRadar } from "@/src/modules/roadmap/components/ReadinessRadar";
+import { ActivityHeatmap } from "@/src/modules/momentum/components/ActivityHeatmap";
 import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
+import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 
 export function RoadmapPage() {
   const store = useRoadmapStore();
@@ -24,6 +26,11 @@ export function RoadmapPage() {
 
   const pending = useMemo(() => new Set(store.pendingKeys), [store.pendingKeys]);
   const missed = store.months.filter((m) => m.status === "missed").length;
+
+  // Activity data lives on the momentum store (it fetches all four sources every
+  // refresh, and AppShell mounts it on every page), so the heatmap reads it here
+  // rather than the roadmap store fetching tasks a second time.
+  const activityGrid = useMomentumStore((state) => state.activityGrid);
 
   return (
     <AppShell activeHref="/roadmap" title="Roadmap">
@@ -81,6 +88,8 @@ export function RoadmapPage() {
             pendingKeys={pending}
             selectedMonth={activeMonth}
           />
+
+          <ActivityHeatmap grid={activityGrid} />
 
           <ReadinessRadar
             evidenceFor={store.evidenceFor}

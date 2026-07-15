@@ -68,6 +68,10 @@ const hueClasses: Record<HueName, { container: string; value: string }> = {
     container: "border-hue-emerald-border bg-hue-emerald-surface",
     value: "text-hue-emerald",
   },
+  fuchsia: {
+    container: "border-hue-fuchsia-border bg-hue-fuchsia-surface",
+    value: "text-hue-fuchsia",
+  },
 };
 
 export function StatCard({

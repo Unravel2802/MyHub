@@ -22,11 +22,11 @@ manufacture learning exercises.
 
 ## Status at a Glance
 
-| Wave                          | Status                                                            | Scope                                                                                                                                                                                            |
-| ----------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Wave 1 — MVP**              | ✅ **Done** — `98d3ed8`                                            | Task Engine, Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard                                                                                                                     |
-| **Wave 2 — Momentum**         | ✅ **Done** — all 8 phases shipped                                 | Shared AppShell, task completion timestamps, Prep depth (mock subtypes, resume deep-dive, §11.3 allocation), CRM depth (notes, rejection nudge, funnel), **streaks + achievements**, weekly review ritual, auth + RLS, offer evaluator |
-| **Wave 3 — Frontend refresh** | ✅ **Done** — see `docs/visual-refresh.md`                         | "Premium developer tool" visual system: zinc/indigo tokens, WCAG AA contrast, focus ring, hero type, motion, IA flip (data-first), presentational/container split, mobile nav, a11y sweep         |
+| Wave                          | Status                                     | Scope                                                                                                                                                                                                                                  |
+| ----------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Wave 1 — MVP**              | ✅ **Done** — `98d3ed8`                    | Task Engine, Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard                                                                                                                                                          |
+| **Wave 2 — Momentum**         | ✅ **Done** — all 8 phases shipped         | Shared AppShell, task completion timestamps, Prep depth (mock subtypes, resume deep-dive, §11.3 allocation), CRM depth (notes, rejection nudge, funnel), **streaks + achievements**, weekly review ritual, auth + RLS, offer evaluator |
+| **Wave 3 — Frontend refresh** | ✅ **Done** — see `docs/visual-refresh.md` | "Premium developer tool" visual system: zinc/indigo tokens, WCAG AA contrast, focus ring, hero type, motion, IA flip (data-first), presentational/container split, mobile nav, a11y sweep                                              |
 
 **Live state:** RLS enforcing (an unauthenticated client reads 0 rows), migrations `0001`–`0013`
 applied, single-user auth working. Gate: **233 unit / 57 E2E green.**
@@ -41,19 +41,21 @@ document: `docs/visual-refresh.md`.
 
 Everything planned is shipped. These are the known open items, in the order they'd bite:
 
-**1. `SUPABASE_SERVICE_ROLE_KEY` is not set.** With RLS enforcing, `npm run backup` and the seed
-scripts read **zero rows** and exit cleanly — you'd get an empty backup file that looks like a
-successful backup. The scripts warn, but the warning is easy to miss. Set the key (Project
-Settings → API → `service_role`) in `.env.local` before you trust a backup. Never commit it; it
-bypasses RLS entirely.
+**Resolved (2026-07-15):**
 
-**2. Knowledge Base and Command Palette** — the two V2 modules deferred since Wave 1. Sketches are
-in Part A §A.2. Nothing depends on them.
+- `SUPABASE_SERVICE_ROLE_KEY` is set and verified — `npm run backup` confirmed
+  it bypasses RLS and captures real rows, not a silent empty export.
+- Test-data hygiene — checked `tasks` directly: only 2 rows exist, both real
+  ("Finish Myhub", "Apply"), no junk rows matching `Codex debug create …` /
+  `Codex ui verify …` remain. Whatever created them is already gone.
+- Knowledge Base and Command Palette contracts are published (migration
+  `0016_knowledge_base.sql`, `NoteRepository`/`useNoteStore`,
+  `src/lib/commandPalette.ts`/`useCommandPaletteStore`) — see
+  `docs/handoff/knowledge-base.md` and `docs/handoff/command-palette.md` for
+  what's left (UI, the Cmd+K modal, per-module command registrations, E2E
+  coverage).
 
-**3. Test-data hygiene.** A few soft-deleted junk rows from development remain in `tasks`
-(`Codex debug create …`, `Codex ui verify …`). Invisible in the app, harmless, but they're there.
-
-**Not open, despite appearances:** the app is *not* mobile-broken. An early audit claimed a
+**Not open, despite appearances:** the app is _not_ mobile-broken. An early audit claimed a
 horizontal overflow at 375px; that was a measurement error, retracted, and `tests/ui/responsive.spec.ts`
 now pins the real behaviour across all eight pages.
 
@@ -415,7 +417,7 @@ surround them.
 >
 > Notable corrections made during the build, worth knowing before touching this code:
 >
-> - **Streaks have a grace day.** `computeStreak` counts a run ending today *or yesterday*. Ending
+> - **Streaks have a grace day.** `computeStreak` counts a run ending today _or yesterday_. Ending
 >   it strictly at today flashes a demoralizing 0 every morning before you've had a chance to log.
 > - **Timestamps convert via `format()`, never `.slice(0, 10)`.** The latter reads the UTC date, so
 >   finishing a task at 9pm in UTC+7 would credit tomorrow and silently break the streak you earned.
@@ -425,7 +427,7 @@ surround them.
 >   tidying silently rewrote your history (migration `0013`).
 > - **Absence is never a number.** Rates return `null`, not `0`, when nothing has been sent — and
 >   the UI renders that as "—". A card showing a zero or an em-dash must never be tinted; it
->   highlights *absence*. Three components made this mistake and were fixed.
+>   highlights _absence_. Three components made this mistake and were fixed.
 
 ### Context
 

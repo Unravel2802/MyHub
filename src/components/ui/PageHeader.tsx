@@ -11,6 +11,7 @@ const eyebrowClasses: Record<HueName, string> = {
   cyan: "text-hue-cyan",
   teal: "text-hue-teal",
   emerald: "text-hue-emerald",
+  fuchsia: "text-hue-fuchsia",
 };
 
 type PageHeaderProps = {

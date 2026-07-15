@@ -7,10 +7,7 @@ import { describe, expect, it } from "vitest";
 // instead of a discovery. It reads the ACTUAL globals.css, so a token edited to
 // a prettier-but-illegible shade fails the unit suite, not a user's eyes.
 
-const css = readFileSync(
-  join(process.cwd(), "app", "globals.css"),
-  "utf-8",
-);
+const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf-8");
 
 // Pull the `:root { ... }` and first `.dark { ... }` blocks and parse their
 // `--name: #hex;` declarations into a map.
@@ -63,11 +60,18 @@ const HUES = [
   "cyan",
   "teal",
   "emerald",
+  "fuchsia",
 ] as const;
 
 // Text-role semantic tokens that carry copy. `-surface`/`-border` roles are
 // backgrounds and don't need AA against text; they're excluded on purpose.
-const TEXT_TOKENS = ["--foreground", "--body", "--muted", "--subtle", "--accent-strong"];
+const TEXT_TOKENS = [
+  "--foreground",
+  "--body",
+  "--muted",
+  "--subtle",
+  "--accent-strong",
+];
 
 describe.each([
   ["light", ":root"],

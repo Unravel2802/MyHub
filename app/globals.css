@@ -78,6 +78,9 @@
   --hue-emerald: #047857;
   --hue-emerald-surface: #ecfdf5;
   --hue-emerald-border: #a7f3d0;
+  --hue-fuchsia: #a21caf;
+  --hue-fuchsia-surface: #fdf4ff;
+  --hue-fuchsia-border: #f5d0fe;
 }
 
 .dark {
@@ -143,6 +146,9 @@
   --hue-emerald: #34d399;
   --hue-emerald-surface: #052e1a;
   --hue-emerald-border: #065f46;
+  --hue-fuchsia: #e879f9;
+  --hue-fuchsia-surface: #33052f;
+  --hue-fuchsia-border: #86198f;
 }
 
 /* `inline` makes the generated utilities reference the variables directly, so
@@ -208,6 +214,9 @@
   --color-hue-emerald: var(--hue-emerald);
   --color-hue-emerald-surface: var(--hue-emerald-surface);
   --color-hue-emerald-border: var(--hue-emerald-border);
+  --color-hue-fuchsia: var(--hue-fuchsia);
+  --color-hue-fuchsia-surface: var(--hue-fuchsia-surface);
+  --color-hue-fuchsia-border: var(--hue-fuchsia-border);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

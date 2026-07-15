@@ -46,6 +46,7 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
     cyan: "bg-hue-cyan",
     teal: "bg-hue-teal",
     emerald: "bg-hue-emerald",
+    fuchsia: "bg-hue-fuchsia",
   };
 
   const activeClasses: Record<HueName, string> = {
@@ -58,6 +59,7 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
     cyan: "bg-hue-cyan-surface font-medium text-hue-cyan",
     teal: "bg-hue-teal-surface font-medium text-hue-teal",
     emerald: "bg-hue-emerald-surface font-medium text-hue-emerald",
+    fuchsia: "bg-hue-fuchsia-surface font-medium text-hue-fuchsia",
   };
 
   return (

@@ -15,6 +15,7 @@ const categoryBorderClasses: Record<HueName, string> = {
   cyan: "border-l-hue-cyan-border",
   teal: "border-l-hue-teal-border",
   emerald: "border-l-hue-emerald-border",
+  fuchsia: "border-l-hue-fuchsia-border",
 };
 
 export function AchievementCard({

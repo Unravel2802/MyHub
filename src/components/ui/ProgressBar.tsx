@@ -18,6 +18,7 @@ const hueClasses: Record<HueName, string> = {
   cyan: "bg-hue-cyan",
   teal: "bg-hue-teal",
   emerald: "bg-hue-emerald",
+  fuchsia: "bg-hue-fuchsia",
 };
 
 export function ProgressBar({ progress, hue }: ProgressBarProps) {

@@ -12,7 +12,8 @@ import { CompanyPanel } from "@/src/modules/jobApplications/components/CompanyPa
 import { InterviewPanel } from "@/src/modules/jobApplications/components/InterviewPanel";
 import type { ApplicationStage } from "@/src/modules/jobApplications/types";
 import { useApplicationStore } from "@/src/modules/jobApplications/useApplicationStore";
-import { hueFor, hueVar } from "@/src/components/moduleHues";
+import { hueFor } from "@/src/components/moduleHues";
+import { PageHeader } from "@/src/components/ui/PageHeader";
 
 export function JobApplicationCrm() {
   const store = useApplicationStore();
@@ -54,39 +55,35 @@ export function JobApplicationCrm() {
 
   return (
     <AppShell activeHref="/applications" title="Job CRM">
-      <section className="min-w-0 py-6">
-        <header
-          className="hue-wash flex flex-wrap items-end justify-between gap-4 border-b border-border bg-surface px-4 py-2 sm:px-6 lg:px-8"
-          style={{ ["--hue" as string]: hueVar(hueFor("/applications")) }}
-        >
-          <div>
-            <p className="text-sm font-medium text-hue-blue">
-              Job search funnel
-            </p>
-            <h2 className="mt-1 text-3xl font-semibold">
-              Applications and interviews
-            </h2>
-          </div>
-          <button
-            className="h-10 rounded-md border border-input bg-surface px-4 text-sm"
-            disabled={store.isLoading}
-            onClick={() => void store.fetchAll()}
-            type="button"
-          >
-            Refresh
-          </button>
-        </header>
+      <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+        <PageHeader
+          actions={
+            <button
+              className="h-10 rounded-md border border-input bg-surface px-4 text-sm"
+              disabled={store.isLoading}
+              onClick={() => void store.fetchAll()}
+              type="button"
+            >
+              Refresh
+            </button>
+          }
+          eyebrow="Job search funnel"
+          bleed
+          hue={hueFor("/applications")}
+          title="Applications and interviews"
+          className="mb-6"
+        />
         {store.error ? (
           <p
             aria-live="assertive"
-            className="mx-4 mt-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger sm:mx-6 lg:mx-8"
+            className="rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
             role="alert"
           >
             {store.error}
           </p>
         ) : null}
 
-        <div className="mt-8 grid gap-8 px-4 pb-6 sm:px-6 lg:px-8">
+        <div className="grid gap-8">
           <FunnelPanel funnel={store.funnel()} />
           <div className="overflow-x-auto">
             <ApplicationPipeline
@@ -106,7 +103,7 @@ export function JobApplicationCrm() {
               form you can scroll past. Data-first is achieved by putting the form
               BELOW the data, not by hiding it. */}
         <details
-          className="mx-4 mb-6 rounded-lg border border-border bg-surface sm:mx-6 lg:mx-8"
+          className="mb-6 rounded-lg border border-border bg-surface"
           open
         >
           <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">

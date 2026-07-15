@@ -144,38 +144,58 @@ place to *see itself*.
 
 ---
 
-## Part 4 — Work split
+## Part 4 — Work split (≈35% Claude / 65% Codex)
 
-Standing rule: Claude owns the system and anything logic-adjacent; Codex applies it per page.
+**Division principle.** Claude is the tech lead: own the *system* (tokens, contracts, the AA gate,
+correctness-critical logic) and the *review*, and hand the *volume* — per-page application across
+nine surfaces — to Codex. The target ratio is roughly **35% Claude / 65% Codex by code**, and it's
+deliberate: the lead's leverage is in deciding *what* and guarding *correctness*, not in typing the
+application. Everything colour-as-place and colour-as-decoration is Codex's; Claude writes only
+what can't be safely delegated.
 
-### Claude
+### Claude — the system (✅ DONE, ~660 lines: the correctness-critical share)
 
-- **K1 — the hue kit** (`app/globals.css`): 8 hues × 3 roles × 2 themes, the `wash` and `glow`
-  utilities, gradient-text utility. Plus `src/components/moduleHues.ts` (the map) and
-  `src/lib/palette.test.ts` (the automated AA gate). *Everything else is blocked on this.*
-- **K2 — the activity heatmap**: per-day count variant of `activityDates` (pure, tested — the
-  date-grid math is the recurring timezone trap), plus the `ActivityHeatmap` component and its
-  placement on the Roadmap page.
-- **K3 — radar + timeline recolor**: the state-aware dashed line is logic-adjacent (it must only
-  be red where `measured < claimed`), and the SVG gradients live next to it.
+- **K1 — the hue kit** ✅ `e038cf3`: 8 hues × 3 roles × 2 themes, the `wash`/`glow`/gradient-text
+  utilities, `moduleHues.ts`, and `palette.test.ts` (the automated AA gate that guards everything
+  Codex builds on top).
+- **K2 — the activity heatmap** ✅ `dd21613`: `activityCounts` + `buildActivityGrid` (pure, tested —
+  the date-grid math is the four-time timezone trap) and the `ActivityHeatmap` component.
+- **K3 — radar + timeline recolor** ✅ `93999d3`: the state-aware dashed line (red only where
+  `measured < claimed`) and the SVG gradients.
 
-### Codex
+**Claude going forward = review only.** No more application code from Claude on this refresh. The
+AA test fails CI if a token regresses; the browser review at each gate catches what code can't see.
+If Codex needs a token or a data→hue map that doesn't exist, Claude adds *that one contract* and
+hands it back — it does not take over the page.
+
+### Codex — the application (all of X1–X3, ~65%)
+
+Everything below is Codex's, including the data→hue maps that under the old rule Claude would have
+written (funnel-stage→hue, prep-type→hue). The plan already specifies every mapping precisely in
+Part 2, so these are transcription against a spec, not design calls — Claude reviews them for
+fidelity rather than typing them.
 
 - **X1 — place**: nav dots + module-hued active states; header washes + hued overlines on all nine
-  pages; hero StatCards take their module hue. **Stop for review after the first two pages** —
-  the wash is the single most visible change in this plan, and if the alpha is wrong it'll be
-  wrong everywhere.
-- **X2 — data**: funnel/pipeline stage ramp, prep type badges (badge + scorecard borders +
-  allocation bars, same hue per type), achievement category hues + unlock glows.
+  pages; hero StatCards take their module hue. **Stop for review after the first two pages** — the
+  wash is the single most visible change in this plan; if the alpha is wrong it's wrong everywhere.
+- **X2 — data**: the funnel/pipeline stage→hue ramp, prep type→hue badges (badge + scorecard
+  borders + allocation bars, one hue per type everywhere), achievement category hues + unlock glows.
+  Define the two hue maps as small TS constants next to their modules, mirroring `moduleHues.ts`.
 - **X3 — light**: gradient hero numbers, the glow applications, gradient progress fills.
 
 ### Sequencing
 
 ```
-Claude  K1 (kit + AA test) ──▶ K2 (heatmap) ──▶ K3 (radar/timeline)
-                 │
-Codex            └──▶ X1 (place) ──review──▶ X2 (data) ──▶ X3 (light)
+Claude  K1 ✅ ──▶ K2 ✅ ──▶ K3 ✅        (system: done)
+                                 │
+Codex                            └──▶ X1 (place) ──review──▶ X2 (data) ──▶ X3 (light)
+                                          ▲            ▲              ▲
+                                          └──── Claude reviews each in the browser ────┘
 ```
 
 Full gate before every commit. Dark mode reviewed in the browser at each gate — that's the mode
 that matters here, and screenshots-by-code has missed things all session that looking caught.
+
+> **Note on the ratio.** With K1–K3 at ~660 lines, X1–X3 across nine pages lands the whole refresh
+> near 35/65 on its own — *provided Claude adds no further application code*. Holding the line is
+> the discipline; the number takes care of itself.

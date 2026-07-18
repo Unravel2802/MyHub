@@ -1,6 +1,9 @@
 import { supabase } from "@/src/lib/supabaseClient";
 import type { WeeklyReviewSnapshot } from "@/src/modules/review/reviewLogic";
-import type { QuarterlyAnswers, WeeklyReview } from "@/src/modules/review/types";
+import type {
+  QuarterlyAnswers,
+  WeeklyReview,
+} from "@/src/modules/review/types";
 
 // Published contract for the Weekly Review (myhub_plan.md Part B, Phase 6).
 // Soft deletes only. Owns one table: weekly_reviews (migration 0011).
@@ -73,10 +76,12 @@ export async function getReviewForWeek(
 }
 
 // Re-saving a week's review UPDATES it rather than stacking a second row —
-// backed by the partial unique index on (week_start) where deleted_at is null.
-// Reviewing is iterative: you write something Sunday morning and add to it
-// Sunday night, and that shouldn't produce two conflicting records of the same
-// week.
+// backed by the plain unique constraint on (week_start) from migration 0018.
+// (Migration 0011's original PARTIAL index couldn't be an ON CONFLICT target,
+// so this upsert failed with 42P10 and every save silently rolled back — see
+// migration 0018.) Reviewing is iterative: you write something Sunday morning
+// and add to it Sunday night, and that shouldn't produce two conflicting
+// records of the same week.
 export async function upsertReview(
   input: UpsertReviewInput,
 ): Promise<WeeklyReview> {

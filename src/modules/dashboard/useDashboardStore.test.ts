@@ -10,6 +10,7 @@ import type { OutreachEntry } from "@/src/modules/outreach/types";
 
 vi.mock("@/src/modules/task/TaskRepository", () => ({
   getTasks: vi.fn(),
+  regenerateWeeklyInstances: vi.fn(),
 }));
 vi.mock("@/src/modules/prep/PrepRepository", () => ({
   getEntries: vi.fn(),
@@ -174,6 +175,7 @@ beforeEach(() => {
   });
   prepRepo.getStories.mockResolvedValue([]);
   outreachRepo.getEntries.mockResolvedValue([]);
+  tasksRepo.regenerateWeeklyInstances.mockResolvedValue([]);
 });
 
 describe("useDashboardStore", () => {

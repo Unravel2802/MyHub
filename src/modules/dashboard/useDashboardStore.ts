@@ -95,6 +95,19 @@ export const useDashboardStore = create<DashboardStore>(() => ({
     useDashboardStore.setState({ isLoading: true, error: null });
 
     try {
+      // Generate this week's recurring instances BEFORE reading tasks, so
+      // "This week's schedule" is correct even when the dashboard is the first
+      // page opened this week. The Task board does this in its own fetch
+      // (useTaskStore.fetchTasks); without it here, recurring blocks only
+      // appear after visiting the board. Best-effort — a failure shouldn't
+      // blank the rest of the dashboard, but log the real error per the store
+      // error convention.
+      try {
+        await TaskRepository.regenerateWeeklyInstances();
+      } catch (err) {
+        console.error(err);
+      }
+
       const [
         tasks,
         prepEntries,

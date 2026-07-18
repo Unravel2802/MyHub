@@ -149,7 +149,7 @@ export function DailyDashboard() {
             {dashboard.scheduleBlocks.length === 0 ? (
               <EmptyState
                 description="Give the week a reliable shape by turning a recurring task into a scheduled block."
-                action={<Link href="/tasks">Create a recurring task</Link>}
+                action={<Link href="/">Create a recurring task</Link>}
                 icon={CalendarDays}
                 title="No recurring blocks yet"
               />

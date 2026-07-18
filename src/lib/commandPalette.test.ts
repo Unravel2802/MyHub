@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { register, searchCommands, unregister } from "@/src/lib/commandPalette";
+import {
+  getCommand,
+  register,
+  searchCommands,
+  unregister,
+} from "@/src/lib/commandPalette";
 
 function entry(id: string, label: string, keywords: string[] = []) {
   return { id, label, keywords, action: vi.fn() };
@@ -61,5 +66,34 @@ describe("commandPalette", () => {
   it("returns every entry in registration order for an empty query", () => {
     register("task", [entry("a", "A"), entry("b", "B")]);
     expect(searchCommands("").map((r) => r.id)).toEqual(["task.a", "task.b"]);
+  });
+
+  it("falls back to fuzzy subsequence match when no substring tier hits", () => {
+    register("task", [entry("new", "New task"), entry("board", "Task board")]);
+
+    // "ntsk" is a subsequence of "New task" but a substring of neither label,
+    // so only the fuzzy tier can surface it.
+    const results = searchCommands("ntsk");
+    expect(results.map((r) => r.id)).toEqual(["task.new"]);
+  });
+
+  it("ranks substring matches above fuzzy-only matches", () => {
+    register("task", [
+      entry("fuzzy", "Never a bad snack"), // "nbs" fuzzy-only
+      entry("substr", "nbs report"), // contains "nbs" as a substring
+    ]);
+
+    // The substring match must outrank the fuzzy-only one regardless of
+    // registration order.
+    expect(searchCommands("nbs").map((r) => r.id)).toEqual([
+      "task.substr",
+      "task.fuzzy",
+    ]);
+  });
+
+  it("getCommand resolves a namespaced id, or undefined when absent", () => {
+    register("task", [entry("new", "New task")]);
+    expect(getCommand("task.new")?.label).toBe("New task");
+    expect(getCommand("task.missing")).toBeUndefined();
   });
 });

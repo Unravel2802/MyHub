@@ -1,6 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
+import { Dumbbell } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
@@ -17,6 +18,7 @@ import {
 } from "@/src/modules/prep/prepTargets";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
+import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
 export function PrepTracker() {
   const {
@@ -59,8 +61,29 @@ export function PrepTracker() {
             ?.scrollIntoView({ behavior: "smooth", block: "start" });
         },
       },
+      {
+        id: "refresh",
+        label: "Refresh prep tracker",
+        keywords: ["prep", "refresh", "reload"],
+        action: () => document.getElementById("prep-refresh")?.click(),
+      },
     ]);
-    return () => unregister("prep");
+    registerShortcuts("prep", [
+      {
+        combo: "n p",
+        commandId: "prep.new-entry",
+        description: "Log a prep entry",
+      },
+      {
+        combo: "r p",
+        commandId: "prep.refresh",
+        description: "Refresh prep data",
+      },
+    ]);
+    return () => {
+      unregisterShortcuts("prep");
+      unregister("prep");
+    };
   }, []);
 
   function confirmEntryDelete(id: string, topic: string) {
@@ -77,12 +100,13 @@ export function PrepTracker() {
 
   return (
     <AppShell activeHref="/prep" title="Prep Tracker">
-      <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
           actions={
             <button
               className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
               disabled={isLoading}
+              id="prep-refresh"
               onClick={() => void Promise.all([fetchEntries(), fetchStories()])}
               type="button"
             >
@@ -93,6 +117,7 @@ export function PrepTracker() {
           className="mb-6"
           eyebrow="Interview preparation"
           hue={hueFor("/prep")}
+          icon={Dumbbell}
           title="Build measurable reps"
         />
 

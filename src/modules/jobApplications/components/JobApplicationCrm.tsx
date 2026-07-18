@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { Briefcase } from "lucide-react";
 import { AppShell } from "@/src/components/AppShell";
 import { ApplicationForm } from "@/src/modules/jobApplications/components/ApplicationForm";
 import {
@@ -15,6 +16,7 @@ import { useApplicationStore } from "@/src/modules/jobApplications/useApplicatio
 import { hueFor } from "@/src/components/moduleHues";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { register, unregister } from "@/src/lib/commandPalette";
+import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
 export function JobApplicationCrm() {
   const store = useApplicationStore();
@@ -37,8 +39,29 @@ export function JobApplicationCrm() {
             ?.scrollIntoView({ behavior: "smooth", block: "start" });
         },
       },
+      {
+        id: "refresh",
+        label: "Refresh job pipeline",
+        keywords: ["jobs", "applications", "refresh", "reload"],
+        action: () => document.getElementById("job-crm-refresh")?.click(),
+      },
     ]);
-    return () => unregister("job-crm");
+    registerShortcuts("job-crm", [
+      {
+        combo: "n a",
+        commandId: "job-crm.new-application",
+        description: "Create an application",
+      },
+      {
+        combo: "r a",
+        commandId: "job-crm.refresh",
+        description: "Refresh the job pipeline",
+      },
+    ]);
+    return () => {
+      unregisterShortcuts("job-crm");
+      unregister("job-crm");
+    };
   }, []);
 
   function deleteCompany(id: string, name: string, hasApplications: boolean) {
@@ -72,12 +95,13 @@ export function JobApplicationCrm() {
 
   return (
     <AppShell activeHref="/applications" title="Job CRM">
-      <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
           actions={
             <button
               className="h-10 rounded-md border border-input bg-surface px-4 text-sm"
               disabled={store.isLoading}
+              id="job-crm-refresh"
               onClick={() => void store.fetchAll()}
               type="button"
             >
@@ -87,6 +111,7 @@ export function JobApplicationCrm() {
           eyebrow="Job search funnel"
           bleed
           hue={hueFor("/applications")}
+          icon={Briefcase}
           title="Applications and interviews"
           className="mb-6"
         />

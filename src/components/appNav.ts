@@ -8,7 +8,19 @@
 // adds Achievements, Phase 6 (Weekly Review) adds Weekly Review, Phase 8
 // (Offers) adds Offer Evaluator.
 
-import type { LucideIcon } from "lucide-react";
+import {
+  BadgeDollarSign,
+  Briefcase,
+  CalendarCheck,
+  CheckSquare,
+  Dumbbell,
+  Flame,
+  LayoutDashboard,
+  Map,
+  NotebookPen,
+  Send,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -21,14 +33,14 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: readonly NavItem[] = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/roadmap", label: "Roadmap" },
-  { href: "/", label: "Task Engine" },
-  { href: "/prep", label: "Prep Tracker" },
-  { href: "/applications", label: "Job CRM" },
-  { href: "/outreach", label: "Outreach Log" },
-  { href: "/achievements", label: "Achievements" },
-  { href: "/review", label: "Weekly Review" },
-  { href: "/offers", label: "Offer Evaluator" },
-  { href: "/notes", label: "Knowledge Base" },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/roadmap", label: "Roadmap", icon: Map },
+  { href: "/", label: "Task Engine", icon: CheckSquare },
+  { href: "/prep", label: "Prep Tracker", icon: Dumbbell },
+  { href: "/applications", label: "Job CRM", icon: Briefcase },
+  { href: "/outreach", label: "Outreach Log", icon: Send },
+  { href: "/achievements", label: "Achievements", icon: Flame },
+  { href: "/review", label: "Weekly Review", icon: CalendarCheck },
+  { href: "/offers", label: "Offer Evaluator", icon: BadgeDollarSign },
+  { href: "/notes", label: "Knowledge Base", icon: NotebookPen },
 ];

@@ -1,4 +1,6 @@
 import { useDroppable } from "@dnd-kit/core";
+import type { CSSProperties } from "react";
+import { Inbox } from "lucide-react";
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -18,6 +20,7 @@ type BoardColumnProps = {
   isCreating: boolean;
   isLoading: boolean;
   tasks: Task[];
+  style?: CSSProperties;
   onCreateSubtask: (id: string, title: string) => void;
   onDeleteTask: (id: string) => void;
   onArchiveTask: (id: string) => void;
@@ -35,6 +38,7 @@ export function BoardColumn({
   isCreating,
   isLoading,
   tasks,
+  style,
   onCreateSubtask,
   onDeleteTask,
   onArchiveTask,
@@ -47,8 +51,9 @@ export function BoardColumn({
   return (
     <section
       aria-label={column.title}
-      className="flex min-h-[520px] min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface"
+      className="fade-up flex min-h-[520px] min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface"
       ref={setNodeRef}
+      style={style}
     >
       <div className="border-b border-border p-4">
         <div className="flex items-center justify-between gap-3">
@@ -100,6 +105,7 @@ export function BoardColumn({
             <EmptyState
               className="flex-1"
               description={column.emptyCopy}
+              icon={Inbox}
               title="Ready for the next task"
             />
           )}

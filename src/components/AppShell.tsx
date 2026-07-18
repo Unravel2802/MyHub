@@ -6,12 +6,19 @@ import { AuthGate } from "@/src/components/AuthGate";
 import { CommandPalette } from "@/src/components/CommandPalette";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
 import { NAV_ITEMS } from "@/src/components/appNav";
-import { hueFor } from "@/src/components/moduleHues";
-import { HUE_DOT, HUE_NAV_ACTIVE } from "@/src/components/ui/hueClasses";
+import { hueFor, hueVar } from "@/src/components/moduleHues";
+import { HUE_NAV_ACTIVE } from "@/src/components/ui/hueClasses";
 import { StreakIndicator } from "@/src/modules/momentum/components/StreakIndicator";
 import { UnlockToaster } from "@/src/modules/momentum/components/UnlockToaster";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
+import { useCommandPaletteStore } from "@/src/modules/commandPalette/useCommandPaletteStore";
 import { signOut } from "@/src/lib/auth";
+import { getCommand, register, unregister } from "@/src/lib/commandPalette";
+import {
+  matchShortcut,
+  registerShortcuts,
+  unregisterShortcuts,
+} from "@/src/lib/shortcuts";
 
 interface AppShellProps {
   title: string;
@@ -20,6 +27,10 @@ interface AppShellProps {
 }
 
 export function AppShell({ title, activeHref, children }: AppShellProps) {
+  const openPalette = useCommandPaletteStore((state) => state.open);
+  const togglePalette = useCommandPaletteStore((state) => state.toggle);
+  const setPaletteQuery = useCommandPaletteStore((state) => state.setQuery);
+  const pushRecent = useCommandPaletteStore((state) => state.pushRecent);
   const streak = useMomentumStore((state) => state.streak);
   const refresh = useMomentumStore((state) => state.refresh);
   const subscribeToUpdates = useMomentumStore(
@@ -32,6 +43,75 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
     void refresh();
     return subscribeToUpdates();
   }, [refresh, subscribeToUpdates]);
+
+  const shortcutBuffer = useRef("");
+  const shortcutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    register("app-shell", [
+      {
+        id: "open-palette",
+        label: "Open command palette",
+        keywords: ["commands", "search", "navigate"],
+        action: togglePalette,
+      },
+      {
+        id: "quick-add",
+        label: "Quick add",
+        keywords: ["new", "create", "add"],
+        action: () => {
+          setPaletteQuery("New");
+          openPalette();
+        },
+      },
+    ]);
+    registerShortcuts("app-shell", [
+      {
+        combo: "mod+k",
+        commandId: "app-shell.open-palette",
+        description: "Open the command palette",
+      },
+      {
+        combo: "/",
+        commandId: "app-shell.quick-add",
+        description: "Open quick add",
+      },
+    ]);
+
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target;
+      const isTyping =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable);
+      const isSingleKey = !event.metaKey && !event.ctrlKey && !event.altKey;
+      if (isTyping && isSingleKey) return;
+
+      const match = matchShortcut(event, shortcutBuffer.current);
+      shortcutBuffer.current = match.buffer;
+      if (shortcutTimer.current) clearTimeout(shortcutTimer.current);
+      shortcutTimer.current = match.buffer
+        ? setTimeout(() => {
+            shortcutBuffer.current = "";
+          }, 800)
+        : null;
+
+      if (!match.commandId) return;
+      const command = getCommand(match.commandId);
+      if (!command) return;
+      event.preventDefault();
+      pushRecent(command.id);
+      command.action();
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      if (shortcutTimer.current) clearTimeout(shortcutTimer.current);
+      unregisterShortcuts("app-shell");
+      unregister("app-shell");
+    };
+  }, [openPalette, pushRecent, setPaletteQuery, togglePalette]);
 
   // Mobile only. On a phone the rail used to eat the ENTIRE first screen — you
   // scrolled past eight nav links, a theme toggle and sign-out before reaching
@@ -72,6 +152,7 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
               <nav aria-label="MyHub modules" className="grid gap-1 text-sm">
                 {NAV_ITEMS.map((item) => {
                   const isActive = item.href === activeHref;
+                  const Icon = item.icon;
                   return (
                     <Link
                       aria-current={isActive ? "page" : undefined}
@@ -80,10 +161,13 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
                       key={item.href}
                       onClick={() => setIsNavOpen(false)}
                     >
-                      <span
-                        aria-hidden="true"
-                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${HUE_DOT[hueFor(item.href)]}`}
-                      />
+                      {Icon ? (
+                        <Icon
+                          aria-hidden="true"
+                          className="size-4 shrink-0"
+                          style={{ color: hueVar(hueFor(item.href)) }}
+                        />
+                      ) : null}
                       {item.label}
                     </Link>
                   );

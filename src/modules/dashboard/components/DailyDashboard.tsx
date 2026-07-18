@@ -1,6 +1,13 @@
 "use client";
 
 import { format } from "date-fns";
+import {
+  CalendarDays,
+  Clock3,
+  LayoutDashboard,
+  Map as MapIcon,
+  MessageSquareText,
+} from "lucide-react";
 import { useEffect } from "react";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
@@ -14,9 +21,11 @@ import {
 } from "@/src/modules/dashboard/components/DashboardCards";
 import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
+import { ActivityHeatmap } from "@/src/modules/momentum/components/ActivityHeatmap";
 import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
+import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
 const targetLabels = [
   ["algorithm", "Algorithms"],
@@ -28,6 +37,7 @@ const targetLabels = [
 export function DailyDashboard() {
   const dashboard = useDashboardStore();
   const streak = useMomentumStore((state) => state.streak);
+  const activityGrid = useMomentumStore((state) => state.activityGrid);
   const roadmap = useRoadmapStore();
   const fetchRoadmap = useRoadmapStore((state) => state.fetchRoadmap);
   const { fetchAll, subscribeToUpdates } = dashboard;
@@ -45,8 +55,32 @@ export function DailyDashboard() {
         keywords: ["dashboard", "refresh", "reload"],
         action: () => document.getElementById("dashboard-refresh")?.click(),
       },
+      {
+        id: "focus-cadence",
+        label: "View weekly cadence",
+        keywords: ["dashboard", "weekly", "cadence", "targets"],
+        action: () =>
+          document
+            .getElementById("cadence-heading")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      },
     ]);
-    return () => unregister("dashboard");
+    registerShortcuts("dashboard", [
+      {
+        combo: "r d",
+        commandId: "dashboard.refresh",
+        description: "Refresh the dashboard",
+      },
+      {
+        combo: "c d",
+        commandId: "dashboard.focus-cadence",
+        description: "View weekly cadence",
+      },
+    ]);
+    return () => {
+      unregisterShortcuts("dashboard");
+      unregister("dashboard");
+    };
   }, []);
 
   useEffect(() => {
@@ -59,7 +93,7 @@ export function DailyDashboard() {
 
   return (
     <AppShell activeHref="/dashboard" title="Daily Dashboard">
-      <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
           actions={
             <button
@@ -76,6 +110,7 @@ export function DailyDashboard() {
           className="mb-6"
           eyebrow={format(new Date(), "EEEE, MMMM d")}
           hue={hueFor("/dashboard")}
+          icon={LayoutDashboard}
           title="Keep the week honest"
         />
 
@@ -105,7 +140,8 @@ export function DailyDashboard() {
         <div className="grid gap-6 xl:grid-cols-2">
           <section
             aria-labelledby="schedule-heading"
-            className="rounded-lg border border-border bg-surface p-5"
+            className="fade-up rounded-lg border border-border bg-surface p-5"
+            style={{ ["--i" as string]: 0 }}
           >
             <h3 className="text-lg font-semibold" id="schedule-heading">
               This week&apos;s schedule
@@ -114,6 +150,7 @@ export function DailyDashboard() {
               <EmptyState
                 description="Give the week a reliable shape by turning a recurring task into a scheduled block."
                 action={<Link href="/tasks">Create a recurring task</Link>}
+                icon={CalendarDays}
                 title="No recurring blocks yet"
               />
             ) : (
@@ -135,7 +172,8 @@ export function DailyDashboard() {
 
           <section
             aria-labelledby="cadence-heading"
-            className="rounded-lg border border-border bg-surface p-5"
+            className="fade-up rounded-lg border border-border bg-surface p-5"
+            style={{ ["--i" as string]: 1 }}
           >
             <h3 className="text-lg font-semibold" id="cadence-heading">
               Weekly cadence
@@ -168,7 +206,8 @@ export function DailyDashboard() {
 
           <section
             aria-labelledby="prep-heading"
-            className="rounded-lg border border-border bg-surface p-5 xl:col-span-2"
+            className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
+            style={{ ["--i" as string]: 2 }}
           >
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <div>
@@ -203,7 +242,8 @@ export function DailyDashboard() {
 
           <section
             aria-labelledby="followups-heading"
-            className="rounded-lg border border-border bg-surface p-5"
+            className="fade-up rounded-lg border border-border bg-surface p-5"
+            style={{ ["--i" as string]: 3 }}
           >
             <h3 className="text-lg font-semibold" id="followups-heading">
               Applications needing follow-up
@@ -212,6 +252,7 @@ export function DailyDashboard() {
               <EmptyState
                 description="Your pipeline is clear. Keep it that way by logging the next follow-up when a conversation happens."
                 action={<Link href="/applications">Review applications</Link>}
+                icon={Clock3}
                 title="No follow-ups due"
               />
             ) : (
@@ -235,7 +276,8 @@ export function DailyDashboard() {
 
           <section
             aria-labelledby="postmortem-heading"
-            className="rounded-lg border border-border bg-surface p-5"
+            className="fade-up rounded-lg border border-border bg-surface p-5"
+            style={{ ["--i" as string]: 4 }}
           >
             <h3 className="text-lg font-semibold" id="postmortem-heading">
               Interview post-mortems
@@ -244,6 +286,7 @@ export function DailyDashboard() {
               <EmptyState
                 description="Complete an interview and capture what you learned while the details are still fresh."
                 action={<Link href="/applications">Open interview log</Link>}
+                icon={MessageSquareText}
                 title="No post-mortems due"
               />
             ) : (
@@ -270,8 +313,17 @@ export function DailyDashboard() {
           </section>
 
           <section
+            aria-label="Recent activity"
+            className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
+            style={{ ["--i" as string]: 5 }}
+          >
+            <ActivityHeatmap grid={activityGrid} />
+          </section>
+
+          <section
             aria-labelledby="gate-heading"
-            className="rounded-lg border border-border bg-surface p-5 xl:col-span-2"
+            className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
+            style={{ ["--i" as string]: 6 }}
           >
             <h3 className="text-lg font-semibold" id="gate-heading">
               Current gate checklist
@@ -300,6 +352,7 @@ export function DailyDashboard() {
               <EmptyState
                 description="The roadmap gate will appear once the current month is loaded."
                 action={<Link href="/roadmap">Open Roadmap</Link>}
+                icon={MapIcon}
                 title="Loading the current gate"
               />
             )}

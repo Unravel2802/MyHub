@@ -1,4 +1,5 @@
 import type { FormEvent } from "react";
+import { CalendarClock, CheckSquare } from "lucide-react";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { PageHeader } from "@/src/components/ui/PageHeader";
@@ -140,6 +141,7 @@ export function BoardHeader({
       }
       eyebrow="Personal productivity"
       hue={hueFor("/")}
+      icon={CheckSquare}
       title="Kanban board"
     >
       {error ? (
@@ -221,6 +223,7 @@ export function BoardHeader({
         {templates.length === 0 ? (
           <EmptyState
             description="Turn a repeated commitment into a fresh Todo task every week."
+            icon={CalendarClock}
             title="No weekly rules yet"
           />
         ) : (

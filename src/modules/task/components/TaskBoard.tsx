@@ -28,6 +28,7 @@ import { archivedTasks, boardTasks } from "@/src/modules/task/taskArchive";
 import { TaskBoardCanvas } from "@/src/modules/task/components/TaskBoardCanvas";
 import { format } from "date-fns";
 import { register, unregister } from "@/src/lib/commandPalette";
+import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
 export function TaskBoard() {
   const {
@@ -85,7 +86,22 @@ export function TaskBoard() {
         action: () => document.getElementById("task-search")?.focus(),
       },
     ]);
-    return () => unregister("task-engine");
+    registerShortcuts("task-engine", [
+      {
+        combo: "n t",
+        commandId: "task-engine.new-task",
+        description: "Create a task",
+      },
+      {
+        combo: "s t",
+        commandId: "task-engine.focus-search",
+        description: "Search tasks",
+      },
+    ]);
+    return () => {
+      unregisterShortcuts("task-engine");
+      unregister("task-engine");
+    };
   }, [fetchTasks, fetchTemplates]);
 
   // Archived tasks stay in `tasks` (Momentum needs their completedAt) but leave

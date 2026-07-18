@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Send } from "lucide-react";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import * as CompanyRepository from "@/src/modules/jobApplications/CompanyRepository";
@@ -11,6 +12,7 @@ import { useOutreachStore } from "@/src/modules/outreach/useOutreachStore";
 import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
+import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
 export function OutreachLog() {
   const {
@@ -48,8 +50,29 @@ export function OutreachLog() {
             ?.scrollIntoView({ behavior: "smooth", block: "start" });
         },
       },
+      {
+        id: "refresh",
+        label: "Refresh outreach log",
+        keywords: ["outreach", "refresh", "reload"],
+        action: () => document.getElementById("outreach-refresh")?.click(),
+      },
     ]);
-    return () => unregister("outreach");
+    registerShortcuts("outreach", [
+      {
+        combo: "n o",
+        commandId: "outreach.new-entry",
+        description: "Log outreach",
+      },
+      {
+        combo: "r o",
+        commandId: "outreach.refresh",
+        description: "Refresh outreach data",
+      },
+    ]);
+    return () => {
+      unregisterShortcuts("outreach");
+      unregister("outreach");
+    };
   }, []);
 
   useEffect(() => {
@@ -89,12 +112,13 @@ export function OutreachLog() {
 
   return (
     <AppShell activeHref="/outreach" title="Outreach Log">
-      <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
           actions={
             <button
               className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
               disabled={isLoading}
+              id="outreach-refresh"
               onClick={() => void fetchEntries()}
               type="button"
             >
@@ -105,6 +129,7 @@ export function OutreachLog() {
           className="mb-6"
           eyebrow="Referral and outreach tracking"
           hue={hueFor("/outreach")}
+          icon={Send}
           title="Keep conversations countable"
         />
 

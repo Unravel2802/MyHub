@@ -129,10 +129,16 @@ test("links two notes bidirectionally and removes the link from both sides", asy
     .getByRole("region", { name: "Your notes" })
     .getByRole("button", { name: /Alpha note/ })
     .click();
-  await page.getByPlaceholder("Search titles and bodies").fill("Beta");
-  await page.getByRole("button", { name: "Beta note", exact: true }).click();
+  await page.getByRole("button", { name: "Link note" }).click();
+  const linkDialog = page.getByRole("dialog", { name: "Link another note" });
+  await expect(linkDialog).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Linked notes" }),
+    linkDialog.getByRole("button", { name: /Alpha note/ }),
+  ).toBeDisabled();
+  await linkDialog.getByPlaceholder("Search titles and bodies").fill("Beta");
+  await linkDialog.getByRole("button", { name: /Beta note/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Backlinks & connections" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Beta note", exact: true }),
@@ -148,7 +154,7 @@ test("links two notes bidirectionally and removes the link from both sides", asy
 
   await page.getByRole("button", { name: "Unlink" }).click();
   await expect(
-    page.getByText("No links yet. Connect this note to another idea below."),
+    page.getByText("No backlinks yet", { exact: true }),
   ).toBeVisible();
 
   await page
@@ -156,6 +162,6 @@ test("links two notes bidirectionally and removes the link from both sides", asy
     .getByRole("button", { name: /Alpha note/ })
     .click();
   await expect(
-    page.getByText("No links yet. Connect this note to another idea below."),
+    page.getByText("No backlinks yet", { exact: true }),
   ).toBeVisible();
 });

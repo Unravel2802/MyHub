@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BadgeDollarSign } from "lucide-react";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { Badge } from "@/src/components/ui/Badge";
@@ -15,6 +16,7 @@ import {
 import type { FactorKey, OfferRatings } from "@/src/modules/offers/offerScore";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
+import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
 type Offer = { id: number; name: string; ratings: OfferRatings };
 
@@ -39,8 +41,29 @@ export function OfferEvaluator() {
         keywords: ["offers", "salary", "compare"],
         action: () => router.push("/offers"),
       },
+      {
+        id: "add-offer",
+        label: "Add offer comparison",
+        keywords: ["offers", "add", "compare", "new"],
+        action: () => document.getElementById("add-offer-button")?.click(),
+      },
     ]);
-    return () => unregister("offers");
+    registerShortcuts("offers", [
+      {
+        combo: "g f",
+        commandId: "offers.go-to-page",
+        description: "Open the offer evaluator",
+      },
+      {
+        combo: "n f",
+        commandId: "offers.add-offer",
+        description: "Add an offer",
+      },
+    ]);
+    return () => {
+      unregisterShortcuts("offers");
+      unregister("offers");
+    };
   }, [router]);
 
   function updateName(id: number, name: string) {
@@ -61,12 +84,13 @@ export function OfferEvaluator() {
 
   return (
     <AppShell activeHref="/offers" title="Offer Evaluator">
-      <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
           bleed
           description="Score the whole opportunity, not just the number on the offer letter."
           eyebrow="Roadmap §12.1"
           hue={hueFor("/offers")}
+          icon={BadgeDollarSign}
           title="Offer Evaluator"
         />
         <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -143,6 +167,7 @@ export function OfferEvaluator() {
           {offers.length < 3 ? (
             <button
               className="h-10 rounded-md border border-input bg-surface px-4 text-sm"
+              id="add-offer-button"
               onClick={() =>
                 setOffers((current) => [
                   ...current,

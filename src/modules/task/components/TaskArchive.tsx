@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Archive } from "lucide-react";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { formatDueDate } from "@/src/modules/task/taskBoardUtils";
@@ -63,6 +64,7 @@ export function TaskArchive({
         tasks.length === 0 ? (
           <EmptyState
             description="Completed work stays visible here for streak history once it leaves the active board."
+            icon={Archive}
             title="Your archive is clear"
           />
         ) : (

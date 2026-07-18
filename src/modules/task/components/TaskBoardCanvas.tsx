@@ -106,7 +106,7 @@ export function TaskBoardCanvas({
   onWeekdayChange,
 }: TaskBoardCanvasProps) {
   return (
-    <section className="flex min-w-0 flex-col">
+    <section className="page-fade flex min-w-0 flex-col">
       <BoardHeader
         columnFilters={columnFilters}
         error={error}
@@ -145,7 +145,7 @@ export function TaskBoardCanvas({
               minWidth: `${visibleColumns.length * 280}px`,
             }}
           >
-            {visibleColumns.map((column) => (
+            {visibleColumns.map((column, index) => (
               <BoardColumn
                 key={column.status}
                 canAddSubtaskIds={canAddSubtaskIds}
@@ -162,6 +162,7 @@ export function TaskBoardCanvas({
                 onUpdateStatus={onUpdateStatus}
                 onUpdateTitle={onUpdateTitle}
                 tasks={tasksByStatus[column.status]}
+                style={{ ["--i" as string]: index }}
               />
             ))}
           </div>

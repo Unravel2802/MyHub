@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 
 interface EmptyStateProps {
-  icon?: ReactNode;
+  icon?: LucideIcon;
   title: string;
   // Sell the NEXT ACTION, tied to the roadmap. Not "No prep sessions logged
   // yet." — that's a shrug, and it's the default state of the one feature whose
@@ -22,14 +23,13 @@ export function EmptyState({
   compact = false,
   className = "",
 }: EmptyStateProps) {
+  const Icon = icon;
   return (
     <div
       className={`flex flex-col items-center justify-center rounded-lg border border-dashed border-border text-center ${compact ? "px-3 py-4" : "px-6 py-10"} ${className}`}
     >
-      {icon ? (
-        <div aria-hidden className="mb-3 text-3xl">
-          {icon}
-        </div>
+      {Icon ? (
+        <Icon aria-hidden="true" className="mb-3 size-8 text-muted" />
       ) : null}
       <p className="font-semibold tracking-tight text-foreground">{title}</p>
       <p className="mt-1 max-w-sm text-sm leading-relaxed text-muted">

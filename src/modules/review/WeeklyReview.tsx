@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CalendarCheck } from "lucide-react";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { EmptyState } from "@/src/components/ui/EmptyState";
@@ -14,6 +15,7 @@ import { useReviewStore } from "@/src/modules/review/useReviewStore";
 import { ReviewSnapshotStats } from "@/src/modules/review/components/ReviewSnapshotStats";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
+import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
 export function WeeklyReview() {
   const router = useRouter();
@@ -48,8 +50,29 @@ export function WeeklyReview() {
         keywords: ["review", "weekly", "ritual"],
         action: () => router.push("/review"),
       },
+      {
+        id: "start-reflection",
+        label: "Start weekly reflection",
+        keywords: ["review", "weekly", "reflection", "write"],
+        action: () => document.getElementById("review-went-well")?.focus(),
+      },
     ]);
-    return () => unregister("weekly-review");
+    registerShortcuts("weekly-review", [
+      {
+        combo: "g w",
+        commandId: "weekly-review.go-to-page",
+        description: "Open weekly review",
+      },
+      {
+        combo: "r w",
+        commandId: "weekly-review.start-reflection",
+        description: "Start the weekly reflection",
+      },
+    ]);
+    return () => {
+      unregisterShortcuts("weekly-review");
+      unregister("weekly-review");
+    };
   }, [router]);
 
   useEffect(() => {
@@ -80,12 +103,13 @@ export function WeeklyReview() {
     "min-h-24 w-full rounded-md border border-input bg-surface px-3 py-2 text-sm";
   return (
     <AppShell activeHref="/review" title="Weekly Review">
-      <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
           bleed
           description="Look honestly at this week, then choose one fix for the next."
           eyebrow="Sunday ritual"
           hue={hueFor("/review")}
+          icon={CalendarCheck}
           title="Weekly Review"
         />
 
@@ -116,6 +140,7 @@ export function WeeklyReview() {
             What went well?
             <textarea
               className={field}
+              id="review-went-well"
               onChange={(event) => setWentWell(event.target.value)}
               value={wentWell}
             />

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Map } from "lucide-react";
 import { AppShell } from "@/src/components/AppShell";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { RoadmapTimeline } from "@/src/modules/roadmap/components/RoadmapTimeline";
@@ -12,6 +13,7 @@ import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
+import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
 export function RoadmapPage() {
   const router = useRouter();
@@ -31,8 +33,32 @@ export function RoadmapPage() {
         keywords: ["roadmap", "plan", "graduation"],
         action: () => router.push("/roadmap"),
       },
+      {
+        id: "focus-readiness",
+        label: "View graduation readiness",
+        keywords: ["roadmap", "readiness", "radar", "graduation"],
+        action: () =>
+          document
+            .getElementById("readiness-heading")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      },
     ]);
-    return () => unregister("roadmap");
+    registerShortcuts("roadmap", [
+      {
+        combo: "g r",
+        commandId: "roadmap.go-to-page",
+        description: "Open the roadmap",
+      },
+      {
+        combo: "v r",
+        commandId: "roadmap.focus-readiness",
+        description: "View graduation readiness",
+      },
+    ]);
+    return () => {
+      unregisterShortcuts("roadmap");
+      unregister("roadmap");
+    };
   }, [router]);
 
   // Derived, not an effect: default to the month you're actually IN, so the page
@@ -54,11 +80,12 @@ export function RoadmapPage() {
 
   return (
     <AppShell activeHref="/roadmap" title="Roadmap">
-      <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
           bleed
           eyebrow="Engineering-first roadmap"
           hue={hueFor("/roadmap")}
+          icon={Map}
           title="Where you stand"
         />
 

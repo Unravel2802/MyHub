@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Flame } from "lucide-react";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { StatCard } from "@/src/components/ui/StatCard";
@@ -15,6 +16,7 @@ import { hueFor } from "@/src/components/moduleHues";
 import type { HueName } from "@/src/components/moduleHues";
 import { ACHIEVEMENT_CATEGORY_HUES } from "@/src/modules/momentum/achievementCategoryHues";
 import { register, unregister } from "@/src/lib/commandPalette";
+import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
 const categories = ["prep", "career", "consistency"] as const;
 
@@ -44,17 +46,42 @@ export function AchievementsPage() {
         keywords: ["achievements", "momentum", "streaks"],
         action: () => router.push("/achievements"),
       },
+      {
+        id: "browse-catalog",
+        label: "Browse achievement catalog",
+        keywords: ["achievements", "catalog", "milestones"],
+        action: () =>
+          document
+            .getElementById("achievement-catalog")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      },
     ]);
-    return () => unregister("achievements");
+    registerShortcuts("achievements", [
+      {
+        combo: "g a",
+        commandId: "achievements.go-to-page",
+        description: "Open achievements",
+      },
+      {
+        combo: "b a",
+        commandId: "achievements.browse-catalog",
+        description: "Browse achievements",
+      },
+    ]);
+    return () => {
+      unregisterShortcuts("achievements");
+      unregister("achievements");
+    };
   }, [router]);
   return (
     <AppShell activeHref="/achievements" title="Achievements">
-      <section className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
           bleed
           description="Visible milestones tied to the roadmap, not points or levels."
           eyebrow="Momentum"
           hue={hueFor("/achievements")}
+          icon={Flame}
           title="Achievements"
         />
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -79,7 +106,7 @@ export function AchievementsPage() {
             value={`${unlocked.length}/${ACHIEVEMENT_COUNT}`}
           />
         </div>
-        <div className="mt-8 grid gap-8">
+        <div className="mt-8 grid gap-8" id="achievement-catalog">
           {categories.map((category) => (
             <section
               aria-labelledby={`${category}-achievements`}

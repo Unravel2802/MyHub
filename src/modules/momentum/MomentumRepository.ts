@@ -46,11 +46,16 @@ export async function getUnlocks(): Promise<AchievementUnlock[]> {
   return data.map(fromRow);
 }
 
-// Idempotent by construction: the partial unique index on (key) where
-// deleted_at is null (migration 0010) makes a duplicate insert a no-op rather
-// than an error, so two tabs racing to unlock the same achievement can't
-// double-insert. This is the LAST of the three idempotency layers — the store
-// has two more in front of it (see useMomentumStore).
+// Idempotent by construction: the unique constraint on (key) makes a duplicate
+// insert a no-op rather than an error, so two tabs racing to unlock the same
+// achievement can't double-insert. This is the LAST of the three idempotency
+// layers — the store has two more in front of it (see useMomentumStore).
+//
+// The constraint is PLAIN, not partial (migration 0017). Migration 0010's
+// original partial index (`where deleted_at is null`) could not serve as an
+// ON CONFLICT target — PostgREST emits a bare `ON CONFLICT (key)`, which
+// Postgres can't match to a partial index — so this upsert failed with 42P10
+// on every unlock and nothing ever persisted. See migration 0017.
 export async function insertUnlocks(
   keys: AchievementKey[],
 ): Promise<AchievementUnlock[]> {

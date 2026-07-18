@@ -46,3 +46,6 @@ next-env.d.ts
 
 # data backups (scripts/exportData.ts) — can contain real personal data
 /backups
+
+# claude code — local settings and git worktrees, not shared repo state
+/.claude

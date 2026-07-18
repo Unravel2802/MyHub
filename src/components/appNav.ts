@@ -8,9 +8,16 @@
 // adds Achievements, Phase 6 (Weekly Review) adds Weekly Review, Phase 8
 // (Offers) adds Offer Evaluator.
 
+import type { LucideIcon } from "lucide-react";
+
 export interface NavItem {
   href: string;
   label: string;
+  // Optional per-item icon (Wave 4 Workstream C). Type only — the actual
+  // icon-per-module assignment is app-knowledge Codex fills in. Rendered
+  // decoratively (aria-hidden) and inherits the item's module hue via
+  // currentColor, so it never names a raw color.
+  icon?: LucideIcon;
 }
 
 export const NAV_ITEMS: readonly NavItem[] = [

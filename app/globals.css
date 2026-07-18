@@ -355,6 +355,25 @@ body {
   animation-delay: calc(var(--i, 0) * 40ms);
 }
 
+/* Page-level enter (Wave 4 Workstream C): a whole route settles in as one
+   element. Distinct from fade-up, which staggers a LIST via --i — this has no
+   stagger. Neutralized automatically by the prefers-reduced-motion block below
+   (it zeroes animation-duration globally), so no per-utility guard is needed. */
+@keyframes page-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page-fade {
+  animation: page-fade 260ms ease-out both;
+}
+
 .stat-card-hover:hover {
   transform: translateY(-2px);
 }

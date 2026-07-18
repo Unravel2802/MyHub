@@ -25,6 +25,7 @@
   --border: #e4e4e7; /* zinc-200 */
   --input: #d4d4d8;
   --input-hover: #a1a1aa;
+  --overlay: #09090b; /* modal scrim — zinc-950, deliberately dark in both themes */
 
   --primary: #4f46e5; /* indigo-600 */
   --primary-foreground: #ffffff;
@@ -167,6 +168,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-input-hover: var(--input-hover);
+  --color-overlay: var(--overlay);
 
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);

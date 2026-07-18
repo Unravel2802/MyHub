@@ -30,6 +30,12 @@ a "reasonable" alternative.
   anything you notice untested
 - Drag-and-drop: `@dnd-kit/*` (core, sortable, utilities) — approved and already load-bearing in
   the Kanban board; don't add a second DnD library
+- UI primitives: shadcn/ui components generated into `src/components/ui/`, built on
+  `@radix-ui/*` (Dialog, Popover, Select, Tooltip) + `cmdk` (Command). Selective adoption,
+  re-skinned onto existing semantic tokens; the hand-rolled primitives are retained, not replaced.
+- Class utilities: `clsx` + `tailwind-merge` via the `cn()` helper (`src/lib/cn.ts`);
+  `class-variance-authority` (CVA), used by generated shadcn components.
+- Icons: `lucide-react`.
 - One-off scripts (`scripts/*.ts`, not application code): `tsx` — added 2026-07-13 for the seed
   and backup scripts. Follow the convention those scripts already establish (see
   `docs/handoff/rls-audit-and-backup-script.md`) rather than picking a different runner.

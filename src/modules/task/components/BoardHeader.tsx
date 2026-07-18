@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { PageHeader } from "@/src/components/ui/PageHeader";
+import { HUE_DOT } from "@/src/components/ui/hueClasses";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import type { TaskStats } from "@/src/modules/task/taskBoardUtils";
 import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
@@ -170,7 +171,9 @@ export function BoardHeader({
               onClick={() => onToggleColumn(column.status)}
               type="button"
             >
-              <span className={`h-2 w-2 rounded-full ${column.accent}`} />
+              <span
+                className={`h-2 w-2 rounded-full ${column.accent ? HUE_DOT[column.accent] : "bg-input"}`}
+              />
               {column.title}
             </button>
           );

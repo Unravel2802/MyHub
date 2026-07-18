@@ -5,6 +5,7 @@ import {
 } from "@dnd-kit/sortable";
 import { TaskCard } from "@/src/modules/task/components/TaskCard";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { HUE_DOT } from "@/src/components/ui/hueClasses";
 import type { ColumnConfig } from "@/src/modules/task/taskBoardConfig";
 import type { Task, TaskStatus } from "@/src/modules/task/types";
 
@@ -52,7 +53,9 @@ export function BoardColumn({
       <div className="border-b border-border p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <span className={`h-2.5 w-2.5 rounded-full ${column.accent}`} />
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${column.accent ? HUE_DOT[column.accent] : "bg-input"}`}
+            />
             <h3 className="truncate text-sm font-semibold text-foreground">
               {column.title}
             </h3>

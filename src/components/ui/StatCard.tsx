@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { HueName } from "@/src/components/moduleHues";
 import { hueVar } from "@/src/components/moduleHues";
+import { HUE_STATCARD } from "@/src/components/ui/hueClasses";
 
 interface StatCardProps {
   label: string;
@@ -31,49 +32,6 @@ const valueClasses = {
   danger: "text-danger",
 } as const;
 
-const hueClasses: Record<HueName, { container: string; value: string }> = {
-  accent: {
-    container: "border-accent-border bg-accent-surface",
-    value: "text-accent-strong",
-  },
-  amber: {
-    container: "border-hue-amber-border bg-hue-amber-surface",
-    value: "text-hue-amber",
-  },
-  orange: {
-    container: "border-hue-orange-border bg-hue-orange-surface",
-    value: "text-hue-orange",
-  },
-  rose: {
-    container: "border-hue-rose-border bg-hue-rose-surface",
-    value: "text-hue-rose",
-  },
-  violet: {
-    container: "border-hue-violet-border bg-hue-violet-surface",
-    value: "text-hue-violet",
-  },
-  blue: {
-    container: "border-hue-blue-border bg-hue-blue-surface",
-    value: "text-hue-blue",
-  },
-  cyan: {
-    container: "border-hue-cyan-border bg-hue-cyan-surface",
-    value: "text-hue-cyan",
-  },
-  teal: {
-    container: "border-hue-teal-border bg-hue-teal-surface",
-    value: "text-hue-teal",
-  },
-  emerald: {
-    container: "border-hue-emerald-border bg-hue-emerald-surface",
-    value: "text-hue-emerald",
-  },
-  fuchsia: {
-    container: "border-hue-fuchsia-border bg-hue-fuchsia-surface",
-    value: "text-hue-fuchsia",
-  },
-};
-
 export function StatCard({
   label,
   value,
@@ -84,7 +42,7 @@ export function StatCard({
   hue,
 }: StatCardProps) {
   const isHero = size === "hero";
-  const colors = hue ? hueClasses[hue] : null;
+  const colors = hue ? HUE_STATCARD[hue] : null;
 
   return (
     <div

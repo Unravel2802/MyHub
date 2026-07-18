@@ -2,23 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { hueVar, type HueName } from "@/src/components/moduleHues";
+import { HUE_PROGRESS } from "@/src/components/ui/hueClasses";
 
 type ProgressBarProps = {
   progress: number;
   hue?: HueName;
-};
-
-const hueClasses: Record<HueName, string> = {
-  accent: "bg-accent",
-  amber: "bg-hue-amber",
-  orange: "bg-hue-orange",
-  rose: "bg-hue-rose",
-  violet: "bg-hue-violet",
-  blue: "bg-hue-blue",
-  cyan: "bg-hue-cyan",
-  teal: "bg-hue-teal",
-  emerald: "bg-hue-emerald",
-  fuchsia: "bg-hue-fuchsia",
 };
 
 export function ProgressBar({ progress, hue }: ProgressBarProps) {
@@ -51,7 +39,7 @@ export function ProgressBar({ progress, hue }: ProgressBarProps) {
         <div
           // motion-reduce disables the sweep for anyone who's asked the OS for
           // less animation.
-          className={`hue-progress h-full rounded-full ${hue ? hueClasses[hue] : "bg-accent"} transition-[width] duration-700 ease-out motion-reduce:transition-none`}
+          className={`hue-progress h-full rounded-full ${hue ? HUE_PROGRESS[hue] : "bg-accent"} transition-[width] duration-700 ease-out motion-reduce:transition-none`}
           style={{
             ["--hue" as string]: hueVar(hue ?? "accent"),
             width: `${width}%`,

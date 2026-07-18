@@ -6,7 +6,8 @@ import { AuthGate } from "@/src/components/AuthGate";
 import { CommandPalette } from "@/src/components/CommandPalette";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
 import { NAV_ITEMS } from "@/src/components/appNav";
-import { hueFor, type HueName } from "@/src/components/moduleHues";
+import { hueFor } from "@/src/components/moduleHues";
+import { HUE_DOT, HUE_NAV_ACTIVE } from "@/src/components/ui/hueClasses";
 import { StreakIndicator } from "@/src/modules/momentum/components/StreakIndicator";
 import { UnlockToaster } from "@/src/modules/momentum/components/UnlockToaster";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
@@ -37,32 +38,6 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
   // any content. Collapsed by default below `lg`; at `lg` and up the rail is
   // always open and this state is ignored, so the desktop DOM is unchanged.
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const hueDotClasses: Record<HueName, string> = {
-    accent: "bg-accent",
-    amber: "bg-hue-amber",
-    orange: "bg-hue-orange",
-    rose: "bg-hue-rose",
-    violet: "bg-hue-violet",
-    blue: "bg-hue-blue",
-    cyan: "bg-hue-cyan",
-    teal: "bg-hue-teal",
-    emerald: "bg-hue-emerald",
-    fuchsia: "bg-hue-fuchsia",
-  };
-
-  const activeClasses: Record<HueName, string> = {
-    accent: "bg-accent-surface font-medium text-accent-strong",
-    amber: "bg-hue-amber-surface font-medium text-hue-amber",
-    orange: "bg-hue-orange-surface font-medium text-hue-orange",
-    rose: "bg-hue-rose-surface font-medium text-hue-rose",
-    violet: "bg-hue-violet-surface font-medium text-hue-violet",
-    blue: "bg-hue-blue-surface font-medium text-hue-blue",
-    cyan: "bg-hue-cyan-surface font-medium text-hue-cyan",
-    teal: "bg-hue-teal-surface font-medium text-hue-teal",
-    emerald: "bg-hue-emerald-surface font-medium text-hue-emerald",
-    fuchsia: "bg-hue-fuchsia-surface font-medium text-hue-fuchsia",
-  };
-
   return (
     <AuthGate>
       <main className="min-h-screen bg-canvas text-foreground">
@@ -100,14 +75,14 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
                   return (
                     <Link
                       aria-current={isActive ? "page" : undefined}
-                      className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all duration-200 ease-in-out ${isActive ? activeClasses[hueFor(item.href)] : "text-body hover:bg-surface-subtle hover:text-foreground"}`}
+                      className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all duration-200 ease-in-out ${isActive ? HUE_NAV_ACTIVE[hueFor(item.href)] : "text-body hover:bg-surface-subtle hover:text-foreground"}`}
                       href={item.href}
                       key={item.href}
                       onClick={() => setIsNavOpen(false)}
                     >
                       <span
                         aria-hidden="true"
-                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${hueDotClasses[hueFor(item.href)]}`}
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${HUE_DOT[hueFor(item.href)]}`}
                       />
                       {item.label}
                     </Link>

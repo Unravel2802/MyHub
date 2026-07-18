@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { Badge } from "@/src/components/ui/Badge";
+import { HUE_DOT } from "@/src/components/ui/hueClasses";
 import { columns } from "@/src/modules/task/taskBoardConfig";
 import { formatDueDate } from "@/src/modules/task/taskBoardUtils";
 import type { Task, TaskStatus } from "@/src/modules/task/types";
@@ -154,7 +155,7 @@ export function TaskCard({
         </div>
         <span
           className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${
-            currentColumn?.accent ?? "bg-input"
+            currentColumn?.accent ? HUE_DOT[currentColumn.accent] : "bg-input"
           }`}
         />
       </div>

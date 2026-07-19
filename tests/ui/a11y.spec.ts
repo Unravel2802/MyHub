@@ -103,7 +103,13 @@ test("achievement unlocks are announced to screen readers", async ({
 });
 
 test("every page has exactly one h1 and a main landmark", async ({ page }) => {
-  for (const path of ["/dashboard", "/", "/prep", "/applications"]) {
+  for (const path of [
+    "/dashboard",
+    "/",
+    "/prep",
+    "/applications",
+    "/finance",
+  ]) {
     await page.goto(path);
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator("main")).toHaveCount(1);

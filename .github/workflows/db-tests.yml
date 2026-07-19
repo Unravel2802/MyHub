@@ -1,0 +1,41 @@
+name: DB Integration Tests
+
+# The gate that was missing. The unit suite mocks the repository and the
+# Playwright mock accepts any POST, so schema / ON CONFLICT / RLS bugs (the
+# 42P10 class that shipped green three times) are invisible to them. This job
+# runs the real repositories against a real Supabase stack — the only place
+# those bugs go red. See docs/db-integration-tests.md.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  db-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Start Supabase (applies every migration to a clean db)
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase start
+
+      - name: Run DB integration tests
+        env:
+          SUPABASE_DB_TEST_URL: http://127.0.0.1:54321
+        run: |
+          SUPABASE_DB_TEST_KEY="$(supabase status -o json | jq -r '.SERVICE_ROLE_KEY')" \
+            npm run test:db
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop

@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:ui": "playwright test",
     "seed:schedule": "tsx scripts/seedWeeklySchedule.ts",
-    "backup": "tsx scripts/exportData.ts"
+    "backup": "tsx scripts/exportData.ts",
+    "test:db": "vitest run --config vitest.config.db.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

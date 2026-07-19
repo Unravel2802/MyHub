@@ -164,7 +164,21 @@ async function mockDashboard(page: Page) {
                           updated_at: timestamp,
                         },
                       ]
-                    : [];
+                    : table === "recurring_bills"
+                      ? [
+                          {
+                            id: "electricity",
+                            name: "Electricity",
+                            amount_cents: 7500,
+                            category: "utilities",
+                            day_of_month: 19,
+                            active: true,
+                            deleted_at: null,
+                            created_at: timestamp,
+                            updated_at: timestamp,
+                          },
+                        ]
+                      : [];
 
     await route.fulfill({
       status: 200,
@@ -200,6 +214,7 @@ test("dashboard renders cross-module progress panels", async ({ page }) => {
     page.getByRole("heading", { name: "Month-to-date" }),
   ).toBeVisible();
   await expect(page.getByText("$75.00", { exact: true })).toBeVisible();
+  await expect(page.getByText("Electricity", { exact: true })).toBeVisible();
   await expect(page.getByText("$125.00", { exact: true })).toBeVisible();
   await expect(page.getByText("$375.00", { exact: true })).toBeVisible();
   await expect(page.getByText("Algorithms practice")).toBeVisible();

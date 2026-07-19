@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { monthlySummary } from "@/src/modules/finance/financeSelectors";
+import {
+  billsDueThisMonth,
+  monthlySummary,
+  monthToDateSpend,
+} from "@/src/modules/finance/financeSelectors";
 import type { FinanceTransaction } from "@/src/modules/finance/types";
 
 let counter = 0;
@@ -72,5 +76,41 @@ describe("monthlySummary", () => {
       expenseCents: 0,
       netCents: 0,
     });
+  });
+});
+
+describe("billsDueThisMonth", () => {
+  const jul = new Date(2026, 6, 15);
+
+  it("returns unpaid bill instances this month, sorted by due date", () => {
+    const due = billsDueThisMonth(
+      [
+        txn({ billId: "power", paidAt: null, occurredOn: "2026-07-20" }),
+        txn({ billId: "rent", paidAt: null, occurredOn: "2026-07-01" }),
+        // paid bill instance — not "due"
+        txn({ billId: "rent", paidAt: "2026-07-02T00:00:00.000Z" }),
+        // ad-hoc unpaid-looking row (no billId) — not a bill
+        txn({ billId: null, paidAt: null }),
+      ],
+      jul,
+    );
+    expect(due.map((t) => t.billId)).toEqual(["rent", "power"]);
+  });
+});
+
+describe("monthToDateSpend", () => {
+  const jul = new Date(2026, 6, 15);
+
+  it("reports settled spend and net for the month", () => {
+    const spend = monthToDateSpend(
+      [
+        txn({ kind: "income", amountCents: 300000 }),
+        txn({ kind: "expense", amountCents: 120000 }),
+        // unpaid bill instance — excluded
+        txn({ kind: "expense", amountCents: 90000, paidAt: null, billId: "b" }),
+      ],
+      jul,
+    );
+    expect(spend).toEqual({ spentCents: 120000, netCents: 180000 });
   });
 });

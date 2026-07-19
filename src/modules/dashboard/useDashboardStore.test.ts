@@ -26,6 +26,11 @@ vi.mock("@/src/modules/outreach/OutreachRepository", () => ({
   getEntries: vi.fn(),
 }));
 
+vi.mock("@/src/modules/finance/FinanceRepository", () => ({
+  regenerateMonthlyBillInstances: vi.fn(),
+  getTransactions: vi.fn(),
+}));
+
 let listeners: ((event: { type: string }) => void)[] = [];
 vi.mock("@/src/lib/events", () => ({
   on: vi.fn((listener: (event: { type: string }) => void) => {
@@ -41,6 +46,7 @@ import * as PrepRepository from "@/src/modules/prep/PrepRepository";
 import * as ApplicationRepository from "@/src/modules/jobApplications/ApplicationRepository";
 import * as InterviewRepository from "@/src/modules/jobApplications/InterviewRepository";
 import * as OutreachRepository from "@/src/modules/outreach/OutreachRepository";
+import * as FinanceRepository from "@/src/modules/finance/FinanceRepository";
 import { on } from "@/src/lib/events";
 import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
 
@@ -49,6 +55,7 @@ const prepRepo = vi.mocked(PrepRepository);
 const appsRepo = vi.mocked(ApplicationRepository);
 const interviewsRepo = vi.mocked(InterviewRepository);
 const outreachRepo = vi.mocked(OutreachRepository);
+const financeRepo = vi.mocked(FinanceRepository);
 const onMock = vi.mocked(on);
 
 function task(overrides: Partial<Task> & { id: string }): Task {
@@ -176,6 +183,8 @@ beforeEach(() => {
   prepRepo.getStories.mockResolvedValue([]);
   outreachRepo.getEntries.mockResolvedValue([]);
   tasksRepo.regenerateWeeklyInstances.mockResolvedValue([]);
+  financeRepo.regenerateMonthlyBillInstances.mockResolvedValue([]);
+  financeRepo.getTransactions.mockResolvedValue([]);
 });
 
 describe("useDashboardStore", () => {
@@ -251,7 +260,9 @@ describe("useDashboardStore", () => {
     const previousCalls = tasksRepo.getTasks.mock.calls.length;
 
     listeners.forEach((listener) => listener({ type: "task.completed" }));
-    await Promise.resolve();
+    // Drain the whole microtask queue — fetchAll awaits the recurrence
+    // regenerations before it reads, so a single-tick flush isn't enough.
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(tasksRepo.getTasks.mock.calls.length).toBeGreaterThan(previousCalls);
     unsubscribe();

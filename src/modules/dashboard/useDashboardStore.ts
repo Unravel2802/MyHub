@@ -16,6 +16,15 @@ import {
 } from "@/src/modules/prep/prepTargets";
 import * as TaskRepository from "@/src/modules/task/TaskRepository";
 import type { Task } from "@/src/modules/task/types";
+import * as FinanceRepository from "@/src/modules/finance/FinanceRepository";
+import {
+  billsDueThisMonth,
+  monthToDateSpend,
+} from "@/src/modules/finance/financeSelectors";
+import type {
+  FinanceTransaction,
+  MonthSpend,
+} from "@/src/modules/finance/types";
 import type {
   Application,
   Interview,
@@ -58,6 +67,10 @@ export interface DashboardStore {
   checkpointProgress: CheckpointProgress | null;
   behavioralStoryProgress: { actual: number; target: number } | null;
   weeklyCadence: WeeklyCadence | null;
+  // Personal Finance panels (docs/finance-plan.md Phase 2). Read via the finance
+  // REPOSITORY + pure selectors, same cross-module pattern as the rest here.
+  billsDue: FinanceTransaction[];
+  monthSpend: MonthSpend | null;
   isLoading: boolean;
   error: string | null;
 
@@ -88,6 +101,8 @@ export const useDashboardStore = create<DashboardStore>(() => ({
   checkpointProgress: null,
   behavioralStoryProgress: null,
   weeklyCadence: null,
+  billsDue: [],
+  monthSpend: null,
   isLoading: false,
   error: null,
 
@@ -107,6 +122,13 @@ export const useDashboardStore = create<DashboardStore>(() => ({
       } catch (err) {
         console.error(err);
       }
+      // Same generate-then-read for this month's recurring bills, so "bills due"
+      // is correct even when the dashboard is the first page opened this month.
+      try {
+        await FinanceRepository.regenerateMonthlyBillInstances();
+      } catch (err) {
+        console.error(err);
+      }
 
       const [
         tasks,
@@ -123,6 +145,15 @@ export const useDashboardStore = create<DashboardStore>(() => ({
         OutreachRepository.getEntries(),
         PrepRepository.getStories(),
       ]);
+
+      // Finance is a secondary panel — a failure here (or finance not set up
+      // yet) must NOT blank the job-search dashboard. Best-effort, defaults to
+      // empty.
+      const financeTransactions =
+        await FinanceRepository.getTransactions().catch((err) => {
+          console.error(err);
+          return [] as FinanceTransaction[];
+        });
 
       const now = new Date();
       const today = format(now, "yyyy-MM-dd");
@@ -146,6 +177,8 @@ export const useDashboardStore = create<DashboardStore>(() => ({
           prepEntries,
           now,
         ),
+        billsDue: billsDueThisMonth(financeTransactions, now),
+        monthSpend: monthToDateSpend(financeTransactions, now),
         isLoading: false,
         error: null,
       });

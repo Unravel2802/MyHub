@@ -25,3 +25,24 @@ export interface MonthlySummary {
   expenseCents: number;
   netCents: number;
 }
+
+// A recurring bill TEMPLATE (rent, utilities, ...). Generates one unpaid
+// instance per month into finance_transactions (Phase 2). `dayOfMonth` is the
+// due day (1-31), clamped to the month's end by billRecurrence.dueDateFor.
+export interface RecurringBill {
+  id: string;
+  name: string;
+  amountCents: number;
+  category: string;
+  dayOfMonth: number;
+  active: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// The dashboard's month-to-date figure: settled spend + net, in integer cents.
+export interface MonthSpend {
+  spentCents: number;
+  netCents: number;
+}

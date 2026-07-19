@@ -6,6 +6,12 @@ vi.mock("@/src/modules/finance/FinanceRepository", () => ({
   createTransaction: vi.fn(),
   updateTransaction: vi.fn(),
   deleteTransaction: vi.fn(),
+  payBillInstance: vi.fn(),
+  regenerateMonthlyBillInstances: vi.fn(),
+  getBills: vi.fn(),
+  createBill: vi.fn(),
+  updateBill: vi.fn(),
+  deleteBill: vi.fn(),
 }));
 
 import * as FinanceRepository from "@/src/modules/finance/FinanceRepository";
@@ -44,8 +50,10 @@ function deferred<T>() {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "error").mockImplementation(() => {});
+  repository.regenerateMonthlyBillInstances.mockResolvedValue([]);
   useFinanceStore.setState({
     transactions: [],
+    bills: [],
     isLoading: false,
     isCreating: false,
     pendingIds: new Set(),

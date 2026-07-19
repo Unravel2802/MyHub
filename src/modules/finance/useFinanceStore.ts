@@ -1,13 +1,16 @@
 import { create } from "zustand";
 import * as FinanceRepository from "@/src/modules/finance/FinanceRepository";
 import type {
+  CreateBillInput,
   CreateTransactionInput,
+  UpdateBillInput,
   UpdateTransactionInput,
 } from "@/src/modules/finance/FinanceRepository";
 import { monthlySummary } from "@/src/modules/finance/financeSelectors";
 import type {
   FinanceTransaction,
   MonthlySummary,
+  RecurringBill,
 } from "@/src/modules/finance/types";
 
 // Published store for Personal Finance (docs/finance-plan.md, Phase 1). One
@@ -17,11 +20,14 @@ import type {
 
 export interface FinanceStore {
   transactions: FinanceTransaction[];
+  bills: RecurringBill[];
   isLoading: boolean;
   isCreating: boolean;
   pendingIds: Set<string>;
   error: string | null;
 
+  // Generates this month's bill instances (best-effort) before reading, so due
+  // bills appear on the finance page without needing the dashboard.
   fetchTransactions: () => Promise<void>;
   createTransaction: (input: CreateTransactionInput) => Promise<void>;
   updateTransaction: (
@@ -29,6 +35,13 @@ export interface FinanceStore {
     input: UpdateTransactionInput,
   ) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  // Mark a due bill instance paid (optimistic).
+  payBill: (transactionId: string) => Promise<void>;
+
+  fetchBills: () => Promise<void>;
+  createBill: (input: CreateBillInput) => Promise<void>;
+  updateBill: (id: string, input: UpdateBillInput) => Promise<void>;
+  deleteBill: (id: string) => Promise<void>;
 
   // The in / out / net for the month containing `date`, derived from state.
   summaryForMonth: (date: Date) => MonthlySummary;
@@ -69,6 +82,7 @@ function optimisticPatch(
 
 export const useFinanceStore = create<FinanceStore>((set, get) => ({
   transactions: [],
+  bills: [],
   isLoading: false,
   isCreating: false,
   pendingIds: new Set(),
@@ -77,6 +91,11 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   fetchTransactions: async () => {
     set({ isLoading: true, error: null });
     try {
+      // Best-effort: a generation failure shouldn't blank the ledger (it also
+      // regenerates from the dashboard). Mirrors useTaskStore.fetchTasks.
+      await FinanceRepository.regenerateMonthlyBillInstances().catch((error) =>
+        console.error(error),
+      );
       const transactions = await FinanceRepository.getTransactions();
       set({ transactions, isLoading: false });
     } catch (error) {
@@ -141,6 +160,75 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
         pendingIds: withoutId(get().pendingIds, id),
         error: toUserMessage(error),
       });
+    }
+  },
+
+  payBill: async (transactionId) => {
+    const previous = get().transactions;
+    const now = new Date().toISOString();
+    set({
+      transactions: previous.map((transaction) =>
+        transaction.id === transactionId
+          ? { ...transaction, paidAt: now }
+          : transaction,
+      ),
+      pendingIds: withId(get().pendingIds, transactionId),
+      error: null,
+    });
+    try {
+      const updated = await FinanceRepository.payBillInstance(transactionId);
+      set({
+        transactions: get().transactions.map((transaction) =>
+          transaction.id === transactionId ? updated : transaction,
+        ),
+        pendingIds: withoutId(get().pendingIds, transactionId),
+      });
+    } catch (error) {
+      set({
+        transactions: previous,
+        pendingIds: withoutId(get().pendingIds, transactionId),
+        error: toUserMessage(error),
+      });
+    }
+  },
+
+  fetchBills: async () => {
+    try {
+      const bills = await FinanceRepository.getBills();
+      set({ bills });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+  },
+
+  createBill: async (input) => {
+    try {
+      const created = await FinanceRepository.createBill(input);
+      set({ bills: [...get().bills, created] });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+  },
+
+  updateBill: async (id, input) => {
+    const previous = get().bills;
+    try {
+      const updated = await FinanceRepository.updateBill(id, input);
+      set({
+        bills: get().bills.map((bill) => (bill.id === id ? updated : bill)),
+      });
+    } catch (error) {
+      set({ bills: previous, error: toUserMessage(error) });
+    }
+  },
+
+  deleteBill: async (id) => {
+    const previous = get().bills;
+    set({ bills: previous.filter((bill) => bill.id !== id), error: null });
+    try {
+      await FinanceRepository.deleteBill(id);
+    } catch (error) {
+      set({ bills: previous, error: toUserMessage(error) });
     }
   },
 

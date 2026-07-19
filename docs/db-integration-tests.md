@@ -52,12 +52,16 @@ Never point `SUPABASE_DB_TEST_URL` at production — the tests write and delete.
 code: `upsertBudget` (ON CONFLICT category), `updateSavings` (single-row upsert),
 and the `markReceivablePaid` receivable → income conversion.
 
-**Next slices** — the same pattern for the already-fixed legacy tables, as
-regression protection (these are the exact writes that broke before):
+**Slice 2** — regression protection for the already-fixed legacy tables (the
+exact writes that broke before):
 
 - `MomentumRepository.insertUnlocks` (achievements — migration 0017 fix)
 - `ReviewRepository.upsertReview` (weekly_reviews — migration 0018 fix)
 - `RoadmapRepository.tickCriterion` (roadmap_progress — migration 0015 fix)
+
+**Next slices** — generation idempotency and authenticated-vs-anonymous policy
+coverage:
+
 - `regenerateWeeklyInstances` / `regenerateMonthlyBillInstances` idempotency
   (call twice → no duplicates)
 - A couple of RLS assertions with the **anon** key (unauthenticated reads 0 rows)

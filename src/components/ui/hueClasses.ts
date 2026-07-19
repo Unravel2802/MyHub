@@ -11,6 +11,7 @@ export const HUE_DOT: Record<HueName, string> = {
   teal: "bg-hue-teal",
   emerald: "bg-hue-emerald",
   fuchsia: "bg-hue-fuchsia",
+  lime: "bg-hue-lime",
 };
 
 export const HUE_NAV_ACTIVE: Record<HueName, string> = {
@@ -24,6 +25,7 @@ export const HUE_NAV_ACTIVE: Record<HueName, string> = {
   teal: "bg-hue-teal-surface font-medium text-hue-teal",
   emerald: "bg-hue-emerald-surface font-medium text-hue-emerald",
   fuchsia: "bg-hue-fuchsia-surface font-medium text-hue-fuchsia",
+  lime: "bg-hue-lime-surface font-medium text-hue-lime",
 };
 
 export const HUE_BADGE: Record<HueName, string> = {
@@ -37,6 +39,7 @@ export const HUE_BADGE: Record<HueName, string> = {
   teal: "border-hue-teal-border bg-hue-teal-surface text-hue-teal",
   emerald: "border-hue-emerald-border bg-hue-emerald-surface text-hue-emerald",
   fuchsia: "border-hue-fuchsia-border bg-hue-fuchsia-surface text-hue-fuchsia",
+  lime: "border-hue-lime-border bg-hue-lime-surface text-hue-lime",
 };
 
 export const HUE_PROGRESS: Record<HueName, string> = {
@@ -50,6 +53,7 @@ export const HUE_PROGRESS: Record<HueName, string> = {
   teal: "bg-hue-teal",
   emerald: "bg-hue-emerald",
   fuchsia: "bg-hue-fuchsia",
+  lime: "bg-hue-lime",
 };
 
 export const HUE_STATCARD: Record<
@@ -95,5 +99,9 @@ export const HUE_STATCARD: Record<
   fuchsia: {
     container: "border-hue-fuchsia-border bg-hue-fuchsia-surface",
     value: "text-hue-fuchsia",
+  },
+  lime: {
+    container: "border-hue-lime-border bg-hue-lime-surface",
+    value: "text-hue-lime",
   },
 };

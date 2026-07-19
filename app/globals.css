@@ -82,6 +82,9 @@
   --hue-fuchsia: #a21caf;
   --hue-fuchsia-surface: #fdf4ff;
   --hue-fuchsia-border: #f5d0fe;
+  --hue-lime: #3f6212; /* lime-800 — 7:1 on white, clears AA */
+  --hue-lime-surface: #f7fee7; /* lime-50 */
+  --hue-lime-border: #d9f99d; /* lime-200 */
 }
 
 .dark {
@@ -150,6 +153,9 @@
   --hue-fuchsia: #e879f9;
   --hue-fuchsia-surface: #33052f;
   --hue-fuchsia-border: #86198f;
+  --hue-lime: #a3e635; /* lime-400 — bright on the dark surfaces, clears AA */
+  --hue-lime-surface: #1a2e05; /* deep lime, so a pill doesn't glow */
+  --hue-lime-border: #3f6212; /* lime-800 */
 }
 
 /* `inline` makes the generated utilities reference the variables directly, so
@@ -219,6 +225,9 @@
   --color-hue-fuchsia: var(--hue-fuchsia);
   --color-hue-fuchsia-surface: var(--hue-fuchsia-surface);
   --color-hue-fuchsia-border: var(--hue-fuchsia-border);
+  --color-hue-lime: var(--hue-lime);
+  --color-hue-lime-surface: var(--hue-lime-surface);
+  --color-hue-lime-border: var(--hue-lime-border);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

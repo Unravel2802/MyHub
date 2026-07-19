@@ -36,6 +36,7 @@ const prepBorderClasses: Record<HueName, string> = {
   teal: "border-t-hue-teal-border",
   emerald: "border-t-hue-emerald-border",
   fuchsia: "border-t-hue-fuchsia-border",
+  lime: "border-t-hue-lime-border",
 };
 
 function percent(value: number | null) {

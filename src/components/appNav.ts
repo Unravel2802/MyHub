@@ -19,6 +19,7 @@ import {
   Map,
   NotebookPen,
   Send,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,4 +44,5 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/review", label: "Weekly Review", icon: CalendarCheck },
   { href: "/offers", label: "Offer Evaluator", icon: BadgeDollarSign },
   { href: "/notes", label: "Knowledge Base", icon: NotebookPen },
+  { href: "/finance", label: "Finances", icon: Wallet },
 ];

@@ -61,6 +61,7 @@ const HUES = [
   "teal",
   "emerald",
   "fuchsia",
+  "lime",
 ] as const;
 
 // Text-role semantic tokens that carry copy. `-surface`/`-border` roles are

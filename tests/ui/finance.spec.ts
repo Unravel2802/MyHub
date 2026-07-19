@@ -37,6 +37,19 @@ type BudgetRow = {
   updated_at: string;
 };
 
+type ReceivableRow = {
+  id: string;
+  person: string;
+  amount_cents: number;
+  reason: string | null;
+  due_on: string | null;
+  status: "not_requested" | "requested" | "paid";
+  transaction_id: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 function mockFinance(page: Page) {
   const historicalDate = format(addMonths(new Date(), -2), "yyyy-MM-dd");
   const historicalTimestamp = new Date().toISOString();
@@ -57,16 +70,73 @@ function mockFinance(page: Page) {
   ];
   const bills: BillRow[] = [];
   const budgets: BudgetRow[] = [];
+  const receivables: ReceivableRow[] = [];
   let savingsCents = 0;
   let sequence = 0;
 
   return page.route(
-    /\/rest\/v1\/(finance_transactions|recurring_bills|finance_budgets|finance_settings)/,
+    /\/rest\/v1\/(finance_transactions|recurring_bills|finance_budgets|finance_settings|finance_receivables)/,
     async (route) => {
       const request = route.request();
       const url = new URL(request.url());
       const table = url.pathname.split("/").pop();
       const now = new Date().toISOString();
+
+      if (table === "finance_receivables") {
+        if (request.method() === "GET") {
+          const id = url.searchParams.get("id")?.replace("eq.", "");
+          const matching = receivables.filter(
+            (receivable) =>
+              !receivable.deleted_at && (!id || receivable.id === id),
+          );
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(id ? matching[0] : matching),
+          });
+          return;
+        }
+
+        if (request.method() === "POST") {
+          const input = request.postDataJSON() as Partial<ReceivableRow>;
+          const receivable: ReceivableRow = {
+            id: `receivable-${++sequence}`,
+            person: input.person ?? "Someone",
+            amount_cents: input.amount_cents ?? 0,
+            reason: input.reason ?? null,
+            due_on: input.due_on ?? null,
+            status: input.status ?? "not_requested",
+            transaction_id: null,
+            deleted_at: null,
+            created_at: now,
+            updated_at: now,
+          };
+          receivables.unshift(receivable);
+          await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            body: JSON.stringify(receivable),
+          });
+          return;
+        }
+
+        if (request.method() === "PATCH") {
+          const id = url.searchParams.get("id")?.replace("eq.", "");
+          const input = request.postDataJSON() as Partial<ReceivableRow>;
+          const receivable = receivables.find((item) => item.id === id);
+          if (!receivable) {
+            await route.fulfill({ status: 404, body: "{}" });
+            return;
+          }
+          Object.assign(receivable, input, { updated_at: now });
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(receivable),
+          });
+          return;
+        }
+      }
 
       if (table === "finance_budgets") {
         if (request.method() === "GET") {
@@ -254,6 +324,15 @@ test("adds, edits, and deletes a transaction with live summary updates", async (
   await expect(
     page.getByRole("heading", { name: "Know where the month went" }),
   ).toBeVisible();
+  const monthSummary = page
+    .locator("section")
+    .filter({
+      has: page.getByRole("heading", {
+        name: format(new Date(), "MMMM yyyy"),
+        exact: true,
+      }),
+    })
+    .last();
   const ledgerView = page.getByRole("group", { name: "Ledger view" });
   await expect(
     ledgerView.getByRole("button", { name: "Table" }),
@@ -305,7 +384,7 @@ test("adds, edits, and deletes a transaction with live summary updates", async (
   await page.getByRole("button", { name: "Delete Groceries" }).click();
   await expect(page.getByText("No transactions this month")).toBeVisible();
   await expect(page.getByText("$200.00", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("—", { exact: true })).toHaveCount(3);
+  await expect(monthSummary.getByText("—", { exact: true })).toHaveCount(3);
 
   await page.getByRole("button", { name: "Add recurring bill" }).click();
   const billDialog = page.getByRole("dialog", { name: "Add recurring bill" });
@@ -325,7 +404,7 @@ test("adds, edits, and deletes a transaction with live summary updates", async (
   await expect(page.getByText("Electricity")).toHaveCount(2);
   await expect(page.getByText("Due", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mark paid" })).toBeVisible();
-  await expect(page.getByText("—", { exact: true })).toHaveCount(3);
+  await expect(monthSummary.getByText("—", { exact: true })).toHaveCount(3);
 
   await page.getByRole("button", { name: "Mark paid" }).click();
   await expect(page.getByText("Due", { exact: true })).toHaveCount(0);
@@ -400,6 +479,65 @@ test("adds, edits, and deletes a transaction with live summary updates", async (
     table.getByText("Enter a valid non-negative amount."),
   ).toHaveCount(0);
   await expect(page.getByText("$400.00", { exact: true })).toHaveCount(2);
+
+  const receivablesPanel = page
+    .locator("section")
+    .filter({
+      has: page.getByRole("heading", { name: "Owed to me", exact: true }),
+    })
+    .last();
+  await expect(
+    receivablesPanel.getByText("Nobody owes you money"),
+  ).toBeVisible();
+  await receivablesPanel
+    .getByRole("button", { name: "Add money owed", exact: true })
+    .click();
+  const receivableDialog = page.getByRole("dialog", {
+    name: "Add money owed",
+  });
+  await receivableDialog.getByLabel("Person").fill("Jordan");
+  await receivableDialog.getByLabel("Amount").fill("not money");
+  await receivableDialog
+    .getByRole("button", { name: "Add money owed" })
+    .click();
+  await expect(
+    receivableDialog.getByText("Enter a valid non-negative amount."),
+  ).toBeVisible();
+
+  await receivableDialog.getByLabel("Amount").fill("50");
+  await receivableDialog.getByLabel("Reason").fill("Movie tickets");
+  await receivableDialog
+    .getByLabel("Due date")
+    .fill(format(new Date(), "yyyy-MM-dd"));
+  await receivableDialog
+    .getByRole("button", { name: "Add money owed" })
+    .click();
+
+  await expect(receivableDialog).toHaveCount(0);
+  await expect(receivablesPanel.getByText("Jordan")).toBeVisible();
+  await expect(receivablesPanel.getByText("1 not requested")).toBeVisible();
+  await receivablesPanel
+    .getByRole("button", { name: "Mark requested" })
+    .click();
+  await expect(
+    receivablesPanel.getByText("Requested", { exact: true }),
+  ).toBeVisible();
+  await expect(receivablesPanel.getByText("0 not requested")).toBeVisible();
+
+  await receivablesPanel.getByRole("button", { name: "Mark paid" }).click();
+  await expect(
+    receivablesPanel.getByText("Nobody owes you money"),
+  ).toBeVisible();
+  await expect(
+    receivablesPanel.getByText("Paid", { exact: true }),
+  ).toBeVisible();
+  const reimbursementRow = table.locator("tbody tr").filter({
+    hasText: "Jordan: Movie tickets",
+  });
+  await expect(reimbursementRow).toContainText("Reimbursement");
+  await expect(reimbursementRow).toContainText("$50.00");
+  await expect(page.getByText("$450.00", { exact: true })).toBeVisible();
+  await expect(page.getByText("$375.00", { exact: true })).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole("table")).toBeVisible();

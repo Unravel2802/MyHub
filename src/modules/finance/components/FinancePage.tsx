@@ -51,6 +51,7 @@ import {
 } from "@/src/modules/finance/components/financeLedgerView";
 import { BudgetDialog } from "@/src/modules/finance/components/BudgetDialog";
 import { RecurringBillDialog } from "@/src/modules/finance/components/RecurringBillDialog";
+import { ReceivablesPanel } from "@/src/modules/finance/components/ReceivablesPanel";
 import { SavingsEditor } from "@/src/modules/finance/components/SavingsEditor";
 import type { CreateTransactionInput } from "@/src/modules/finance/FinanceRepository";
 import type {
@@ -81,7 +82,13 @@ export function FinancePage() {
     getFinanceLedgerView,
     getServerFinanceLedgerView,
   );
-  const { fetchBills, fetchBudgets, fetchSettings, fetchTransactions } = store;
+  const {
+    fetchBills,
+    fetchBudgets,
+    fetchReceivables,
+    fetchSettings,
+    fetchTransactions,
+  } = store;
 
   useEffect(() => {
     if (fetched.current) return;
@@ -90,9 +97,16 @@ export function FinancePage() {
       fetchTransactions(),
       fetchBills(),
       fetchBudgets(),
+      fetchReceivables(),
       fetchSettings(),
     ]);
-  }, [fetchBills, fetchBudgets, fetchSettings, fetchTransactions]);
+  }, [
+    fetchBills,
+    fetchBudgets,
+    fetchReceivables,
+    fetchSettings,
+    fetchTransactions,
+  ]);
 
   useEffect(() => {
     register("finance", [
@@ -401,6 +415,10 @@ export function FinancePage() {
             </ul>
           )}
         </Panel>
+
+        <div className="mb-6">
+          <ReceivablesPanel />
+        </div>
 
         <div className="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(20rem,1fr)]">
           <Panel

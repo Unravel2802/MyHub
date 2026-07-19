@@ -3,6 +3,7 @@ import type {
   Budget,
   FinanceSettings,
   FinanceTransaction,
+  Receivable,
   RecurringBill,
 } from "@/src/modules/finance/types";
 
@@ -73,6 +74,23 @@ function budget(overrides: Partial<Budget> & { id: string }): Budget {
     id: overrides.id,
     category: overrides.category ?? "groceries",
     amountCents: overrides.amountCents ?? 50000,
+    deletedAt: overrides.deletedAt ?? null,
+    createdAt: overrides.createdAt ?? "2026-07-19T00:00:00.000Z",
+    updatedAt: overrides.updatedAt ?? "2026-07-19T00:00:00.000Z",
+  };
+}
+
+function receivable(
+  overrides: Partial<Receivable> & { id: string },
+): Receivable {
+  return {
+    id: overrides.id,
+    person: overrides.person ?? "Alex",
+    amountCents: overrides.amountCents ?? 4500,
+    reason: overrides.reason ?? "Shared dinner",
+    dueOn: overrides.dueOn ?? "2026-07-25",
+    status: overrides.status ?? "not_requested",
+    transactionId: overrides.transactionId ?? null,
     deletedAt: overrides.deletedAt ?? null,
     createdAt: overrides.createdAt ?? "2026-07-19T00:00:00.000Z",
     updatedAt: overrides.updatedAt ?? "2026-07-19T00:00:00.000Z",
@@ -359,6 +377,97 @@ describe("useFinanceStore", () => {
     expect(useFinanceStore.getState().error).toBe(
       "Something went wrong, please try again later.",
     );
+  });
+
+  it("fetches, creates, and updates receivables", async () => {
+    const alex = receivable({ id: "alex" });
+    repository.getReceivables.mockResolvedValueOnce([alex]);
+
+    await useFinanceStore.getState().fetchReceivables();
+    expect(useFinanceStore.getState().receivables).toEqual([alex]);
+
+    const sam = receivable({
+      id: "sam",
+      person: "Sam",
+      amountCents: 8000,
+      reason: "Concert tickets",
+      dueOn: null,
+    });
+    repository.createReceivable.mockResolvedValueOnce(sam);
+    await useFinanceStore.getState().createReceivable({
+      person: "Sam",
+      amountCents: 8000,
+      reason: "Concert tickets",
+      dueOn: null,
+      status: "not_requested",
+    });
+    expect(useFinanceStore.getState().receivables).toEqual([sam, alex]);
+
+    const requested = receivable({ ...sam, status: "requested" });
+    repository.updateReceivable.mockResolvedValueOnce(requested);
+    await useFinanceStore
+      .getState()
+      .updateReceivable(sam.id, { status: "requested" });
+    expect(useFinanceStore.getState().receivables).toEqual([requested, alex]);
+  });
+
+  it("optimistically deletes a receivable and rolls back on failure", async () => {
+    const alex = receivable({ id: "alex" });
+    const pending = deferred<void>();
+    useFinanceStore.setState({ receivables: [alex] });
+    repository.deleteReceivable.mockReturnValueOnce(pending.promise);
+
+    const request = useFinanceStore.getState().deleteReceivable(alex.id);
+    expect(useFinanceStore.getState().receivables).toEqual([]);
+    pending.resolve();
+    await request;
+
+    useFinanceStore.setState({ receivables: [alex], error: null });
+    repository.deleteReceivable.mockRejectedValueOnce(
+      new Error("delete failed"),
+    );
+    await useFinanceStore.getState().deleteReceivable(alex.id);
+
+    expect(useFinanceStore.getState().receivables).toEqual([alex]);
+    expect(useFinanceStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
+  });
+
+  it("marks a receivable paid and prepends its reimbursement income", async () => {
+    const owed = receivable({ id: "alex", status: "requested" });
+    const paid = receivable({
+      ...owed,
+      status: "paid",
+      transactionId: "reimbursement",
+      updatedAt: "2026-07-19T12:00:00.000Z",
+    });
+    const existing = transaction({ id: "existing" });
+    const reimbursement = transaction({
+      id: "reimbursement",
+      kind: "income",
+      amountCents: owed.amountCents,
+      category: "reimbursement",
+      note: "Alex: Shared dinner",
+    });
+    useFinanceStore.setState({
+      receivables: [owed],
+      transactions: [existing],
+    });
+    repository.markReceivablePaid.mockResolvedValueOnce({
+      receivable: paid,
+      transaction: reimbursement,
+    });
+
+    await useFinanceStore.getState().markReceivablePaid(owed.id);
+
+    expect(useFinanceStore.getState().receivables).toEqual([paid]);
+    expect(useFinanceStore.getState().transactions).toEqual([
+      reimbursement,
+      existing,
+    ]);
+    expect(useFinanceStore.getState().outstandingReceivables()).toEqual([]);
+    expect(useFinanceStore.getState().totalOwedCents()).toBe(0);
   });
 
   it("fetches savings and rolls an optimistic update back on failure", async () => {

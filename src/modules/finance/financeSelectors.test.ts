@@ -4,10 +4,13 @@ import {
   budgetProgressForMonth,
   monthlySummary,
   monthToDateSpend,
+  outstandingReceivables,
+  totalOwedCents,
 } from "@/src/modules/finance/financeSelectors";
 import type {
   Budget,
   FinanceTransaction,
+  Receivable,
   RecurringBill,
 } from "@/src/modules/finance/types";
 
@@ -199,5 +202,50 @@ describe("budgetProgressForMonth", () => {
       { category: "groceries", limitCents: 50000, spentCents: 7000 },
       { category: "rent", limitCents: 120000, spentCents: 0 },
     ]);
+  });
+});
+
+describe("receivables selectors", () => {
+  function receivable(
+    overrides: Partial<Receivable> & { id: string },
+  ): Receivable {
+    return {
+      id: overrides.id,
+      person: overrides.person ?? "Alex",
+      amountCents: overrides.amountCents ?? 5000,
+      reason: overrides.reason ?? null,
+      dueOn: overrides.dueOn ?? null,
+      status: overrides.status ?? "not_requested",
+      transactionId: overrides.transactionId ?? null,
+      deletedAt: overrides.deletedAt ?? null,
+      createdAt: "2026-07-01T00:00:00.000Z",
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    };
+  }
+
+  it("outstandingReceivables drops paid/deleted and sorts due-first then by person", () => {
+    const out = outstandingReceivables([
+      receivable({ id: "paid", status: "paid", person: "Zoe" }),
+      receivable({ id: "gone", deletedAt: "2026-07-02T00:00:00.000Z" }),
+      receivable({ id: "undated", person: "Bo", dueOn: null }),
+      receivable({ id: "later", person: "Cy", dueOn: "2026-08-01" }),
+      receivable({ id: "soon", person: "Di", dueOn: "2026-07-20" }),
+    ]);
+    expect(out.map((r) => r.id)).toEqual(["soon", "later", "undated"]);
+  });
+
+  it("totalOwedCents sums only unpaid receivables", () => {
+    expect(
+      totalOwedCents([
+        receivable({ id: "a", amountCents: 5000, status: "requested" }),
+        receivable({ id: "b", amountCents: 3000, status: "not_requested" }),
+        receivable({ id: "c", amountCents: 9999, status: "paid" }),
+        receivable({
+          id: "d",
+          amountCents: 1,
+          deletedAt: "2026-07-02T00:00:00.000Z",
+        }),
+      ]),
+    ).toBe(8000);
   });
 });

@@ -2,13 +2,17 @@ import { create } from "zustand";
 import * as FinanceRepository from "@/src/modules/finance/FinanceRepository";
 import type {
   CreateBillInput,
+  CreateReceivableInput,
   CreateTransactionInput,
   UpdateBillInput,
+  UpdateReceivableInput,
   UpdateTransactionInput,
 } from "@/src/modules/finance/FinanceRepository";
 import {
   budgetProgressForMonth,
   monthlySummary,
+  outstandingReceivables,
+  totalOwedCents,
 } from "@/src/modules/finance/financeSelectors";
 import { computeRunway } from "@/src/modules/finance/runway";
 import type {
@@ -17,6 +21,7 @@ import type {
   FinanceSettings,
   FinanceTransaction,
   MonthlySummary,
+  Receivable,
   RecurringBill,
   Runway,
 } from "@/src/modules/finance/types";
@@ -30,6 +35,7 @@ export interface FinanceStore {
   transactions: FinanceTransaction[];
   bills: RecurringBill[];
   budgets: Budget[];
+  receivables: Receivable[];
   settings: FinanceSettings | null;
   isLoading: boolean;
   isCreating: boolean;
@@ -60,8 +66,19 @@ export interface FinanceStore {
   fetchSettings: () => Promise<void>;
   updateSavings: (currentSavingsCents: number) => Promise<void>;
 
+  fetchReceivables: () => Promise<void>;
+  createReceivable: (input: CreateReceivableInput) => Promise<void>;
+  updateReceivable: (id: string, input: UpdateReceivableInput) => Promise<void>;
+  deleteReceivable: (id: string) => Promise<void>;
+  // Convert a receivable to a settled income transaction and mark it paid. The
+  // new transaction lands in `transactions` so the ledger + summary update.
+  markReceivablePaid: (id: string) => Promise<void>;
+
   // The in / out / net for the month containing `date`, derived from state.
   summaryForMonth: (date: Date) => MonthlySummary;
+  // The still-unpaid "owed to me" entries + the total owed (integer cents).
+  outstandingReceivables: () => Receivable[];
+  totalOwedCents: () => number;
   // Per-category budget spend vs limit for the month containing `date`.
   budgetProgressForMonth: (date: Date) => BudgetProgress[];
   // Runway (savings / avg monthly burn) as of `date`, or null when not
@@ -106,6 +123,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   transactions: [],
   bills: [],
   budgets: [],
+  receivables: [],
   settings: null,
   isLoading: false,
   isCreating: false,
@@ -311,6 +329,71 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
     }
   },
 
+  fetchReceivables: async () => {
+    try {
+      const receivables = await FinanceRepository.getReceivables();
+      set({ receivables });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+  },
+
+  createReceivable: async (input) => {
+    try {
+      const created = await FinanceRepository.createReceivable(input);
+      set({ receivables: [created, ...get().receivables] });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+  },
+
+  updateReceivable: async (id, input) => {
+    const previous = get().receivables;
+    try {
+      const updated = await FinanceRepository.updateReceivable(id, input);
+      set({
+        receivables: get().receivables.map((receivable) =>
+          receivable.id === id ? updated : receivable,
+        ),
+      });
+    } catch (error) {
+      set({ receivables: previous, error: toUserMessage(error) });
+    }
+  },
+
+  deleteReceivable: async (id) => {
+    const previous = get().receivables;
+    set({
+      receivables: previous.filter((receivable) => receivable.id !== id),
+      error: null,
+    });
+    try {
+      await FinanceRepository.deleteReceivable(id);
+    } catch (error) {
+      set({ receivables: previous, error: toUserMessage(error) });
+    }
+  },
+
+  markReceivablePaid: async (id) => {
+    try {
+      const { receivable, transaction } =
+        await FinanceRepository.markReceivablePaid(id);
+      set({
+        receivables: get().receivables.map((existing) =>
+          existing.id === id ? receivable : existing,
+        ),
+        // The new income transaction lands in the ledger; dedupe in case a
+        // fetch already picked it up.
+        transactions: [
+          transaction,
+          ...get().transactions.filter((t) => t.id !== transaction.id),
+        ],
+      });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+  },
+
   summaryForMonth: (date) => monthlySummary(get().transactions, date),
   budgetProgressForMonth: (date) =>
     budgetProgressForMonth(get().transactions, get().budgets, date),
@@ -320,4 +403,6 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       get().settings?.currentSavingsCents ?? 0,
       date,
     ),
+  outstandingReceivables: () => outstandingReceivables(get().receivables),
+  totalOwedCents: () => totalOwedCents(get().receivables),
 }));

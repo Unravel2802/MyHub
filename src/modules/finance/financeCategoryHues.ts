@@ -10,6 +10,7 @@ export type FinanceCategoryKey =
   | "health"
   | "savings"
   | "stipend"
+  | "reimbursement"
   | "other_income"
   | "other";
 
@@ -23,6 +24,7 @@ export const FINANCE_CATEGORY_HUES: Record<FinanceCategoryKey, HueName> = {
   health: "rose",
   savings: "lime",
   stipend: "teal",
+  reimbursement: "teal", // income sibling of stipend; Codex may re-tune
   other_income: "cyan",
   other: "accent",
 };

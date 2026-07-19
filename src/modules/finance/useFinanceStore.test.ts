@@ -22,6 +22,11 @@ vi.mock("@/src/modules/finance/FinanceRepository", () => ({
   deleteBudget: vi.fn(),
   getSettings: vi.fn(),
   updateSavings: vi.fn(),
+  getReceivables: vi.fn(),
+  createReceivable: vi.fn(),
+  updateReceivable: vi.fn(),
+  deleteReceivable: vi.fn(),
+  markReceivablePaid: vi.fn(),
 }));
 
 import * as FinanceRepository from "@/src/modules/finance/FinanceRepository";
@@ -92,6 +97,7 @@ beforeEach(() => {
     transactions: [],
     bills: [],
     budgets: [],
+    receivables: [],
     settings: null,
     isLoading: false,
     isCreating: false,

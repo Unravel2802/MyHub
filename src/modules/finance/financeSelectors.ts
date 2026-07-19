@@ -7,6 +7,7 @@ import type {
   FinanceTransaction,
   MonthlySummary,
   MonthSpend,
+  Receivable,
   RecurringBill,
 } from "@/src/modules/finance/types";
 
@@ -111,4 +112,38 @@ export function budgetProgressForMonth(
       spentCents: spentByCategory.get(budget.category) ?? 0,
     }))
     .sort((a, b) => a.category.localeCompare(b.category));
+}
+
+// The still-outstanding "owed to me" entries (status not yet paid), soonest due
+// first (undated last), then by person. Drives the "Owed to me" panel and the
+// "you forgot to request" nudge (filter these by status === "not_requested").
+// Soft-deleted excluded.
+export function outstandingReceivables(
+  receivables: Receivable[],
+): Receivable[] {
+  return receivables
+    .filter(
+      (receivable) =>
+        receivable.deletedAt === null && receivable.status !== "paid",
+    )
+    .sort((a, b) => {
+      if (a.dueOn && b.dueOn) return a.dueOn.localeCompare(b.dueOn);
+      if (a.dueOn) return -1;
+      if (b.dueOn) return 1;
+      return a.person.localeCompare(b.person);
+    });
+}
+
+// Total still owed to you, in integer cents — the sum of every unpaid
+// receivable. This is NOT income (the money hasn't arrived); it's a headline
+// figure for the panel, deliberately separate from the ledger summary.
+export function totalOwedCents(receivables: Receivable[]): number {
+  return sumCents(
+    receivables
+      .filter(
+        (receivable) =>
+          receivable.deletedAt === null && receivable.status !== "paid",
+      )
+      .map((receivable) => receivable.amountCents),
+  );
 }

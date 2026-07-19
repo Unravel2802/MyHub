@@ -22,6 +22,7 @@ export const FINANCE_CATEGORIES: FinanceCategory[] = [
   { key: "health", label: "Health", kind: "expense" },
   { key: "savings", label: "Savings", kind: "expense" },
   { key: "stipend", label: "Internship / salary", kind: "income" },
+  { key: "reimbursement", label: "Reimbursement", kind: "income" }, // money owed to you, once paid
   { key: "other_income", label: "Other income", kind: "income" },
   { key: "other", label: "Other", kind: "both" },
 ];

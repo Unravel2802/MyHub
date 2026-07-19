@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { supabase } from "@/src/lib/supabaseClient";
 import {
   billOccurrenceKey,
@@ -7,6 +8,7 @@ import type {
   Budget,
   FinanceSettings,
   FinanceTransaction,
+  Receivable,
   RecurringBill,
   TransactionKind,
 } from "@/src/modules/finance/types";
@@ -385,4 +387,154 @@ export async function updateSavings(
 
   if (error) throw error;
   return { currentSavingsCents: data.current_savings_cents };
+}
+
+// --- Receivables ("Owed to me") --------------------------------------------
+
+interface ReceivableRow {
+  id: string;
+  person: string;
+  amount_cents: number;
+  reason: string | null;
+  due_on: string | null;
+  status: Receivable["status"];
+  transaction_id: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function fromReceivableRow(row: ReceivableRow): Receivable {
+  return {
+    id: row.id,
+    person: row.person,
+    amountCents: row.amount_cents,
+    reason: row.reason,
+    dueOn: row.due_on,
+    status: row.status,
+    transactionId: row.transaction_id,
+    deletedAt: row.deleted_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface CreateReceivableInput {
+  person: string;
+  amountCents: number;
+  reason?: string | null;
+  dueOn?: string | null;
+  status?: Receivable["status"];
+}
+
+export type UpdateReceivableInput = Partial<CreateReceivableInput>;
+
+export async function getReceivables(): Promise<Receivable[]> {
+  const { data, error } = await supabase
+    .from("finance_receivables")
+    .select("*")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data.map(fromReceivableRow);
+}
+
+export async function createReceivable(
+  input: CreateReceivableInput,
+): Promise<Receivable> {
+  const { data, error } = await supabase
+    .from("finance_receivables")
+    .insert({
+      person: input.person,
+      amount_cents: input.amountCents,
+      reason: input.reason ?? null,
+      due_on: input.dueOn ?? null,
+      status: input.status ?? "not_requested",
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return fromReceivableRow(data);
+}
+
+export async function updateReceivable(
+  id: string,
+  input: UpdateReceivableInput,
+): Promise<Receivable> {
+  const patch: Record<string, unknown> = {};
+  if (input.person !== undefined) patch.person = input.person;
+  if (input.amountCents !== undefined) patch.amount_cents = input.amountCents;
+  if (input.reason !== undefined) patch.reason = input.reason ?? null;
+  if (input.dueOn !== undefined) patch.due_on = input.dueOn ?? null;
+  if (input.status !== undefined) patch.status = input.status;
+
+  const { data, error } = await supabase
+    .from("finance_receivables")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return fromReceivableRow(data);
+}
+
+export async function deleteReceivable(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("finance_receivables")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+// Convert a receivable to received money: create a SETTLED income transaction
+// (category "reimbursement", dated today) and mark the receivable paid, linked
+// to that transaction. This is the one place a receivable becomes income —
+// until now it was deliberately NOT counted, so income can't be inflated by
+// money that hasn't arrived. Returns both so the store updates the ledger and
+// the panel in one go. Guards against double-conversion: a receivable already
+// paid is returned as-is with its existing transaction, never a second one.
+export async function markReceivablePaid(
+  id: string,
+): Promise<{ receivable: Receivable; transaction: FinanceTransaction }> {
+  const { data: recRow, error: recError } = await supabase
+    .from("finance_receivables")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (recError) throw recError;
+  const existing = fromReceivableRow(recRow);
+
+  if (existing.status === "paid" && existing.transactionId) {
+    const { data: txnRow, error: txnError } = await supabase
+      .from("finance_transactions")
+      .select("*")
+      .eq("id", existing.transactionId)
+      .single();
+    if (txnError) throw txnError;
+    return { receivable: existing, transaction: fromRow(txnRow) };
+  }
+
+  const transaction = await createTransaction({
+    kind: "income",
+    amountCents: existing.amountCents,
+    category: "reimbursement",
+    occurredOn: format(new Date(), "yyyy-MM-dd"),
+    note: existing.reason
+      ? `${existing.person}: ${existing.reason}`
+      : existing.person,
+  });
+
+  const { data: updated, error: updateError } = await supabase
+    .from("finance_receivables")
+    .update({ status: "paid", transaction_id: transaction.id })
+    .eq("id", id)
+    .select()
+    .single();
+  if (updateError) throw updateError;
+
+  return { receivable: fromReceivableRow(updated), transaction };
 }

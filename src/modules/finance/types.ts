@@ -87,3 +87,21 @@ export interface Runway {
   months: number;
   avgMonthlyBurnCents: number;
 }
+
+export type ReceivableStatus = "not_requested" | "requested" | "paid";
+
+// Money someone owes you ("Owed to me"). NOT a transaction until paid — see
+// migration 0023. Marking it paid creates a settled income transaction and
+// links it via `transactionId`.
+export interface Receivable {
+  id: string;
+  person: string;
+  amountCents: number;
+  reason: string | null;
+  dueOn: string | null; // yyyy-MM-dd, when to request / expect it
+  status: ReceivableStatus;
+  transactionId: string | null;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

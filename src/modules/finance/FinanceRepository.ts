@@ -4,6 +4,8 @@ import {
   missingBillInstances,
 } from "@/src/modules/finance/billRecurrence";
 import type {
+  Budget,
+  FinanceSettings,
   FinanceTransaction,
   RecurringBill,
   TransactionKind,
@@ -292,4 +294,95 @@ export async function regenerateMonthlyBillInstances(
   }
 
   return created;
+}
+
+// --- Budgets (Phase 3) -----------------------------------------------------
+
+interface BudgetRow {
+  id: string;
+  category: string;
+  amount_cents: number;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function fromBudgetRow(row: BudgetRow): Budget {
+  return {
+    id: row.id,
+    category: row.category,
+    amountCents: row.amount_cents,
+    deletedAt: row.deleted_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getBudgets(): Promise<Budget[]> {
+  const { data, error } = await supabase
+    .from("finance_budgets")
+    .select("*")
+    .is("deleted_at", null)
+    .order("category", { ascending: true });
+
+  if (error) throw error;
+  return data.map(fromBudgetRow);
+}
+
+// One budget per category. Upsert on the PLAIN unique (category) constraint
+// (migration 0021), clearing deleted_at so a previously-removed budget for the
+// same category is revived rather than colliding.
+export async function upsertBudget(
+  category: string,
+  amountCents: number,
+): Promise<Budget> {
+  const { data, error } = await supabase
+    .from("finance_budgets")
+    .upsert(
+      { category, amount_cents: amountCents, deleted_at: null },
+      { onConflict: "category" },
+    )
+    .select()
+    .single();
+
+  if (error) throw error;
+  return fromBudgetRow(data);
+}
+
+export async function deleteBudget(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("finance_budgets")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+// --- Settings (Phase 3) ----------------------------------------------------
+
+export async function getSettings(): Promise<FinanceSettings> {
+  const { data, error } = await supabase
+    .from("finance_settings")
+    .select("current_savings_cents")
+    .maybeSingle();
+
+  if (error) throw error;
+  return { currentSavingsCents: data?.current_savings_cents ?? 0 };
+}
+
+// Single-row upsert on the fixed `id = true` key (migration 0022).
+export async function updateSavings(
+  currentSavingsCents: number,
+): Promise<FinanceSettings> {
+  const { data, error } = await supabase
+    .from("finance_settings")
+    .upsert(
+      { id: true, current_savings_cents: currentSavingsCents },
+      { onConflict: "id" },
+    )
+    .select("current_savings_cents")
+    .single();
+
+  if (error) throw error;
+  return { currentSavingsCents: data.current_savings_cents };
 }

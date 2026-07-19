@@ -57,3 +57,33 @@ export interface BillDue {
   amountCents: number;
   occurredOn: string;
 }
+
+// A standing monthly spending limit for one category (Phase 3).
+export interface Budget {
+  id: string;
+  category: string;
+  amountCents: number;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// A budget with this month's settled spend against its limit, in integer cents.
+// The UI derives the progress ratio (spent / limit) from these.
+export interface BudgetProgress {
+  category: string;
+  limitCents: number;
+  spentCents: number;
+}
+
+// The single-row settings (Phase 3). Just the savings figure runway needs.
+export interface FinanceSettings {
+  currentSavingsCents: number;
+}
+
+// The runway projection: how many months current savings last at the recent
+// average monthly burn. `months` is a raw number the UI formats.
+export interface Runway {
+  months: number;
+  avgMonthlyBurnCents: number;
+}

@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   billsDueThisMonth,
+  budgetProgressForMonth,
   monthlySummary,
   monthToDateSpend,
 } from "@/src/modules/finance/financeSelectors";
 import type {
+  Budget,
   FinanceTransaction,
   RecurringBill,
 } from "@/src/modules/finance/types";
@@ -153,5 +155,49 @@ describe("monthToDateSpend", () => {
       jul,
     );
     expect(spend).toEqual({ spentCents: 120000, netCents: 180000 });
+  });
+});
+
+describe("budgetProgressForMonth", () => {
+  const jul = new Date(2026, 6, 15);
+
+  function budget(category: string, amountCents: number): Budget {
+    return {
+      id: category,
+      category,
+      amountCents,
+      deletedAt: null,
+      createdAt: "2026-07-01T00:00:00.000Z",
+      updatedAt: "2026-07-01T00:00:00.000Z",
+    };
+  }
+
+  it("sums settled expenses per budgeted category for the month", () => {
+    const progress = budgetProgressForMonth(
+      [
+        txn({ category: "groceries", amountCents: 4000 }),
+        txn({ category: "groceries", amountCents: 3000 }),
+        // unpaid bill instance — not yet spent
+        txn({
+          category: "rent",
+          amountCents: 120000,
+          paidAt: null,
+          billId: "b",
+        }),
+        // income and other-month rows don't count
+        txn({ category: "groceries", kind: "income", amountCents: 9999 }),
+        txn({
+          category: "groceries",
+          amountCents: 9999,
+          occurredOn: "2026-06-30",
+        }),
+      ],
+      [budget("groceries", 50000), budget("rent", 120000)],
+      jul,
+    );
+    expect(progress).toEqual([
+      { category: "groceries", limitCents: 50000, spentCents: 7000 },
+      { category: "rent", limitCents: 120000, spentCents: 0 },
+    ]);
   });
 });

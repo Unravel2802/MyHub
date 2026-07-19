@@ -15,6 +15,11 @@ vi.mock("@/src/modules/finance/FinanceRepository", () => ({
   createBill: vi.fn(),
   updateBill: vi.fn(),
   deleteBill: vi.fn(),
+  getBudgets: vi.fn(),
+  upsertBudget: vi.fn(),
+  deleteBudget: vi.fn(),
+  getSettings: vi.fn(),
+  updateSavings: vi.fn(),
 }));
 
 import * as FinanceRepository from "@/src/modules/finance/FinanceRepository";
@@ -73,6 +78,8 @@ beforeEach(() => {
   useFinanceStore.setState({
     transactions: [],
     bills: [],
+    budgets: [],
+    settings: null,
     isLoading: false,
     isCreating: false,
     pendingIds: new Set(),

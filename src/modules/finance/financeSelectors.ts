@@ -2,6 +2,8 @@ import { isInMonth } from "@/src/modules/finance/financePeriods";
 import { sumCents } from "@/src/modules/finance/money";
 import type {
   BillDue,
+  Budget,
+  BudgetProgress,
   FinanceTransaction,
   MonthlySummary,
   MonthSpend,
@@ -75,4 +77,38 @@ export function monthToDateSpend(
 ): MonthSpend {
   const summary = monthlySummary(transactions, date);
   return { spentCents: summary.expenseCents, netCents: summary.netCents };
+}
+
+// This month's settled spend per budgeted category against its limit. Only
+// SETTLED expenses count (an unpaid due bill isn't spent yet), same rule as the
+// summary. Soft-deleted budgets and transactions are excluded.
+export function budgetProgressForMonth(
+  transactions: FinanceTransaction[],
+  budgets: Budget[],
+  date: Date,
+): BudgetProgress[] {
+  const spentByCategory = new Map<string, number>();
+  for (const transaction of transactions) {
+    if (
+      transaction.deletedAt === null &&
+      transaction.kind === "expense" &&
+      transaction.paidAt !== null &&
+      isInMonth(transaction.occurredOn, date)
+    ) {
+      spentByCategory.set(
+        transaction.category,
+        (spentByCategory.get(transaction.category) ?? 0) +
+          transaction.amountCents,
+      );
+    }
+  }
+
+  return budgets
+    .filter((budget) => budget.deletedAt === null)
+    .map((budget) => ({
+      category: budget.category,
+      limitCents: budget.amountCents,
+      spentCents: spentByCategory.get(budget.category) ?? 0,
+    }))
+    .sort((a, b) => a.category.localeCompare(b.category));
 }

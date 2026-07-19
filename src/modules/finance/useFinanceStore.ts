@@ -6,11 +6,19 @@ import type {
   UpdateBillInput,
   UpdateTransactionInput,
 } from "@/src/modules/finance/FinanceRepository";
-import { monthlySummary } from "@/src/modules/finance/financeSelectors";
+import {
+  budgetProgressForMonth,
+  monthlySummary,
+} from "@/src/modules/finance/financeSelectors";
+import { computeRunway } from "@/src/modules/finance/runway";
 import type {
+  Budget,
+  BudgetProgress,
+  FinanceSettings,
   FinanceTransaction,
   MonthlySummary,
   RecurringBill,
+  Runway,
 } from "@/src/modules/finance/types";
 
 // Published store for Personal Finance (docs/finance-plan.md, Phase 1). One
@@ -21,6 +29,8 @@ import type {
 export interface FinanceStore {
   transactions: FinanceTransaction[];
   bills: RecurringBill[];
+  budgets: Budget[];
+  settings: FinanceSettings | null;
   isLoading: boolean;
   isCreating: boolean;
   pendingIds: Set<string>;
@@ -43,8 +53,20 @@ export interface FinanceStore {
   updateBill: (id: string, input: UpdateBillInput) => Promise<void>;
   deleteBill: (id: string) => Promise<void>;
 
+  fetchBudgets: () => Promise<void>;
+  upsertBudget: (category: string, amountCents: number) => Promise<void>;
+  deleteBudget: (id: string) => Promise<void>;
+
+  fetchSettings: () => Promise<void>;
+  updateSavings: (currentSavingsCents: number) => Promise<void>;
+
   // The in / out / net for the month containing `date`, derived from state.
   summaryForMonth: (date: Date) => MonthlySummary;
+  // Per-category budget spend vs limit for the month containing `date`.
+  budgetProgressForMonth: (date: Date) => BudgetProgress[];
+  // Runway (savings / avg monthly burn) as of `date`, or null when not
+  // depleting savings / no data.
+  runwayFor: (date: Date) => Runway | null;
 }
 
 const FAILURE_MESSAGE = "Something went wrong, please try again later.";
@@ -83,6 +105,8 @@ function optimisticPatch(
 export const useFinanceStore = create<FinanceStore>((set, get) => ({
   transactions: [],
   bills: [],
+  budgets: [],
+  settings: null,
   isLoading: false,
   isCreating: false,
   pendingIds: new Set(),
@@ -232,5 +256,68 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
     }
   },
 
+  fetchBudgets: async () => {
+    try {
+      const budgets = await FinanceRepository.getBudgets();
+      set({ budgets });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+  },
+
+  upsertBudget: async (category, amountCents) => {
+    try {
+      const saved = await FinanceRepository.upsertBudget(category, amountCents);
+      const others = get().budgets.filter(
+        (budget) => budget.category !== category,
+      );
+      set({ budgets: [...others, saved] });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+  },
+
+  deleteBudget: async (id) => {
+    const previous = get().budgets;
+    set({
+      budgets: previous.filter((budget) => budget.id !== id),
+      error: null,
+    });
+    try {
+      await FinanceRepository.deleteBudget(id);
+    } catch (error) {
+      set({ budgets: previous, error: toUserMessage(error) });
+    }
+  },
+
+  fetchSettings: async () => {
+    try {
+      const settings = await FinanceRepository.getSettings();
+      set({ settings });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+  },
+
+  updateSavings: async (currentSavingsCents) => {
+    const previous = get().settings;
+    set({ settings: { currentSavingsCents }, error: null });
+    try {
+      const settings =
+        await FinanceRepository.updateSavings(currentSavingsCents);
+      set({ settings });
+    } catch (error) {
+      set({ settings: previous, error: toUserMessage(error) });
+    }
+  },
+
   summaryForMonth: (date) => monthlySummary(get().transactions, date),
+  budgetProgressForMonth: (date) =>
+    budgetProgressForMonth(get().transactions, get().budgets, date),
+  runwayFor: (date) =>
+    computeRunway(
+      get().transactions,
+      get().settings?.currentSavingsCents ?? 0,
+      date,
+    ),
 }));

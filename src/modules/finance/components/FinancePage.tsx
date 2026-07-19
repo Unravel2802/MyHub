@@ -14,7 +14,13 @@ import {
   Trash2,
   Wallet,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { AppShell } from "@/src/components/AppShell";
 import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
@@ -36,6 +42,13 @@ import {
 import { isInMonth } from "@/src/modules/finance/financePeriods";
 import { formatCents } from "@/src/modules/finance/money";
 import { FinanceTransactionDialog } from "@/src/modules/finance/components/FinanceTransactionDialog";
+import { FinanceTransactionTable } from "@/src/modules/finance/components/FinanceTransactionTable";
+import {
+  getFinanceLedgerView,
+  getServerFinanceLedgerView,
+  setFinanceLedgerView,
+  subscribeFinanceLedgerView,
+} from "@/src/modules/finance/components/financeLedgerView";
 import { BudgetDialog } from "@/src/modules/finance/components/BudgetDialog";
 import { RecurringBillDialog } from "@/src/modules/finance/components/RecurringBillDialog";
 import { SavingsEditor } from "@/src/modules/finance/components/SavingsEditor";
@@ -63,6 +76,11 @@ export function FinancePage() {
     null,
   );
   const [dialogBudget, setDialogBudget] = useState<Budget | null | "new">(null);
+  const ledgerView = useSyncExternalStore(
+    subscribeFinanceLedgerView,
+    getFinanceLedgerView,
+    getServerFinanceLedgerView,
+  );
   const { fetchBills, fetchBudgets, fetchSettings, fetchTransactions } = store;
 
   useEffect(() => {
@@ -191,7 +209,7 @@ export function FinancePage() {
 
   return (
     <AppShell activeHref="/finance" title="Finances">
-      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      <section className="page-fade min-w-0 max-w-full overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
         <PageHeader
           actions={
             <div className="flex flex-wrap gap-2">
@@ -517,10 +535,32 @@ export function FinancePage() {
           </Panel>
         </div>
 
-        <div id="finance-ledger">
+        <div className="min-w-0 max-w-full" id="finance-ledger">
           <Panel
-            aside={<Badge tone="neutral">{monthTransactions.length}</Badge>}
+            aside={
+              <div className="flex items-center gap-2">
+                <Badge tone="neutral">{monthTransactions.length}</Badge>
+                <div
+                  aria-label="Ledger view"
+                  className="inline-flex rounded-md border border-input bg-surface p-0.5"
+                  role="group"
+                >
+                  {(["cards", "table"] as const).map((view) => (
+                    <button
+                      aria-pressed={ledgerView === view}
+                      className={`rounded px-2.5 py-1 text-xs font-medium capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ${ledgerView === view ? "bg-primary text-primary-foreground" : "text-muted hover:bg-surface-subtle hover:text-foreground"}`}
+                      key={view}
+                      onClick={() => setFinanceLedgerView(view)}
+                      type="button"
+                    >
+                      {view}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            }
             description="Newest transactions appear first."
+            className="min-w-0 max-w-full overflow-x-hidden"
             overline={format(selectedMonth, "MMMM yyyy")}
             title="Transactions"
           >
@@ -546,7 +586,7 @@ export function FinancePage() {
                 icon={ReceiptText}
                 title="No transactions this month"
               />
-            ) : (
+            ) : ledgerView === "cards" ? (
               <ul className="grid gap-2">
                 {monthTransactions.map((transaction, index) => {
                   const pending = store.pendingIds.has(transaction.id);
@@ -640,6 +680,17 @@ export function FinancePage() {
                   );
                 })}
               </ul>
+            ) : (
+              <FinanceTransactionTable
+                billNames={billNames}
+                onDelete={confirmDelete}
+                onPayBill={(transactionId) => void store.payBill(transactionId)}
+                onUpdate={(id, input) =>
+                  void store.updateTransaction(id, input)
+                }
+                pendingIds={store.pendingIds}
+                transactions={monthTransactions}
+              />
             )}
           </Panel>
         </div>

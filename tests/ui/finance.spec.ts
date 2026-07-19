@@ -254,6 +254,11 @@ test("adds, edits, and deletes a transaction with live summary updates", async (
   await expect(
     page.getByRole("heading", { name: "Know where the month went" }),
   ).toBeVisible();
+  const ledgerView = page.getByRole("group", { name: "Ledger view" });
+  await expect(
+    ledgerView.getByRole("button", { name: "Table" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await ledgerView.getByRole("button", { name: "Cards" }).click();
 
   await page.getByRole("button", { name: "Add transaction" }).click();
   const dialog = page.getByRole("dialog", { name: "Add transaction" });
@@ -349,4 +354,58 @@ test("adds, edits, and deletes a transaction with live summary updates", async (
   await expect(
     page.getByText("$200.00 average monthly burn", { exact: true }),
   ).toBeVisible();
+
+  await page.getByRole("button", { name: "Add transaction" }).click();
+  const incomeDialog = page.getByRole("dialog", { name: "Add transaction" });
+  await incomeDialog.getByRole("button", { name: "Income" }).click();
+  await incomeDialog.getByLabel("Amount").fill("300");
+  await incomeDialog.getByLabel("Note").fill("Contract payment");
+  await incomeDialog.getByRole("button", { name: "Add transaction" }).click();
+  await expect(incomeDialog).toHaveCount(0);
+
+  await ledgerView.getByRole("button", { name: "Table" }).click();
+  const table = page.getByRole("table");
+  await expect(table).toBeVisible();
+
+  await table.getByRole("button", { name: "Amount", exact: true }).click();
+  const rows = table.locator("tbody tr");
+  await expect(rows.nth(0)).toContainText("Electricity");
+  await expect(rows.nth(1)).toContainText("Contract payment");
+
+  await table.getByRole("button", { name: "Amount", exact: true }).click();
+  await expect(rows.nth(0)).toContainText("Contract payment");
+  await expect(rows.nth(1)).toContainText("Electricity");
+
+  await table
+    .getByRole("button", { name: "Edit amount for Contract payment" })
+    .click();
+  const inlineAmount = table.getByLabel("Amount for Contract payment");
+  await inlineAmount.fill("400");
+  await inlineAmount.press("Enter");
+  await expect(page.getByText("$400.00", { exact: true })).toHaveCount(2);
+  await expect(page.getByText("$325.00", { exact: true })).toBeVisible();
+
+  await table
+    .getByRole("button", { name: "Edit amount for Contract payment" })
+    .click();
+  const invalidAmount = table.getByLabel("Amount for Contract payment");
+  await invalidAmount.fill("not an amount");
+  await invalidAmount.press("Enter");
+  await expect(
+    table.getByText("Enter a valid non-negative amount."),
+  ).toBeVisible();
+  await expect(invalidAmount).toBeVisible();
+  await invalidAmount.press("Escape");
+  await expect(
+    table.getByText("Enter a valid non-negative amount."),
+  ).toHaveCount(0);
+  await expect(page.getByText("$400.00", { exact: true })).toHaveCount(2);
+
+  await page.reload();
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect(
+    page
+      .getByRole("group", { name: "Ledger view" })
+      .getByRole("button", { name: "Table" }),
+  ).toHaveAttribute("aria-pressed", "true");
 });

@@ -7,7 +7,9 @@ import {
   ArrowRight,
   ArrowUpRight,
   CalendarClock,
+  ChartNoAxesColumnIncreasing,
   Pencil,
+  PiggyBank,
   ReceiptText,
   Trash2,
   Wallet,
@@ -19,10 +21,14 @@ import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { Panel } from "@/src/components/ui/Panel";
+import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
-import { FINANCE_CATEGORIES } from "@/src/modules/finance/financeCategories";
+import {
+  categoriesForKind,
+  FINANCE_CATEGORIES,
+} from "@/src/modules/finance/financeCategories";
 import {
   FINANCE_CATEGORY_HUES,
   type FinanceCategoryKey,
@@ -30,9 +36,12 @@ import {
 import { isInMonth } from "@/src/modules/finance/financePeriods";
 import { formatCents } from "@/src/modules/finance/money";
 import { FinanceTransactionDialog } from "@/src/modules/finance/components/FinanceTransactionDialog";
+import { BudgetDialog } from "@/src/modules/finance/components/BudgetDialog";
 import { RecurringBillDialog } from "@/src/modules/finance/components/RecurringBillDialog";
+import { SavingsEditor } from "@/src/modules/finance/components/SavingsEditor";
 import type { CreateTransactionInput } from "@/src/modules/finance/FinanceRepository";
 import type {
+  Budget,
   FinanceTransaction,
   RecurringBill,
 } from "@/src/modules/finance/types";
@@ -53,13 +62,19 @@ export function FinancePage() {
   const [dialogBill, setDialogBill] = useState<RecurringBill | null | "new">(
     null,
   );
-  const { fetchBills, fetchTransactions } = store;
+  const [dialogBudget, setDialogBudget] = useState<Budget | null | "new">(null);
+  const { fetchBills, fetchBudgets, fetchSettings, fetchTransactions } = store;
 
   useEffect(() => {
     if (fetched.current) return;
     fetched.current = true;
-    void Promise.all([fetchTransactions(), fetchBills()]);
-  }, [fetchBills, fetchTransactions]);
+    void Promise.all([
+      fetchTransactions(),
+      fetchBills(),
+      fetchBudgets(),
+      fetchSettings(),
+    ]);
+  }, [fetchBills, fetchBudgets, fetchSettings, fetchTransactions]);
 
   useEffect(() => {
     register("finance", [
@@ -119,10 +134,19 @@ export function FinancePage() {
   const editing =
     dialogTransaction && dialogTransaction !== "new" ? dialogTransaction : null;
   const editingBill = dialogBill && dialogBill !== "new" ? dialogBill : null;
+  const editingBudget =
+    dialogBudget && dialogBudget !== "new" ? dialogBudget : null;
   const billNames = useMemo(
     () => new Map(store.bills.map((bill) => [bill.id, bill.name])),
     [store.bills],
   );
+  const budgetProgress = store.budgetProgressForMonth(selectedMonth);
+  const runway = store.runwayFor(selectedMonth);
+  const expenseCategories = categoriesForKind("expense");
+  const firstUnbudgetedCategory = expenseCategories.find(
+    (category) =>
+      !store.budgets.some((budget) => budget.category === category.key),
+  )?.key;
 
   async function submitTransaction(input: CreateTransactionInput) {
     if (editing) {
@@ -155,6 +179,13 @@ export function FinancePage() {
       )
     ) {
       void store.deleteBill(bill.id);
+    }
+  }
+
+  function confirmRemoveBudget(budget: Budget) {
+    const label = CATEGORY_LABELS.get(budget.category) ?? budget.category;
+    if (window.confirm(`Remove the monthly ${label} budget?`)) {
+      void store.deleteBudget(budget.id);
     }
   }
 
@@ -353,6 +384,139 @@ export function FinancePage() {
           )}
         </Panel>
 
+        <div className="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(20rem,1fr)]">
+          <Panel
+            aside={
+              <button
+                className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
+                onClick={() => setDialogBudget("new")}
+                type="button"
+              >
+                Set budget
+              </button>
+            }
+            description={`Settled spending against standing limits for ${format(selectedMonth, "MMMM yyyy")}.`}
+            overline="Spending guardrails"
+            title="Monthly budgets"
+          >
+            {budgetProgress.length === 0 ? (
+              <EmptyState
+                action={
+                  <button
+                    className="text-hue-lime hover:underline"
+                    onClick={() => setDialogBudget("new")}
+                    type="button"
+                  >
+                    Set the first budget
+                  </button>
+                }
+                description="Choose an expense category and a monthly limit to start tracking progress."
+                icon={ChartNoAxesColumnIncreasing}
+                title="No budgets set"
+              />
+            ) : (
+              <ul className="grid gap-3">
+                {budgetProgress.map((progress, index) => {
+                  const budget = store.budgets.find(
+                    (item) => item.category === progress.category,
+                  );
+                  if (!budget) return null;
+                  const overageCents = Math.max(
+                    0,
+                    progress.spentCents - progress.limitCents,
+                  );
+                  const ratio =
+                    progress.limitCents > 0
+                      ? progress.spentCents / progress.limitCents
+                      : progress.spentCents > 0
+                        ? Number.POSITIVE_INFINITY
+                        : 0;
+                  const hue =
+                    FINANCE_CATEGORY_HUES[
+                      progress.category as FinanceCategoryKey
+                    ];
+                  return (
+                    <li
+                      className="fade-up rounded-lg border border-border bg-surface-subtle p-4"
+                      key={progress.category}
+                      style={{ ["--i" as string]: index }}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <Badge hue={hue}>
+                            {CATEGORY_LABELS.get(progress.category) ??
+                              progress.category}
+                          </Badge>
+                          <p className="mt-2 text-sm tabular-nums text-body">
+                            {formatCents(progress.spentCents)} spent of{" "}
+                            {formatCents(progress.limitCents)}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            className="rounded-md px-2 py-1 text-sm text-muted hover:bg-surface hover:text-foreground"
+                            onClick={() => setDialogBudget(budget)}
+                            type="button"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="rounded-md px-2 py-1 text-sm text-muted hover:bg-danger-surface hover:text-danger"
+                            onClick={() => confirmRemoveBudget(budget)}
+                            type="button"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <ProgressBar hue={hue} progress={ratio} />
+                      </div>
+                      <p
+                        className={`mt-2 text-xs font-medium ${overageCents > 0 ? "text-danger" : "text-muted"}`}
+                      >
+                        {overageCents > 0
+                          ? `Over by ${formatCents(overageCents)}`
+                          : `${Math.round(ratio * 100)}% used`}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+
+          <Panel
+            description="A projection from current savings and completed-month net burn."
+            overline="Cash cushion"
+            title="Runway"
+          >
+            <StatCard
+              hint={
+                runway
+                  ? `${formatCents(runway.avgMonthlyBurnCents)} average monthly burn`
+                  : "No completed-month burn to project."
+              }
+              hue={runway && runway.months > 0 ? "lime" : undefined}
+              label="Estimated runway"
+              value={runway ? `${runway.months.toFixed(1)} months` : "—"}
+            />
+            <div className="mt-4 rounded-lg border border-border bg-surface-subtle p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <PiggyBank aria-hidden="true" className="size-5 text-muted" />
+                <p className="font-medium text-foreground">Savings balance</p>
+              </div>
+              <SavingsEditor
+                currentSavingsCents={
+                  store.settings?.currentSavingsCents ?? null
+                }
+                key={store.settings?.currentSavingsCents ?? "loading"}
+                onSubmit={store.updateSavings}
+              />
+            </div>
+          </Panel>
+        </div>
+
         <div id="finance-ledger">
           <Panel
             aside={<Badge tone="neutral">{monthTransactions.length}</Badge>}
@@ -498,6 +662,15 @@ export function FinancePage() {
             key={editingBill?.id ?? "new"}
             onClose={() => setDialogBill(null)}
             onSubmit={submitBill}
+          />
+        ) : null}
+        {dialogBudget ? (
+          <BudgetDialog
+            budget={editingBudget}
+            initialCategory={firstUnbudgetedCategory}
+            key={editingBudget?.id ?? "new"}
+            onClose={() => setDialogBudget(null)}
+            onSubmit={store.upsertBudget}
           />
         ) : null}
       </section>

@@ -28,18 +28,118 @@ type BillRow = {
   updated_at: string;
 };
 
+type BudgetRow = {
+  id: string;
+  category: string;
+  amount_cents: number;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 function mockFinance(page: Page) {
-  const rows: FinanceRow[] = [];
+  const historicalDate = format(addMonths(new Date(), -2), "yyyy-MM-dd");
+  const historicalTimestamp = new Date().toISOString();
+  const rows: FinanceRow[] = [
+    {
+      id: "historical-burn",
+      kind: "expense",
+      amount_cents: 20000,
+      category: "rent",
+      occurred_on: historicalDate,
+      note: "Historical rent",
+      bill_id: null,
+      paid_at: historicalTimestamp,
+      deleted_at: null,
+      created_at: historicalTimestamp,
+      updated_at: historicalTimestamp,
+    },
+  ];
   const bills: BillRow[] = [];
+  const budgets: BudgetRow[] = [];
+  let savingsCents = 0;
   let sequence = 0;
 
   return page.route(
-    /\/rest\/v1\/(finance_transactions|recurring_bills)/,
+    /\/rest\/v1\/(finance_transactions|recurring_bills|finance_budgets|finance_settings)/,
     async (route) => {
       const request = route.request();
       const url = new URL(request.url());
       const table = url.pathname.split("/").pop();
       const now = new Date().toISOString();
+
+      if (table === "finance_budgets") {
+        if (request.method() === "GET") {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(
+              budgets.filter((budget) => !budget.deleted_at),
+            ),
+          });
+          return;
+        }
+
+        if (request.method() === "POST") {
+          const input = request.postDataJSON() as Partial<BudgetRow>;
+          const existing = budgets.find(
+            (budget) => budget.category === input.category,
+          );
+          const budget: BudgetRow = existing ?? {
+            id: `budget-${++sequence}`,
+            category: input.category ?? "other",
+            amount_cents: 0,
+            deleted_at: null,
+            created_at: now,
+            updated_at: now,
+          };
+          Object.assign(budget, input, { deleted_at: null, updated_at: now });
+          if (!existing) budgets.push(budget);
+          await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            body: JSON.stringify(budget),
+          });
+          return;
+        }
+
+        if (request.method() === "PATCH") {
+          const id = url.searchParams.get("id")?.replace("eq.", "");
+          const input = request.postDataJSON() as Partial<BudgetRow>;
+          const budget = budgets.find((item) => item.id === id);
+          if (!budget) {
+            await route.fulfill({ status: 404, body: "{}" });
+            return;
+          }
+          Object.assign(budget, input, { updated_at: now });
+          await route.fulfill({ status: 204, body: "" });
+          return;
+        }
+      }
+
+      if (table === "finance_settings") {
+        if (request.method() === "GET") {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ current_savings_cents: savingsCents }),
+          });
+          return;
+        }
+
+        if (request.method() === "POST") {
+          const input = request.postDataJSON() as {
+            current_savings_cents?: number;
+          };
+          savingsCents = input.current_savings_cents ?? 0;
+          await route.fulfill({
+            status: 201,
+            contentType: "application/json",
+            body: JSON.stringify({ current_savings_cents: savingsCents }),
+          });
+          return;
+        }
+      }
 
       if (table === "recurring_bills") {
         if (request.method() === "GET") {
@@ -227,4 +327,26 @@ test("adds, edits, and deletes a transaction with live summary updates", async (
   await expect(page.getByRole("button", { name: "Mark paid" })).toHaveCount(0);
   await expect(page.getByText("$75.00", { exact: true })).toHaveCount(2);
   await expect(page.getByText("-$75.00", { exact: true })).toHaveCount(2);
+
+  await page.getByRole("button", { name: "Set budget" }).click();
+  const budgetDialog = page.getByRole("dialog", { name: "Set a budget" });
+  await budgetDialog.getByLabel("Category").selectOption("utilities");
+  await budgetDialog.getByLabel("Monthly limit").fill("bad limit");
+  await budgetDialog.getByRole("button", { name: "Set budget" }).click();
+  await expect(
+    budgetDialog.getByText("Enter a valid non-negative amount."),
+  ).toBeVisible();
+
+  await budgetDialog.getByLabel("Monthly limit").fill("50");
+  await budgetDialog.getByRole("button", { name: "Set budget" }).click();
+  await expect(budgetDialog).toHaveCount(0);
+  await expect(page.getByText("$75.00 spent of $50.00")).toBeVisible();
+  await expect(page.getByText("Over by $25.00")).toBeVisible();
+
+  await page.getByLabel("Current savings").fill("1000");
+  await page.getByRole("button", { name: "Update savings" }).click();
+  await expect(page.getByText("5.0 months", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("$200.00 average monthly burn", { exact: true }),
+  ).toBeVisible();
 });

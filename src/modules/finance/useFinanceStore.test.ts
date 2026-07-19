@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
+  Budget,
+  FinanceSettings,
   FinanceTransaction,
   RecurringBill,
 } from "@/src/modules/finance/types";
@@ -55,6 +57,17 @@ function bill(
     category: overrides.category ?? "rent",
     dayOfMonth: overrides.dayOfMonth ?? 1,
     active: overrides.active ?? true,
+    deletedAt: overrides.deletedAt ?? null,
+    createdAt: overrides.createdAt ?? "2026-07-19T00:00:00.000Z",
+    updatedAt: overrides.updatedAt ?? "2026-07-19T00:00:00.000Z",
+  };
+}
+
+function budget(overrides: Partial<Budget> & { id: string }): Budget {
+  return {
+    id: overrides.id,
+    category: overrides.category ?? "groceries",
+    amountCents: overrides.amountCents ?? 50000,
     deletedAt: overrides.deletedAt ?? null,
     createdAt: overrides.createdAt ?? "2026-07-19T00:00:00.000Z",
     updatedAt: overrides.updatedAt ?? "2026-07-19T00:00:00.000Z",
@@ -294,6 +307,75 @@ describe("useFinanceStore", () => {
 
     expect(useFinanceStore.getState().transactions).toEqual([due]);
     expect(useFinanceStore.getState().pendingIds.has(due.id)).toBe(false);
+    expect(useFinanceStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
+  });
+
+  it("fetches and upserts monthly budgets by category", async () => {
+    const groceries = budget({ id: "groceries" });
+    repository.getBudgets.mockResolvedValueOnce([groceries]);
+
+    await useFinanceStore.getState().fetchBudgets();
+    expect(useFinanceStore.getState().budgets).toEqual([groceries]);
+
+    const updated = budget({ id: "groceries", amountCents: 75000 });
+    repository.upsertBudget.mockResolvedValueOnce(updated);
+    await useFinanceStore.getState().upsertBudget("groceries", 75000);
+    expect(useFinanceStore.getState().budgets).toEqual([updated]);
+
+    const rent = budget({
+      id: "rent",
+      category: "rent",
+      amountCents: 120000,
+    });
+    repository.upsertBudget.mockResolvedValueOnce(rent);
+    await useFinanceStore.getState().upsertBudget("rent", 120000);
+    expect(useFinanceStore.getState().budgets).toEqual([updated, rent]);
+  });
+
+  it("optimistically removes a budget and rolls back on failure", async () => {
+    const groceries = budget({ id: "groceries" });
+    const pending = deferred<void>();
+    useFinanceStore.setState({ budgets: [groceries] });
+    repository.deleteBudget.mockReturnValueOnce(pending.promise);
+
+    const request = useFinanceStore.getState().deleteBudget(groceries.id);
+    expect(useFinanceStore.getState().budgets).toEqual([]);
+    pending.resolve();
+    await request;
+
+    useFinanceStore.setState({ budgets: [groceries], error: null });
+    repository.deleteBudget.mockRejectedValueOnce(new Error("delete failed"));
+    await useFinanceStore.getState().deleteBudget(groceries.id);
+
+    expect(useFinanceStore.getState().budgets).toEqual([groceries]);
+    expect(useFinanceStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
+  });
+
+  it("fetches savings and rolls an optimistic update back on failure", async () => {
+    const initial: FinanceSettings = { currentSavingsCents: 100000 };
+    repository.getSettings.mockResolvedValueOnce(initial);
+    await useFinanceStore.getState().fetchSettings();
+    expect(useFinanceStore.getState().settings).toEqual(initial);
+
+    const saved: FinanceSettings = { currentSavingsCents: 250000 };
+    const pending = deferred<FinanceSettings>();
+    repository.updateSavings.mockReturnValueOnce(pending.promise);
+    const request = useFinanceStore.getState().updateSavings(250000);
+    expect(useFinanceStore.getState().settings).toEqual({
+      currentSavingsCents: 250000,
+    });
+    pending.resolve(saved);
+    await request;
+    expect(useFinanceStore.getState().settings).toEqual(saved);
+
+    useFinanceStore.setState({ settings: initial, error: null });
+    repository.updateSavings.mockRejectedValueOnce(new Error("save failed"));
+    await useFinanceStore.getState().updateSavings(999999);
+    expect(useFinanceStore.getState().settings).toEqual(initial);
     expect(useFinanceStore.getState().error).toBe(
       "Something went wrong, please try again later.",
     );

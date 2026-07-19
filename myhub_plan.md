@@ -22,18 +22,21 @@ manufacture learning exercises.
 
 ## Status at a Glance
 
-| Wave                          | Status                                     | Scope                                                                                                                                                                                                                                  |
-| ----------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Wave 1 — MVP**              | ✅ **Done** — `98d3ed8`                    | Task Engine, Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard                                                                                                                                                          |
-| **Wave 2 — Momentum**         | ✅ **Done** — all 8 phases shipped         | Shared AppShell, task completion timestamps, Prep depth (mock subtypes, resume deep-dive, §11.3 allocation), CRM depth (notes, rejection nudge, funnel), **streaks + achievements**, weekly review ritual, auth + RLS, offer evaluator |
-| **Wave 3 — Frontend refresh** | ✅ **Done** — see `docs/visual-refresh.md` | "Premium developer tool" visual system: zinc/indigo tokens, WCAG AA contrast, focus ring, hero type, motion, IA flip (data-first), presentational/container split, mobile nav, a11y sweep                                              |
+| Wave                          | Status                                      | Scope                                                                                                                                                                                                                                  |
+| ----------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Wave 1 — MVP**              | ✅ **Done** — `98d3ed8`                     | Task Engine, Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard                                                                                                                                                          |
+| **Wave 2 — Momentum**         | ✅ **Done** — all 8 phases shipped          | Shared AppShell, task completion timestamps, Prep depth (mock subtypes, resume deep-dive, §11.3 allocation), CRM depth (notes, rejection nudge, funnel), **streaks + achievements**, weekly review ritual, auth + RLS, offer evaluator |
+| **Wave 3 — Frontend refresh** | ✅ **Done** — see `docs/visual-refresh.md`  | "Premium developer tool" visual system: zinc/indigo tokens, WCAG AA contrast, focus ring, hero type, motion, IA flip (data-first), presentational/container split, mobile nav, a11y sweep                                              |
+| **Wave 4 — Frontend upgrade** | ✅ **Done** — see `docs/wave4.md`           | Design-system cleanup (single-source hue classes), selective shadcn adoption + `cn()` + lucide icons, motion polish, command-palette rebuild (fuzzy + recents), Knowledge Base link editor, global keyboard shortcuts                  |
+| **Personal Finance**          | 📋 **Planned** — see `docs/finance-plan.md` | Net-new module (outside the job-search roadmap): expense/income ledger, recurring bills (rent/utilities), per-category budgets, and a job-search runway metric. Dashboard surfaces: bills due + month-to-date spend                    |
 
-**Live state:** RLS enforcing (an unauthenticated client reads 0 rows), migrations `0001`–`0013`
-applied, single-user auth working. Gate: **233 unit / 57 E2E green.**
+**Live state:** RLS enforcing (an unauthenticated client reads 0 rows), migrations `0001`–`0018`
+applied, single-user auth working.
 
 Wave 1's design is in **Part A**. Wave 2's phase-by-phase plan is in **Part B** — kept as the
-record of what was built and why, not as a to-do list. Wave 3 (the frontend refresh) has its own
-document: `docs/visual-refresh.md`.
+record of what was built and why, not as a to-do list. Wave 3 (the frontend refresh), Wave 4 (the
+frontend upgrade), and the planned Personal Finance module each have their own document:
+`docs/visual-refresh.md`, `docs/wave4.md`, and `docs/finance-plan.md`.
 
 ---
 

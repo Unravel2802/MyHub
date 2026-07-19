@@ -29,6 +29,7 @@ vi.mock("@/src/modules/outreach/OutreachRepository", () => ({
 vi.mock("@/src/modules/finance/FinanceRepository", () => ({
   regenerateMonthlyBillInstances: vi.fn(),
   getTransactions: vi.fn(),
+  getBills: vi.fn(),
 }));
 
 let listeners: ((event: { type: string }) => void)[] = [];
@@ -185,6 +186,7 @@ beforeEach(() => {
   tasksRepo.regenerateWeeklyInstances.mockResolvedValue([]);
   financeRepo.regenerateMonthlyBillInstances.mockResolvedValue([]);
   financeRepo.getTransactions.mockResolvedValue([]);
+  financeRepo.getBills.mockResolvedValue([]);
 });
 
 describe("useDashboardStore", () => {

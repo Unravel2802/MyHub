@@ -1,7 +1,9 @@
 import { expect, test } from "./fixtures";
 import type { Page } from "@playwright/test";
+import { format } from "date-fns";
 
 const timestamp = "2026-07-13T08:00:00.000Z";
+const today = format(new Date(), "yyyy-MM-dd");
 
 async function mockDashboard(page: Page) {
   await page.route("**/rest/v1/*", async (route) => {
@@ -120,7 +122,49 @@ async function mockDashboard(page: Page) {
                         updated_at: timestamp,
                       },
                     ]
-                  : [];
+                  : table === "finance_transactions"
+                    ? [
+                        {
+                          id: "bill-due",
+                          kind: "expense",
+                          amount_cents: 7500,
+                          category: "utilities",
+                          occurred_on: today,
+                          note: null,
+                          bill_id: "electricity",
+                          paid_at: null,
+                          deleted_at: null,
+                          created_at: timestamp,
+                          updated_at: timestamp,
+                        },
+                        {
+                          id: "settled-expense",
+                          kind: "expense",
+                          amount_cents: 12500,
+                          category: "groceries",
+                          occurred_on: today,
+                          note: "Groceries",
+                          bill_id: null,
+                          paid_at: timestamp,
+                          deleted_at: null,
+                          created_at: timestamp,
+                          updated_at: timestamp,
+                        },
+                        {
+                          id: "income",
+                          kind: "income",
+                          amount_cents: 50000,
+                          category: "stipend",
+                          occurred_on: today,
+                          note: "Stipend",
+                          bill_id: null,
+                          paid_at: timestamp,
+                          deleted_at: null,
+                          created_at: timestamp,
+                          updated_at: timestamp,
+                        },
+                      ]
+                    : [];
 
     await route.fulfill({
       status: 200,
@@ -149,6 +193,15 @@ test("dashboard renders cross-module progress panels", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Current gate checklist" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Bills due this month" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Month-to-date" }),
+  ).toBeVisible();
+  await expect(page.getByText("$75.00", { exact: true })).toBeVisible();
+  await expect(page.getByText("$125.00", { exact: true })).toBeVisible();
+  await expect(page.getByText("$375.00", { exact: true })).toBeVisible();
   await expect(page.getByText("Algorithms practice")).toBeVisible();
   await expect(page.getByText("1/8")).toBeVisible();
 });

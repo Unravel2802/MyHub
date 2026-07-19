@@ -1,12 +1,14 @@
 "use client";
 
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
+  CalendarClock,
   CalendarDays,
   Clock3,
   LayoutDashboard,
   Map as MapIcon,
   MessageSquareText,
+  WalletCards,
 } from "lucide-react";
 import { useEffect } from "react";
 import { AppShell } from "@/src/components/AppShell";
@@ -26,6 +28,7 @@ import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
+import { formatCents } from "@/src/modules/finance/money";
 
 const targetLabels = [
   ["algorithm", "Algorithms"],
@@ -139,9 +142,105 @@ export function DailyDashboard() {
 
         <div className="grid gap-6 xl:grid-cols-2">
           <section
-            aria-labelledby="schedule-heading"
+            aria-labelledby="bills-due-heading"
             className="fade-up rounded-lg border border-border bg-surface p-5"
             style={{ ["--i" as string]: 0 }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold" id="bills-due-heading">
+                Bills due this month
+              </h3>
+              <Link
+                className="text-sm text-hue-lime hover:underline"
+                href="/finance"
+              >
+                Open ledger
+              </Link>
+            </div>
+            {dashboard.billsDue.length === 0 ? (
+              <EmptyState
+                compact
+                className="mt-3"
+                description="Recurring bills will appear here when their monthly ledger entries are due."
+                icon={CalendarClock}
+                title="No bills due"
+              />
+            ) : (
+              <ul className="mt-3 grid gap-2">
+                {dashboard.billsDue.map((bill) => (
+                  <li
+                    className="flex items-center justify-between gap-3 rounded-md bg-surface-subtle px-3 py-2"
+                    key={bill.transactionId}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {bill.name}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        Due {format(parseISO(bill.occurredOn), "MMM d")}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-semibold tabular-nums text-danger">
+                      {formatCents(bill.amountCents)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section
+            aria-labelledby="month-spend-heading"
+            className="fade-up rounded-lg border border-border bg-surface p-5"
+            style={{ ["--i" as string]: 1 }}
+          >
+            <div className="flex items-center gap-2">
+              <WalletCards aria-hidden="true" className="size-5 text-muted" />
+              <h3 className="text-lg font-semibold" id="month-spend-heading">
+                Month-to-date
+              </h3>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <StatCard
+                hint="Settled expenses"
+                label="Spent"
+                tone={
+                  dashboard.monthSpend && dashboard.monthSpend.spentCents > 0
+                    ? "danger"
+                    : "default"
+                }
+                value={
+                  dashboard.monthSpend && dashboard.monthSpend.spentCents > 0
+                    ? formatCents(dashboard.monthSpend.spentCents)
+                    : "—"
+                }
+              />
+              <StatCard
+                hint="Income minus settled expenses"
+                hue={
+                  dashboard.monthSpend && dashboard.monthSpend.netCents > 0
+                    ? "lime"
+                    : undefined
+                }
+                label="Net"
+                tone={
+                  dashboard.monthSpend && dashboard.monthSpend.netCents < 0
+                    ? "danger"
+                    : "default"
+                }
+                value={
+                  dashboard.monthSpend && dashboard.monthSpend.netCents !== 0
+                    ? formatCents(dashboard.monthSpend.netCents)
+                    : "—"
+                }
+              />
+            </div>
+          </section>
+
+          <section
+            aria-labelledby="schedule-heading"
+            className="fade-up rounded-lg border border-border bg-surface p-5"
+            style={{ ["--i" as string]: 2 }}
           >
             <h3 className="text-lg font-semibold" id="schedule-heading">
               This week&apos;s schedule
@@ -173,7 +272,7 @@ export function DailyDashboard() {
           <section
             aria-labelledby="cadence-heading"
             className="fade-up rounded-lg border border-border bg-surface p-5"
-            style={{ ["--i" as string]: 1 }}
+            style={{ ["--i" as string]: 3 }}
           >
             <h3 className="text-lg font-semibold" id="cadence-heading">
               Weekly cadence
@@ -207,7 +306,7 @@ export function DailyDashboard() {
           <section
             aria-labelledby="prep-heading"
             className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
-            style={{ ["--i" as string]: 2 }}
+            style={{ ["--i" as string]: 4 }}
           >
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <div>
@@ -243,7 +342,7 @@ export function DailyDashboard() {
           <section
             aria-labelledby="followups-heading"
             className="fade-up rounded-lg border border-border bg-surface p-5"
-            style={{ ["--i" as string]: 3 }}
+            style={{ ["--i" as string]: 5 }}
           >
             <h3 className="text-lg font-semibold" id="followups-heading">
               Applications needing follow-up
@@ -277,7 +376,7 @@ export function DailyDashboard() {
           <section
             aria-labelledby="postmortem-heading"
             className="fade-up rounded-lg border border-border bg-surface p-5"
-            style={{ ["--i" as string]: 4 }}
+            style={{ ["--i" as string]: 6 }}
           >
             <h3 className="text-lg font-semibold" id="postmortem-heading">
               Interview post-mortems
@@ -315,7 +414,7 @@ export function DailyDashboard() {
           <section
             aria-label="Recent activity"
             className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
-            style={{ ["--i" as string]: 5 }}
+            style={{ ["--i" as string]: 7 }}
           >
             <ActivityHeatmap grid={activityGrid} />
           </section>
@@ -323,7 +422,7 @@ export function DailyDashboard() {
           <section
             aria-labelledby="gate-heading"
             className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
-            style={{ ["--i" as string]: 6 }}
+            style={{ ["--i" as string]: 8 }}
           >
             <h3 className="text-lg font-semibold" id="gate-heading">
               Current gate checklist

@@ -22,8 +22,10 @@ import {
   monthToDateSpend,
 } from "@/src/modules/finance/financeSelectors";
 import type {
+  BillDue,
   FinanceTransaction,
   MonthSpend,
+  RecurringBill,
 } from "@/src/modules/finance/types";
 import type {
   Application,
@@ -69,7 +71,7 @@ export interface DashboardStore {
   weeklyCadence: WeeklyCadence | null;
   // Personal Finance panels (docs/finance-plan.md Phase 2). Read via the finance
   // REPOSITORY + pure selectors, same cross-module pattern as the rest here.
-  billsDue: FinanceTransaction[];
+  billsDue: BillDue[];
   monthSpend: MonthSpend | null;
   isLoading: boolean;
   error: string | null;
@@ -154,6 +156,10 @@ export const useDashboardStore = create<DashboardStore>(() => ({
           console.error(err);
           return [] as FinanceTransaction[];
         });
+      const financeBills = await FinanceRepository.getBills().catch((err) => {
+        console.error(err);
+        return [] as RecurringBill[];
+      });
 
       const now = new Date();
       const today = format(now, "yyyy-MM-dd");
@@ -177,7 +183,7 @@ export const useDashboardStore = create<DashboardStore>(() => ({
           prepEntries,
           now,
         ),
-        billsDue: billsDueThisMonth(financeTransactions, now),
+        billsDue: billsDueThisMonth(financeTransactions, financeBills, now),
         monthSpend: monthToDateSpend(financeTransactions, now),
         isLoading: false,
         error: null,

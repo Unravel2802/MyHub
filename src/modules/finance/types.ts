@@ -46,3 +46,14 @@ export interface MonthSpend {
   spentCents: number;
   netCents: number;
 }
+
+// A due bill instance enriched with its template name, for the dashboard panel.
+// The name lives on recurring_bills (not on the transaction row), so the
+// selector joins it in — the raw FinanceTransaction has no name to show.
+export interface BillDue {
+  transactionId: string;
+  billId: string;
+  name: string;
+  amountCents: number;
+  occurredOn: string;
+}

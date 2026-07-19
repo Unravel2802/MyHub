@@ -1,9 +1,11 @@
 import { isInMonth } from "@/src/modules/finance/financePeriods";
 import { sumCents } from "@/src/modules/finance/money";
 import type {
+  BillDue,
   FinanceTransaction,
   MonthlySummary,
   MonthSpend,
+  RecurringBill,
 } from "@/src/modules/finance/types";
 
 // The income / expense / net totals for the month containing `date`. Only
@@ -36,12 +38,17 @@ export function monthlySummary(
 }
 
 // The unpaid bill instances due in the month containing `date` — generated
-// rows (bill_id set) that haven't been paid yet. Drives the dashboard's
-// "bills due this month" panel. Soft-deleted rows excluded.
+// rows (bill_id set) that haven't been paid yet, each enriched with its bill's
+// name from `bills` (the transaction row carries no name). Drives the
+// dashboard's "bills due this month" panel. Soft-deleted rows excluded; a bill
+// whose template is gone falls back to a generic label rather than dropping.
 export function billsDueThisMonth(
   transactions: FinanceTransaction[],
+  bills: RecurringBill[],
   date: Date,
-): FinanceTransaction[] {
+): BillDue[] {
+  const nameByBillId = new Map(bills.map((bill) => [bill.id, bill.name]));
+
   return transactions
     .filter(
       (transaction) =>
@@ -50,7 +57,14 @@ export function billsDueThisMonth(
         transaction.paidAt === null &&
         isInMonth(transaction.occurredOn, date),
     )
-    .sort((a, b) => a.occurredOn.localeCompare(b.occurredOn));
+    .sort((a, b) => a.occurredOn.localeCompare(b.occurredOn))
+    .map((transaction) => ({
+      transactionId: transaction.id,
+      billId: transaction.billId as string,
+      name: nameByBillId.get(transaction.billId as string) ?? "Recurring bill",
+      amountCents: transaction.amountCents,
+      occurredOn: transaction.occurredOn,
+    }));
 }
 
 // Month-to-date settled spend and net for the dashboard, derived from the same

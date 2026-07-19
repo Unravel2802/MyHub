@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { FinanceTransaction } from "@/src/modules/finance/types";
+import type {
+  FinanceTransaction,
+  RecurringBill,
+} from "@/src/modules/finance/types";
 
 vi.mock("@/src/modules/finance/FinanceRepository", () => ({
   getTransactions: vi.fn(),
@@ -31,6 +34,22 @@ function transaction(
     note: overrides.note ?? null,
     billId: overrides.billId ?? null,
     paidAt: overrides.paidAt ?? "2026-07-19T00:00:00.000Z",
+    deletedAt: overrides.deletedAt ?? null,
+    createdAt: overrides.createdAt ?? "2026-07-19T00:00:00.000Z",
+    updatedAt: overrides.updatedAt ?? "2026-07-19T00:00:00.000Z",
+  };
+}
+
+function bill(
+  overrides: Partial<RecurringBill> & { id: string },
+): RecurringBill {
+  return {
+    id: overrides.id,
+    name: overrides.name ?? "Rent",
+    amountCents: overrides.amountCents ?? 120000,
+    category: overrides.category ?? "rent",
+    dayOfMonth: overrides.dayOfMonth ?? 1,
+    active: overrides.active ?? true,
     deletedAt: overrides.deletedAt ?? null,
     createdAt: overrides.createdAt ?? "2026-07-19T00:00:00.000Z",
     updatedAt: overrides.updatedAt ?? "2026-07-19T00:00:00.000Z",
@@ -181,6 +200,93 @@ describe("useFinanceStore", () => {
 
     expect(useFinanceStore.getState().transactions).toEqual([original]);
     expect(useFinanceStore.getState().pendingIds.has("txn")).toBe(false);
+    expect(useFinanceStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
+  });
+
+  it("fetches, creates, and updates recurring bills", async () => {
+    const rent = bill({ id: "rent" });
+    const utilities = bill({
+      id: "utilities",
+      name: "Electricity",
+      amountCents: 8500,
+      category: "utilities",
+      dayOfMonth: 15,
+    });
+    repository.getBills.mockResolvedValueOnce([rent]);
+
+    await useFinanceStore.getState().fetchBills();
+    expect(useFinanceStore.getState().bills).toEqual([rent]);
+
+    repository.createBill.mockResolvedValueOnce(utilities);
+    await useFinanceStore.getState().createBill({
+      name: "Electricity",
+      amountCents: 8500,
+      category: "utilities",
+      dayOfMonth: 15,
+      active: true,
+    });
+    expect(useFinanceStore.getState().bills).toEqual([rent, utilities]);
+
+    const paused = bill({ ...utilities, active: false });
+    repository.updateBill.mockResolvedValueOnce(paused);
+    await useFinanceStore
+      .getState()
+      .updateBill(utilities.id, { active: false });
+    expect(useFinanceStore.getState().bills).toEqual([rent, paused]);
+  });
+
+  it("optimistically deletes a bill and rolls back on failure", async () => {
+    const rent = bill({ id: "rent" });
+    const pending = deferred<void>();
+    useFinanceStore.setState({ bills: [rent] });
+    repository.deleteBill.mockReturnValueOnce(pending.promise);
+
+    const request = useFinanceStore.getState().deleteBill(rent.id);
+    expect(useFinanceStore.getState().bills).toEqual([]);
+    pending.resolve();
+    await request;
+
+    useFinanceStore.setState({ bills: [rent], error: null });
+    repository.deleteBill.mockRejectedValueOnce(new Error("delete failed"));
+    await useFinanceStore.getState().deleteBill(rent.id);
+
+    expect(useFinanceStore.getState().bills).toEqual([rent]);
+    expect(useFinanceStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
+  });
+
+  it("optimistically marks a due bill paid and rolls back on failure", async () => {
+    const due = transaction({
+      id: "due",
+      billId: "rent",
+      paidAt: null,
+      amountCents: 120000,
+    });
+    const paid = transaction({
+      ...due,
+      paidAt: "2026-07-19T12:00:00.000Z",
+    });
+    const pending = deferred<FinanceTransaction>();
+    useFinanceStore.setState({ transactions: [due] });
+    repository.payBillInstance.mockReturnValueOnce(pending.promise);
+
+    const request = useFinanceStore.getState().payBill(due.id);
+    expect(useFinanceStore.getState().transactions[0].paidAt).not.toBeNull();
+    expect(useFinanceStore.getState().pendingIds.has(due.id)).toBe(true);
+    pending.resolve(paid);
+    await request;
+    expect(useFinanceStore.getState().transactions).toEqual([paid]);
+    expect(useFinanceStore.getState().pendingIds.has(due.id)).toBe(false);
+
+    useFinanceStore.setState({ transactions: [due], error: null });
+    repository.payBillInstance.mockRejectedValueOnce(new Error("pay failed"));
+    await useFinanceStore.getState().payBill(due.id);
+
+    expect(useFinanceStore.getState().transactions).toEqual([due]);
+    expect(useFinanceStore.getState().pendingIds.has(due.id)).toBe(false);
     expect(useFinanceStore.getState().error).toBe(
       "Something went wrong, please try again later.",
     );

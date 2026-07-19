@@ -204,7 +204,7 @@ function Column({
         </h3>
         <span className="text-xs text-muted">{applications.length}</span>
       </div>
-      <div className="grid gap-3">
+      <div className="grid max-h-[min(36rem,60vh)] gap-3 overflow-y-auto overscroll-contain pr-1">
         {applications.length === 0 ? (
           <EmptyState
             compact

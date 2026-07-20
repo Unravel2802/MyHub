@@ -13,26 +13,12 @@ import {
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 import { AchievementCard } from "@/src/modules/momentum/components/AchievementCard";
 import { hueFor } from "@/src/components/moduleHues";
-import type { HueName } from "@/src/components/moduleHues";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { ACHIEVEMENT_CATEGORY_HUES } from "@/src/modules/momentum/achievementCategoryHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
 const categories = ["prep", "career", "consistency"] as const;
-
-const categoryHeadingClasses: Record<HueName, string> = {
-  accent: "text-accent-strong",
-  amber: "text-hue-amber",
-  orange: "text-hue-orange",
-  rose: "text-hue-rose",
-  violet: "text-hue-violet",
-  blue: "text-hue-blue",
-  cyan: "text-hue-cyan",
-  teal: "text-hue-teal",
-  emerald: "text-hue-emerald",
-  fuchsia: "text-hue-fuchsia",
-  lime: "text-hue-lime",
-};
 
 export function AchievementsPage() {
   const router = useRouter();
@@ -114,7 +100,7 @@ export function AchievementsPage() {
               key={category}
             >
               <h3
-                className={`text-xl font-semibold capitalize ${categoryHeadingClasses[ACHIEVEMENT_CATEGORY_HUES[category]]}`}
+                className={`text-xl font-semibold capitalize ${HUE_TEXT[ACHIEVEMENT_CATEGORY_HUES[category]]}`}
                 id={`${category}-achievements`}
               >
                 {category}

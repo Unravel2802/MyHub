@@ -1,20 +1,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { hueVar, type HueName } from "@/src/components/moduleHues";
-
-const eyebrowClasses: Record<HueName, string> = {
-  accent: "text-accent-strong",
-  amber: "text-hue-amber",
-  orange: "text-hue-orange",
-  rose: "text-hue-rose",
-  violet: "text-hue-violet",
-  blue: "text-hue-blue",
-  cyan: "text-hue-cyan",
-  teal: "text-hue-teal",
-  emerald: "text-hue-emerald",
-  fuchsia: "text-hue-fuchsia",
-  lime: "text-hue-lime",
-};
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 
 type PageHeaderProps = {
   actions?: ReactNode;
@@ -50,7 +37,7 @@ export function PageHeader({
       <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
         <div>
           <p
-            className={`flex items-center gap-2 text-sm font-medium ${eyebrowClasses[hue]}`}
+            className={`flex items-center gap-2 text-sm font-medium ${HUE_TEXT[hue]}`}
           >
             {Icon ? <Icon aria-hidden="true" className="size-4" /> : null}
             {eyebrow}

@@ -56,6 +56,48 @@ export const HUE_PROGRESS: Record<HueName, string> = {
   lime: "bg-hue-lime",
 };
 
+export const HUE_TEXT: Record<HueName, string> = {
+  accent: "text-accent-strong",
+  amber: "text-hue-amber",
+  orange: "text-hue-orange",
+  rose: "text-hue-rose",
+  violet: "text-hue-violet",
+  blue: "text-hue-blue",
+  cyan: "text-hue-cyan",
+  teal: "text-hue-teal",
+  emerald: "text-hue-emerald",
+  fuchsia: "text-hue-fuchsia",
+  lime: "text-hue-lime",
+};
+
+export const HUE_BORDER_LEFT: Record<HueName, string> = {
+  accent: "border-l-accent-border",
+  amber: "border-l-hue-amber-border",
+  orange: "border-l-hue-orange-border",
+  rose: "border-l-hue-rose-border",
+  violet: "border-l-hue-violet-border",
+  blue: "border-l-hue-blue-border",
+  cyan: "border-l-hue-cyan-border",
+  teal: "border-l-hue-teal-border",
+  emerald: "border-l-hue-emerald-border",
+  fuchsia: "border-l-hue-fuchsia-border",
+  lime: "border-l-hue-lime-border",
+};
+
+export const HUE_BORDER_TOP: Record<HueName, string> = {
+  accent: "border-t-accent-border",
+  amber: "border-t-hue-amber-border",
+  orange: "border-t-hue-orange-border",
+  rose: "border-t-hue-rose-border",
+  violet: "border-t-hue-violet-border",
+  blue: "border-t-hue-blue-border",
+  cyan: "border-t-hue-cyan-border",
+  teal: "border-t-hue-teal-border",
+  emerald: "border-t-hue-emerald-border",
+  fuchsia: "border-t-hue-fuchsia-border",
+  lime: "border-t-hue-lime-border",
+};
+
 export const HUE_STATCARD: Record<
   HueName,
   { container: string; value: string }

@@ -2,7 +2,7 @@ import { expect, test } from "./fixtures";
 import type { Page } from "@playwright/test";
 import { format } from "date-fns";
 
-const timestamp = "2026-07-13T08:00:00.000Z";
+const timestamp = new Date().toISOString();
 const today = format(new Date(), "yyyy-MM-dd");
 
 async function mockDashboard(page: Page) {

@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { format, startOfWeek } from "date-fns";
 import { FakeReviewDb, mockSupabaseReview } from "./supabaseReviewMock";
 
 async function load(
@@ -6,7 +7,6 @@ async function load(
   db = new FakeReviewDb(),
 ) {
   await mockSupabaseReview(page, db);
-  await page.clock.install({ time: new Date("2026-07-13T12:00:00") });
   await page.goto("/review");
   await expect(
     page.getByRole("heading", { name: "Weekly Review", exact: true }).last(),
@@ -16,17 +16,21 @@ async function load(
 
 test("saves a review and upserts the same week", async ({ page }) => {
   const db = await load(page);
+  const weekStart = format(
+    startOfWeek(new Date(), { weekStartsOn: 1 }),
+    "yyyy-MM-dd",
+  );
   await page.getByLabel("What went well?").fill("Shipped the review ritual");
   await page.getByLabel("One fix for next week").fill("Protect deep work");
   await page.getByRole("button", { name: "Save review" }).click();
   await expect(
-    page.getByRole("heading", { name: "Week of 2026-07-13" }),
+    page.getByRole("heading", { name: `Week of ${weekStart}` }),
   ).toBeVisible();
   await page.getByLabel("What went well?").fill("Shipped it and documented it");
   await page.getByRole("button", { name: "Save review" }).click();
   await expect.poll(() => db.reviews).toHaveLength(1);
   await expect(
-    page.getByRole("heading", { name: "Week of 2026-07-13" }),
+    page.getByRole("heading", { name: `Week of ${weekStart}` }),
   ).toHaveCount(1);
   // Scope to the saved-review article. An unscoped getByText also matches the
   // form's <textarea>, whose re-hydrated value holds the same string — and
@@ -34,7 +38,7 @@ test("saves a review and upserts the same week", async ({ page }) => {
   // this passes alone and fails intermittently under full-suite load. What we
   // actually mean to assert is that the PERSISTED review shows the new text.
   await expect(
-    page.getByRole("article").filter({ hasText: "Week of 2026-07-13" }),
+    page.getByRole("article").filter({ hasText: `Week of ${weekStart}` }),
   ).toContainText("Shipped it and documented it");
 });
 
@@ -47,6 +51,9 @@ test("saves a review and upserts the same week", async ({ page }) => {
 const FIRST_QUARTERLY_QUESTION = "Am I becoming more technically rare?";
 
 test("hides quarterly questions off a boundary week", async ({ page }) => {
+  // This is an explicit off-boundary scenario, not a fixture pretending to be
+  // "today". The normal save flow above follows the browser's real clock.
+  await page.clock.install({ time: new Date("2026-02-02T12:00:00") });
   await load(page);
   await expect(
     page.getByRole("group", { name: "Quarterly questions" }),

@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { format } from "date-fns";
 
 export type PrepEntryRow = {
   id: string;
@@ -32,7 +33,8 @@ export type BehavioralStoryRow = {
   updated_at: string;
 };
 
-const TIMESTAMP = "2026-07-12T00:00:00.000Z";
+const TODAY = format(new Date(), "yyyy-MM-dd");
+const TIMESTAMP = new Date().toISOString();
 
 export function prepEntryRow(
   overrides: Partial<PrepEntryRow> & Pick<PrepEntryRow, "id">,
@@ -40,7 +42,7 @@ export function prepEntryRow(
   return {
     entry_type: "algorithm",
     topic: null,
-    date: "2026-07-12",
+    date: TODAY,
     duration_min: null,
     time_to_solve_min: null,
     outcome: null,

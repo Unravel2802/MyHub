@@ -19,6 +19,7 @@ import {
   Map,
   NotebookPen,
   Send,
+  Swords,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -38,6 +39,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/", label: "Task Engine", icon: CheckSquare },
   { href: "/prep", label: "Prep Tracker", icon: Dumbbell },
+  { href: "/design-drills", label: "Design Drills", icon: Swords },
   { href: "/applications", label: "Job CRM", icon: Briefcase },
   { href: "/outreach", label: "Outreach Log", icon: Send },
   { href: "/achievements", label: "Achievements", icon: Flame },

@@ -191,11 +191,17 @@ beforeEach(() => {
 
 describe("useDashboardStore", () => {
   it("fetches and aggregates all five module sources", async () => {
+    // Fixtures that must land in the CURRENT week/day use a live `today`, not a
+    // fixed string, or these assertions only pass the week the test was written
+    // (thisWeeksScheduleBlocks + weeklyCadence compare against the real now).
+    // format(), not toISOString(): the latter converts through UTC and can land
+    // on the wrong calendar day outside UTC+0 (the bug dashboardSelectors hit).
+    const today = format(new Date(), "yyyy-MM-dd");
     tasksRepo.getTasks.mockResolvedValue([
       task({
         id: "recurring",
         recurrenceTemplateId: "template",
-        occurrenceDate: "2026-07-13",
+        occurrenceDate: today,
       }),
       task({ id: "gate", title: "Gate: July 2026" }),
       task({ id: "gate-child", parentTaskId: "gate" }),
@@ -205,13 +211,6 @@ describe("useDashboardStore", () => {
     interviewsRepo.getInterviews.mockResolvedValue([
       interview({ id: "interview", completed: true }),
     ]);
-    // weeklyCadence compares against the real current date inside fetchAll, so
-    // this fixture needs a live "today" rather than a fixed string, or the
-    // weeklyCadence.applications.count assertion below only passes on the day
-    // this test was written. format(), not toISOString(): the latter converts
-    // through UTC and can land on the wrong calendar day outside UTC+0 (the
-    // same bug dashboardSelectors.ts itself hit earlier).
-    const today = format(new Date(), "yyyy-MM-dd");
     appsRepo.getApplications.mockResolvedValue([
       application({
         id: "app",

@@ -39,7 +39,7 @@ clean local db) and runs `npm run test:db` against it. This is the real gate.
 ```bash
 supabase start                      # boots Postgres+PostgREST, applies migrations
 SUPABASE_DB_TEST_URL=http://127.0.0.1:54321 \
-SUPABASE_DB_TEST_KEY="$(supabase status -o json | jq -r '.SERVICE_ROLE_KEY')" \
+SUPABASE_DB_TEST_KEY="$(supabase status -o json | jq -er '.SECRET_KEY // .SERVICE_ROLE_KEY | select(type == "string" and length > 0)')" \
   npm run test:db
 supabase stop
 ```

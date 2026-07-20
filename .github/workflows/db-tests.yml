@@ -33,7 +33,7 @@ jobs:
         env:
           SUPABASE_DB_TEST_URL: http://127.0.0.1:54321
         run: |
-          SUPABASE_DB_TEST_KEY="$(supabase status -o json | jq -er '.SERVICE_ROLE_KEY // .SECRET_KEY | select(type == "string" and length > 0)')"
+          SUPABASE_DB_TEST_KEY="$(supabase status -o json | jq -er '.SECRET_KEY // .SERVICE_ROLE_KEY | select(type == "string" and length > 0)')"
           export SUPABASE_DB_TEST_KEY
           npm run test:db
 

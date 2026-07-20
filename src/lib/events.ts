@@ -9,6 +9,8 @@ type PrepType =
   | "mock_interview"
   | "resume_deep_dive";
 
+type DesignDrillCategory = "system_design" | "ml_system_design";
+
 type ApplicationStage =
   | "researching"
   | "applied"
@@ -63,6 +65,22 @@ export type AppEvent =
   | {
       type: "outreach.logged";
       payload: { entryId: string };
+      timestamp: number;
+    }
+  // Fired when a Design Drill attempt is submitted (completed_at set), not on
+  // every save of an in-progress attempt. Design Drills is a problem bank +
+  // timed self-graded attempts, deliberately separate from Prep Tracker's rep
+  // log (myhub_plan.md §2.3: "don't conflate a problem bank with a rep log").
+  // This event is the only sanctioned way anything else (Dashboard, Momentum)
+  // learns a drill happened — no module reaches into another's repository
+  // directly (architecture rule 1).
+  | {
+      type: "drill.completed";
+      payload: {
+        attemptId: string;
+        drillId: string;
+        category: DesignDrillCategory;
+      };
       timestamp: number;
     };
 

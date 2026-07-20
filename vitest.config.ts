@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    setupFiles: ["./vitest.setup.ts"],
     // The DB integration suite (*.db.test.ts) needs a real database and runs via
     // `npm run test:db` (vitest.config.db.ts), not the fast unit loop.
     exclude: [...configDefaults.exclude, "**/*.db.test.ts"],

@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, subDays, subHours } from "date-fns";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Task } from "@/src/modules/task/types";
 import type {
@@ -197,24 +197,38 @@ describe("useDashboardStore", () => {
     // format(), not toISOString(): the latter converts through UTC and can land
     // on the wrong calendar day outside UTC+0 (the bug dashboardSelectors hit).
     const today = format(new Date(), "yyyy-MM-dd");
+    const staleDate = format(subDays(new Date(), 8), "yyyy-MM-dd");
+    const completedInterviewAt = subHours(new Date(), 25).toISOString();
     tasksRepo.getTasks.mockResolvedValue([
       task({
         id: "recurring",
         recurrenceTemplateId: "template",
         occurrenceDate: today,
       }),
-      task({ id: "gate", title: "Gate: July 2026" }),
+      task({ id: "gate", title: `Gate: ${format(new Date(), "MMMM yyyy")}` }),
       task({ id: "gate-child", parentTaskId: "gate" }),
     ]);
-    prepRepo.getEntries.mockResolvedValue([prepEntry({ id: "prep" })]);
+    prepRepo.getEntries.mockResolvedValue([
+      prepEntry({
+        id: "prep",
+        date: today,
+        createdAt: `${today}T00:00:00.000Z`,
+        updatedAt: `${today}T00:00:00.000Z`,
+      }),
+    ]);
     prepRepo.getStories.mockResolvedValue([behavioralStory({ id: "story" })]);
     interviewsRepo.getInterviews.mockResolvedValue([
-      interview({ id: "interview", completed: true }),
+      interview({
+        id: "interview",
+        completed: true,
+        scheduledAt: completedInterviewAt,
+      }),
     ]);
     appsRepo.getApplications.mockResolvedValue([
       application({
         id: "app",
-        lastUpdateDate: "2026-07-01",
+        appliedDate: today,
+        lastUpdateDate: staleDate,
         createdAt: `${today}T00:00:00.000Z`,
       }),
     ]);

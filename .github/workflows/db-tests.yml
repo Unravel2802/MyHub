@@ -29,6 +29,12 @@ jobs:
           version: latest
       - run: supabase start
 
+      - name: Grant the local service role access through PostgREST
+        run: |
+          SUPABASE_DB_TEST_DATABASE_URL="$(supabase status -o json | jq -er '.DB_URL | select(type == "string" and length > 0)')"
+          psql "$SUPABASE_DB_TEST_DATABASE_URL" --set ON_ERROR_STOP=1 --command \
+            "grant all privileges on all tables in schema public to service_role; grant all privileges on all sequences in schema public to service_role;"
+
       - name: Run DB integration tests
         env:
           SUPABASE_DB_TEST_URL: http://127.0.0.1:54321

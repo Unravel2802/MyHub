@@ -15,6 +15,7 @@ interface DesignDrillRow {
   title: string;
   prompt: string;
   rubric: string[];
+  solution: string;
   estimated_minutes: number;
   tags: string[];
   deleted_at: string | null;
@@ -45,6 +46,7 @@ function drillFromRow(row: DesignDrillRow): DesignDrill {
     title: row.title,
     prompt: row.prompt,
     rubric: row.rubric,
+    solution: row.solution,
     estimatedMinutes: row.estimated_minutes,
     tags: row.tags,
     deletedAt: row.deleted_at,

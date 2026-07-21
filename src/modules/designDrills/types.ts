@@ -19,6 +19,11 @@ export interface DesignDrill {
   // after an attempt is submitted; showing it alongside the prompt defeats
   // the point of a timed practice rep.
   rubric: string[];
+  // The full worked solution (markdown-ish plain text, rendered pre-wrap like
+  // `prompt`). Unlike the rubric this is deliberately ALWAYS viewable — a
+  // LeetCode-style reference tab, per the user's product call. Empty string
+  // means "not written yet".
+  solution: string;
   estimatedMinutes: number;
   tags: string[];
   deletedAt: string | null;

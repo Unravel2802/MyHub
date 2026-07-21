@@ -37,6 +37,11 @@ export interface DesignDrillsStore {
   deleteAttempt: (id: string) => Promise<void>;
 
   attemptsForDrill: (drillId: string) => DesignDrillAttempt[];
+  // Resolves a drill from its URL slug, for the deep-linkable
+  // /design-drills/[slug] route. Returns undefined while drills are still
+  // loading or when the slug matches nothing — the route treats undefined as
+  // "not found" (render a not-found state / call notFound()).
+  drillBySlug: (slug: string) => DesignDrill | undefined;
 }
 
 const FAILURE_MESSAGE = "Something went wrong, please try again later.";
@@ -197,5 +202,7 @@ export const useDesignDrillsStore = create<DesignDrillsStore>((set, get) => {
 
     attemptsForDrill: (drillId) =>
       get().attempts.filter((attempt) => attempt.drillId === drillId),
+
+    drillBySlug: (slug) => get().drills.find((drill) => drill.slug === slug),
   };
 });

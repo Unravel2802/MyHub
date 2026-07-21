@@ -139,7 +139,7 @@ export function DrillWorkspace({
             Target: ~{drill.estimatedMinutes} min
           </p>
           <div className="mt-4">
-            <DrillBrief prompt={drill.prompt} solution={drill.solution} />
+            <DrillBrief drill={drill} />
           </div>
 
           {completedPastAttempts.length > 0 ? (

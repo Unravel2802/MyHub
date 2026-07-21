@@ -6,12 +6,40 @@ import {
   mockSupabaseDesignDrills,
 } from "./supabaseDesignDrillsMock";
 
-const solutionText =
-  "Use a write service to allocate unique IDs and encode them in Base62.\nCache hot redirects at the edge and in Redis.";
+const editorialDetail = {
+  summary:
+    "A URL shortener is a **read-heavy key-value lookup** with code generation on the write path.",
+  sections: [
+    {
+      id: "requirements",
+      heading: "Requirements",
+      body: "- Resolve short codes quickly\n- Keep codes unique",
+    },
+    {
+      id: "key-generation",
+      heading: "Key generation",
+      body: "Use **Base62** over independently allocated integer ranges.",
+    },
+  ],
+  estimates: [
+    {
+      label: "Read throughput",
+      value: "~12K rps",
+      note: "10:1 read:write skew",
+    },
+  ],
+  references: [
+    { label: "Base62 encoding", url: "https://en.wikipedia.org/wiki/Base62" },
+  ],
+};
 
 function seededDb() {
   return new FakeDesignDrillsDb([
-    designDrillRow({ id: "url-shortener", title: "URL Shortener" }),
+    designDrillRow({
+      id: "url-shortener",
+      title: "URL Shortener",
+      solution_detail: editorialDetail,
+    }),
     designDrillRow({
       id: "feature-store",
       title: "ML Feature Store",
@@ -35,7 +63,7 @@ async function load(
   ).toBeVisible();
 }
 
-test("lists seeded drills and opens the always-viewable solution", async ({
+test("lists seeded drills and opens the structured editorial", async ({
   page,
 }) => {
   const db = seededDb();
@@ -69,8 +97,42 @@ test("lists seeded drills and opens the always-viewable solution", async ({
   await expect(solutionTab).toBeFocused();
   await expect(solutionTab).toHaveAttribute("aria-selected", "true");
   const solutionPanel = page.getByRole("tabpanel");
-  await expect(solutionPanel).toContainText(solutionText);
-  await expect(solutionPanel).toHaveClass(/whitespace-pre-wrap/);
+  await expect(solutionPanel).toContainText(
+    "A URL shortener is a read-heavy key-value lookup",
+  );
+  await expect(
+    solutionPanel.getByRole("navigation", { name: "Solution outline" }),
+  ).toBeVisible();
+  await expect(
+    solutionPanel.getByRole("link", { name: "2. Key generation" }),
+  ).toHaveAttribute("href", "#key-generation");
+  await expect(
+    solutionPanel.getByRole("heading", { name: "Key generation" }),
+  ).toBeVisible();
+  await expect(solutionPanel).toContainText("Read throughput");
+  await expect(solutionPanel).toContainText("~12K rps");
+  await expect(
+    solutionPanel
+      .locator("strong")
+      .filter({ hasText: "read-heavy key-value lookup" }),
+  ).toHaveText("read-heavy key-value lookup");
+});
+
+test("falls back to the pre-wrapped legacy solution", async ({ page }) => {
+  const db = seededDb();
+  await load(page, db);
+
+  await page.getByRole("button", { name: "ML Feature Store" }).click();
+  await page.getByRole("tab", { name: "Solution" }).click();
+
+  const solutionPanel = page.getByRole("tabpanel");
+  await expect(solutionPanel).toContainText(
+    "Separate offline computation from low-latency online serving.",
+  );
+  await expect(solutionPanel.locator(".whitespace-pre-wrap")).toBeVisible();
+  await expect(
+    solutionPanel.getByRole("navigation", { name: "Solution outline" }),
+  ).toHaveCount(0);
 });
 
 test("runs a timed attempt and persists the self-grade", async ({ page }) => {
@@ -87,7 +149,9 @@ test("runs a timed attempt and persists the self-grade", async ({ page }) => {
   const solutionTab = page.getByRole("tab", { name: "Solution" });
   await expect(promptTab).toHaveAttribute("aria-selected", "true");
   await solutionTab.click();
-  await expect(page.getByRole("tabpanel")).toContainText(solutionText);
+  await expect(page.getByRole("tabpanel")).toContainText(
+    "A URL shortener is a read-heavy key-value lookup",
+  );
   await promptTab.click();
   await expect(page.getByRole("tabpanel")).toContainText(
     "Design a URL shortener",

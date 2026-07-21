@@ -1,6 +1,9 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import { Markdown } from "@/src/components/ui/Markdown";
+import { SolutionEditorial } from "@/src/modules/designDrills/components/SolutionEditorial";
+import type { DesignDrill } from "@/src/modules/designDrills/types";
 
 type BriefTab = "prompt" | "solution";
 
@@ -10,11 +13,13 @@ const tabs: { id: BriefTab; label: string }[] = [
 ];
 
 interface DrillBriefProps {
-  prompt: string;
-  solution: string;
+  drill: Pick<
+    DesignDrill,
+    "category" | "prompt" | "solution" | "solutionDetail"
+  >;
 }
 
-export function DrillBrief({ prompt, solution }: DrillBriefProps) {
+export function DrillBrief({ drill }: DrillBriefProps) {
   const [activeTab, setActiveTab] = useState<BriefTab>("prompt");
   const id = useId();
   const tabRefs = useRef<Partial<Record<BriefTab, HTMLButtonElement>>>({});
@@ -42,9 +47,6 @@ export function DrillBrief({ prompt, solution }: DrillBriefProps) {
     event.preventDefault();
     selectTab(tabs[nextIndex].id);
   }
-
-  const content =
-    activeTab === "prompt" ? prompt : solution || "Solution not written yet.";
 
   return (
     <div>
@@ -82,12 +84,23 @@ export function DrillBrief({ prompt, solution }: DrillBriefProps) {
       </div>
       <div
         aria-labelledby={`${id}-${activeTab}-tab`}
-        className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-body"
+        className="mt-4 text-sm leading-relaxed text-body"
         id={`${id}-${activeTab}-panel`}
         role="tabpanel"
         tabIndex={0}
       >
-        {content}
+        {activeTab === "prompt" ? (
+          <Markdown>{drill.prompt}</Markdown>
+        ) : drill.solutionDetail ? (
+          <SolutionEditorial
+            category={drill.category}
+            solution={drill.solutionDetail}
+          />
+        ) : (
+          <div className="whitespace-pre-wrap">
+            {drill.solution || "Solution not written yet."}
+          </div>
+        )}
       </div>
     </div>
   );

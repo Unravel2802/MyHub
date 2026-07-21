@@ -5,6 +5,7 @@ import type {
   DesignDrillDifficulty,
   DesignDrillSelfRating,
 } from "@/src/modules/designDrills/types";
+import { parseSolutionDetail } from "@/src/modules/designDrills/solutionDetail";
 import { supabase } from "@/src/lib/supabaseClient";
 
 interface DesignDrillRow {
@@ -16,6 +17,10 @@ interface DesignDrillRow {
   prompt: string;
   rubric: string[];
   solution: string;
+  // jsonb — Supabase hands it back already parsed (object | null), so it's
+  // `unknown` here and validated by parseSolutionDetail before it reaches the
+  // typed domain model.
+  solution_detail: unknown;
   estimated_minutes: number;
   tags: string[];
   deleted_at: string | null;
@@ -47,6 +52,7 @@ function drillFromRow(row: DesignDrillRow): DesignDrill {
     prompt: row.prompt,
     rubric: row.rubric,
     solution: row.solution,
+    solutionDetail: parseSolutionDetail(row.solution_detail, row.slug),
     estimatedMinutes: row.estimated_minutes,
     tags: row.tags,
     deletedAt: row.deleted_at,

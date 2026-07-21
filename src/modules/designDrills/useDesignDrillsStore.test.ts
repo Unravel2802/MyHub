@@ -11,6 +11,9 @@ vi.mock("@/src/modules/designDrills/DesignDrillsRepository", () => ({
   submitAttempt: vi.fn(),
   saveAttemptNotes: vi.fn(),
   deleteAttempt: vi.fn(),
+  listBookmarkedDrillIds: vi.fn(),
+  addBookmark: vi.fn(),
+  removeBookmark: vi.fn(),
 }));
 
 vi.mock("@/src/lib/events", () => ({ emit: vi.fn() }));
@@ -69,6 +72,7 @@ function reset(
     error: null,
     isStarting: false,
     pendingIds: [],
+    bookmarkedDrillIds: [],
   });
 }
 
@@ -195,5 +199,57 @@ describe("useDesignDrillsStore", () => {
     expect(useDesignDrillsStore.getState().attemptsForDrill("drill-1")).toEqual(
       [attempt({ id: "a", drillId: "drill-1" })],
     );
+  });
+
+  it("loads bookmarks", async () => {
+    repository.listBookmarkedDrillIds.mockResolvedValue(["drill-1", "drill-2"]);
+
+    await useDesignDrillsStore.getState().fetchBookmarks();
+
+    expect(useDesignDrillsStore.getState().bookmarkedDrillIds).toEqual([
+      "drill-1",
+      "drill-2",
+    ]);
+    expect(useDesignDrillsStore.getState().isBookmarked("drill-1")).toBe(true);
+    expect(useDesignDrillsStore.getState().isBookmarked("nope")).toBe(false);
+  });
+
+  it("optimistically stars an unbookmarked drill via addBookmark", async () => {
+    repository.addBookmark.mockResolvedValue(undefined);
+
+    const promise = useDesignDrillsStore.getState().toggleBookmark("drill-1");
+    // Optimistic: reflected before the write resolves.
+    expect(useDesignDrillsStore.getState().isBookmarked("drill-1")).toBe(true);
+    await promise;
+
+    expect(repository.addBookmark).toHaveBeenCalledWith("drill-1");
+    expect(repository.removeBookmark).not.toHaveBeenCalled();
+    expect(useDesignDrillsStore.getState().bookmarkedDrillIds).toEqual([
+      "drill-1",
+    ]);
+  });
+
+  it("optimistically unstars a bookmarked drill via removeBookmark", async () => {
+    useDesignDrillsStore.setState({ bookmarkedDrillIds: ["drill-1"] });
+    repository.removeBookmark.mockResolvedValue(undefined);
+
+    await useDesignDrillsStore.getState().toggleBookmark("drill-1");
+
+    expect(repository.removeBookmark).toHaveBeenCalledWith("drill-1");
+    expect(repository.addBookmark).not.toHaveBeenCalled();
+    expect(useDesignDrillsStore.getState().bookmarkedDrillIds).toEqual([]);
+  });
+
+  it("rolls back the star when the write fails", async () => {
+    repository.addBookmark.mockRejectedValue(new Error("network"));
+
+    await useDesignDrillsStore.getState().toggleBookmark("drill-1");
+
+    expect(useDesignDrillsStore.getState().bookmarkedDrillIds).toEqual([]);
+    expect(useDesignDrillsStore.getState().isBookmarked("drill-1")).toBe(false);
+    expect(useDesignDrillsStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
+    expect(useDesignDrillsStore.getState().pendingIds).toEqual([]);
   });
 });

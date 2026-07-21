@@ -177,3 +177,40 @@ export async function deleteAttempt(id: string): Promise<void> {
 
   if (error) throw error;
 }
+
+// --- Bookmarks (Phase 3) -----------------------------------------------------
+// A bookmark lives in its own soft-deletable table (see migration 0029), so
+// these return/act on drill ids rather than the bookmark rows themselves — the
+// UI only cares "is this drill starred". The store guards against double-adding,
+// so `addBookmark` is a plain insert (the partial unique index tolerates a prior
+// soft-deleted row for the same drill).
+
+export async function listBookmarkedDrillIds(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("design_drill_bookmarks")
+    .select("drill_id")
+    .is("deleted_at", null);
+
+  if (error) throw error;
+  return data.map((row) => row.drill_id as string);
+}
+
+export async function addBookmark(drillId: string): Promise<void> {
+  const { error } = await supabase
+    .from("design_drill_bookmarks")
+    .insert({ drill_id: drillId });
+
+  if (error) throw error;
+}
+
+// Soft-deletes only the active bookmark for the drill, leaving any historical
+// rows untouched.
+export async function removeBookmark(drillId: string): Promise<void> {
+  const { error } = await supabase
+    .from("design_drill_bookmarks")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("drill_id", drillId)
+    .is("deleted_at", null);
+
+  if (error) throw error;
+}

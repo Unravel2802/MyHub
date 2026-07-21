@@ -40,6 +40,7 @@ interface DrillListProps {
   attempts: DesignDrillAttempt[];
   isStarting: boolean;
   startingDrillId: string | null;
+  onOpen: (drillId: string) => void;
   onStart: (drillId: string) => void;
 }
 
@@ -48,6 +49,7 @@ export function DrillList({
   attempts,
   isStarting,
   startingDrillId,
+  onOpen,
   onStart,
 }: DrillListProps) {
   const [category, setCategory] = useState<DesignDrillCategory | "all">("all");
@@ -130,8 +132,14 @@ export function DrillList({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold tracking-tight text-foreground">
-                        {drill.title}
+                      <h3>
+                        <button
+                          className="font-semibold tracking-tight text-foreground hover:text-accent-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                          onClick={() => onOpen(drill.id)}
+                          type="button"
+                        >
+                          {drill.title}
+                        </button>
                       </h3>
                       <Badge hue={DESIGN_DRILL_CATEGORY_HUES[drill.category]}>
                         {categoryLabels[drill.category]}

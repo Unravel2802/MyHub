@@ -146,7 +146,7 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
     <AuthGate>
       <main className="min-h-screen bg-canvas text-foreground">
         <div
-          className={`grid min-h-screen ${collapsed ? "lg:grid-cols-1" : "lg:grid-cols-[260px_1fr]"}`}
+          className={`grid min-h-screen ${collapsed ? "lg:grid-cols-[3.5rem_1fr]" : "lg:grid-cols-[260px_1fr]"}`}
         >
           <aside
             className={`flex flex-col gap-6 border-b border-border bg-surface px-6 py-5 lg:sticky lg:top-0 lg:h-screen lg:gap-8 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-6 ${collapsed ? "lg:hidden" : ""}`}
@@ -181,7 +181,7 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
                 rail, so this is hidden there. */}
             <button
               aria-label="Collapse sidebar"
-              className="hidden shrink-0 rounded-md border border-border p-2 text-body transition-all duration-200 ease-in-out hover:bg-surface-subtle lg:inline-flex"
+              className="hidden size-8 shrink-0 items-center justify-center self-start rounded-md text-body transition-all duration-200 ease-in-out hover:bg-surface-subtle hover:text-foreground lg:inline-flex"
               onClick={() => setSidebarCollapsed(true)}
               title="Collapse sidebar (⌘/Ctrl+B)"
               type="button"
@@ -236,18 +236,22 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
             </div>
           </aside>
 
-          {/* Reopen affordance while the rail is collapsed. Desktop-only: on
-              mobile the rail is never collapsed via this path. */}
+          {/* Collapsed rail: a slim strip that keeps the reopen toggle pinned
+              at the top-left where the collapse button lives, instead of floating
+              it over the page (which overlapped the page header) or dropping it to
+              the vertical middle. Desktop-only — mobile never collapses this way. */}
           {collapsed ? (
-            <button
-              aria-label="Open sidebar"
-              className="fixed left-0 top-1/2 z-30 hidden -translate-y-1/2 items-center justify-center rounded-r-md border border-l-0 border-border bg-surface p-2 text-body shadow-sm transition-all duration-200 ease-in-out hover:bg-surface-subtle lg:inline-flex"
-              onClick={() => setSidebarCollapsed(false)}
-              title="Open sidebar (⌘/Ctrl+B)"
-              type="button"
-            >
-              <PanelLeftOpen aria-hidden className="size-4" />
-            </button>
+            <div className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:items-center lg:border-r lg:border-border lg:bg-surface lg:pt-6">
+              <button
+                aria-label="Open sidebar"
+                className="flex size-8 items-center justify-center rounded-md text-body transition-all duration-200 ease-in-out hover:bg-surface-subtle hover:text-foreground"
+                onClick={() => setSidebarCollapsed(false)}
+                title="Open sidebar (⌘/Ctrl+B)"
+                type="button"
+              >
+                <PanelLeftOpen aria-hidden className="size-4" />
+              </button>
+            </div>
           ) : null}
 
           {children}

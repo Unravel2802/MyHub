@@ -5,6 +5,7 @@ import { ArrowLeft, Clock } from "lucide-react";
 import { Badge } from "@/src/components/ui/Badge";
 import type { SubmitAttemptInput } from "@/src/modules/designDrills/DesignDrillsRepository";
 import { DESIGN_DRILL_CATEGORY_HUES } from "@/src/modules/designDrills/designDrillHues";
+import { DrillBrief } from "@/src/modules/designDrills/components/DrillBrief";
 import type {
   DesignDrill,
   DesignDrillAttempt,
@@ -137,8 +138,8 @@ export function DrillWorkspace({
           <p className="mt-1 text-xs text-muted">
             Target: ~{drill.estimatedMinutes} min
           </p>
-          <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-body">
-            {drill.prompt}
+          <div className="mt-4">
+            <DrillBrief prompt={drill.prompt} solution={drill.solution} />
           </div>
 
           {completedPastAttempts.length > 0 ? (

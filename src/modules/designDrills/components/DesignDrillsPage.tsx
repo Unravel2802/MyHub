@@ -9,6 +9,7 @@ import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 import { DrillList } from "@/src/modules/designDrills/components/DrillList";
+import { DrillDetail } from "@/src/modules/designDrills/components/DrillDetail";
 import { DrillWorkspace } from "@/src/modules/designDrills/components/DrillWorkspace";
 import { useDesignDrillsStore } from "@/src/modules/designDrills/useDesignDrillsStore";
 
@@ -28,6 +29,7 @@ export function DesignDrillsPage() {
   } = useDesignDrillsStore();
 
   const [activeAttemptId, setActiveAttemptId] = useState<string | null>(null);
+  const [previewDrillId, setPreviewDrillId] = useState<string | null>(null);
   const [startingDrillId, setStartingDrillId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -68,6 +70,10 @@ export function DesignDrillsPage() {
         : null,
     [drills, activeAttempt],
   );
+  const previewDrill = useMemo(
+    () => drills.find((drill) => drill.id === previewDrillId) ?? null,
+    [drills, previewDrillId],
+  );
 
   const completedCount = useMemo(
     () => attempts.filter((attempt) => attempt.completedAt).length,
@@ -82,6 +88,7 @@ export function DesignDrillsPage() {
     setStartingDrillId(drillId);
     try {
       const attempt = await startAttempt(drillId);
+      setPreviewDrillId(null);
       setActiveAttemptId(attempt.id);
     } catch {
       // store.error already holds the user-facing message; nothing else to do.
@@ -139,6 +146,16 @@ export function DesignDrillsPage() {
             )}
             pending={pendingIds.includes(activeAttempt.id)}
           />
+        ) : previewDrill ? (
+          <DrillDetail
+            drill={previewDrill}
+            isStarting={isStarting && startingDrillId === previewDrill.id}
+            onBack={() => setPreviewDrillId(null)}
+            onStart={() => void handleStart(previewDrill.id)}
+            pastAttempts={attempts.filter(
+              (attempt) => attempt.drillId === previewDrill.id,
+            )}
+          />
         ) : (
           <div className="grid gap-6">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -158,6 +175,7 @@ export function DesignDrillsPage() {
               attempts={attempts}
               drills={drills}
               isStarting={isStarting}
+              onOpen={setPreviewDrillId}
               onStart={handleStart}
               startingDrillId={startingDrillId}
             />

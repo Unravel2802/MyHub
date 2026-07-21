@@ -1,8 +1,8 @@
 "use client";
 
+import { PanelLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { AuthGate } from "@/src/components/AuthGate";
 import { CommandPalette } from "@/src/components/CommandPalette";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
@@ -151,36 +151,43 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
           <aside
             className={`flex flex-col gap-6 border-b border-border bg-surface px-6 py-5 lg:sticky lg:top-0 lg:h-screen lg:gap-8 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-6 ${collapsed ? "lg:hidden" : ""}`}
           >
-            <div className="flex items-center justify-between gap-3 lg:block">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-widest text-accent-strong">
-                  MyHub
-                </p>
-                <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-foreground lg:mt-2 lg:text-2xl">
-                  {title}
-                </h1>
-              </div>
-              <button
-                aria-controls="app-nav"
-                aria-expanded={isNavOpen}
-                className="shrink-0 rounded-md border border-border px-3 py-2 text-sm font-medium text-body transition-all duration-200 ease-in-out hover:bg-surface-subtle lg:hidden"
-                onClick={() => setIsNavOpen((open) => !open)}
-                type="button"
-              >
-                {isNavOpen ? "Close" : "Menu"}
-              </button>
-              {/* Desktop-only collapse. Below lg the Menu button above owns the
-                  rail, so this is hidden there. */}
-              <button
-                aria-label="Collapse sidebar"
-                className="hidden shrink-0 rounded-md border border-border p-2 text-body transition-all duration-200 ease-in-out hover:bg-surface-subtle lg:inline-flex"
-                onClick={() => setSidebarCollapsed(true)}
-                title="Collapse sidebar (⌘/Ctrl+B)"
-                type="button"
-              >
-                <PanelLeftClose aria-hidden className="size-4" />
-              </button>
+            <button
+              aria-controls="app-nav"
+              aria-expanded={isNavOpen}
+              className="-ml-1.5 flex size-8 items-center justify-center rounded-md text-body transition-colors duration-200 ease-in-out hover:bg-surface-subtle hover:text-foreground lg:hidden"
+              onClick={() => setIsNavOpen((open) => !open)}
+              type="button"
+            >
+              {isNavOpen ? (
+                <PanelLeftClose aria-hidden="true" className="size-5" />
+              ) : (
+                <PanelLeft aria-hidden="true" className="size-5" />
+              )}
+              <span className="sr-only">
+                {isNavOpen ? "Close menu" : "Open menu"}
+              </span>
+            </button>
+
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-widest text-accent-strong">
+                MyHub
+              </p>
+              <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-foreground lg:mt-2 lg:text-2xl">
+                {title}
+              </h1>
             </div>
+
+            {/* Desktop-only collapse. Below lg the icon button above owns the
+                rail, so this is hidden there. */}
+            <button
+              aria-label="Collapse sidebar"
+              className="hidden shrink-0 rounded-md border border-border p-2 text-body transition-all duration-200 ease-in-out hover:bg-surface-subtle lg:inline-flex"
+              onClick={() => setSidebarCollapsed(true)}
+              title="Collapse sidebar (⌘/Ctrl+B)"
+              type="button"
+            >
+              <PanelLeftClose aria-hidden className="size-4" />
+            </button>
 
             {/* `hidden` only below lg, and only while closed — at lg the rail is
                 always expanded, so nothing about the desktop DOM changes. */}

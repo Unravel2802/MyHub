@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Dumbbell } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Dumbbell, SearchX } from "lucide-react";
 import { AppShell } from "@/src/components/AppShell";
+import { EmptyState } from "@/src/components/ui/EmptyState";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { hueFor } from "@/src/components/moduleHues";
@@ -13,7 +16,12 @@ import { DrillDetail } from "@/src/modules/designDrills/components/DrillDetail";
 import { DrillWorkspace } from "@/src/modules/designDrills/components/DrillWorkspace";
 import { useDesignDrillsStore } from "@/src/modules/designDrills/useDesignDrillsStore";
 
-export function DesignDrillsPage() {
+interface DesignDrillsPageProps {
+  slug?: string;
+}
+
+export function DesignDrillsPage({ slug }: DesignDrillsPageProps) {
+  const router = useRouter();
   const {
     drills,
     attempts,
@@ -23,18 +31,32 @@ export function DesignDrillsPage() {
     error,
     fetchDrills,
     fetchAttempts,
+    fetchBookmarks,
     startAttempt,
     submitAttempt,
     saveAttemptNotes,
+    toggleBookmark,
+    isBookmarked,
+    drillBySlug,
   } = useDesignDrillsStore();
 
   const [activeAttemptId, setActiveAttemptId] = useState<string | null>(null);
-  const [previewDrillId, setPreviewDrillId] = useState<string | null>(null);
   const [startingDrillId, setStartingDrillId] = useState<string | null>(null);
+  const [drillsLoaded, setDrillsLoaded] = useState(false);
 
   useEffect(() => {
-    void Promise.all([fetchDrills(), fetchAttempts()]);
-  }, [fetchDrills, fetchAttempts]);
+    let active = true;
+    void Promise.all([
+      fetchDrills(),
+      fetchAttempts(),
+      fetchBookmarks(),
+    ]).finally(() => {
+      if (active) setDrillsLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [fetchDrills, fetchAttempts, fetchBookmarks]);
 
   useEffect(() => {
     register("design-drills", [
@@ -70,10 +92,7 @@ export function DesignDrillsPage() {
         : null,
     [drills, activeAttempt],
   );
-  const previewDrill = useMemo(
-    () => drills.find((drill) => drill.id === previewDrillId) ?? null,
-    [drills, previewDrillId],
-  );
+  const focusedDrill = slug ? drillBySlug(slug) : undefined;
 
   const completedCount = useMemo(
     () => attempts.filter((attempt) => attempt.completedAt).length,
@@ -88,7 +107,6 @@ export function DesignDrillsPage() {
     setStartingDrillId(drillId);
     try {
       const attempt = await startAttempt(drillId);
-      setPreviewDrillId(null);
       setActiveAttemptId(attempt.id);
     } catch {
       // store.error already holds the user-facing message; nothing else to do.
@@ -106,7 +124,13 @@ export function DesignDrillsPage() {
               className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
               disabled={isLoading}
               id="drills-refresh"
-              onClick={() => void Promise.all([fetchDrills(), fetchAttempts()])}
+              onClick={() =>
+                void Promise.all([
+                  fetchDrills(),
+                  fetchAttempts(),
+                  fetchBookmarks(),
+                ])
+              }
               type="button"
             >
               Refresh
@@ -146,15 +170,38 @@ export function DesignDrillsPage() {
             )}
             pending={pendingIds.includes(activeAttempt.id)}
           />
-        ) : previewDrill ? (
+        ) : slug && !drillsLoaded ? (
+          <EmptyState
+            description="Loading the drill and your previous attempts."
+            icon={Dumbbell}
+            title="Loading drill…"
+          />
+        ) : slug && focusedDrill ? (
           <DrillDetail
-            drill={previewDrill}
-            isStarting={isStarting && startingDrillId === previewDrill.id}
-            onBack={() => setPreviewDrillId(null)}
-            onStart={() => void handleStart(previewDrill.id)}
+            bookmarked={isBookmarked(focusedDrill.id)}
+            bookmarkPending={pendingIds.includes(focusedDrill.id)}
+            drill={focusedDrill}
+            isStarting={isStarting && startingDrillId === focusedDrill.id}
+            onBack={() => router.push("/design-drills")}
+            onStart={() => void handleStart(focusedDrill.id)}
+            onToggleBookmark={() => void toggleBookmark(focusedDrill.id)}
             pastAttempts={attempts.filter(
-              (attempt) => attempt.drillId === previewDrill.id,
+              (attempt) => attempt.drillId === focusedDrill.id,
             )}
+          />
+        ) : slug ? (
+          <EmptyState
+            action={
+              <Link
+                className="inline-flex h-10 items-center rounded-md border border-input bg-surface px-4 text-sm font-medium text-body hover:border-input-hover"
+                href="/design-drills"
+              >
+                Browse all drills
+              </Link>
+            }
+            description="This drill may have moved or the link may be incorrect."
+            icon={SearchX}
+            title="Drill not found"
           />
         ) : (
           <div className="grid gap-6">
@@ -174,9 +221,11 @@ export function DesignDrillsPage() {
             <DrillList
               attempts={attempts}
               drills={drills}
+              isBookmarked={isBookmarked}
               isStarting={isStarting}
-              onOpen={setPreviewDrillId}
               onStart={handleStart}
+              onToggleBookmark={(drillId) => void toggleBookmark(drillId)}
+              pendingIds={pendingIds}
               startingDrillId={startingDrillId}
             />
           </div>

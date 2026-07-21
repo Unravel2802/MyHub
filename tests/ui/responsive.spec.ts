@@ -12,6 +12,7 @@ const PAGES = [
   "/notes",
   "/finance",
   "/design-drills",
+  "/design-drills/url-shortener",
 ];
 
 test.use({ viewport: { width: 390, height: 844 } });

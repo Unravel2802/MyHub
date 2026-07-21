@@ -78,14 +78,13 @@ test("lists seeded drills and opens the structured editorial", async ({
   );
   await load(page, db);
 
+  await expect(page.getByRole("link", { name: "URL Shortener" })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "URL Shortener" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "ML Feature Store" }),
+    page.getByRole("link", { name: "ML Feature Store" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "URL Shortener" }).click();
+  await page.getByRole("link", { name: "URL Shortener" }).click();
+  await expect(page).toHaveURL("/design-drills/url-shortener");
   await expect(
     page.getByRole("heading", { name: "Your past attempts" }),
   ).toBeVisible();
@@ -103,9 +102,14 @@ test("lists seeded drills and opens the structured editorial", async ({
   await expect(
     solutionPanel.getByRole("navigation", { name: "Solution outline" }),
   ).toBeVisible();
-  await expect(
-    solutionPanel.getByRole("link", { name: "2. Key generation" }),
-  ).toHaveAttribute("href", "#key-generation");
+  const sectionLink = solutionPanel.getByRole("link", {
+    name: "2. Key generation",
+  });
+  await expect(sectionLink).toHaveAttribute("href", "#key-generation");
+  await sectionLink.click();
+  await expect(page).toHaveURL(
+    /\/design-drills\/url-shortener#key-generation$/,
+  );
   await expect(
     solutionPanel.getByRole("heading", { name: "Key generation" }),
   ).toBeVisible();
@@ -122,7 +126,7 @@ test("falls back to the pre-wrapped legacy solution", async ({ page }) => {
   const db = seededDb();
   await load(page, db);
 
-  await page.getByRole("button", { name: "ML Feature Store" }).click();
+  await page.getByRole("link", { name: "ML Feature Store" }).click();
   await page.getByRole("tab", { name: "Solution" }).click();
 
   const solutionPanel = page.getByRole("tabpanel");
@@ -138,7 +142,7 @@ test("falls back to the pre-wrapped legacy solution", async ({ page }) => {
 test("runs a timed attempt and persists the self-grade", async ({ page }) => {
   const db = seededDb();
   await load(page, db);
-  await page.getByRole("button", { name: "URL Shortener" }).click();
+  await page.getByRole("link", { name: "URL Shortener" }).click();
   await page.getByRole("button", { name: "Start timed attempt" }).click();
 
   const timer = page.getByRole("timer");
@@ -178,7 +182,7 @@ test("runs a timed attempt and persists the self-grade", async ({ page }) => {
       self_rating: "solid",
     });
   await expect(
-    page.getByRole("button", { name: "URL Shortener" }),
+    page.getByRole("heading", { name: "URL Shortener" }),
   ).toBeVisible();
 });
 
@@ -194,7 +198,71 @@ test("rolls back a failed timed-attempt create", async ({ page }) => {
     page.getByText("Something went wrong, please try again later."),
   ).toBeVisible();
   await expect.poll(() => db.attempts).toHaveLength(0);
+  await expect(page.getByRole("link", { name: "URL Shortener" })).toBeVisible();
+});
+
+test("loads a known drill directly and shows not-found after loading an unknown slug", async ({
+  page,
+}) => {
+  const db = seededDb();
+  await mockSupabaseDesignDrills(page, db);
+
+  await page.goto("/design-drills/url-shortener");
   await expect(
-    page.getByRole("button", { name: "URL Shortener" }),
+    page.getByRole("heading", { name: "URL Shortener" }),
+  ).toBeVisible();
+  await expect(page.getByText("Drill not found")).toHaveCount(0);
+
+  await page.goto("/design-drills/does-not-exist");
+  await expect(page.getByText("Drill not found")).toBeVisible();
+  await expect(page.getByText("Loading drill…")).toHaveCount(0);
+});
+
+test("persists bookmarks and filters the drill bank", async ({ page }) => {
+  const db = seededDb();
+  await load(page, db);
+
+  const bookmark = page.getByRole("button", {
+    name: "Bookmark URL Shortener",
+  });
+  await bookmark.click();
+  await expect.poll(() => db.bookmarks).toHaveLength(1);
+  await expect(db.bookmarks[0]).toMatchObject({
+    drill_id: "url-shortener",
+    deleted_at: null,
+  });
+  await expect(
+    page.getByRole("button", { name: "Remove URL Shortener bookmark" }),
+  ).toHaveAttribute("aria-pressed", "true");
+
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Remove URL Shortener bookmark" }),
+  ).toHaveAttribute("aria-pressed", "true");
+
+  await page.getByRole("button", { name: "Bookmarked only" }).click();
+  await expect(page.getByRole("link", { name: "URL Shortener" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "ML Feature Store" }),
+  ).toHaveCount(0);
+});
+
+test("searches drills by prompt and clears the query", async ({ page }) => {
+  const db = seededDb();
+  await load(page, db);
+
+  const search = page.getByRole("searchbox", { name: "Search drills" });
+  await search.fill("online and offline");
+  await expect(
+    page.getByRole("link", { name: "ML Feature Store" }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "URL Shortener" })).toHaveCount(
+    0,
+  );
+
+  await search.fill("");
+  await expect(page.getByRole("link", { name: "URL Shortener" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "ML Feature Store" }),
   ).toBeVisible();
 });

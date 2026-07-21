@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { AuthGate } from "@/src/components/AuthGate";
 import { CommandPalette } from "@/src/components/CommandPalette";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
@@ -13,6 +14,13 @@ import { UnlockToaster } from "@/src/modules/momentum/components/UnlockToaster";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 import { useCommandPaletteStore } from "@/src/modules/commandPalette/useCommandPaletteStore";
 import { signOut } from "@/src/lib/auth";
+import {
+  getServerSidebarCollapsed,
+  getSidebarCollapsed,
+  setSidebarCollapsed,
+  subscribeSidebar,
+  toggleSidebar,
+} from "@/src/lib/sidebar";
 import { getCommand, register, unregister } from "@/src/lib/commandPalette";
 import {
   matchShortcut,
@@ -35,6 +43,11 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
   const refresh = useMomentumStore((state) => state.refresh);
   const subscribeToUpdates = useMomentumStore(
     (state) => state.subscribeToUpdates,
+  );
+  const collapsed = useSyncExternalStore(
+    subscribeSidebar,
+    getSidebarCollapsed,
+    getServerSidebarCollapsed,
   );
   const mounted = useRef(false);
   useEffect(() => {
@@ -63,6 +76,12 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
           openPalette();
         },
       },
+      {
+        id: "toggle-sidebar",
+        label: "Toggle sidebar",
+        keywords: ["sidebar", "nav", "collapse", "expand", "rail"],
+        action: toggleSidebar,
+      },
     ]);
     registerShortcuts("app-shell", [
       {
@@ -74,6 +93,11 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
         combo: "/",
         commandId: "app-shell.quick-add",
         description: "Open quick add",
+      },
+      {
+        combo: "mod+b",
+        commandId: "app-shell.toggle-sidebar",
+        description: "Toggle the sidebar",
       },
     ]);
 
@@ -121,8 +145,12 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
   return (
     <AuthGate>
       <main className="min-h-screen bg-canvas text-foreground">
-        <div className="grid min-h-screen lg:grid-cols-[260px_1fr]">
-          <aside className="flex flex-col gap-6 border-b border-border bg-surface px-6 py-5 lg:sticky lg:top-0 lg:h-screen lg:gap-8 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-6">
+        <div
+          className={`grid min-h-screen ${collapsed ? "lg:grid-cols-1" : "lg:grid-cols-[260px_1fr]"}`}
+        >
+          <aside
+            className={`flex flex-col gap-6 border-b border-border bg-surface px-6 py-5 lg:sticky lg:top-0 lg:h-screen lg:gap-8 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-6 ${collapsed ? "lg:hidden" : ""}`}
+          >
             <div className="flex items-center justify-between gap-3 lg:block">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-widest text-accent-strong">
@@ -140,6 +168,17 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
                 type="button"
               >
                 {isNavOpen ? "Close" : "Menu"}
+              </button>
+              {/* Desktop-only collapse. Below lg the Menu button above owns the
+                  rail, so this is hidden there. */}
+              <button
+                aria-label="Collapse sidebar"
+                className="hidden shrink-0 rounded-md border border-border p-2 text-body transition-all duration-200 ease-in-out hover:bg-surface-subtle lg:inline-flex"
+                onClick={() => setSidebarCollapsed(true)}
+                title="Collapse sidebar (⌘/Ctrl+B)"
+                type="button"
+              >
+                <PanelLeftClose aria-hidden className="size-4" />
               </button>
             </div>
 
@@ -189,6 +228,20 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
               </div>
             </div>
           </aside>
+
+          {/* Reopen affordance while the rail is collapsed. Desktop-only: on
+              mobile the rail is never collapsed via this path. */}
+          {collapsed ? (
+            <button
+              aria-label="Open sidebar"
+              className="fixed left-0 top-1/2 z-30 hidden -translate-y-1/2 items-center justify-center rounded-r-md border border-l-0 border-border bg-surface p-2 text-body shadow-sm transition-all duration-200 ease-in-out hover:bg-surface-subtle lg:inline-flex"
+              onClick={() => setSidebarCollapsed(false)}
+              title="Open sidebar (⌘/Ctrl+B)"
+              type="button"
+            >
+              <PanelLeftOpen aria-hidden className="size-4" />
+            </button>
+          ) : null}
 
           {children}
         </div>

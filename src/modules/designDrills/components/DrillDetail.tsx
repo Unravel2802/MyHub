@@ -72,7 +72,7 @@ export function DrillDetail({
           Target: ~{drill.estimatedMinutes} min
         </p>
         <div className="mt-4">
-          <DrillBrief prompt={drill.prompt} solution={drill.solution} />
+          <DrillBrief drill={drill} />
         </div>
       </section>
 

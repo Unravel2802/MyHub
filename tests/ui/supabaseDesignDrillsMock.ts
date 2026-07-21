@@ -9,6 +9,7 @@ export type DesignDrillRow = {
   prompt: string;
   rubric: string[];
   solution: string;
+  solution_detail: unknown;
   estimated_minutes: number;
   tags: string[];
   deleted_at: string | null;
@@ -47,6 +48,7 @@ export function designDrillRow(
     rubric: ["Covers key generation", "Covers caching and hot keys"],
     solution:
       "Use a write service to allocate unique IDs and encode them in Base62.\nCache hot redirects at the edge and in Redis.",
+    solution_detail: null,
     estimated_minutes: 30,
     tags: ["hashing", "caching"],
     deleted_at: null,

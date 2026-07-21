@@ -31,7 +31,16 @@ export type DesignDrillAttemptRow = {
   updated_at: string;
 };
 
-type TableName = "design_drills" | "design_drill_attempts";
+export type DesignDrillBookmarkRow = {
+  id: string;
+  drill_id: string;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type TableName =
+  "design_drills" | "design_drill_attempts" | "design_drill_bookmarks";
 type Method = "POST" | "PATCH";
 
 const timestamp = () => new Date().toISOString();
@@ -80,14 +89,17 @@ export function designDrillAttemptRow(
 export class FakeDesignDrillsDb {
   drills: DesignDrillRow[];
   attempts: DesignDrillAttemptRow[];
+  bookmarks: DesignDrillBookmarkRow[];
   private failures: { table: TableName; method: Method }[] = [];
 
   constructor(
     drills: DesignDrillRow[] = [],
     attempts: DesignDrillAttemptRow[] = [],
+    bookmarks: DesignDrillBookmarkRow[] = [],
   ) {
     this.drills = drills;
     this.attempts = attempts;
+    this.bookmarks = bookmarks;
   }
 
   failNext(table: TableName, method: Method) {
@@ -128,13 +140,15 @@ export async function mockSupabaseDesignDrills(
   db: FakeDesignDrillsDb,
 ) {
   await page.route(
-    "**/rest/v1/{design_drills,design_drill_attempts}*",
+    "**/rest/v1/{design_drills,design_drill_attempts,design_drill_bookmarks}*",
     async (route) => {
       const request = route.request();
       const url = new URL(request.url());
       const table: TableName = url.pathname.includes("design_drill_attempts")
         ? "design_drill_attempts"
-        : "design_drills";
+        : url.pathname.includes("design_drill_bookmarks")
+          ? "design_drill_bookmarks"
+          : "design_drills";
       const method = request.method();
 
       if (db.takeFailure(table, method)) {
@@ -158,7 +172,11 @@ export async function mockSupabaseDesignDrills(
       };
 
       const rows = (
-        table === "design_drills" ? db.drills : db.attempts
+        table === "design_drills"
+          ? db.drills
+          : table === "design_drill_attempts"
+            ? db.attempts
+            : db.bookmarks
       ) as Record<string, unknown>[];
 
       if (method === "GET") {
@@ -183,6 +201,21 @@ export async function mockSupabaseDesignDrills(
           updated_at: now,
         };
         db.attempts.unshift(created);
+        await respond([created]);
+        return;
+      }
+
+      if (method === "POST" && table === "design_drill_bookmarks") {
+        const now = timestamp();
+        const payload = request.postDataJSON() as Record<string, unknown>;
+        const created: DesignDrillBookmarkRow = {
+          id: crypto.randomUUID(),
+          drill_id: String(payload.drill_id),
+          deleted_at: null,
+          created_at: now,
+          updated_at: now,
+        };
+        db.bookmarks.unshift(created);
         await respond([created]);
         return;
       }

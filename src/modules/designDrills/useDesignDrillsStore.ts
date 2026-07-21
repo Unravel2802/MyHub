@@ -20,6 +20,9 @@ export interface DesignDrillsStore {
   // controls rather than freezing the whole panel.
   isStarting: boolean;
   pendingIds: string[];
+  // Ids of drills the user has starred. Loaded via fetchBookmarks; kept as a
+  // flat id list (bookmarks live in their own table, not on the drill row).
+  bookmarkedDrillIds: string[];
 
   fetchDrills: () => Promise<void>;
   fetchAttempts: () => Promise<void>;
@@ -36,7 +39,18 @@ export interface DesignDrillsStore {
   saveAttemptNotes: (id: string, notes: string) => Promise<void>;
   deleteAttempt: (id: string) => Promise<void>;
 
+  fetchBookmarks: () => Promise<void>;
+  // Optimistically stars/unstars a drill and rolls back on failure. Tracks the
+  // drill id in pendingIds while the write is in flight, like the other mutators.
+  toggleBookmark: (drillId: string) => Promise<void>;
+
   attemptsForDrill: (drillId: string) => DesignDrillAttempt[];
+  isBookmarked: (drillId: string) => boolean;
+  // Resolves a drill from its URL slug, for the deep-linkable
+  // /design-drills/[slug] route. Returns undefined while drills are still
+  // loading or when the slug matches nothing — the route treats undefined as
+  // "not found" (render a not-found state / call notFound()).
+  drillBySlug: (slug: string) => DesignDrill | undefined;
 }
 
 const FAILURE_MESSAGE = "Something went wrong, please try again later.";
@@ -59,6 +73,7 @@ export const useDesignDrillsStore = create<DesignDrillsStore>((set, get) => {
     error: null,
     isStarting: false,
     pendingIds: [],
+    bookmarkedDrillIds: [],
 
     fetchDrills: async () => {
       set({ isLoading: true, error: null });
@@ -195,7 +210,45 @@ export const useDesignDrillsStore = create<DesignDrillsStore>((set, get) => {
       }
     },
 
+    fetchBookmarks: async () => {
+      try {
+        const bookmarkedDrillIds =
+          await DesignDrillsRepository.listBookmarkedDrillIds();
+        set({ bookmarkedDrillIds });
+      } catch (error) {
+        set({ error: toUserMessage(error) });
+      }
+    },
+
+    toggleBookmark: async (drillId) => {
+      const previous = get().bookmarkedDrillIds;
+      const wasBookmarked = previous.includes(drillId);
+      set({
+        bookmarkedDrillIds: wasBookmarked
+          ? previous.filter((id) => id !== drillId)
+          : [...previous, drillId],
+        error: null,
+      });
+      addPending(drillId);
+
+      try {
+        if (wasBookmarked) {
+          await DesignDrillsRepository.removeBookmark(drillId);
+        } else {
+          await DesignDrillsRepository.addBookmark(drillId);
+        }
+      } catch (error) {
+        set({ bookmarkedDrillIds: previous, error: toUserMessage(error) });
+      } finally {
+        removePending(drillId);
+      }
+    },
+
     attemptsForDrill: (drillId) =>
       get().attempts.filter((attempt) => attempt.drillId === drillId),
+
+    isBookmarked: (drillId) => get().bookmarkedDrillIds.includes(drillId),
+
+    drillBySlug: (slug) => get().drills.find((drill) => drill.slug === slug),
   };
 });

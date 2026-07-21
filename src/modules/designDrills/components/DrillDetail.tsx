@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { DrillBookmarkButton } from "@/src/modules/designDrills/components/DrillBookmarkButton";
 import { DrillBrief } from "@/src/modules/designDrills/components/DrillBrief";
 import { DESIGN_DRILL_CATEGORY_HUES } from "@/src/modules/designDrills/designDrillHues";
 import type {
@@ -23,7 +24,10 @@ interface DrillDetailProps {
   drill: DesignDrill;
   isStarting: boolean;
   pastAttempts: DesignDrillAttempt[];
+  bookmarked: boolean;
+  bookmarkPending: boolean;
   onBack: () => void;
+  onToggleBookmark: () => void;
   onStart: () => void;
 }
 
@@ -31,7 +35,10 @@ export function DrillDetail({
   drill,
   isStarting,
   pastAttempts,
+  bookmarked,
+  bookmarkPending,
   onBack,
+  onToggleBookmark,
   onStart,
 }: DrillDetailProps) {
   const completedAttempts = pastAttempts.filter(
@@ -49,14 +56,22 @@ export function DrillDetail({
           <ArrowLeft aria-hidden className="size-4" />
           Back to drills
         </button>
-        <button
-          className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
-          disabled={isStarting}
-          onClick={onStart}
-          type="button"
-        >
-          {isStarting ? "Starting…" : "Start timed attempt"}
-        </button>
+        <div className="flex items-center gap-2">
+          <DrillBookmarkButton
+            bookmarked={bookmarked}
+            disabled={bookmarkPending}
+            drillTitle={drill.title}
+            onToggle={onToggleBookmark}
+          />
+          <button
+            className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
+            disabled={isStarting}
+            onClick={onStart}
+            type="button"
+          >
+            {isStarting ? "Starting…" : "Start timed attempt"}
+          </button>
+        </div>
       </div>
 
       <section className="rounded-lg border border-border bg-surface p-5">

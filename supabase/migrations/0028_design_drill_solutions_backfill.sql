@@ -1,5 +1,17 @@
--- REVIEW DRAFT ONLY — intentionally outside supabase/migrations.
--- Claude owns review and landing as 0028_design_drill_solutions_backfill.sql.
+-- Design Drills: backfill structured editorial solutions for the remaining 22
+-- drills — the 25 in the bank minus the 3 exemplars authored in 0027
+-- (url-shortener, rate-limiter, recommendation-system).
+--
+-- Sets `solution_detail` (jsonb) on each: the intuition summary + ordered GFM
+-- markdown sections + the "scale, latency & cost" estimates block, mirroring the
+-- 0027 exemplar shape. Validated defensively by
+-- DesignDrillsRepository/parseSolutionDetail — a malformed blob falls back to the
+-- plain-text `solution` and never throws.
+--
+-- Content drafted by Codex against the 0027 exemplars and reviewed by Claude
+-- (22 drills, all expected slugs, balanced dollar-quoting). Re-runnable: plain
+-- UPDATE ... WHERE slug. jsonb is built with jsonb_build_object/array so each
+-- markdown body is a dollar-quoted $md$…$md$ literal (no JSON escaping).
 
 -- Original-bank drills not covered by the three 0027 exemplars ----------------
 

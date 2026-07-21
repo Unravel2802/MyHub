@@ -11,6 +11,7 @@ const PAGES = [
   "/offers",
   "/notes",
   "/finance",
+  "/design-drills",
 ];
 
 test.use({ viewport: { width: 390, height: 844 } });

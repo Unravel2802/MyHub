@@ -115,6 +115,7 @@ function drillRow(overrides: Record<string, unknown> = {}) {
     title: "URL Shortener",
     prompt: "Design a URL shortener.",
     rubric: ["Covers key generation", "Covers caching"],
+    solution: "Use Base62 IDs and cache hot redirects.",
     estimated_minutes: 30,
     tags: ["hashing"],
     deleted_at: null,
@@ -155,6 +156,7 @@ describe("DesignDrillsRepository drills", () => {
         id: "drill-1",
         category: "system_design",
         rubric: ["Covers key generation", "Covers caching"],
+        solution: "Use Base62 IDs and cache hot redirects.",
       }),
     ]);
   });

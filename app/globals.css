@@ -346,6 +346,77 @@ body {
     0 8px 10px -6px rgb(0 0 0 / 0.5);
 }
 
+/* --- Markdown editorial (src/components/ui/Markdown.tsx) ---------------------
+   The `<Markdown>` component maps block elements onto tokens inline; two things
+   can only live in CSS: neutralizing the inline-code pill when code sits inside
+   a fenced <pre>, and the highlight.js token theme. Both are scoped to
+   `.md-content` so they never leak into the rest of the app. */
+
+/* rehype-highlight tags fenced code with `.hljs`; the inline `code` component
+   paints a pill, so reset that back to the bare block inside <pre>. */
+.md-content pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  border-radius: 0;
+}
+
+/* Syntax theme built from the hue kit, so it re-themes for light/dark with the
+   same variables every other colored surface uses — no separate dark rules. */
+.md-content .hljs {
+  color: var(--body);
+}
+.md-content .hljs-comment,
+.md-content .hljs-quote,
+.md-content .hljs-meta {
+  color: var(--muted);
+  font-style: italic;
+}
+.md-content .hljs-keyword,
+.md-content .hljs-selector-tag,
+.md-content .hljs-literal,
+.md-content .hljs-section,
+.md-content .hljs-doctag {
+  color: var(--hue-violet);
+}
+.md-content .hljs-string,
+.md-content .hljs-regexp,
+.md-content .hljs-addition {
+  color: var(--hue-emerald);
+}
+.md-content .hljs-number,
+.md-content .hljs-symbol,
+.md-content .hljs-bullet {
+  color: var(--hue-amber);
+}
+.md-content .hljs-title,
+.md-content .hljs-title.function_,
+.md-content .hljs-name {
+  color: var(--hue-blue);
+}
+.md-content .hljs-built_in,
+.md-content .hljs-type,
+.md-content .hljs-class .hljs-title,
+.md-content .hljs-params {
+  color: var(--hue-cyan);
+}
+.md-content .hljs-attr,
+.md-content .hljs-attribute,
+.md-content .hljs-property,
+.md-content .hljs-variable {
+  color: var(--hue-orange);
+}
+.md-content .hljs-deletion {
+  color: var(--danger);
+}
+.md-content .hljs-emphasis {
+  font-style: italic;
+}
+.md-content .hljs-strong {
+  font-weight: 600;
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;

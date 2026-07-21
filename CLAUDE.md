@@ -38,6 +38,12 @@ rather than picking a "reasonable" alternative.
 - Class utilities: `clsx` + `tailwind-merge` via the `cn()` helper (`src/lib/cn.ts`);
   `class-variance-authority` (CVA), used by generated shadcn components.
 - Icons: `lucide-react`.
+- Markdown rendering: `react-markdown` + `remark-gfm` + `rehype-highlight` — added 2026-07-21 for
+  the Design Drills LeetCode-editorial solutions. This reverses the earlier "no markdown renderer"
+  call (migration 0025's comment), which the Lead Architect approved. Render **only** through the
+  shared `src/components/ui/Markdown.tsx` wrapper — never add `rehype-raw` or otherwise render raw
+  HTML from the DB, and don't reach for `@tailwindcss/typography`/`prose` (not installed; the
+  wrapper maps elements onto the semantic tokens by hand).
 - One-off scripts (`scripts/*.ts`, not application code): `tsx` — added 2026-07-13 for the seed
   and backup scripts. Follow the convention those scripts already establish (see
   `docs/handoff/rls-audit-and-backup-script.md`) rather than picking a different runner.

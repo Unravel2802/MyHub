@@ -31,6 +31,7 @@ function drill(overrides: Partial<DesignDrill> & { id: string }): DesignDrill {
     prompt: "Design a URL shortener.",
     rubric: ["Covers key generation"],
     solution: "",
+    solutionDetail: null,
     estimatedMinutes: 30,
     tags: [],
     deletedAt: null,

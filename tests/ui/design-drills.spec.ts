@@ -190,6 +190,31 @@ test("runs a timed attempt and persists the self-grade", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("highlights code, renders line numbers, and remembers the language", async ({
+  page,
+}) => {
+  const db = seededDb();
+  await load(page, db);
+  await page.getByRole("link", { name: "URL Shortener", exact: true }).click();
+  await page.getByRole("button", { name: "Start timed attempt" }).click();
+
+  const language = page.getByRole("combobox", { name: "Code language" });
+  await expect(language).toHaveValue("markdown");
+  await language.selectOption("javascript");
+  await page
+    .getByLabel("Your design (scratchpad)")
+    .fill("const cache = new Map();\nreturn cache;");
+
+  const highlightedCode = page.locator(".code-pad code.language-javascript");
+  await expect(highlightedCode).toHaveClass(/hljs/);
+  await expect(highlightedCode.locator(".hljs-keyword")).toHaveCount(3);
+  await expect(page.locator(".code-pad-line-number")).toHaveText(["1", "2"]);
+
+  await page.reload();
+  await page.getByRole("button", { name: "Start timed attempt" }).click();
+  await expect(language).toHaveValue("javascript");
+});
+
 test("rolls back a failed timed-attempt create", async ({ page }) => {
   const db = seededDb();
   db.failNext("design_drill_attempts", "POST");

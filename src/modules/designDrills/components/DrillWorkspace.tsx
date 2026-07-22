@@ -6,6 +6,7 @@ import { Badge } from "@/src/components/ui/Badge";
 import type { SubmitAttemptInput } from "@/src/modules/designDrills/DesignDrillsRepository";
 import { DESIGN_DRILL_CATEGORY_HUES } from "@/src/modules/designDrills/designDrillHues";
 import { DrillBrief } from "@/src/modules/designDrills/components/DrillBrief";
+import { CodePad } from "@/src/modules/designDrills/components/CodePad";
 import type {
   DesignDrill,
   DesignDrillAttempt,
@@ -138,7 +139,7 @@ export function DrillWorkspace({
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 xl:grid-cols-2">
         <section className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="px-5 pb-4 pt-5">
             <div className="flex flex-wrap items-center gap-2">
@@ -207,10 +208,9 @@ export function DrillWorkspace({
               <label className="sr-only" htmlFor={scratchpadId}>
                 Your design (scratchpad)
               </label>
-              <textarea
-                className="min-h-80 w-full rounded-md border border-input bg-surface px-3 py-2 font-mono text-sm text-foreground outline-none placeholder:text-subtle focus:border-accent"
+              <CodePad
                 id={scratchpadId}
-                onChange={(event) => setNotes(event.target.value)}
+                onChange={setNotes}
                 placeholder={
                   "Requirements & scale\n\nAPI design\n\nHigh-level design\n\nDeep dive\n\nTrade-offs"
                 }

@@ -124,6 +124,79 @@ test("lists seeded drills and opens the structured editorial", async ({
   ).toHaveText("read-heavy key-value lookup");
 });
 
+test("shows completed attempts newest first with saved notes and an improving rating trend", async ({
+  page,
+}) => {
+  const db = seededDb();
+  db.attempts.push(
+    designDrillAttemptRow({
+      id: "oldest-attempt",
+      drill_id: "url-shortener",
+      started_at: "2026-07-01T10:00:00.000Z",
+      completed_at: "2026-07-01T10:30:00.000Z",
+      duration_sec: 1800,
+      notes: "Missed the cache invalidation story.",
+      rubric_hits: [],
+      self_rating: "weak",
+    }),
+    designDrillAttemptRow({
+      id: "newest-attempt",
+      drill_id: "url-shortener",
+      started_at: "2026-07-03T10:00:00.000Z",
+      completed_at: "2026-07-03T10:20:00.000Z",
+      duration_sec: 1200,
+      notes:
+        "## Better design\n\nUsed **Base62 IDs** and a Redis hot-key cache.",
+      rubric_hits: [0, 1],
+      self_rating: "strong",
+    }),
+    designDrillAttemptRow({
+      id: "middle-attempt",
+      drill_id: "url-shortener",
+      started_at: "2026-07-02T10:00:00.000Z",
+      completed_at: "2026-07-02T10:25:00.000Z",
+      duration_sec: 1500,
+      notes: "Covered IDs but only sketched caching.",
+      rubric_hits: [0],
+      self_rating: "solid",
+    }),
+  );
+  await load(page, db);
+
+  await page.getByRole("link", { name: "URL Shortener", exact: true }).click();
+
+  const timeline = page.getByRole("list", {
+    name: "Completed attempt timeline",
+  });
+  const attempts = timeline.locator(":scope > li");
+  await expect(attempts).toHaveCount(3);
+  await expect(attempts.nth(0)).toContainText("7/3/2026");
+  await expect(attempts.nth(0)).toContainText("20:00");
+  await expect(attempts.nth(0)).toContainText("Strong");
+  await expect(attempts.nth(1)).toContainText("7/2/2026");
+  await expect(attempts.nth(1)).toContainText("Solid");
+  await expect(attempts.nth(2)).toContainText("7/1/2026");
+  await expect(attempts.nth(2)).toContainText("Weak");
+
+  await expect(
+    page.getByRole("img", {
+      name: "Self-rating trend, oldest to newest: weak, solid, strong",
+    }),
+  ).toBeVisible();
+
+  const newestAttempt = attempts.nth(0);
+  await expect(newestAttempt.getByLabel("Hit")).toHaveCount(2);
+  await newestAttempt.getByText("View notes").click();
+  await expect(
+    newestAttempt.getByRole("heading", { name: "Better design" }),
+  ).toBeVisible();
+  await expect(newestAttempt.locator("strong")).toHaveText("Base62 IDs");
+
+  const middleAttempt = attempts.nth(1);
+  await expect(middleAttempt.getByLabel("Hit")).toHaveCount(1);
+  await expect(middleAttempt.getByLabel("Missed")).toHaveCount(1);
+});
+
 test("falls back to the pre-wrapped legacy solution", async ({ page }) => {
   const db = seededDb();
   await load(page, db);

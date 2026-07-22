@@ -1,15 +1,20 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import { BookOpenCheck, FileText } from "lucide-react";
 import { Markdown } from "@/src/components/ui/Markdown";
 import { SolutionEditorial } from "@/src/modules/designDrills/components/SolutionEditorial";
 import type { DesignDrill } from "@/src/modules/designDrills/types";
 
 type BriefTab = "prompt" | "solution";
 
-const tabs: { id: BriefTab; label: string }[] = [
-  { id: "prompt", label: "Prompt" },
-  { id: "solution", label: "Solution" },
+const tabs: {
+  id: BriefTab;
+  label: string;
+  icon: typeof FileText;
+}[] = [
+  { id: "prompt", label: "Prompt", icon: FileText },
+  { id: "solution", label: "Solution", icon: BookOpenCheck },
 ];
 
 interface DrillBriefProps {
@@ -52,19 +57,20 @@ export function DrillBrief({ drill }: DrillBriefProps) {
     <div>
       <div
         aria-label="Drill brief"
-        className="flex gap-1 border-b border-border"
+        className="flex items-end gap-1 border-b border-border bg-surface-subtle px-5 pt-2"
         role="tablist"
       >
         {tabs.map((tab) => {
           const selected = activeTab === tab.id;
+          const Icon = tab.icon;
           return (
             <button
               aria-controls={`${id}-${tab.id}-panel`}
               aria-selected={selected}
-              className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ${
+              className={`-mb-px flex items-center gap-1.5 rounded-t-md border-x border-t px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ${
                 selected
-                  ? "border-accent text-accent-strong"
-                  : "border-transparent text-muted hover:border-input-hover hover:text-body"
+                  ? "border-border bg-surface text-accent-strong"
+                  : "border-transparent text-muted hover:bg-surface/60 hover:text-body"
               }`}
               id={`${id}-${tab.id}-tab`}
               key={tab.id}
@@ -77,6 +83,7 @@ export function DrillBrief({ drill }: DrillBriefProps) {
               tabIndex={selected ? 0 : -1}
               type="button"
             >
+              <Icon aria-hidden className="size-3.5" />
               {tab.label}
             </button>
           );
@@ -84,7 +91,7 @@ export function DrillBrief({ drill }: DrillBriefProps) {
       </div>
       <div
         aria-labelledby={`${id}-${activeTab}-tab`}
-        className="mt-4 text-sm leading-relaxed text-body"
+        className="px-5 pb-5 pt-4 text-sm leading-relaxed text-body"
         id={`${id}-${activeTab}-panel`}
         role="tabpanel"
         tabIndex={0}

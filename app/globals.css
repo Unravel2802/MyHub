@@ -350,7 +350,7 @@ body {
    The `<Markdown>` component maps block elements onto tokens inline; two things
    can only live in CSS: neutralizing the inline-code pill when code sits inside
    a fenced <pre>, and the highlight.js token theme. Both are scoped to
-   `.md-content` so they never leak into the rest of the app. */
+   the Markdown wrapper and code pad so they never leak elsewhere. */
 
 /* rehype-highlight tags fenced code with `.hljs`; the inline `code` component
    paints a pill, so reset that back to the bare block inside <pre>. */
@@ -364,56 +364,56 @@ body {
 
 /* Syntax theme built from the hue kit, so it re-themes for light/dark with the
    same variables every other colored surface uses — no separate dark rules. */
-.md-content .hljs {
+:is(.md-content, .code-pad) .hljs {
   color: var(--body);
 }
-.md-content .hljs-comment,
-.md-content .hljs-quote,
-.md-content .hljs-meta {
+:is(.md-content, .code-pad) .hljs-comment,
+:is(.md-content, .code-pad) .hljs-quote,
+:is(.md-content, .code-pad) .hljs-meta {
   color: var(--muted);
   font-style: italic;
 }
-.md-content .hljs-keyword,
-.md-content .hljs-selector-tag,
-.md-content .hljs-literal,
-.md-content .hljs-section,
-.md-content .hljs-doctag {
+:is(.md-content, .code-pad) .hljs-keyword,
+:is(.md-content, .code-pad) .hljs-selector-tag,
+:is(.md-content, .code-pad) .hljs-literal,
+:is(.md-content, .code-pad) .hljs-section,
+:is(.md-content, .code-pad) .hljs-doctag {
   color: var(--hue-violet);
 }
-.md-content .hljs-string,
-.md-content .hljs-regexp,
-.md-content .hljs-addition {
+:is(.md-content, .code-pad) .hljs-string,
+:is(.md-content, .code-pad) .hljs-regexp,
+:is(.md-content, .code-pad) .hljs-addition {
   color: var(--hue-emerald);
 }
-.md-content .hljs-number,
-.md-content .hljs-symbol,
-.md-content .hljs-bullet {
+:is(.md-content, .code-pad) .hljs-number,
+:is(.md-content, .code-pad) .hljs-symbol,
+:is(.md-content, .code-pad) .hljs-bullet {
   color: var(--hue-amber);
 }
-.md-content .hljs-title,
-.md-content .hljs-title.function_,
-.md-content .hljs-name {
+:is(.md-content, .code-pad) .hljs-title,
+:is(.md-content, .code-pad) .hljs-title.function_,
+:is(.md-content, .code-pad) .hljs-name {
   color: var(--hue-blue);
 }
-.md-content .hljs-built_in,
-.md-content .hljs-type,
-.md-content .hljs-class .hljs-title,
-.md-content .hljs-params {
+:is(.md-content, .code-pad) .hljs-built_in,
+:is(.md-content, .code-pad) .hljs-type,
+:is(.md-content, .code-pad) .hljs-class .hljs-title,
+:is(.md-content, .code-pad) .hljs-params {
   color: var(--hue-cyan);
 }
-.md-content .hljs-attr,
-.md-content .hljs-attribute,
-.md-content .hljs-property,
-.md-content .hljs-variable {
+:is(.md-content, .code-pad) .hljs-attr,
+:is(.md-content, .code-pad) .hljs-attribute,
+:is(.md-content, .code-pad) .hljs-property,
+:is(.md-content, .code-pad) .hljs-variable {
   color: var(--hue-orange);
 }
-.md-content .hljs-deletion {
+:is(.md-content, .code-pad) .hljs-deletion {
   color: var(--danger);
 }
-.md-content .hljs-emphasis {
+:is(.md-content, .code-pad) .hljs-emphasis {
   font-style: italic;
 }
-.md-content .hljs-strong {
+:is(.md-content, .code-pad) .hljs-strong {
   font-weight: 600;
 }
 

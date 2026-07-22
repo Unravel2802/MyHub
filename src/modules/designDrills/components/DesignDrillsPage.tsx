@@ -7,13 +7,13 @@ import { Dumbbell, SearchX } from "lucide-react";
 import { AppShell } from "@/src/components/AppShell";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { PageHeader } from "@/src/components/ui/PageHeader";
-import { StatCard } from "@/src/components/ui/StatCard";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 import { DrillList } from "@/src/modules/designDrills/components/DrillList";
 import { DrillDetail } from "@/src/modules/designDrills/components/DrillDetail";
 import { DrillWorkspace } from "@/src/modules/designDrills/components/DrillWorkspace";
+import { DrillProgressOverview } from "@/src/modules/designDrills/components/DrillProgressOverview";
 import { useDesignDrillsStore } from "@/src/modules/designDrills/useDesignDrillsStore";
 
 interface DesignDrillsPageProps {
@@ -93,15 +93,6 @@ export function DesignDrillsPage({ slug }: DesignDrillsPageProps) {
     [drills, activeAttempt],
   );
   const focusedDrill = slug ? drillBySlug(slug) : undefined;
-
-  const completedCount = useMemo(
-    () => attempts.filter((attempt) => attempt.completedAt).length,
-    [attempts],
-  );
-  const strongCount = useMemo(
-    () => attempts.filter((attempt) => attempt.selfRating === "strong").length,
-    [attempts],
-  );
 
   async function handleStart(drillId: string) {
     setStartingDrillId(drillId);
@@ -205,19 +196,7 @@ export function DesignDrillsPage({ slug }: DesignDrillsPageProps) {
           />
         ) : (
           <div className="grid gap-6">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <StatCard
-                hint="Timed attempts you've submitted and self-graded"
-                hue={hueFor("/design-drills")}
-                label="Attempts completed"
-                value={completedCount}
-              />
-              <StatCard
-                hint='Self-rated "strong" — ready for an onsite'
-                label="Strong reps"
-                value={strongCount}
-              />
-            </div>
+            <DrillProgressOverview attempts={attempts} drills={drills} />
             <DrillList
               attempts={attempts}
               drills={drills}

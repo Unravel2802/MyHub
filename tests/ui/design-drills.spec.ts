@@ -78,12 +78,14 @@ test("lists seeded drills and opens the structured editorial", async ({
   );
   await load(page, db);
 
-  await expect(page.getByRole("link", { name: "URL Shortener" })).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "ML Feature Store" }),
+    page.getByRole("link", { name: "URL Shortener", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "ML Feature Store", exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "URL Shortener" }).click();
+  await page.getByRole("link", { name: "URL Shortener", exact: true }).click();
   await expect(page).toHaveURL("/design-drills/url-shortener");
   await expect(
     page.getByRole("heading", { name: "Your past attempts" }),
@@ -126,7 +128,9 @@ test("falls back to the pre-wrapped legacy solution", async ({ page }) => {
   const db = seededDb();
   await load(page, db);
 
-  await page.getByRole("link", { name: "ML Feature Store" }).click();
+  await page
+    .getByRole("link", { name: "ML Feature Store", exact: true })
+    .click();
   await page.getByRole("tab", { name: "Solution" }).click();
 
   const solutionPanel = page.getByRole("tabpanel");
@@ -142,7 +146,7 @@ test("falls back to the pre-wrapped legacy solution", async ({ page }) => {
 test("runs a timed attempt and persists the self-grade", async ({ page }) => {
   const db = seededDb();
   await load(page, db);
-  await page.getByRole("link", { name: "URL Shortener" }).click();
+  await page.getByRole("link", { name: "URL Shortener", exact: true }).click();
   await page.getByRole("button", { name: "Start timed attempt" }).click();
 
   const timer = page.getByRole("timer");
@@ -198,7 +202,9 @@ test("rolls back a failed timed-attempt create", async ({ page }) => {
     page.getByText("Something went wrong, please try again later."),
   ).toBeVisible();
   await expect.poll(() => db.attempts).toHaveLength(0);
-  await expect(page.getByRole("link", { name: "URL Shortener" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "URL Shortener", exact: true }),
+  ).toBeVisible();
 });
 
 test("loads a known drill directly and shows not-found after loading an unknown slug", async ({
@@ -241,9 +247,11 @@ test("persists bookmarks and filters the drill bank", async ({ page }) => {
   ).toHaveAttribute("aria-pressed", "true");
 
   await page.getByRole("button", { name: "Bookmarked only" }).click();
-  await expect(page.getByRole("link", { name: "URL Shortener" })).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "ML Feature Store" }),
+    page.getByRole("link", { name: "URL Shortener", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "ML Feature Store", exact: true }),
   ).toHaveCount(0);
 });
 
@@ -254,15 +262,82 @@ test("searches drills by prompt and clears the query", async ({ page }) => {
   const search = page.getByRole("searchbox", { name: "Search drills" });
   await search.fill("online and offline");
   await expect(
-    page.getByRole("link", { name: "ML Feature Store" }),
+    page.getByRole("link", { name: "ML Feature Store", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "URL Shortener" })).toHaveCount(
-    0,
-  );
+  await expect(
+    page.getByRole("link", { name: "URL Shortener", exact: true }),
+  ).toHaveCount(0);
 
   await search.fill("");
-  await expect(page.getByRole("link", { name: "URL Shortener" })).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "ML Feature Store" }),
+    page.getByRole("link", { name: "URL Shortener", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "ML Feature Store", exact: true }),
+  ).toBeVisible();
+});
+
+test("shows coverage and links new and overdue drills in the review queue", async ({
+  page,
+}) => {
+  const db = seededDb();
+  const fourDaysAgo = new Date(
+    Date.now() - 4 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  db.attempts.push(
+    designDrillAttemptRow({
+      id: "due-url-shortener",
+      drill_id: "url-shortener",
+      started_at: fourDaysAgo,
+      completed_at: fourDaysAgo,
+      duration_sec: 1200,
+      self_rating: "weak",
+    }),
+  );
+  await load(page, db);
+
+  await expect(page.getByRole("heading", { name: "Coverage" })).toBeVisible();
+  await expect(page.getByText("1 / 2", { exact: true })).toBeVisible();
+  const weakCard = page.getByText("Weak", { exact: true }).locator("..");
+  await expect(weakCard.getByText("1", { exact: true })).toBeVisible();
+
+  await expect(
+    page.getByRole("heading", { name: "Revisit weak drills" }),
+  ).toBeVisible();
+  await expect(page.getByText("New", { exact: true })).toBeVisible();
+  await expect(page.getByText("Overdue 2d", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Review ML Feature Store: New" }),
+  ).toHaveAttribute("href", "/design-drills/ml-feature-store");
+  await expect(
+    page.getByRole("link", { name: "Review URL Shortener: Overdue 2d" }),
+  ).toHaveAttribute("href", "/design-drills/url-shortener");
+});
+
+test("shows all caught up when every drill is still inside its review interval", async ({
+  page,
+}) => {
+  const db = seededDb();
+  const completedAt = new Date().toISOString();
+  db.attempts.push(
+    designDrillAttemptRow({
+      id: "recent-url-shortener",
+      drill_id: "url-shortener",
+      completed_at: completedAt,
+      self_rating: "strong",
+    }),
+    designDrillAttemptRow({
+      id: "recent-feature-store",
+      drill_id: "feature-store",
+      completed_at: completedAt,
+      self_rating: "strong",
+    }),
+  );
+  await load(page, db);
+
+  await expect(page.getByText("2 / 2", { exact: true })).toBeVisible();
+  await expect(page.getByText("All caught up", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Nothing needs another rep today.", { exact: true }),
   ).toBeVisible();
 });

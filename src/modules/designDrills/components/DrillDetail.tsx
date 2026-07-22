@@ -47,7 +47,7 @@ export function DrillDetail({
 
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
         <button
           className="flex items-center gap-1.5 text-sm text-muted hover:text-body"
           onClick={onBack}
@@ -74,21 +74,21 @@ export function DrillDetail({
         </div>
       </div>
 
-      <section className="rounded-lg border border-border bg-surface p-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
-            {drill.title}
-          </h2>
-          <Badge hue={DESIGN_DRILL_CATEGORY_HUES[drill.category]}>
-            {categoryLabels[drill.category]}
-          </Badge>
+      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+        <div className="px-5 pb-4 pt-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              {drill.title}
+            </h2>
+            <Badge hue={DESIGN_DRILL_CATEGORY_HUES[drill.category]}>
+              {categoryLabels[drill.category]}
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs text-muted">
+            Target: ~{drill.estimatedMinutes} min
+          </p>
         </div>
-        <p className="mt-1 text-xs text-muted">
-          Target: ~{drill.estimatedMinutes} min
-        </p>
-        <div className="mt-4">
-          <DrillBrief drill={drill} />
-        </div>
+        <DrillBrief drill={drill} />
       </section>
 
       <section

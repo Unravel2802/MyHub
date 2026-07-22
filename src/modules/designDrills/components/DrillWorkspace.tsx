@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Clock } from "lucide-react";
+import { useEffect, useId, useMemo, useState } from "react";
+import { ArrowLeft, Check, Clock, Loader2, PenLine } from "lucide-react";
 import { Badge } from "@/src/components/ui/Badge";
 import type { SubmitAttemptInput } from "@/src/modules/designDrills/DesignDrillsRepository";
 import { DESIGN_DRILL_CATEGORY_HUES } from "@/src/modules/designDrills/designDrillHues";
@@ -56,6 +56,15 @@ export function DrillWorkspace({
   const [revealed, setRevealed] = useState(false);
   const [rubricHits, setRubricHits] = useState<Set<number>>(new Set());
   const [selfRating, setSelfRating] = useState<DesignDrillSelfRating | "">("");
+  // Tracks what's actually been persisted so save status can be derived at
+  // render time (notes !== lastSavedNotes => still dirty) rather than stored
+  // as its own state var that could drift from the real autosave effect.
+  const [lastSavedNotes, setLastSavedNotes] = useState(attempt.notes ?? "");
+  const [hasSaved, setHasSaved] = useState(false);
+  const scratchpadId = useId();
+
+  const saveStatus: "idle" | "saving" | "saved" =
+    notes !== lastSavedNotes ? "saving" : hasSaved ? "saved" : "idle";
 
   const startedAtMs = useMemo(
     () => new Date(attempt.startedAt).getTime(),
@@ -75,7 +84,11 @@ export function DrillWorkspace({
   // attempt.
   useEffect(() => {
     if (notes === (attempt.notes ?? "")) return;
-    const timeout = setTimeout(() => onSaveNotes(notes), 1500);
+    const timeout = setTimeout(() => {
+      onSaveNotes(notes);
+      setLastSavedNotes(notes);
+      setHasSaved(true);
+    }, 1500);
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes]);
@@ -107,7 +120,7 @@ export function DrillWorkspace({
 
   return (
     <div className="grid gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
         <button
           className="flex items-center gap-1.5 text-sm text-muted hover:text-body"
           onClick={onExit}
@@ -126,24 +139,25 @@ export function DrillWorkspace({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <section className="rounded-lg border border-border bg-surface p-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
-              {drill.title}
-            </h2>
-            <Badge hue={DESIGN_DRILL_CATEGORY_HUES[drill.category]}>
-              {categoryLabels[drill.category]}
-            </Badge>
-          </div>
-          <p className="mt-1 text-xs text-muted">
-            Target: ~{drill.estimatedMinutes} min
-          </p>
-          <div className="mt-4">
-            <DrillBrief drill={drill} />
+        <section className="overflow-hidden rounded-lg border border-border bg-surface">
+          <div className="px-5 pb-4 pt-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                {drill.title}
+              </h2>
+              <Badge hue={DESIGN_DRILL_CATEGORY_HUES[drill.category]}>
+                {categoryLabels[drill.category]}
+              </Badge>
+            </div>
+            <p className="mt-1 text-xs text-muted">
+              Target: ~{drill.estimatedMinutes} min
+            </p>
           </div>
 
+          <DrillBrief drill={drill} />
+
           {completedPastAttempts.length > 0 ? (
-            <div className="mt-6 border-t border-border pt-4">
+            <div className="border-t border-border px-5 pb-5 pt-4">
               <h3 className="text-xs font-medium uppercase tracking-widest text-muted">
                 Your past attempts
               </h3>
@@ -167,18 +181,42 @@ export function DrillWorkspace({
         </section>
 
         <section className="grid content-start gap-4">
-          <div className="rounded-lg border border-border bg-surface p-5">
-            <label className="grid gap-1.5 text-sm font-medium text-body">
-              Your design (scratchpad)
+          <div className="overflow-hidden rounded-lg border border-border bg-surface">
+            <div className="flex items-center justify-between gap-3 border-b border-border bg-surface-subtle px-4 py-2">
+              <span className="flex items-center gap-2 text-sm font-medium text-body">
+                <PenLine aria-hidden className="size-4 text-muted" />
+                Your design (scratchpad)
+              </span>
+              {saveStatus === "idle" ? null : (
+                <span className="flex items-center gap-1.5 text-xs text-muted">
+                  {saveStatus === "saving" ? (
+                    <>
+                      <Loader2 aria-hidden className="size-3.5 animate-spin" />
+                      Saving…
+                    </>
+                  ) : (
+                    <>
+                      <Check aria-hidden className="size-3.5 text-success" />
+                      Saved
+                    </>
+                  )}
+                </span>
+              )}
+            </div>
+            <div className="p-4">
+              <label className="sr-only" htmlFor={scratchpadId}>
+                Your design (scratchpad)
+              </label>
               <textarea
-                className="min-h-80 rounded-md border border-input bg-surface px-3 py-2 font-mono text-sm text-foreground outline-none placeholder:text-subtle focus:border-accent"
+                className="min-h-80 w-full rounded-md border border-input bg-surface px-3 py-2 font-mono text-sm text-foreground outline-none placeholder:text-subtle focus:border-accent"
+                id={scratchpadId}
                 onChange={(event) => setNotes(event.target.value)}
                 placeholder={
                   "Requirements & scale\n\nAPI design\n\nHigh-level design\n\nDeep dive\n\nTrade-offs"
                 }
                 value={notes}
               />
-            </label>
+            </div>
           </div>
 
           {!revealed ? (

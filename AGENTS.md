@@ -41,6 +41,14 @@ a "reasonable" alternative.
   `src/components/ui/Markdown.tsx` wrapper — never add `rehype-raw` or render raw HTML from the DB,
   and don't reach for `@tailwindcss/typography`/`prose` (not installed; the wrapper maps elements
   onto the semantic tokens by hand).
+- Syntax highlighting (editor): `highlight.js` — added 2026-07-22 for the Design Drills code pad's
+  live highlighting. It was already on disk transitively (via `rehype-highlight`); this declares
+  it directly so its version isn't governed by someone else's transitive range. Import from
+  `highlight.js/lib/core` and `registerLanguage` only the grammars actually offered — a bare
+  `import hljs from "highlight.js"` pulls all 384. Rendering its output via
+  `dangerouslySetInnerHTML` is allowed **only** for the user's own scratchpad text (highlight.js
+  HTML-escapes what it highlights); this is not a licence to relax the markdown rule above —
+  `Markdown.tsx` still never renders raw HTML from the DB.
 - One-off scripts (`scripts/*.ts`, not application code): `tsx` — added 2026-07-13 for the seed
   and backup scripts. Follow the convention those scripts already establish (see
   `docs/handoff/rls-audit-and-backup-script.md`) rather than picking a different runner.

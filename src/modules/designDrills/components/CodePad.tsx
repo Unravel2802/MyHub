@@ -2,6 +2,7 @@
 
 import {
   type ChangeEvent,
+  type ReactNode,
   type UIEvent,
   useMemo,
   useRef,
@@ -16,6 +17,7 @@ import plaintext from "highlight.js/lib/languages/plaintext";
 import python from "highlight.js/lib/languages/python";
 import sql from "highlight.js/lib/languages/sql";
 import typescript from "highlight.js/lib/languages/typescript";
+import { RotateCcw } from "lucide-react";
 import {
   getDesignDrillCodeLanguage,
   getServerDesignDrillCodeLanguage,
@@ -54,10 +56,26 @@ interface CodePadProps {
   id: string;
   value: string;
   onChange: (value: string) => void;
+  /** Clears the scratchpad back to its starting-empty state. Omit to hide the reset button. */
+  onReset?: () => void;
   placeholder?: string;
+  /** Label shown in the pad's own header bar (replaces a separate wrapping card + heading). */
+  label?: string;
+  /** Save-status indicator (or any other status node) rendered in the header, left of the controls. */
+  status?: ReactNode;
+  className?: string;
 }
 
-export function CodePad({ id, value, onChange, placeholder }: CodePadProps) {
+export function CodePad({
+  id,
+  value,
+  onChange,
+  onReset,
+  placeholder,
+  label,
+  status,
+  className,
+}: CodePadProps) {
   const language = useSyncExternalStore(
     subscribeDesignDrillCodeLanguage,
     getDesignDrillCodeLanguage,
@@ -89,27 +107,57 @@ export function CodePad({ id, value, onChange, placeholder }: CodePadProps) {
     );
   }
 
+  function handleReset() {
+    if (!onReset) return;
+    if (
+      value.trim() &&
+      !window.confirm("Reset the scratchpad? This clears what you've written.")
+    ) {
+      return;
+    }
+    onReset();
+  }
+
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-end gap-2">
-        <label className="text-xs text-muted" htmlFor={`${id}-language`}>
-          Code language
-        </label>
-        <select
-          className="h-8 rounded-md border border-input bg-surface px-2 text-xs text-foreground outline-none focus:border-accent"
-          id={`${id}-language`}
-          onChange={handleLanguageChange}
-          value={language}
-        >
-          {languageOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+    <div
+      className={`flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-surface focus-within:border-accent ${className ?? ""}`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-surface-subtle px-3 py-1.5">
+        {label ? (
+          <span className="text-xs font-medium text-body">{label}</span>
+        ) : (
+          <span />
+        )}
+        <div className="flex items-center gap-2">
+          {status}
+          <select
+            aria-label="Code language"
+            className="h-7 rounded-md border border-input bg-surface px-2 text-xs text-foreground outline-none focus:border-accent"
+            id={`${id}-language`}
+            onChange={handleLanguageChange}
+            value={language}
+          >
+            {languageOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {onReset ? (
+            <button
+              aria-label="Reset to default"
+              className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-surface hover:text-body"
+              onClick={handleReset}
+              title="Reset to default"
+              type="button"
+            >
+              <RotateCcw aria-hidden className="size-3.5" />
+            </button>
+          ) : null}
+        </div>
       </div>
 
-      <div className="code-pad relative min-h-80 overflow-hidden rounded-md border border-input bg-surface focus-within:border-accent">
+      <div className="code-pad relative min-h-80 flex-1 overflow-hidden">
         <div
           aria-hidden="true"
           className={`${textMetrics} absolute inset-y-0 left-0 w-12 overflow-hidden border-r border-border bg-surface-subtle text-right text-muted tabular-nums select-none`}
@@ -122,7 +170,7 @@ export function CodePad({ id, value, onChange, placeholder }: CodePadProps) {
           ))}
         </div>
 
-        <div className="relative ml-12 min-h-80">
+        <div className="relative ml-12 h-full min-h-80">
           <pre
             aria-hidden="true"
             className={`${textMetrics} pointer-events-none absolute inset-0 m-0 overflow-hidden text-body`}
@@ -136,7 +184,7 @@ export function CodePad({ id, value, onChange, placeholder }: CodePadProps) {
           <textarea
             autoCapitalize="off"
             autoCorrect="off"
-            className={`${textMetrics} relative z-10 min-h-80 w-full resize-y overflow-auto bg-transparent text-transparent outline-none placeholder:text-subtle`}
+            className={`${textMetrics} relative z-10 h-full min-h-80 w-full resize-none overflow-auto bg-transparent text-transparent outline-none placeholder:text-subtle`}
             id={id}
             onChange={(event) => onChange(event.currentTarget.value)}
             onScroll={handleScroll}

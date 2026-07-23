@@ -263,6 +263,73 @@ test("runs a timed attempt and persists the self-grade", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("pauses and resumes the attempt timer without counting paused time", async ({
+  page,
+}) => {
+  const db = seededDb();
+  await load(page, db);
+  await page.getByRole("link", { name: "URL Shortener", exact: true }).click();
+  await page.clock.install();
+  await page.getByRole("button", { name: "Start timed attempt" }).click();
+
+  const timer = page.getByRole("timer");
+  await page.clock.fastForward(2_200);
+  await expect(timer).toHaveText("00:02");
+
+  await page.getByRole("button", { name: "Pause timer" }).click();
+  await expect(
+    page.getByRole("button", { name: "Resume timer" }),
+  ).toBeVisible();
+  await page.clock.fastForward(5_000);
+  await expect(timer).toHaveText("00:02");
+
+  await page.getByRole("button", { name: "Resume timer" }).click();
+  await page.clock.fastForward(1_000);
+  await expect(timer).toHaveText("00:03");
+
+  await page.getByRole("button", { name: "Pause timer" }).click();
+  await page.clock.fastForward(3_000);
+  await expect(timer).toHaveText("00:03");
+});
+
+test("resets an empty scratchpad quietly and confirms before clearing notes", async ({
+  page,
+}) => {
+  const db = seededDb();
+  await load(page, db);
+  await page.getByRole("link", { name: "URL Shortener", exact: true }).click();
+  await page.getByRole("button", { name: "Start timed attempt" }).click();
+
+  const scratchpad = page.getByLabel("Your design (scratchpad)");
+  const reset = page.getByRole("button", { name: "Reset to default" });
+  let dialogCount = 0;
+  page.on("dialog", () => {
+    dialogCount += 1;
+  });
+
+  await reset.click();
+  await expect(scratchpad).toHaveValue("");
+  expect(dialogCount).toBe(0);
+
+  await scratchpad.fill("Keep this design unless I confirm.");
+  const dismissDialog = page.waitForEvent("dialog");
+  const dismissClick = reset.click();
+  const dismissed = await dismissDialog;
+  expect(dismissed.message()).toBe(
+    "Reset the scratchpad? This clears what you've written.",
+  );
+  await dismissed.dismiss();
+  await dismissClick;
+  await expect(scratchpad).toHaveValue("Keep this design unless I confirm.");
+
+  const acceptDialog = page.waitForEvent("dialog");
+  const acceptClick = reset.click();
+  const accepted = await acceptDialog;
+  await accepted.accept();
+  await acceptClick;
+  await expect(scratchpad).toHaveValue("");
+});
+
 test("highlights code, renders line numbers, and remembers the language", async ({
   page,
 }) => {

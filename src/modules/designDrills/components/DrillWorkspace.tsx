@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
-import { ArrowLeft, Check, Clock, Loader2, PenLine } from "lucide-react";
+import { useEffect, useId, useState } from "react";
+import { ArrowLeft, Check, Clock, Loader2, Pause, Play } from "lucide-react";
 import { Badge } from "@/src/components/ui/Badge";
 import type { SubmitAttemptInput } from "@/src/modules/designDrills/DesignDrillsRepository";
 import { DESIGN_DRILL_CATEGORY_HUES } from "@/src/modules/designDrills/designDrillHues";
@@ -53,7 +53,6 @@ export function DrillWorkspace({
   onExit,
 }: DrillWorkspaceProps) {
   const [notes, setNotes] = useState(attempt.notes ?? "");
-  const [elapsedSec, setElapsedSec] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [rubricHits, setRubricHits] = useState<Set<number>>(new Set());
   const [selfRating, setSelfRating] = useState<DesignDrillSelfRating | "">("");
@@ -67,18 +66,40 @@ export function DrillWorkspace({
   const saveStatus: "idle" | "saving" | "saved" =
     notes !== lastSavedNotes ? "saving" : hasSaved ? "saved" : "idle";
 
-  const startedAtMs = useMemo(
-    () => new Date(attempt.startedAt).getTime(),
-    [attempt.startedAt],
+  // Timer is pausable, unlike a plain `Date.now() - startedAt` stopwatch:
+  // `accumulatedMs` banks time from prior running spans, `runningSince` is the
+  // start of the current span (null while paused). Initialized from the
+  // attempt's persisted `startedAt` so a page reload resumes the real elapsed
+  // time instead of restarting from zero.
+  const [accumulatedMs, setAccumulatedMs] = useState(() =>
+    Math.max(0, Date.now() - new Date(attempt.startedAt).getTime()),
+  );
+  const [runningSince, setRunningSince] = useState<number | null>(() =>
+    Date.now(),
+  );
+  const [elapsedSec, setElapsedSec] = useState(() =>
+    Math.floor(accumulatedMs / 1000),
   );
 
   useEffect(() => {
+    if (runningSince === null) return;
     const tick = () =>
-      setElapsedSec(Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000)));
+      setElapsedSec(
+        Math.floor((accumulatedMs + Date.now() - runningSince) / 1000),
+      );
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [startedAtMs]);
+  }, [accumulatedMs, runningSince]);
+
+  function toggleTimer() {
+    if (runningSince === null) {
+      setRunningSince(Date.now());
+    } else {
+      setAccumulatedMs((ms) => ms + Date.now() - runningSince);
+      setRunningSince(null);
+    }
+  }
 
   // Autosave the scratchpad 1.5s after the last keystroke — frequent enough
   // that a closed tab loses at most a few seconds of writing, not the whole
@@ -130,16 +151,31 @@ export function DrillWorkspace({
           <ArrowLeft aria-hidden className="size-4" />
           Back to drills
         </button>
-        <div
-          className="flex items-center gap-2 rounded-md border border-border bg-surface-subtle px-3 py-1.5 font-mono text-sm tabular-nums text-foreground"
-          role="timer"
-        >
-          <Clock aria-hidden className="size-4 text-muted" />
-          {formatElapsed(elapsedSec)}
+        <div className="flex items-center gap-1.5 rounded-md border border-border bg-surface-subtle pl-3 pr-1.5 py-1.5">
+          <span
+            className="flex items-center gap-2 font-mono text-sm tabular-nums text-foreground"
+            role="timer"
+          >
+            <Clock aria-hidden className="size-4 text-muted" />
+            {formatElapsed(elapsedSec)}
+          </span>
+          <button
+            aria-label={runningSince === null ? "Resume timer" : "Pause timer"}
+            className="flex size-6 items-center justify-center rounded text-muted hover:bg-surface hover:text-body"
+            onClick={toggleTimer}
+            title={runningSince === null ? "Resume timer" : "Pause timer"}
+            type="button"
+          >
+            {runningSince === null ? (
+              <Play aria-hidden className="size-3.5" />
+            ) : (
+              <Pause aria-hidden className="size-3.5" />
+            )}
+          </button>
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <section className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="px-5 pb-4 pt-5">
             <div className="flex flex-wrap items-center gap-2">
@@ -181,14 +217,21 @@ export function DrillWorkspace({
           ) : null}
         </section>
 
-        <section className="grid content-start gap-4">
-          <div className="overflow-hidden rounded-lg border border-border bg-surface">
-            <div className="flex items-center justify-between gap-3 border-b border-border bg-surface-subtle px-4 py-2">
-              <span className="flex items-center gap-2 text-sm font-medium text-body">
-                <PenLine aria-hidden className="size-4 text-muted" />
-                Your design (scratchpad)
-              </span>
-              {saveStatus === "idle" ? null : (
+        <section className="grid gap-4 lg:h-[calc(100vh-11rem)] lg:grid-rows-[1fr_auto]">
+          <label className="sr-only" htmlFor={scratchpadId}>
+            Your design (scratchpad)
+          </label>
+          <CodePad
+            className="min-h-[28rem] lg:min-h-0 lg:h-full"
+            id={scratchpadId}
+            label="Your design (scratchpad)"
+            onChange={setNotes}
+            onReset={() => setNotes("")}
+            placeholder={
+              "Requirements & scale\n\nAPI design\n\nHigh-level design\n\nDeep dive\n\nTrade-offs"
+            }
+            status={
+              saveStatus === "idle" ? null : (
                 <span className="flex items-center gap-1.5 text-xs text-muted">
                   {saveStatus === "saving" ? (
                     <>
@@ -202,22 +245,10 @@ export function DrillWorkspace({
                     </>
                   )}
                 </span>
-              )}
-            </div>
-            <div className="p-4">
-              <label className="sr-only" htmlFor={scratchpadId}>
-                Your design (scratchpad)
-              </label>
-              <CodePad
-                id={scratchpadId}
-                onChange={setNotes}
-                placeholder={
-                  "Requirements & scale\n\nAPI design\n\nHigh-level design\n\nDeep dive\n\nTrade-offs"
-                }
-                value={notes}
-              />
-            </div>
-          </div>
+              )
+            }
+            value={notes}
+          />
 
           {!revealed ? (
             <button

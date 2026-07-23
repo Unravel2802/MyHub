@@ -146,7 +146,7 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
     <AuthGate>
       <main className="min-h-screen bg-canvas text-foreground">
         <div
-          className={`grid min-h-screen ${collapsed ? "lg:grid-cols-[3.5rem_1fr]" : "lg:grid-cols-[260px_1fr]"}`}
+          className={`grid min-h-screen ${collapsed ? "lg:grid-cols-[3.5rem_minmax(0,1fr)]" : "lg:grid-cols-[260px_minmax(0,1fr)]"}`}
         >
           <aside
             className={`flex flex-col gap-6 border-b border-border bg-surface px-6 py-5 lg:sticky lg:top-0 lg:h-screen lg:gap-8 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-6 ${collapsed ? "lg:hidden" : ""}`}

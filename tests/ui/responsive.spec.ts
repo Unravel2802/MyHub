@@ -22,6 +22,19 @@ for (const path of PAGES) {
     await page.goto(path);
     await page.waitForTimeout(1200);
 
+    // The reference-implementation code tabs only render on the Solution
+    // tab, and only there does an unwrapped `pre` line get long enough to
+    // trigger a CSS Grid auto-sizing blowout (a nested `grid` item without
+    // `min-w-0` grows to its content's min-content width instead of
+    // shrinking, and the whole section overflows instead of the `pre`'s own
+    // overflow-x-auto scrolling) — so this path has to be exercised
+    // explicitly, the default "Prompt" tab never shows code.
+    const solutionTab = page.getByRole("tab", { name: "Solution" });
+    if (await solutionTab.isVisible().catch(() => false)) {
+      await solutionTab.click();
+      await page.waitForTimeout(200);
+    }
+
     const result = await page.evaluate(() => {
       const vw = document.documentElement.clientWidth;
       const culprits: { tag: string; cls: string; w: number }[] = [];

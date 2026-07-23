@@ -36,7 +36,7 @@ export function SolutionEditorial({
   });
 
   return (
-    <article className={cn("grid gap-5", "text-body")}>
+    <article className={cn("grid min-w-0 gap-5", "text-body")}>
       <Panel aside={<Badge hue={hue}>Editorial</Badge>} overline="Intuition">
         <Markdown>{solution.summary}</Markdown>
       </Panel>
@@ -59,11 +59,11 @@ export function SolutionEditorial({
         </ol>
       </nav>
 
-      <div className="grid gap-5">
+      <div className="grid min-w-0 gap-5">
         {solution.sections.map((section, index) => (
           <section
             aria-labelledby={`${section.id}-heading`}
-            className="scroll-mt-6 border-t border-border pt-5 first:border-0 first:pt-0"
+            className="min-w-0 scroll-mt-6 border-t border-border pt-5 first:border-0 first:pt-0"
             id={section.id}
             key={section.id}
           >

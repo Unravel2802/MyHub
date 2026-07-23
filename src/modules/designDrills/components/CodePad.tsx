@@ -11,6 +11,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import hljs from "highlight.js/lib/core";
+import cpp from "highlight.js/lib/languages/cpp";
 import go from "highlight.js/lib/languages/go";
 import java from "highlight.js/lib/languages/java";
 import javascript from "highlight.js/lib/languages/javascript";
@@ -34,6 +35,7 @@ hljs.registerLanguage("python", python);
 hljs.registerLanguage("typescript", typescript);
 hljs.registerLanguage("javascript", javascript);
 hljs.registerLanguage("go", go);
+hljs.registerLanguage("cpp", cpp);
 hljs.registerLanguage("java", java);
 hljs.registerLanguage("sql", sql);
 
@@ -43,10 +45,11 @@ const languageOptions: {
 }[] = [
   { value: "markdown", label: "Markdown" },
   { value: "plaintext", label: "Plain text" },
-  { value: "python", label: "Python" },
+  { value: "python", label: "Python3" },
   { value: "typescript", label: "TypeScript" },
   { value: "javascript", label: "JavaScript" },
   { value: "go", label: "Go" },
+  { value: "cpp", label: "C++" },
   { value: "java", label: "Java" },
   { value: "sql", label: "SQL" },
 ];

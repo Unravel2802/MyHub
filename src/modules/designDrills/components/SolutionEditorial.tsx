@@ -3,6 +3,7 @@ import { Markdown } from "@/src/components/ui/Markdown";
 import { Panel } from "@/src/components/ui/Panel";
 import { cn } from "@/src/lib/cn";
 import { DESIGN_DRILL_CATEGORY_HUES } from "@/src/modules/designDrills/designDrillHues";
+import { SolutionCodeTabs } from "@/src/modules/designDrills/components/SolutionCodeTabs";
 import type {
   DesignDrillCategory,
   DrillSolution,
@@ -76,6 +77,9 @@ export function SolutionEditorial({
               </h3>
             </div>
             <Markdown>{section.body}</Markdown>
+            {section.codeExamples?.length ? (
+              <SolutionCodeTabs examples={section.codeExamples} />
+            ) : null}
           </section>
         ))}
       </div>

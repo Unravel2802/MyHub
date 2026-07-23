@@ -597,6 +597,10 @@ test("Enter auto-indents the scratchpad like an editor", async ({ page }) => {
   });
   await page.keyboard.press("Enter");
   await expect(scratchpad).toHaveValue("def f():\n  ");
+
+  // Backspace on an empty indented line removes one full indent level.
+  await page.keyboard.press("Backspace");
+  await expect(scratchpad).toHaveValue("def f():\n");
 });
 
 test("rolls back a failed timed-attempt create", async ({ page }) => {

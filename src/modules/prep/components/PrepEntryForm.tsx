@@ -147,7 +147,7 @@ export function PrepEntryForm({ disabled, onCreate }: PrepEntryFormProps) {
         </label>
 
         <label className="grid gap-1.5 text-sm font-medium text-body">
-          Duration (minutes)
+          Session length (minutes)
           <input
             className={inputClass}
             disabled={disabled}
@@ -160,7 +160,7 @@ export function PrepEntryForm({ disabled, onCreate }: PrepEntryFormProps) {
 
         {entryType === "algorithm" ? (
           <label className="grid gap-1.5 text-sm font-medium text-body">
-            Time to solve (minutes)
+            Time to solve this problem (minutes)
             <input
               className={inputClass}
               disabled={disabled}

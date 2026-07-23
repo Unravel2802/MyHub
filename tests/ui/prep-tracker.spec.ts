@@ -18,12 +18,16 @@ test("entry form only offers fields and outcomes valid for its type", async ({
 }) => {
   await loadPrep(page);
 
-  await expect(page.getByLabel("Time to solve (minutes)")).toBeVisible();
+  await expect(
+    page.getByLabel("Time to solve this problem (minutes)"),
+  ).toBeVisible();
   await expect(page.getByLabel("Outcome")).toContainText("Solved");
 
   await page.getByLabel("Practice type").selectOption("system_design");
 
-  await expect(page.getByLabel("Time to solve (minutes)")).toHaveCount(0);
+  await expect(
+    page.getByLabel("Time to solve this problem (minutes)"),
+  ).toHaveCount(0);
   await expect(page.getByLabel("Outcome")).toContainText("Needs work");
   await expect(page.getByLabel("Outcome")).not.toContainText("Solved");
 });
@@ -37,7 +41,7 @@ test("logs mock subtypes, resume deep-dives, and renders time allocation", async
   await expect(page.getByLabel("Mock subtype")).toBeVisible();
   await page.getByLabel("Mock subtype").selectOption("coding");
   await page.getByLabel("Topic").fill("coding mock");
-  await page.getByLabel("Duration (minutes)").fill("60");
+  await page.getByLabel("Session length (minutes)").fill("60");
   await page.getByRole("button", { name: "Log session" }).click();
 
   await expect
@@ -50,7 +54,7 @@ test("logs mock subtypes, resume deep-dives, and renders time allocation", async
   await page.getByLabel("Practice type").selectOption("resume_deep_dive");
   await expect(page.getByLabel("Mock subtype")).toHaveCount(0);
   await page.getByLabel("Topic").fill("resume walkthrough");
-  await page.getByLabel("Duration (minutes)").fill("30");
+  await page.getByLabel("Session length (minutes)").fill("30");
   await page.getByRole("button", { name: "Log session" }).click();
 
   await expect
@@ -73,8 +77,8 @@ test("logs an algorithm rep and updates the monthly scorecard", async ({
   const db = await loadPrep(page);
 
   await page.getByLabel("Topic").fill("graphs");
-  await page.getByLabel("Duration (minutes)").fill("45");
-  await page.getByLabel("Time to solve (minutes)").fill("30");
+  await page.getByLabel("Session length (minutes)").fill("45");
+  await page.getByLabel("Time to solve this problem (minutes)").fill("30");
   await page.getByLabel("Outcome").selectOption("solved");
   await page.getByLabel("Notes / post-mortem").fill("BFS was the key");
   await page.getByRole("button", { name: "Log session" }).click();
@@ -92,6 +96,61 @@ test("logs an algorithm rep and updates the monthly scorecard", async ({
       time_to_solve_min: 30,
       outcome: "solved",
     });
+});
+
+test("keeps recent sessions bounded with pinned deletes and preserved note lines", async ({
+  page,
+}) => {
+  await loadPrep(
+    page,
+    new FakePrepDb([
+      prepEntryRow({
+        id: "multiline-notes",
+        topic: "Graph traversal",
+        notes:
+          "First note line with enough detail to fill the session card.\nSecond note line stays distinct.",
+      }),
+    ]),
+  );
+
+  await expect(
+    page.locator("details").filter({ hasText: "Log a prep session" }),
+  ).toHaveCount(0);
+
+  const recentSessions = page.getByRole("region", {
+    name: "Recent sessions",
+  });
+  const list = recentSessions.getByRole("list");
+  const listStyles = await list.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return {
+      maxHeight: styles.maxHeight,
+      overflowY: styles.overflowY,
+    };
+  });
+  expect(listStyles.overflowY).toBe("auto");
+  expect(listStyles.maxHeight).not.toBe("none");
+
+  const item = recentSessions.getByRole("listitem");
+  const notes = item.getByText(/First note line/);
+  await expect(notes).toHaveCSS("white-space", "pre-wrap");
+
+  const itemBox = await item.boundingBox();
+  const deleteBox = await item
+    .getByRole("button", { name: "Delete" })
+    .boundingBox();
+  expect(itemBox).not.toBeNull();
+  expect(deleteBox).not.toBeNull();
+  if (!itemBox || !deleteBox) return;
+
+  expect(deleteBox.y - itemBox.y).toBeGreaterThanOrEqual(10);
+  expect(deleteBox.y - itemBox.y).toBeLessThanOrEqual(15);
+  expect(
+    itemBox.x + itemBox.width - (deleteBox.x + deleteBox.width),
+  ).toBeGreaterThanOrEqual(10);
+  expect(
+    itemBox.x + itemBox.width - (deleteBox.x + deleteBox.width),
+  ).toBeLessThanOrEqual(15);
 });
 
 test("creates and edits a behavioral story grouped by theme", async ({

@@ -42,17 +42,17 @@ export function PrepEntryList({
       </h2>
       {entries.length === 0 ? (
         <EmptyState
-          description="Your first rep starts the December count. Log one below to begin."
+          description="Your first rep starts the December count. Log one above to begin."
           title="Start the December count"
         />
       ) : (
-        <ul className="mt-4 grid gap-3">
+        <ul className="mt-4 grid max-h-[36rem] gap-3 overflow-y-auto rounded-md border border-border">
           {entries.map((entry) => (
             <li
-              className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border p-3"
+              className="relative rounded-md border border-border p-3"
               key={entry.id}
             >
-              <div className="min-w-0">
+              <div className="min-w-0 pr-20">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium text-foreground">
                     {entry.topic ?? labels[entry.entryType]}
@@ -78,13 +78,13 @@ export function PrepEntryList({
                     : " · unjudged"}
                 </p>
                 {entry.notes ? (
-                  <p className="mt-2 line-clamp-2 text-sm text-body">
+                  <p className="mt-2 line-clamp-2 whitespace-pre-wrap text-sm text-body">
                     {entry.notes}
                   </p>
                 ) : null}
               </div>
               <button
-                className="rounded-md border border-danger-border px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-surface disabled:cursor-not-allowed disabled:text-danger-subtle"
+                className="absolute right-3 top-3 rounded-md border border-danger-border px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-surface disabled:cursor-not-allowed disabled:text-danger-subtle"
                 disabled={pendingIds.has(entry.id)}
                 onClick={() =>
                   onDelete(entry.id, entry.topic ?? labels[entry.entryType])

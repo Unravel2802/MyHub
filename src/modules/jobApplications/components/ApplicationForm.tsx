@@ -24,7 +24,6 @@ export function ApplicationForm({
   const [stage, setStage] = useState<ApplicationStage>("researching");
   const [appliedDate, setAppliedDate] = useState("");
   const [referralSource, setReferralSource] = useState("");
-  const [followUpDate, setFollowUpDate] = useState("");
   const [notes, setNotes] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -36,12 +35,10 @@ export function ApplicationForm({
       stage,
       appliedDate: appliedDate || null,
       referralSource: referralSource.trim() || null,
-      followUpDate: followUpDate || null,
       notes: notes.trim() || null,
     });
     setRoleTitle("");
     setReferralSource("");
-    setFollowUpDate("");
     setNotes("");
   }
 
@@ -134,16 +131,6 @@ export function ApplicationForm({
             onChange={(event) => setAppliedDate(event.target.value)}
             type="date"
             value={appliedDate}
-          />
-        </label>
-        <label className="grid gap-1.5 text-sm font-medium text-body">
-          Follow-up date
-          <input
-            className={field}
-            disabled={disabled}
-            onChange={(event) => setFollowUpDate(event.target.value)}
-            type="date"
-            value={followUpDate}
           />
         </label>
       </div>

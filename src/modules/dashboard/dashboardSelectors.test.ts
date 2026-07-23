@@ -51,7 +51,6 @@ function application(
     appliedDate: "2026-07-01",
     lastUpdateDate: "2026-07-01",
     referralSource: null,
-    followUpDate: null,
     notes: null,
     deletedAt: null,
     createdAt: "2026-07-01T00:00:00.000Z",
@@ -180,34 +179,7 @@ describe("thisWeeksScheduleBlocks", () => {
 describe("applicationsNeedingFollowUp", () => {
   const today = "2026-07-12";
 
-  it("flags a followUpDate that is today or earlier", () => {
-    const apps = [
-      application({
-        id: "due-today",
-        followUpDate: "2026-07-12",
-        lastUpdateDate: "2026-07-11",
-      }),
-      application({
-        id: "overdue",
-        followUpDate: "2026-07-01",
-        lastUpdateDate: "2026-07-11",
-      }),
-      // Recent lastUpdateDate so this is isolated to the followUpDate clause —
-      // otherwise it would also get flagged as stale via the OR condition.
-      application({
-        id: "future",
-        followUpDate: "2026-07-20",
-        lastUpdateDate: "2026-07-11",
-      }),
-    ];
-
-    expect(applicationsNeedingFollowUp(apps, today).map((a) => a.id)).toEqual([
-      "due-today",
-      "overdue",
-    ]);
-  });
-
-  it("flags no update in more than 7 days even with no followUpDate set", () => {
+  it("flags no update in more than 7 days", () => {
     const apps = [
       application({ id: "stale", lastUpdateDate: "2026-07-01" }),
       application({ id: "fresh", lastUpdateDate: "2026-07-10" }),
@@ -232,7 +204,6 @@ describe("applicationsNeedingFollowUp", () => {
         id: "withdrawn",
         stage: "withdrawn",
         lastUpdateDate: "2026-06-01",
-        followUpDate: "2026-07-01",
       }),
       application({
         id: "offer",
@@ -388,9 +359,9 @@ describe("weeklyCadence", () => {
       }),
     ];
 
-    expect(weeklyCadence(applications, [], [], WEDNESDAY).applications.count).toBe(
-      0,
-    );
+    expect(
+      weeklyCadence(applications, [], [], WEDNESDAY).applications.count,
+    ).toBe(0);
   });
 
   it("counts outreach entries by date within the current week", () => {
@@ -408,7 +379,11 @@ describe("weeklyCadence", () => {
 
   it("counts only mock_interview prep entries within the current week", () => {
     const entries = [
-      prepEntry({ id: "mock", entryType: "mock_interview", date: "2026-07-08" }),
+      prepEntry({
+        id: "mock",
+        entryType: "mock_interview",
+        date: "2026-07-08",
+      }),
       prepEntry({ id: "algo", entryType: "algorithm", date: "2026-07-08" }),
       prepEntry({
         id: "mock-next-week",

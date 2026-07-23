@@ -153,9 +153,6 @@ function Card({
         </select>
         <p className="text-xs text-muted">
           Updated {application.lastUpdateDate}
-          {application.followUpDate
-            ? ` · Follow up ${application.followUpDate}`
-            : ""}
         </p>
         <button
           className="text-left text-xs font-medium text-danger"

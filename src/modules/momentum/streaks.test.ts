@@ -70,7 +70,6 @@ function application(
     appliedDate: null,
     lastUpdateDate: "2026-07-13",
     referralSource: null,
-    followUpDate: null,
     notes: null,
     deletedAt: null,
     createdAt: "2026-07-13T00:00:00.000Z",
@@ -89,9 +88,7 @@ const EMPTY = {
 describe("activityDates", () => {
   it("counts a day active for any of the four activity kinds", () => {
     const days = activityDates({
-      tasks: [
-        task({ id: "t", completedAt: "2026-07-10T12:00:00.000Z" }),
-      ],
+      tasks: [task({ id: "t", completedAt: "2026-07-10T12:00:00.000Z" })],
       prepEntries: [prepEntry({ id: "p", date: "2026-07-11" })],
       applications: [
         application({ id: "a", createdAt: "2026-07-12T12:00:00.000Z" }),
@@ -222,7 +219,9 @@ describe("computeStreak", () => {
   it("counts a run across a month boundary", () => {
     const days = new Set(["2026-06-29", "2026-06-30", "2026-07-01"]);
 
-    expect(computeStreak(days, new Date("2026-07-01T09:00:00")).current).toBe(3);
+    expect(computeStreak(days, new Date("2026-07-01T09:00:00")).current).toBe(
+      3,
+    );
   });
 });
 

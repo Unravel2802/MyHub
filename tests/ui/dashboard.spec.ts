@@ -100,7 +100,6 @@ async function mockDashboard(page: Page) {
                     applied_date: today,
                     last_update_date: today,
                     referral_source: null,
-                    follow_up_date: null,
                     deleted_at: null,
                     created_at: timestamp,
                     updated_at: timestamp,

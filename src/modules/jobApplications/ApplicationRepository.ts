@@ -15,7 +15,6 @@ interface ApplicationRow {
   applied_date: string | null;
   last_update_date: string;
   referral_source: string | null;
-  follow_up_date: string | null;
   notes: string | null;
   deleted_at: string | null;
   created_at: string;
@@ -32,7 +31,6 @@ function fromRow(row: ApplicationRow): Application {
     appliedDate: row.applied_date,
     lastUpdateDate: row.last_update_date,
     referralSource: row.referral_source,
-    followUpDate: row.follow_up_date,
     notes: row.notes,
     deletedAt: row.deleted_at,
     createdAt: row.created_at,
@@ -52,9 +50,6 @@ function toRow(input: Partial<CreateApplicationInput>) {
     ...(input.referralSource !== undefined && {
       referral_source: input.referralSource,
     }),
-    ...(input.followUpDate !== undefined && {
-      follow_up_date: input.followUpDate,
-    }),
     ...(input.notes !== undefined && { notes: input.notes }),
   };
 }
@@ -72,7 +67,6 @@ export interface CreateApplicationInput {
   stage?: ApplicationStage;
   appliedDate?: string | null;
   referralSource?: string | null;
-  followUpDate?: string | null;
   notes?: string | null;
 }
 
@@ -82,7 +76,6 @@ export interface UpdateApplicationInput {
   stage?: ApplicationStage;
   appliedDate?: string | null;
   referralSource?: string | null;
-  followUpDate?: string | null;
   notes?: string | null;
 }
 

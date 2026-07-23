@@ -92,7 +92,6 @@ function application(
     appliedDate: overrides.appliedDate ?? "2026-07-01",
     lastUpdateDate: overrides.lastUpdateDate ?? "2026-07-01",
     referralSource: overrides.referralSource ?? null,
-    followUpDate: overrides.followUpDate ?? null,
     notes: overrides.notes ?? null,
     deletedAt: overrides.deletedAt ?? null,
     createdAt: overrides.createdAt ?? "2026-07-01T00:00:00.000Z",

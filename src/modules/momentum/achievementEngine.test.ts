@@ -62,7 +62,6 @@ function applications(count: number, createdAt = "2026-07-08"): Application[] {
     appliedDate: null,
     lastUpdateDate: createdAt,
     referralSource: null,
-    followUpDate: null,
     notes: null,
     deletedAt: null,
     createdAt: `${createdAt}T12:00:00.000Z`,
@@ -284,7 +283,10 @@ describe("perfect_cadence_week", () => {
   it("does not award a week that missed any one target", () => {
     expect(
       evaluateAchievements(
-        snapshot({ ...lastWeek, outreachEntries: outreachEntries(1, "2026-07-08") }),
+        snapshot({
+          ...lastWeek,
+          outreachEntries: outreachEntries(1, "2026-07-08"),
+        }),
       ),
     ).not.toContain("perfect_cadence_week");
 

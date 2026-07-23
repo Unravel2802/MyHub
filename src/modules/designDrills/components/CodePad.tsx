@@ -144,6 +144,22 @@ function computeClosingBracketDedent(
   return { next, cursor: lineStart + dedented.length + 1 };
 }
 
+function computeBackspaceDedent(
+  current: string,
+  cursor: number,
+): { next: string; cursor: number } | null {
+  const lineStart = current.lastIndexOf("\n", cursor - 1) + 1;
+  const nextNewline = current.indexOf("\n", cursor);
+  const lineEnd = nextNewline === -1 ? current.length : nextNewline;
+  const line = current.slice(lineStart, lineEnd);
+  const beforeCursor = current.slice(lineStart, cursor);
+  if (/\S/.test(line) || !beforeCursor.endsWith(INDENT)) return null;
+
+  const nextCursor = cursor - INDENT.length;
+  const next = `${current.slice(0, nextCursor)}${current.slice(cursor)}`;
+  return { next, cursor: nextCursor };
+}
+
 interface CodePadProps {
   id: string;
   value: string;
@@ -219,6 +235,19 @@ export function CodePad({
       pendingSelection.current = { start: cursor, end: cursor };
       onChange(next);
       return;
+    }
+
+    if (event.key === "Backspace" && selectionStart === selectionEnd) {
+      const dedented = computeBackspaceDedent(value, selectionStart);
+      if (dedented) {
+        event.preventDefault();
+        pendingSelection.current = {
+          start: dedented.cursor,
+          end: dedented.cursor,
+        };
+        onChange(dedented.next);
+        return;
+      }
     }
 
     if (

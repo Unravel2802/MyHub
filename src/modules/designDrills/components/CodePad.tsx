@@ -106,6 +106,44 @@ function computeIndent(
   };
 }
 
+// LeetCode-style auto-indent on Enter: the new line inherits the current
+// line's leading whitespace, plus one more level if the line being ended
+// opens a block (a trailing `{`/`(`/`[`, or a Python-style trailing `:`).
+function computeEnterIndent(
+  current: string,
+  selectionStart: number,
+  selectionEnd: number,
+): { next: string; cursor: number } {
+  const withoutSelection =
+    current.slice(0, selectionStart) + current.slice(selectionEnd);
+  const lineStart = withoutSelection.lastIndexOf("\n", selectionStart - 1) + 1;
+  const lineBeforeCursor = withoutSelection.slice(lineStart, selectionStart);
+  const baseIndent = /^[ \t]*/.exec(lineBeforeCursor)?.[0] ?? "";
+  const opensBlock = /[{([:]$/.test(lineBeforeCursor.trim());
+  const indent = opensBlock ? `${baseIndent}${INDENT}` : baseIndent;
+
+  const next = `${withoutSelection.slice(0, selectionStart)}\n${indent}${withoutSelection.slice(selectionStart)}`;
+  return { next, cursor: selectionStart + 1 + indent.length };
+}
+
+// The common "closing bracket snaps back a level" editor behavior: typing
+// `}`/`)`/`]` as the only (whitespace) content so far on the line dedents by
+// one level before inserting it, rather than leaving the bracket over-indented.
+function computeClosingBracketDedent(
+  current: string,
+  cursor: number,
+  bracket: string,
+): { next: string; cursor: number } | null {
+  const lineStart = current.lastIndexOf("\n", cursor - 1) + 1;
+  const beforeCursor = current.slice(lineStart, cursor);
+  if (beforeCursor.length < INDENT.length || /\S/.test(beforeCursor)) {
+    return null;
+  }
+  const dedented = beforeCursor.slice(0, beforeCursor.length - INDENT.length);
+  const next = `${current.slice(0, lineStart)}${dedented}${bracket}${current.slice(cursor)}`;
+  return { next, cursor: lineStart + dedented.length + 1 };
+}
+
 interface CodePadProps {
   id: string;
   value: string;
@@ -156,17 +194,51 @@ export function CodePad({
   }, [value]);
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key !== "Tab") return;
-    event.preventDefault();
     const { selectionStart, selectionEnd } = event.currentTarget;
-    const { next, start, end } = computeIndent(
-      value,
-      selectionStart,
-      selectionEnd,
-      event.shiftKey,
-    );
-    pendingSelection.current = { start, end };
-    onChange(next);
+
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const { next, start, end } = computeIndent(
+        value,
+        selectionStart,
+        selectionEnd,
+        event.shiftKey,
+      );
+      pendingSelection.current = { start, end };
+      onChange(next);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const { next, cursor } = computeEnterIndent(
+        value,
+        selectionStart,
+        selectionEnd,
+      );
+      pendingSelection.current = { start: cursor, end: cursor };
+      onChange(next);
+      return;
+    }
+
+    if (
+      (event.key === "}" || event.key === ")" || event.key === "]") &&
+      selectionStart === selectionEnd
+    ) {
+      const dedented = computeClosingBracketDedent(
+        value,
+        selectionStart,
+        event.key,
+      );
+      if (dedented) {
+        event.preventDefault();
+        pendingSelection.current = {
+          start: dedented.cursor,
+          end: dedented.cursor,
+        };
+        onChange(dedented.next);
+      }
+    }
   }
 
   function handleScroll(event: UIEvent<HTMLTextAreaElement>) {

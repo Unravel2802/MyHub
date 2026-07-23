@@ -557,6 +557,48 @@ test("Tab indents the scratchpad instead of moving focus away", async ({
   await expect(scratchpad).toBeFocused();
 });
 
+test("Enter auto-indents the scratchpad like an editor", async ({ page }) => {
+  const db = seededDb();
+  await load(page, db);
+  await page.getByRole("link", { name: "URL Shortener", exact: true }).click();
+  await page.getByRole("button", { name: "Start timed attempt" }).click();
+
+  const scratchpad = page.getByLabel("Your design (scratchpad)");
+
+  // Plain line: new line inherits the same indentation, no change.
+  await scratchpad.fill("  const x = 1;");
+  await scratchpad.focus();
+  await scratchpad.evaluate((el) => {
+    const textarea = el as HTMLTextAreaElement;
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  });
+  await page.keyboard.press("Enter");
+  await expect(scratchpad).toHaveValue("  const x = 1;\n  ");
+
+  // Opening a block indents one level deeper on the next line.
+  await scratchpad.fill("  if (ok) {");
+  await scratchpad.evaluate((el) => {
+    const textarea = el as HTMLTextAreaElement;
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  });
+  await page.keyboard.press("Enter");
+  await expect(scratchpad).toHaveValue("  if (ok) {\n    ");
+
+  // Typing the closing bracket on that now-empty indented line snaps back
+  // to the block's own indent level instead of staying over-indented.
+  await page.keyboard.type("}");
+  await expect(scratchpad).toHaveValue("  if (ok) {\n  }");
+
+  // Python-style trailing colon also opens a block.
+  await scratchpad.fill("def f():");
+  await scratchpad.evaluate((el) => {
+    const textarea = el as HTMLTextAreaElement;
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  });
+  await page.keyboard.press("Enter");
+  await expect(scratchpad).toHaveValue("def f():\n  ");
+});
+
 test("rolls back a failed timed-attempt create", async ({ page }) => {
   const db = seededDb();
   db.failNext("design_drill_attempts", "POST");

@@ -686,6 +686,58 @@ test("searches drills by prompt and clears the query", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("paginates and numbers filtered drills, then resets on filter change", async ({
+  page,
+}) => {
+  const db = new FakeDesignDrillsDb(
+    Array.from({ length: 12 }, (_, index) => {
+      const position = index + 1;
+      return designDrillRow({
+        id: `pagination-drill-${position}`,
+        title: `Pagination Drill ${String(position).padStart(2, "0")}`,
+        category: position === 12 ? "ml_system_design" : "system_design",
+      });
+    }),
+  );
+  await load(page, db);
+
+  await expect(
+    page.getByRole("link", { name: "Pagination Drill 01", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Pagination Drill 11", exact: true }),
+  ).toHaveCount(0);
+
+  const pagination = page.getByRole("navigation", { name: "Drill pages" });
+  await expect(
+    pagination.getByRole("button", { name: "Previous" }),
+  ).toBeDisabled();
+  await expect(pagination.getByRole("button", { name: "Next" })).toBeEnabled();
+  await pagination.getByRole("button", { name: "Page 2" }).click();
+
+  const eleventhRow = page
+    .getByRole("link", { name: "Pagination Drill 11", exact: true })
+    .locator("xpath=ancestor::li[1]");
+  await expect(eleventhRow).toBeVisible();
+  await expect(eleventhRow.getByText("11", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Pagination Drill 01", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    pagination.getByRole("button", { name: "Page 2" }),
+  ).toHaveAttribute("aria-current", "page");
+
+  await page
+    .getByRole("combobox", { name: "Category", exact: true })
+    .selectOption("ml_system_design");
+  const filteredRow = page
+    .getByRole("link", { name: "Pagination Drill 12", exact: true })
+    .locator("xpath=ancestor::li[1]");
+  await expect(filteredRow).toBeVisible();
+  await expect(filteredRow.getByText("1", { exact: true })).toBeVisible();
+  await expect(pagination).toHaveCount(0);
+});
+
 test("shows coverage and links new and overdue drills in the review queue", async ({
   page,
 }) => {

@@ -2,8 +2,10 @@
 
 import {
   type ChangeEvent,
+  type KeyboardEvent,
   type ReactNode,
   type UIEvent,
+  useEffect,
   useMemo,
   useRef,
   useSyncExternalStore,
@@ -52,6 +54,55 @@ const languageOptions: {
 const textMetrics =
   "p-3 font-mono text-sm leading-6 tracking-normal whitespace-pre";
 
+const INDENT = "  ";
+
+// A plain <textarea> treats Tab as "move focus to the next element", so
+// without this a code pad is unusable for actually indenting code. Mirrors
+// the common editor convention: an empty selection just inserts an indent at
+// the cursor, a selection (single- or multi-line) indents/dedents every line
+// it touches instead of replacing the selected text.
+function computeIndent(
+  current: string,
+  selectionStart: number,
+  selectionEnd: number,
+  dedent: boolean,
+): { next: string; start: number; end: number } {
+  if (selectionStart === selectionEnd && !dedent) {
+    const next = `${current.slice(0, selectionStart)}${INDENT}${current.slice(selectionEnd)}`;
+    const cursor = selectionStart + INDENT.length;
+    return { next, start: cursor, end: cursor };
+  }
+
+  const lineStart = current.lastIndexOf("\n", selectionStart - 1) + 1;
+  const nextNewline = current.indexOf(
+    "\n",
+    Math.max(selectionEnd - 1, lineStart),
+  );
+  const lineEnd = nextNewline === -1 ? current.length : nextNewline;
+
+  const lines = current.slice(lineStart, lineEnd).split("\n");
+  let firstLineDelta = 0;
+  const nextLines = lines.map((line, index) => {
+    if (dedent) {
+      const match = /^ {1,2}/.exec(line);
+      if (!match) return line;
+      if (index === 0) firstLineDelta = -match[0].length;
+      return line.slice(match[0].length);
+    }
+    if (index === 0) firstLineDelta = INDENT.length;
+    return `${INDENT}${line}`;
+  });
+
+  const nextBlock = nextLines.join("\n");
+  const next = `${current.slice(0, lineStart)}${nextBlock}${current.slice(lineEnd)}`;
+
+  return {
+    next,
+    start: Math.max(lineStart, selectionStart + firstLineDelta),
+    end: lineStart + nextBlock.length,
+  };
+}
+
 interface CodePadProps {
   id: string;
   value: string;
@@ -83,11 +134,37 @@ export function CodePad({
   );
   const preRef = useRef<HTMLPreElement>(null);
   const gutterRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pendingSelection = useRef<{ start: number; end: number } | null>(null);
   const highlighted = useMemo(
     () => hljs.highlight(`${value}\n`, { language }).value,
     [language, value],
   );
   const lineCount = value.split("\n").length;
+
+  // Setting selectionRange has to wait until the controlled textarea has
+  // actually re-rendered with the new value, or the browser clamps it to the
+  // pre-edit content length.
+  useEffect(() => {
+    if (!pendingSelection.current || !textareaRef.current) return;
+    const { start, end } = pendingSelection.current;
+    textareaRef.current.setSelectionRange(start, end);
+    pendingSelection.current = null;
+  }, [value]);
+
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Tab") return;
+    event.preventDefault();
+    const { selectionStart, selectionEnd } = event.currentTarget;
+    const { next, start, end } = computeIndent(
+      value,
+      selectionStart,
+      selectionEnd,
+      event.shiftKey,
+    );
+    pendingSelection.current = { start, end };
+    onChange(next);
+  }
 
   function handleScroll(event: UIEvent<HTMLTextAreaElement>) {
     const { scrollLeft, scrollTop } = event.currentTarget;
@@ -187,8 +264,10 @@ export function CodePad({
             className={`${textMetrics} relative z-10 h-full min-h-80 w-full resize-none overflow-auto bg-transparent text-transparent outline-none placeholder:text-subtle`}
             id={id}
             onChange={(event) => onChange(event.currentTarget.value)}
+            onKeyDown={handleKeyDown}
             onScroll={handleScroll}
             placeholder={placeholder}
+            ref={textareaRef}
             spellCheck={false}
             style={{ caretColor: "var(--foreground)" }}
             value={value}

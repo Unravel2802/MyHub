@@ -355,6 +355,30 @@ test("highlights code, renders line numbers, and remembers the language", async 
   await expect(language).toHaveValue("javascript");
 });
 
+test("Tab indents the scratchpad instead of moving focus away", async ({
+  page,
+}) => {
+  const db = seededDb();
+  await load(page, db);
+  await page.getByRole("link", { name: "URL Shortener", exact: true }).click();
+  await page.getByRole("button", { name: "Start timed attempt" }).click();
+
+  const scratchpad = page.getByLabel("Your design (scratchpad)");
+  await scratchpad.fill("line one\nline two");
+  await scratchpad.focus();
+  await scratchpad.evaluate((el) =>
+    (el as HTMLTextAreaElement).setSelectionRange(0, 0),
+  );
+
+  await page.keyboard.press("Tab");
+  await expect(scratchpad).toHaveValue("  line one\nline two");
+  await expect(scratchpad).toBeFocused();
+
+  await page.keyboard.press("Shift+Tab");
+  await expect(scratchpad).toHaveValue("line one\nline two");
+  await expect(scratchpad).toBeFocused();
+});
+
 test("rolls back a failed timed-attempt create", async ({ page }) => {
   const db = seededDb();
   db.failNext("design_drill_attempts", "POST");

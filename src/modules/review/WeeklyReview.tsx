@@ -209,34 +209,38 @@ export function WeeklyReview() {
               title="No past reviews yet"
             />
           ) : (
-            store.reviews.map((review) => (
-              <article
-                className="grid gap-4 rounded-lg border border-border bg-surface p-5"
-                key={review.id}
-              >
-                <div>
-                  <h4 className="font-semibold">Week of {review.weekStart}</h4>
-                  <ReviewSnapshotStats snapshot={review.snapshot} />
-                </div>
-                <div className="grid gap-2 text-sm">
-                  {review.wentWell ? (
-                    <p>
-                      <strong>Went well:</strong> {review.wentWell}
-                    </p>
-                  ) : null}
-                  {review.needsWork ? (
-                    <p>
-                      <strong>Needs work:</strong> {review.needsWork}
-                    </p>
-                  ) : null}
-                  {review.nextWeekFix ? (
-                    <p>
-                      <strong>Next week:</strong> {review.nextWeekFix}
-                    </p>
-                  ) : null}
-                </div>
-              </article>
-            ))
+            <div className="grid max-h-[36rem] gap-4 overflow-y-auto overscroll-contain pr-1">
+              {store.reviews.map((review) => (
+                <article
+                  className="grid gap-4 rounded-lg border border-border bg-surface p-5"
+                  key={review.id}
+                >
+                  <div>
+                    <h4 className="font-semibold">
+                      Week of {review.weekStart}
+                    </h4>
+                    <ReviewSnapshotStats snapshot={review.snapshot} />
+                  </div>
+                  <div className="grid gap-2 text-sm">
+                    {review.wentWell ? (
+                      <p>
+                        <strong>Went well:</strong> {review.wentWell}
+                      </p>
+                    ) : null}
+                    {review.needsWork ? (
+                      <p>
+                        <strong>Needs work:</strong> {review.needsWork}
+                      </p>
+                    ) : null}
+                    {review.nextWeekFix ? (
+                      <p>
+                        <strong>Next week:</strong> {review.nextWeekFix}
+                      </p>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </div>
           )}
         </section>
       </section>

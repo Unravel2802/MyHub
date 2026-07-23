@@ -152,7 +152,7 @@ export function DrillDetail({
         </div>
       </div>
 
-      <section className="overflow-hidden rounded-lg border border-border bg-surface">
+      <section className="min-w-0 overflow-hidden rounded-lg border border-border bg-surface">
         <div className="px-5 pb-4 pt-5">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-xl font-semibold tracking-tight text-foreground">

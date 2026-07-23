@@ -111,7 +111,6 @@ function applicationRow(overrides: Record<string, unknown> = {}) {
     applied_date: null,
     last_update_date: "2026-07-01",
     referral_source: null,
-    follow_up_date: null,
     deleted_at: null,
     created_at: stamp,
     updated_at: stamp,

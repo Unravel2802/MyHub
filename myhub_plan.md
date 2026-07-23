@@ -312,7 +312,7 @@ raw SQL DDL from the schema plan, reviewed via the automated CI gate, not a manu
 - `Applications`: `id`, `company_id` (FK), `role_title`, `resume_variant` (enum:
   `swe_backend`/`mle_ml_infra`), `stage` (enum: `researching`/`applied`/`oa`/`phone_screen`/
   `onsite`/`offer`/`rejected`/`withdrawn`), `applied_date`, `last_update_date`,
-  `referral_source`, `follow_up_date`, `deleted_at`.
+  `referral_source`, `deleted_at`.
 - `Interviews`: `id`, `application_id` (FK), `round_type` (enum: `coding`/`system_design`/
   `ml_system_design`/`behavioral`/`other`), `scheduled_at`, `completed` (boolean), `outcome`,
   `post_mortem_notes`, `deleted_at`.
@@ -340,11 +340,10 @@ raw SQL DDL from the schema plan, reviewed via the automated CI gate, not a manu
   `application.stage_changed`, `interview.completed`, and `prep.logged` to stay current without
   polling.
 - Panels: this week's recurring schedule blocks, applications needing follow-up
-  (`follow_up_date` today-or-earlier or no update in >7 days), running scorecard totals vs. the
-  roadmap's monthly/checkpoint targets, current month's gate checklist (a parent Task with
-  subtasks), and a **weekly-cadence panel** (applications/outreach/mock-interviews this week vs.
-  §11.2's weekly targets — distinct from the monthly scorecard, since a week behind on cadence
-  can still be on pace for the month).
+  (no update in >7 days), running scorecard totals vs. the roadmap's monthly/checkpoint targets,
+  current month's gate checklist (a parent Task with subtasks), and a **weekly-cadence panel**
+  (applications/outreach/mock-interviews this week vs. §11.2's weekly targets — distinct from the
+  monthly scorecard, since a week behind on cadence can still be on pace for the month).
 
 **V2 — sketched so the shape exists when picked up, not part of the current build:**
 

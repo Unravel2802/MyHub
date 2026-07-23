@@ -67,11 +67,7 @@ export function applicationsNeedingFollowUp(
     if (application.deletedAt) return false;
     if (TERMINAL_STAGES.has(application.stage)) return false;
 
-    const followUpDue =
-      application.followUpDate !== null && application.followUpDate <= today;
-    const stale = daysBetween(application.lastUpdateDate, today) > 7;
-
-    return followUpDue || stale;
+    return daysBetween(application.lastUpdateDate, today) > 7;
   });
 }
 

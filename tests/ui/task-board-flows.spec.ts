@@ -146,6 +146,83 @@ test("column filters narrow the board and restore it when cleared", async ({
   await expect(columns).toHaveCount(4);
 });
 
+test("overflowing columns scroll without shrinking task cards", async ({
+  page,
+}) => {
+  const tasks = Array.from({ length: 18 }, (_, index) =>
+    row({
+      id: `todo-${index + 1}`,
+      title: `Todo task ${index + 1}`,
+      status: "todo",
+      position: (index + 1) * 1000,
+    }),
+  );
+  const db = await loadBoard(page, tasks);
+
+  const todo = page.getByRole("region", { name: "Todo" });
+  const cards = todo.getByRole("article");
+  await expect(cards).toHaveCount(tasks.length);
+  await todo.scrollIntoViewIfNeeded();
+
+  const list = cards.first().locator("..");
+  const dimensions = await list.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    overflowY: getComputedStyle(element).overflowY,
+    scrollHeight: element.scrollHeight,
+  }));
+  expect(dimensions.overflowY).toBe("auto");
+  expect(dimensions.scrollHeight).toBeGreaterThan(dimensions.clientHeight);
+
+  const cardLayouts = await cards.evaluateAll((elements) =>
+    elements.map((element) => ({
+      flexShrink: getComputedStyle(element).flexShrink,
+      height: element.getBoundingClientRect().height,
+    })),
+  );
+  expect(cardLayouts.every(({ flexShrink }) => flexShrink === "0")).toBe(true);
+  expect(cardLayouts.every(({ height }) => height > 40)).toBe(true);
+
+  const scrolled = await list.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+    const lastCard = element.lastElementChild;
+    if (!lastCard) throw new Error("Expected an overflowing task list");
+    const listBounds = element.getBoundingClientRect();
+    const cardBounds = lastCard.getBoundingClientRect();
+    return {
+      cardBottom: cardBounds.bottom,
+      cardTop: cardBounds.top,
+      listBottom: listBounds.bottom,
+      listTop: listBounds.top,
+      scrollTop: element.scrollTop,
+    };
+  });
+  expect(scrolled.scrollTop).toBeGreaterThan(0);
+  expect(scrolled.cardTop).toBeGreaterThanOrEqual(scrolled.listTop);
+  expect(scrolled.cardBottom).toBeLessThanOrEqual(scrolled.listBottom);
+
+  const dragHandle = card(page, "Todo task 18").getByText("Todo task 18");
+  const dropTarget = card(page, "Todo task 16");
+  const from = await dragHandle.boundingBox();
+  const to = await dropTarget.boundingBox();
+  if (!from || !to) throw new Error("Expected scrolled cards to be visible");
+
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(
+    from.x + from.width / 2,
+    from.y + from.height / 2 - 20,
+    { steps: 5 },
+  );
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
+    steps: 12,
+  });
+  await page.mouse.up();
+
+  await expect
+    .poll(() => db.rows.find((task) => task.id === "todo-18")?.position)
+    .not.toBe(18000);
+});
+
 test("dragging a card from Inbox to Todo persists the new status", async ({
   page,
 }) => {

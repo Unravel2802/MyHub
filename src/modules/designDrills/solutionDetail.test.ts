@@ -110,4 +110,96 @@ describe("parseSolutionDetail", () => {
     expect(result?.estimates).toEqual([{ label: "Good", value: "1" }]);
     expect(result?.references).toBeUndefined();
   });
+
+  it("keeps a well-formed codeExamples array and preserves order", () => {
+    const result = parseSolutionDetail(
+      {
+        summary: "s",
+        sections: [
+          {
+            id: "reference-implementation",
+            heading: "Reference implementation",
+            body: "intro",
+            codeExamples: [
+              { language: "cpp", label: "C++", code: "int main() {}" },
+              { language: "java", label: "Java", code: "class Main {}" },
+              { language: "python", label: "Python3", code: "pass" },
+            ],
+          },
+        ],
+        estimates: [],
+      },
+      "x",
+    );
+    expect(result?.sections[0].codeExamples).toEqual([
+      { language: "cpp", label: "C++", code: "int main() {}" },
+      { language: "java", label: "Java", code: "class Main {}" },
+      { language: "python", label: "Python3", code: "pass" },
+    ]);
+  });
+
+  it("drops individual codeExamples entries with an unknown language or missing fields, keeping the rest", () => {
+    const result = parseSolutionDetail(
+      {
+        summary: "s",
+        sections: [
+          {
+            id: "reference-implementation",
+            heading: "Reference implementation",
+            body: "intro",
+            codeExamples: [
+              { language: "cpp", label: "C++", code: "int main() {}" },
+              { language: "rust", label: "Rust", code: "fn main() {}" },
+              { language: "java", label: "Java" },
+              "not even an object",
+            ],
+          },
+        ],
+        estimates: [],
+      },
+      "x",
+    );
+    expect(result?.sections[0].codeExamples).toEqual([
+      { language: "cpp", label: "C++", code: "int main() {}" },
+    ]);
+  });
+
+  it("omits codeExamples entirely when absent, non-array, or empty after filtering", () => {
+    const noField = parseSolutionDetail(
+      {
+        summary: "s",
+        sections: [{ id: "a", heading: "A", body: "b" }],
+        estimates: [],
+      },
+      "x",
+    );
+    expect(noField?.sections[0]).toEqual({ id: "a", heading: "A", body: "b" });
+
+    const nonArray = parseSolutionDetail(
+      {
+        summary: "s",
+        sections: [{ id: "a", heading: "A", body: "b", codeExamples: "nope" }],
+        estimates: [],
+      },
+      "x",
+    );
+    expect(nonArray?.sections[0].codeExamples).toBeUndefined();
+
+    const allInvalid = parseSolutionDetail(
+      {
+        summary: "s",
+        sections: [
+          {
+            id: "a",
+            heading: "A",
+            body: "b",
+            codeExamples: [{ language: "rust", label: "Rust", code: "x" }],
+          },
+        ],
+        estimates: [],
+      },
+      "x",
+    );
+    expect(allInvalid?.sections[0].codeExamples).toBeUndefined();
+  });
 });

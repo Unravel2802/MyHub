@@ -5,6 +5,7 @@ export type DesignDrillCodeLanguage =
   | "typescript"
   | "javascript"
   | "go"
+  | "cpp"
   | "java"
   | "sql";
 
@@ -20,6 +21,7 @@ function isCodeLanguage(value: unknown): value is DesignDrillCodeLanguage {
     value === "typescript" ||
     value === "javascript" ||
     value === "go" ||
+    value === "cpp" ||
     value === "java" ||
     value === "sql"
   );

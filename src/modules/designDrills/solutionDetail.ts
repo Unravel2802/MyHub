@@ -1,7 +1,42 @@
 import type {
   DrillSolution,
+  DrillSolutionCodeExample,
+  DrillSolutionCodeLanguage,
   DrillSolutionSection,
 } from "@/src/modules/designDrills/types";
+
+const CODE_LANGUAGES: readonly DrillSolutionCodeLanguage[] = [
+  "cpp",
+  "java",
+  "python",
+];
+
+function isCodeLanguage(value: unknown): value is DrillSolutionCodeLanguage {
+  return (
+    typeof value === "string" &&
+    (CODE_LANGUAGES as readonly string[]).includes(value)
+  );
+}
+
+function parseCodeExamples(
+  raw: unknown,
+): DrillSolutionCodeExample[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const examples = raw
+    .filter(
+      (example): example is Record<string, unknown> =>
+        isRecord(example) &&
+        isCodeLanguage(example.language) &&
+        typeof example.label === "string" &&
+        typeof example.code === "string",
+    )
+    .map((example) => ({
+      language: example.language as DrillSolutionCodeLanguage,
+      label: example.label as string,
+      code: example.code as string,
+    }));
+  return examples.length > 0 ? examples : undefined;
+}
 
 // Defensive parser for the `design_drills.solution_detail` jsonb column.
 // Supabase hands the column back already parsed (object | null), so the input is
@@ -47,10 +82,12 @@ export function parseSolutionDetail(
       typeof section.heading === "string" &&
       typeof section.body === "string"
     ) {
+      const codeExamples = parseCodeExamples(section.codeExamples);
       parsedSections.push({
         id: section.id,
         heading: section.heading,
         body: section.body,
+        ...(codeExamples ? { codeExamples } : {}),
       });
     }
   }

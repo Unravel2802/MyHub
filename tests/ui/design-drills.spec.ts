@@ -124,6 +124,90 @@ test("lists seeded drills and opens the structured editorial", async ({
   ).toHaveText("read-heavy key-value lookup");
 });
 
+test("switches solution code languages with click and keyboard navigation", async ({
+  page,
+}) => {
+  const db = new FakeDesignDrillsDb([
+    designDrillRow({
+      id: "code-tabs-drill",
+      title: "Code Tabs Drill",
+      solution_detail: {
+        ...editorialDetail,
+        sections: [
+          ...editorialDetail.sections,
+          {
+            id: "reference-implementation",
+            heading: "Reference implementation",
+            body: "Compare the same implementation across languages.",
+            codeExamples: [
+              {
+                language: "cpp",
+                label: "C++",
+                code: "std::vector<int> ids;",
+              },
+              {
+                language: "java",
+                label: "Java",
+                code: "List<Integer> ids = new ArrayList<>();",
+              },
+              {
+                language: "python",
+                label: "Python3",
+                code: "ids: list[int] = []",
+              },
+            ],
+          },
+        ],
+      },
+    }),
+  ]);
+  await load(page, db);
+
+  await page
+    .getByRole("link", { name: "Code Tabs Drill", exact: true })
+    .click();
+  await page.getByRole("tab", { name: "Solution" }).click();
+
+  const reference = page.locator("#reference-implementation");
+  const tablist = reference.getByRole("tablist", {
+    name: "Solution code examples",
+  });
+  const cppTab = tablist.getByRole("tab", { name: "C++" });
+  const javaTab = tablist.getByRole("tab", { name: "Java" });
+  const pythonTab = tablist.getByRole("tab", { name: "Python3" });
+
+  await expect(cppTab).toHaveAttribute("aria-selected", "true");
+  await expect(cppTab).toHaveAttribute("tabindex", "0");
+  await expect(javaTab).toHaveAttribute("aria-selected", "false");
+  await expect(javaTab).toHaveAttribute("tabindex", "-1");
+  await expect(pythonTab).toHaveAttribute("aria-selected", "false");
+  await expect(pythonTab).toHaveAttribute("tabindex", "-1");
+  await expect(reference.getByRole("tabpanel")).toContainText(
+    "std::vector<int> ids;",
+  );
+
+  await javaTab.click();
+  await expect(javaTab).toHaveAttribute("aria-selected", "true");
+  await expect(javaTab).toHaveAttribute("tabindex", "0");
+  await expect(cppTab).toHaveAttribute("aria-selected", "false");
+  await expect(cppTab).toHaveAttribute("tabindex", "-1");
+  await expect(reference.getByRole("tabpanel")).toContainText(
+    "List<Integer> ids = new ArrayList<>();",
+  );
+
+  await javaTab.press("ArrowRight");
+  await expect(pythonTab).toBeFocused();
+  await expect(pythonTab).toHaveAttribute("aria-selected", "true");
+  await expect(pythonTab).toHaveAttribute("tabindex", "0");
+  await expect(reference.getByRole("tabpanel")).toContainText(
+    "ids: list[int] = []",
+  );
+
+  await pythonTab.press("ArrowRight");
+  await expect(cppTab).toBeFocused();
+  await expect(cppTab).toHaveAttribute("aria-selected", "true");
+});
+
 test("shows completed attempts newest first with saved notes and an improving rating trend", async ({
   page,
 }) => {
@@ -340,6 +424,13 @@ test("highlights code, renders line numbers, and remembers the language", async 
 
   const language = page.getByRole("combobox", { name: "Code language" });
   await expect(language).toHaveValue("markdown");
+  await expect(language.getByRole("option", { name: "C++" })).toHaveAttribute(
+    "value",
+    "cpp",
+  );
+  await expect(
+    language.getByRole("option", { name: "Python3" }),
+  ).toHaveAttribute("value", "python");
   await language.selectOption("javascript");
   await page
     .getByLabel("Your design (scratchpad)")

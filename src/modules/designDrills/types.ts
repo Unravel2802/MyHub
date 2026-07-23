@@ -20,6 +20,21 @@ export interface DrillEstimate {
   note?: string;
 }
 
+// LeetCode-editorial-style multi-language reference implementation. Always
+// exactly these three — no SQL/TypeScript/Go tab kept for drills whose
+// original snippet was in one of those, they're translated like everything
+// else (see supabase/migrations/0031_design_drill_solution_code_tabs.sql).
+export type DrillSolutionCodeLanguage = "cpp" | "java" | "python";
+
+export interface DrillSolutionCodeExample {
+  language: DrillSolutionCodeLanguage;
+  // "C++" | "Java" | "Python3" — display label, not derived from `language`
+  // so the tab strip can match LeetCode's exact wording.
+  label: string;
+  // Raw source, no markdown fencing — SolutionCodeTabs wraps it in one.
+  code: string;
+}
+
 // One editorial section of a worked solution — the "Approach", a deep-dive, a
 // "Tradeoffs" block. `id` is a stable slug used as the anchor target for the
 // outline nav and for `#section` deep-links, so it must be URL-safe and unique
@@ -30,6 +45,10 @@ export interface DrillSolutionSection {
   // GFM markdown: prose, bullets, tables, fenced code. Rendered via the shared
   // `<Markdown>` component (XSS-safe, no raw HTML).
   body: string;
+  // Optional C++/Java/Python3 tab strip rendered after `body` — only the
+  // "reference-implementation" section carries this today, but it's not
+  // restricted to a specific `id`.
+  codeExamples?: DrillSolutionCodeExample[];
 }
 
 // The structured, LeetCode-editorial-style solution. `summary` is the intuition

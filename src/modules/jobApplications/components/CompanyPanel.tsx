@@ -87,7 +87,7 @@ export function CompanyPanel({
         </button>
       </form>
 
-      <ul className="mt-4 grid gap-2">
+      <ul className="mt-4 grid max-h-72 gap-2 overflow-y-auto pr-1">
         {companies.map((company) => {
           const count = applications.filter(
             (application) => application.companyId === company.id,

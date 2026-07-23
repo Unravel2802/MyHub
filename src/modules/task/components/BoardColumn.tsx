@@ -78,7 +78,7 @@ export function BoardColumn({
         items={tasks.map((task) => task.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="flex min-w-0 flex-1 flex-col gap-3 p-3">
+        <div className="flex max-h-[min(36rem,60vh)] min-w-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-3 pr-1">
           {isLoading ? (
             <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-input bg-surface-subtle p-6 text-center">
               <p className="text-sm leading-6 text-muted">Loading tasks...</p>

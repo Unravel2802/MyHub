@@ -218,9 +218,9 @@ export function FinanceTransactionTable({
   }
 
   return (
-    <div className="max-w-full overflow-x-auto rounded-lg border border-border">
+    <div className="max-h-[28rem] max-w-full overflow-x-auto overflow-y-auto rounded-lg border border-border">
       <table className="min-w-[760px] w-full border-collapse text-sm">
-        <thead className="bg-surface-subtle">
+        <thead className="sticky top-0 z-10 bg-surface-subtle">
           <tr className="border-b border-border">
             {header("Date", "date")}
             {header("Category", "category")}

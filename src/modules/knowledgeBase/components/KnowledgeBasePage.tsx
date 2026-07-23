@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Bold, Heading2, Link2, List, NotebookPen, Plus } from "lucide-react";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
@@ -32,9 +32,54 @@ const MARKDOWN_TOOLS: MarkdownTool[] = [
   { label: "Link", prefix: "[", suffix: "](https://)", icon: Link2 },
 ];
 
+const INDENT = "  ";
+
+function computeIndent(
+  current: string,
+  selectionStart: number,
+  selectionEnd: number,
+  dedent: boolean,
+): { next: string; start: number; end: number } {
+  if (selectionStart === selectionEnd && !dedent) {
+    const next = `${current.slice(0, selectionStart)}${INDENT}${current.slice(selectionEnd)}`;
+    const cursor = selectionStart + INDENT.length;
+    return { next, start: cursor, end: cursor };
+  }
+
+  const lineStart = current.lastIndexOf("\n", selectionStart - 1) + 1;
+  const nextNewline = current.indexOf(
+    "\n",
+    Math.max(selectionEnd - 1, lineStart),
+  );
+  const lineEnd = nextNewline === -1 ? current.length : nextNewline;
+
+  const lines = current.slice(lineStart, lineEnd).split("\n");
+  let firstLineDelta = 0;
+  const nextLines = lines.map((line, index) => {
+    if (dedent) {
+      const match = /^ {1,2}/.exec(line);
+      if (!match) return line;
+      if (index === 0) firstLineDelta = -match[0].length;
+      return line.slice(match[0].length);
+    }
+    if (index === 0) firstLineDelta = INDENT.length;
+    return `${INDENT}${line}`;
+  });
+
+  const nextBlock = nextLines.join("\n");
+  const next = `${current.slice(0, lineStart)}${nextBlock}${current.slice(lineEnd)}`;
+
+  return {
+    next,
+    start: Math.max(lineStart, selectionStart + firstLineDelta),
+    end: lineStart + nextBlock.length,
+  };
+}
+
 export function KnowledgeBasePage() {
   const store = useNoteStore();
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const pendingSelection = useRef<{ start: number; end: number } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -93,6 +138,28 @@ export function KnowledgeBasePage() {
     if (!selectedId) return;
     void fetchLinksForNote(selectedId);
   }, [selectedId, fetchLinksForNote]);
+
+  useEffect(() => {
+    if (!pendingSelection.current || !bodyRef.current) return;
+    const { start, end } = pendingSelection.current;
+    bodyRef.current.setSelectionRange(start, end);
+    pendingSelection.current = null;
+  }, [body]);
+
+  function handleBodyKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Tab") return;
+
+    event.preventDefault();
+    const { selectionStart, selectionEnd } = event.currentTarget;
+    const { next, start, end } = computeIndent(
+      body,
+      selectionStart,
+      selectionEnd,
+      event.shiftKey,
+    );
+    pendingSelection.current = { start, end };
+    setBody(next);
+  }
 
   function resetLinkPicker() {
     setLinkPickerOpen(false);
@@ -291,6 +358,7 @@ export function KnowledgeBasePage() {
                     aria-label="Body"
                     className="min-h-64 w-full rounded-b-md border border-input bg-surface px-3 py-2 font-mono text-sm leading-relaxed text-foreground"
                     onChange={(event) => setBody(event.target.value)}
+                    onKeyDown={handleBodyKeyDown}
                     placeholder="Write in Markdown: ideas, decisions, references..."
                     ref={bodyRef}
                     value={body}

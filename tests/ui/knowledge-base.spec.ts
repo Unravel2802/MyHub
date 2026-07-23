@@ -108,6 +108,33 @@ function mockNotes(page: Page) {
   });
 }
 
+test("Tab indents the note body without moving focus", async ({ page }) => {
+  await mockNotes(page);
+  await page.goto("/notes");
+
+  const body = page.getByLabel("Body");
+  await body.fill("line one\nline two");
+  await body.focus();
+  await body.evaluate((element) =>
+    (element as HTMLTextAreaElement).setSelectionRange(0, 0),
+  );
+
+  await page.keyboard.press("Tab");
+  await expect(body).toHaveValue("  line one\nline two");
+  await expect(body).toBeFocused();
+
+  await page.keyboard.press("Shift+Tab");
+  await expect(body).toHaveValue("line one\nline two");
+  await expect(body).toBeFocused();
+
+  await body.evaluate((element) =>
+    (element as HTMLTextAreaElement).setSelectionRange(8, 8),
+  );
+  await page.keyboard.press("Enter");
+  await expect(body).toHaveValue("line one\n\nline two");
+  await expect(body).toBeFocused();
+});
+
 test("links two notes bidirectionally and removes the link from both sides", async ({
   page,
 }) => {

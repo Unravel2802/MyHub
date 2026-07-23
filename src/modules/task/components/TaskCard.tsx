@@ -120,7 +120,7 @@ export function TaskCard({
   return (
     <article
       aria-label={`Task: ${task.title}`}
-      className={`min-w-0 overflow-hidden rounded-md border border-border bg-surface p-3 shadow-sm transition-colors hover:border-input-hover ${
+      className={`min-w-0 shrink-0 overflow-hidden rounded-md border border-border bg-surface p-3 shadow-sm transition-colors hover:border-input-hover ${
         disabled ? "opacity-70" : "hover:border-input-hover"
       } ${isDragging ? "opacity-40" : ""}`}
       ref={setNodeRef}

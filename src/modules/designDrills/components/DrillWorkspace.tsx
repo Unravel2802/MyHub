@@ -176,7 +176,7 @@ export function DrillWorkspace({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="overflow-hidden rounded-lg border border-border bg-surface">
+        <section className="overflow-hidden rounded-lg border border-border bg-surface lg:h-[calc(100vh-11rem)] lg:overflow-y-auto">
           <div className="px-5 pb-4 pt-5">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">

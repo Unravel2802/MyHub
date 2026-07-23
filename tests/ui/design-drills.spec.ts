@@ -347,6 +347,93 @@ test("runs a timed attempt and persists the self-grade", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("keeps a long solution independently scrollable beside the scratchpad", async ({
+  page,
+}) => {
+  const db = new FakeDesignDrillsDb([
+    designDrillRow({
+      id: "long-solution",
+      title: "Long Solution Drill",
+      solution_detail: {
+        ...editorialDetail,
+        sections: [
+          ...editorialDetail.sections,
+          {
+            id: "long-deep-dive",
+            heading: "Long deep dive",
+            body: Array.from(
+              { length: 30 },
+              (_, index) =>
+                `### Detail ${index + 1}\n\nExplain this design decision and its operational tradeoffs.`,
+            ).join("\n\n"),
+          },
+        ],
+      },
+    }),
+  ]);
+  await load(page, db);
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  await page
+    .getByRole("link", { name: "Long Solution Drill", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Start timed attempt" }).click();
+  await page.getByRole("tab", { name: "Solution" }).click();
+
+  const leftPane = page
+    .getByRole("heading", { name: "Long Solution Drill" })
+    .locator("xpath=ancestor::section[1]");
+  const rightPane = page
+    .getByLabel("Your design (scratchpad)")
+    .locator("xpath=ancestor::section[1]");
+  const leftBox = await leftPane.boundingBox();
+  const rightBox = await rightPane.boundingBox();
+
+  expect(leftBox).not.toBeNull();
+  expect(rightBox).not.toBeNull();
+  expect(leftBox!.height).toBeCloseTo(rightBox!.height, 0);
+
+  const leftScroll = await leftPane.evaluate((element) => ({
+    clientHeight: element.clientHeight,
+    overflowY: getComputedStyle(element).overflowY,
+    scrollHeight: element.scrollHeight,
+  }));
+  expect(leftScroll.overflowY).toBe("auto");
+  expect(leftScroll.scrollHeight).toBeGreaterThan(leftScroll.clientHeight);
+
+  await page.evaluate(() => {
+    window.scrollTo(0, document.scrollingElement?.scrollHeight ?? 0);
+  });
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0);
+  const outerScrollBefore = await page.evaluate(() => window.scrollY);
+  const alignedRightBox = await rightPane.boundingBox();
+  await leftPane.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect
+    .poll(() => leftPane.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.scrollY)).toBe(outerScrollBefore);
+  expect((await rightPane.boundingBox())?.y).toBeCloseTo(alignedRightBox!.y, 0);
+
+  await leftPane.evaluate((element) => {
+    element.scrollTop = 0;
+  });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.setViewportSize({ width: 900, height: 900 });
+  const mobileLeftBox = await leftPane.boundingBox();
+  const mobileRightBox = await rightPane.boundingBox();
+  expect(mobileLeftBox).not.toBeNull();
+  expect(mobileRightBox).not.toBeNull();
+  expect(Math.abs(mobileRightBox!.x - mobileLeftBox!.x)).toBeLessThan(2);
+  expect(mobileRightBox!.y).toBeGreaterThan(mobileLeftBox!.y);
+  expect(
+    await leftPane.evaluate((element) => getComputedStyle(element).overflowY),
+  ).toBe("hidden");
+});
+
 test("pauses and resumes the attempt timer without counting paused time", async ({
   page,
 }) => {

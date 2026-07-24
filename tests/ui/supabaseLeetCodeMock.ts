@@ -6,6 +6,7 @@ export type LeetCodeProblemRow = {
   question_number: number | null;
   difficulty: "easy" | "medium" | "hard";
   tags: string[];
+  notes: string | null;
   status: "to_review" | "in_progress" | "solved" | "needs_revisit";
   deleted_at: string | null;
   created_at: string;
@@ -38,6 +39,7 @@ export function leetCodeProblemRow(
     question_number: null,
     difficulty: "medium",
     tags: [],
+    notes: null,
     status: "to_review",
     deleted_at: null,
     created_at: STAMP,

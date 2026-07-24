@@ -18,8 +18,8 @@ import { emit } from "@/src/lib/events";
 
 // Published store contract for the LeetCode Tracker. One store per module —
 // this must never reach into usePrepStore or vice versa; the only sanctioned
-// cross-module signal is `leetcode.attempt_logged` on the Event Bus
-// (src/lib/events.ts).
+// cross-module signals are `leetcode.problem_logged` and
+// `leetcode.attempt_logged` on the Event Bus (src/lib/events.ts).
 //
 // CONTRACT ONLY: the async action bodies below are Codex's to implement,
 // against LeetCodeRepository.ts (already published and tested) — mechanical
@@ -27,7 +27,7 @@ import { emit } from "@/src/lib/events";
 // usePrepStore.ts's createEntry/updateEntry/deleteEntry pattern exactly:
 // optimistic update, roll back `previousX` and set `error` via
 // toUserMessage() on failure, track in-flight ids in `pendingIds`), and
-// emitting `leetcode.attempt_logged` on a successful createAttempt. The shape
+// emitting the published success events from createProblem/createAttempt. The shape
 // below is not Codex's to change — if the UI needs something this doesn't
 // expose, flag it rather than widening a payload or bypassing the store.
 
@@ -88,6 +88,7 @@ function applyProblemUpdates(
       difficulty: updates.difficulty,
     }),
     ...(updates.tags !== undefined && { tags: updates.tags }),
+    ...(updates.notes !== undefined && { notes: updates.notes }),
     ...(updates.status !== undefined && { status: updates.status }),
   };
 }
@@ -149,6 +150,7 @@ export const useLeetCodeStore = create<LeetCodeStore>((set, get) => {
         questionNumber: input.questionNumber ?? null,
         difficulty: input.difficulty,
         tags: input.tags ?? [],
+        notes: input.notes ?? null,
         status: input.status ?? "to_review",
         deletedAt: null,
         createdAt: now,
@@ -166,6 +168,11 @@ export const useLeetCodeStore = create<LeetCodeStore>((set, get) => {
           problems: get().problems.map((problem) =>
             problem.id === optimistic.id ? created : problem,
           ),
+        });
+        emit({
+          type: "leetcode.problem_logged",
+          payload: { problemId: created.id },
+          timestamp: Date.now(),
         });
       } catch (error) {
         set({ problems: previousProblems, error: toUserMessage(error) });

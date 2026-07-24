@@ -20,14 +20,18 @@ test("entry form only offers fields and outcomes valid for its type", async ({
 
   await expect(
     page.getByLabel("Time to solve this problem (minutes)"),
-  ).toBeVisible();
-  await expect(page.getByLabel("Outcome")).toContainText("Solved");
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Practice type")).not.toContainText("Algorithm");
+  await expect(page.getByLabel("Outcome")).toContainText("Pass");
+  await expect(page.getByLabel("Outcome")).toContainText("Needs work");
+  await expect(page.getByLabel("Outcome")).not.toContainText("Solved");
 
-  await page.getByLabel("Practice type").selectOption("system_design");
+  await page.getByLabel("Practice type").selectOption("behavioral");
 
   await expect(
     page.getByLabel("Time to solve this problem (minutes)"),
   ).toHaveCount(0);
+  await expect(page.getByLabel("Outcome")).toContainText("Pass");
   await expect(page.getByLabel("Outcome")).toContainText("Needs work");
   await expect(page.getByLabel("Outcome")).not.toContainText("Solved");
 });
@@ -71,30 +75,35 @@ test("logs mock subtypes, resume deep-dives, and renders time allocation", async
   await expect(allocation).toContainText("Mock-interview time excluded");
 });
 
-test("logs an algorithm rep and updates the monthly scorecard", async ({
+test("logs a system design rep and updates the monthly scorecard", async ({
   page,
 }) => {
   const db = await loadPrep(page);
 
-  await page.getByLabel("Topic").fill("graphs");
+  await page.getByLabel("Topic").fill("rate limiter");
   await page.getByLabel("Session length (minutes)").fill("45");
-  await page.getByLabel("Time to solve this problem (minutes)").fill("30");
-  await page.getByLabel("Outcome").selectOption("solved");
-  await page.getByLabel("Notes / post-mortem").fill("BFS was the key");
+  await page.getByLabel("Outcome").selectOption("pass");
+  await page
+    .getByLabel("Notes / post-mortem")
+    .fill("Separated global and per-user limits");
   await page.getByRole("button", { name: "Log session" }).click();
 
   await expect(
     page.getByRole("region", { name: "Recent sessions" }),
-  ).toContainText("graphs");
-  await expect(
-    page.getByRole("region", { name: "Monthly scorecard" }),
-  ).toContainText("1 / 1");
+  ).toContainText("rate limiter");
+  const systemDesignTile = page
+    .getByRole("region", { name: "Monthly scorecard" })
+    .getByText("System design", { exact: true })
+    .first()
+    .locator("..");
+  await expect(systemDesignTile).toContainText("1");
   await expect
     .poll(() => db.entries[0])
     .toMatchObject({
-      topic: "graphs",
-      time_to_solve_min: 30,
-      outcome: "solved",
+      entry_type: "system_design",
+      topic: "rate limiter",
+      time_to_solve_min: null,
+      outcome: "pass",
     });
 });
 

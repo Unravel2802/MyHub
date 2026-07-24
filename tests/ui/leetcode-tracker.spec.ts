@@ -87,12 +87,10 @@ test("logs an attempt, moves its problem on the board, and shows highlighted his
   ).toHaveCount(3);
 });
 
-test("logging an attempt counts toward Prep Tracker's algorithm checkpoint and monthly count", async ({
+test("adding a problem counts toward Prep Tracker's algorithm checkpoint and monthly count", async ({
   page,
 }) => {
-  const db = new FakeLeetCodeDb([
-    leetCodeProblemRow({ id: "two-sum", title: "Two Sum" }),
-  ]);
+  const db = new FakeLeetCodeDb();
   await load(page, db);
 
   const checkpointStat = page.getByText(/\/\d+ algorithms/);
@@ -103,11 +101,11 @@ test("logging an attempt counts toward Prep Tracker's algorithm checkpoint and m
     .locator("..");
   await expect(algorithmsTile).toContainText("0");
 
-  await page.getByRole("button", { name: "Two Sum", exact: true }).click();
-  const attemptForm = page.getByRole("form", { name: "Log attempt" });
-  await attemptForm.getByLabel("Outcome").selectOption("solved");
-  await attemptForm.getByRole("button", { name: "Log attempt" }).click();
-  await expect.poll(() => db.attempts).toHaveLength(1);
+  const addForm = page.getByRole("form", { name: "Add problem" });
+  await addForm.getByLabel("Problem title").fill("Two Sum");
+  await addForm.getByLabel("Difficulty").selectOption("easy");
+  await addForm.getByRole("button", { name: "Add problem" }).click();
+  await expect.poll(() => db.problems).toHaveLength(1);
 
   await expect(checkpointStat).toContainText("1/");
   await expect(algorithmsTile).toContainText("1");
@@ -169,10 +167,6 @@ test("filters, sorts, and inline edits the problem table", async ({ page }) => {
   );
   await load(page, db);
 
-  const twoSumRow = page.getByRole("row").filter({ hasText: "Two Sum" });
-  await expect(twoSumRow).toContainText("2");
-  await expect(twoSumRow).toContainText("2026-07-24");
-
   const filters = page.getByRole("group", {
     name: "Filter LeetCode problems",
   });
@@ -205,14 +199,13 @@ test("filters, sorts, and inline edits the problem table", async ({ page }) => {
     .poll(() => db.problems.find((problem) => problem.id === "two-sum")?.tags)
     .toEqual(["Array", "Two Pointers"]);
 
-  await page.getByRole("button", { name: "Attempts" }).click();
-  await page.getByRole("button", { name: "Attempts" }).click();
-  await expect(page.locator("tbody tr").first()).toContainText("Two Sum");
-
   const addForm = page.getByRole("form", { name: "Add problem" });
   await addForm.getByLabel("Problem title").fill("Valid Parentheses");
   await addForm.getByLabel("Difficulty").selectOption("easy");
   await addForm.getByLabel("Tags").fill("Stack");
+  await addForm
+    .getByLabel("Problem notes")
+    .fill("Match each closer to the latest opener.");
   await addForm.getByRole("button", { name: "Add problem" }).click();
   await expect
     .poll(() =>
@@ -225,7 +218,13 @@ test("filters, sorts, and inline edits the problem table", async ({ page }) => {
     .click();
   await page.getByText("Edit problem details", { exact: true }).click();
   const editForm = page.getByRole("form", { name: "Edit problem" });
+  await expect(editForm.getByLabel("Problem notes")).toHaveValue(
+    "Match each closer to the latest opener.",
+  );
   await editForm.getByLabel("Problem title").fill("Valid Parentheses Revised");
+  await editForm
+    .getByLabel("Problem notes")
+    .fill("Use a stack and reject mismatched closers.");
   await editForm.getByRole("button", { name: "Save changes" }).click();
   await expect
     .poll(() =>
@@ -234,4 +233,12 @@ test("filters, sorts, and inline edits the problem table", async ({ page }) => {
       ),
     )
     .toBeTruthy();
+  await expect
+    .poll(
+      () =>
+        db.problems.find(
+          (problem) => problem.title === "Valid Parentheses Revised",
+        )?.notes,
+    )
+    .toBe("Use a stack and reject mismatched closers.");
 });

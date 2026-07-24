@@ -34,6 +34,7 @@ export function LeetCodeProblemForm({
     initialProblem?.difficulty ?? "medium",
   );
   const [tags, setTags] = useState(initialProblem?.tags.join(", ") ?? "");
+  const [notes, setNotes] = useState(initialProblem?.notes ?? "");
   const [status, setStatus] = useState<LeetCodeStatus>(
     initialProblem?.status ?? "to_review",
   );
@@ -54,6 +55,7 @@ export function LeetCodeProblemForm({
           : null,
       difficulty,
       tags: parseTags(tags),
+      notes: notes.trim() || null,
       status,
     });
 
@@ -61,6 +63,7 @@ export function LeetCodeProblemForm({
       setTitle("");
       setQuestionNumber("");
       setTags("");
+      setNotes("");
       setDifficulty("medium");
       setStatus("to_review");
     }
@@ -134,6 +137,16 @@ export function LeetCodeProblemForm({
             onChange={(event) => setTags(event.target.value)}
             placeholder="Array, Hash Table"
             value={tags}
+          />
+        </label>
+        <label className="grid gap-1.5 text-sm font-medium text-body md:col-span-2 xl:col-span-5">
+          Problem notes
+          <textarea
+            className="min-h-24 rounded-md border border-input bg-surface px-3 py-2 text-sm text-foreground outline-none placeholder:text-subtle focus:border-accent disabled:bg-surface-subtle"
+            disabled={disabled}
+            onChange={(event) => setNotes(event.target.value)}
+            placeholder="Patterns, pitfalls, and what to revisit"
+            value={notes}
           />
         </label>
         <label className="grid gap-1.5 text-sm font-medium text-body">

@@ -89,6 +89,11 @@ export type AppEvent =
   // "problem bank, not a rep log" split as Design Drills' drill.completed
   // above — Prep Tracker's 'algorithm' entries stay a separate, unlinked log.
   | {
+      type: "leetcode.problem_logged";
+      payload: { problemId: string };
+      timestamp: number;
+    }
+  | {
       type: "leetcode.attempt_logged";
       payload: {
         attemptId: string;

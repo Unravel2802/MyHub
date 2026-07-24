@@ -107,6 +107,7 @@ function problemRow(overrides: Record<string, unknown> = {}) {
     question_number: 1,
     difficulty: "easy",
     tags: ["array", "hash-table"],
+    notes: null,
     status: "to_review",
     deleted_at: null,
     created_at: timestamp,
@@ -157,14 +158,23 @@ describe("LeetCodeRepository problems", () => {
       title: "3Sum",
       difficulty: "medium",
       tags: ["array", "two-pointers"],
+      notes: "Revisit duplicate skipping.",
     });
 
-    expect(created).toMatchObject({ title: "3Sum", difficulty: "medium" });
+    expect(created).toMatchObject({
+      title: "3Sum",
+      difficulty: "medium",
+      notes: "Revisit duplicate skipping.",
+    });
 
     const updated = await LeetCodeRepository.updateProblem(created.id, {
       status: "solved",
+      notes: "Sort first, then move both pointers.",
     });
-    expect(updated).toMatchObject({ status: "solved" });
+    expect(updated).toMatchObject({
+      status: "solved",
+      notes: "Sort first, then move both pointers.",
+    });
   });
 
   it("soft-deletes problems", async () => {

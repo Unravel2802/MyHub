@@ -32,6 +32,7 @@ function problem(
     questionNumber: 1,
     difficulty: "easy",
     tags: ["Array"],
+    notes: null,
     status: "to_review",
     deletedAt: null,
     createdAt: "2026-07-24T00:00:00.000Z",
@@ -93,17 +94,41 @@ describe("useLeetCodeStore problems", () => {
   });
 
   it("replaces an optimistic problem after create", async () => {
-    const created = problem({ id: "created" });
+    const created = problem({ id: "created", notes: "Use complements." });
     repository.createProblem.mockResolvedValue(created);
 
     await useLeetCodeStore.getState().createProblem({
       title: "Two Sum",
       difficulty: "easy",
       tags: ["Array"],
+      notes: "Use complements.",
     });
 
     expect(useLeetCodeStore.getState().problems).toEqual([created]);
     expect(useLeetCodeStore.getState().isCreating).toBe(false);
+    expect(emitMock).toHaveBeenCalledWith({
+      type: "leetcode.problem_logged",
+      payload: { problemId: "created" },
+      timestamp: expect.any(Number),
+    });
+  });
+
+  it("rolls back a failed problem create without emitting", async () => {
+    const existing = problem({ id: "existing" });
+    reset([existing]);
+    repository.createProblem.mockRejectedValue(new Error("offline"));
+
+    await useLeetCodeStore.getState().createProblem({
+      title: "Three Sum",
+      difficulty: "medium",
+      notes: "Optimistic note",
+    });
+
+    expect(useLeetCodeStore.getState().problems).toEqual([existing]);
+    expect(useLeetCodeStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
+    expect(emitMock).not.toHaveBeenCalled();
   });
 
   it("optimistically updates a problem and tracks its pending id", async () => {

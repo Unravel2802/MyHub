@@ -89,6 +89,7 @@ function applyProblemUpdates(
     }),
     ...(updates.tags !== undefined && { tags: updates.tags }),
     ...(updates.notes !== undefined && { notes: updates.notes }),
+    ...(updates.timeMin !== undefined && { timeMin: updates.timeMin }),
     ...(updates.status !== undefined && { status: updates.status }),
   };
 }
@@ -151,6 +152,7 @@ export const useLeetCodeStore = create<LeetCodeStore>((set, get) => {
         difficulty: input.difficulty,
         tags: input.tags ?? [],
         notes: input.notes ?? null,
+        timeMin: input.timeMin ?? null,
         status: input.status ?? "to_review",
         deletedAt: null,
         createdAt: now,

@@ -71,3 +71,20 @@ export function problemCountThrough(
     (problem) => problem.createdAt.slice(0, 10) <= throughDate,
   ).length;
 }
+
+// Total minutes spent across problems, optionally scoped to problems added on
+// or after fromDate (yyyy-MM-dd, inclusive) — mirrors prepAllocation.ts's
+// timeAllocation's own fromDate scoping. Problems with a null timeMin
+// contribute 0 but still count as logged, matching prepAllocation's treatment
+// of a null durationMin.
+export function totalTimeMin(
+  problems: LeetCodeProblem[],
+  fromDate?: string,
+): number {
+  return problems
+    .filter(
+      (problem) =>
+        fromDate === undefined || problem.createdAt.slice(0, 10) >= fromDate,
+    )
+    .reduce((total, problem) => total + (problem.timeMin ?? 0), 0);
+}

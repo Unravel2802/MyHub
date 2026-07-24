@@ -38,9 +38,14 @@ export interface AreaAllocation {
 // entries on or after `fromDate` (yyyy-MM-dd, inclusive). Entries with a null
 // durationMin contribute 0 minutes but still exist — they're not excluded
 // the way mock_interview entries are.
+//
+// `additionalAlgorithmMinutes` folds in LeetCode problem time computed by the
+// caller via leetcodeBoard.ts's totalTimeMin. It stays a plain number so this
+// module remains PrepEntry-only and does not import LeetCode types.
 export function timeAllocation(
   entries: PrepEntry[],
   fromDate?: string,
+  additionalAlgorithmMinutes = 0,
 ): AreaAllocation[] {
   const scoped = entries.filter(
     (entry) =>
@@ -58,6 +63,12 @@ export function timeAllocation(
     minutesByArea.set(area, (minutesByArea.get(area) ?? 0) + minutes);
     totalMinutes += minutes;
   }
+
+  minutesByArea.set(
+    "algorithm",
+    (minutesByArea.get("algorithm") ?? 0) + additionalAlgorithmMinutes,
+  );
+  totalMinutes += additionalAlgorithmMinutes;
 
   return (Object.keys(TARGET_ALLOCATION) as AllocationArea[]).map((area) => {
     const minutes = minutesByArea.get(area) ?? 0;

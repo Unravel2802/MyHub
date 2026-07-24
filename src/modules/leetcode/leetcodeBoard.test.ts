@@ -6,6 +6,7 @@ import {
   groupByStatus,
   problemCountInMonth,
   problemCountThrough,
+  totalTimeMin,
 } from "@/src/modules/leetcode/leetcodeBoard";
 import type {
   LeetCodeAttempt,
@@ -22,6 +23,7 @@ function problem(overrides: Partial<LeetCodeProblem> = {}): LeetCodeProblem {
     difficulty: "easy",
     tags: [],
     notes: null,
+    timeMin: null,
     status: "to_review",
     deletedAt: null,
     createdAt: timestamp,
@@ -121,5 +123,39 @@ describe("problemCountThrough", () => {
 
     expect(problemCountThrough(problems, "2026-07-24")).toBe(2);
     expect(problemCountThrough(problems, "2026-06-30")).toBe(0);
+  });
+});
+
+describe("totalTimeMin", () => {
+  it("sums all problem time and treats null as zero", () => {
+    const problems = [
+      problem({ id: "p1", timeMin: 25 }),
+      problem({ id: "p2", timeMin: null }),
+      problem({ id: "p3", timeMin: 40 }),
+    ];
+
+    expect(totalTimeMin(problems)).toBe(65);
+  });
+
+  it("excludes problems added before fromDate", () => {
+    const problems = [
+      problem({
+        id: "old",
+        timeMin: 60,
+        createdAt: "2026-07-31T23:59:59.000Z",
+      }),
+      problem({
+        id: "boundary",
+        timeMin: 20,
+        createdAt: "2026-08-01T00:00:00.000Z",
+      }),
+      problem({
+        id: "new",
+        timeMin: 30,
+        createdAt: "2026-08-12T00:00:00.000Z",
+      }),
+    ];
+
+    expect(totalTimeMin(problems, "2026-08-01")).toBe(50);
   });
 });

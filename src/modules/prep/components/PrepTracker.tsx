@@ -12,6 +12,7 @@ import { PrepEntryList } from "@/src/modules/prep/components/PrepEntryList";
 import { PrepScorecard } from "@/src/modules/prep/components/PrepScorecard";
 import { TimeAllocationPanel } from "@/src/modules/prep/components/TimeAllocationPanel";
 import { usePrepStore } from "@/src/modules/prep/usePrepStore";
+import { timeAllocation } from "@/src/modules/prep/prepAllocation";
 import { scorecardFor } from "@/src/modules/prep/prepScorecard";
 import {
   activeCheckpoint,
@@ -22,10 +23,10 @@ import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 import { on } from "@/src/lib/events";
 import * as LeetCodeRepository from "@/src/modules/leetcode/LeetCodeRepository";
-import type { LeetCodeProblem } from "@/src/modules/leetcode/types";
 import {
   problemCountInMonth,
   problemCountThrough,
+  totalTimeMin,
 } from "@/src/modules/leetcode/leetcodeBoard";
 
 interface PrepTrackerProps {
@@ -60,9 +61,9 @@ export function PrepTracker({ children }: PrepTrackerProps) {
   // rule 1). Refetched on `leetcode.problem_logged` so a problem added in
   // the LeetCode Tracker section below updates this count without a manual
   // refresh.
-  const [leetcodeProblems, setLeetcodeProblems] = useState<LeetCodeProblem[]>(
-    [],
-  );
+  const [leetcodeProblems, setLeetcodeProblems] = useState<
+    Awaited<ReturnType<typeof LeetCodeRepository.getProblems>>
+  >([]);
   const fetchLeetcodeProblems = () =>
     LeetCodeRepository.getProblems()
       .then(setLeetcodeProblems)
@@ -77,6 +78,11 @@ export function PrepTracker({ children }: PrepTrackerProps) {
     entries,
     checkpoint,
     problemCountThrough(leetcodeProblems, checkpoint.throughDate),
+  );
+  const allocation = timeAllocation(
+    entries,
+    undefined,
+    totalTimeMin(leetcodeProblems),
   );
 
   useEffect(() => {
@@ -149,7 +155,13 @@ export function PrepTracker({ children }: PrepTrackerProps) {
               className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
               disabled={isLoading}
               id="prep-refresh"
-              onClick={() => void Promise.all([fetchEntries(), fetchStories()])}
+              onClick={() =>
+                void Promise.all([
+                  fetchEntries(),
+                  fetchStories(),
+                  fetchLeetcodeProblems(),
+                ])
+              }
               type="button"
             >
               Refresh
@@ -193,7 +205,7 @@ export function PrepTracker({ children }: PrepTrackerProps) {
               scorecard={monthlyScorecard}
               topics={topics}
             />
-            <TimeAllocationPanel entries={entries} />
+            <TimeAllocationPanel allocation={allocation} />
           </div>
           {children}
           <PrepEntryForm disabled={isCreating} onCreate={createEntry} />

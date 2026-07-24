@@ -27,7 +27,9 @@ export function LeetCodeProblemForm({
   onSubmit,
 }: LeetCodeProblemFormProps) {
   const [title, setTitle] = useState(initialProblem?.title ?? "");
-  const [url, setUrl] = useState(initialProblem?.url ?? "");
+  const [questionNumber, setQuestionNumber] = useState(
+    initialProblem?.questionNumber?.toString() ?? "",
+  );
   const [difficulty, setDifficulty] = useState<LeetCodeDifficulty>(
     initialProblem?.difficulty ?? "medium",
   );
@@ -41,9 +43,15 @@ export function LeetCodeProblemForm({
     const trimmedTitle = title.trim();
     if (!trimmedTitle) return;
 
+    const trimmedNumber = questionNumber.trim();
+    const parsedNumber = trimmedNumber ? Number(trimmedNumber) : null;
+
     await onSubmit({
       title: trimmedTitle,
-      url: url.trim() || null,
+      questionNumber:
+        parsedNumber !== null && Number.isFinite(parsedNumber)
+          ? parsedNumber
+          : null,
       difficulty,
       tags: parseTags(tags),
       status,
@@ -51,7 +59,7 @@ export function LeetCodeProblemForm({
 
     if (!initialProblem) {
       setTitle("");
-      setUrl("");
+      setQuestionNumber("");
       setTags("");
       setDifficulty("medium");
       setStatus("to_review");
@@ -88,14 +96,15 @@ export function LeetCodeProblemForm({
           />
         </label>
         <label className="grid gap-1.5 text-sm font-medium text-body xl:col-span-2">
-          LeetCode URL
+          LeetCode #
           <input
             className={inputClass}
             disabled={disabled}
-            onChange={(event) => setUrl(event.target.value)}
-            placeholder="https://leetcode.com/problems/..."
-            type="url"
-            value={url}
+            min={1}
+            onChange={(event) => setQuestionNumber(event.target.value)}
+            placeholder="1"
+            type="number"
+            value={questionNumber}
           />
         </label>
         <label className="grid gap-1.5 text-sm font-medium text-body">

@@ -81,7 +81,9 @@ function applyProblemUpdates(
   return {
     ...problem,
     ...(updates.title !== undefined && { title: updates.title }),
-    ...(updates.url !== undefined && { url: updates.url }),
+    ...(updates.questionNumber !== undefined && {
+      questionNumber: updates.questionNumber,
+    }),
     ...(updates.difficulty !== undefined && {
       difficulty: updates.difficulty,
     }),
@@ -144,7 +146,7 @@ export const useLeetCodeStore = create<LeetCodeStore>((set, get) => {
       const optimistic: LeetCodeProblem = {
         id: `optimistic-${crypto.randomUUID()}`,
         title: input.title,
-        url: input.url ?? null,
+        questionNumber: input.questionNumber ?? null,
         difficulty: input.difficulty,
         tags: input.tags ?? [],
         status: input.status ?? "to_review",

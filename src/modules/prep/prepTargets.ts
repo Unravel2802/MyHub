@@ -78,16 +78,27 @@ export interface CheckpointProgress {
 // Cumulative actuals (from July onward — PrepEntries has no data before the
 // roadmap started, so "all entries up to throughDate" is equivalent to
 // "since the roadmap began") compared against one checkpoint's targets.
+//
+// `additionalAlgorithmCount` folds in reps logged outside prep_entries —
+// today that's LeetCode Tracker attempts through the checkpoint's
+// throughDate (Prep Tracker's component computes that via leetcodeBoard.ts's
+// attemptCountThrough and passes it in). Plain number, not a LeetCode-typed
+// parameter — see the identical note on prepScorecard.ts's scorecardFor.
 export function progressTowardCheckpoint(
   entries: PrepEntry[],
   checkpoint: CumulativeCheckpoint,
+  additionalAlgorithmCount = 0,
 ): CheckpointProgress {
   const counts = cumulativeCountsByType(entries, checkpoint.throughDate);
+  const algorithmActual = counts.algorithm + additionalAlgorithmCount;
 
   return {
     checkpoint,
-    algorithm: progressFor(counts.algorithm, checkpoint.algorithm.min),
-    systemDesign: progressFor(counts.system_design, checkpoint.systemDesign.min),
+    algorithm: progressFor(algorithmActual, checkpoint.algorithm.min),
+    systemDesign: progressFor(
+      counts.system_design,
+      checkpoint.systemDesign.min,
+    ),
     mlSystemDesign: progressFor(
       counts.ml_system_design,
       checkpoint.mlSystemDesign.min,

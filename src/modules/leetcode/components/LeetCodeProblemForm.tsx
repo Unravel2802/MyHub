@@ -35,6 +35,9 @@ export function LeetCodeProblemForm({
   );
   const [tags, setTags] = useState(initialProblem?.tags.join(", ") ?? "");
   const [notes, setNotes] = useState(initialProblem?.notes ?? "");
+  const [timeMin, setTimeMin] = useState(
+    initialProblem?.timeMin?.toString() ?? "",
+  );
   const [status, setStatus] = useState<LeetCodeStatus>(
     initialProblem?.status ?? "to_review",
   );
@@ -46,6 +49,8 @@ export function LeetCodeProblemForm({
 
     const trimmedNumber = questionNumber.trim();
     const parsedNumber = trimmedNumber ? Number(trimmedNumber) : null;
+    const trimmedTimeMin = timeMin.trim();
+    const parsedTimeMin = trimmedTimeMin ? Number(trimmedTimeMin) : null;
 
     await onSubmit({
       title: trimmedTitle,
@@ -56,6 +61,10 @@ export function LeetCodeProblemForm({
       difficulty,
       tags: parseTags(tags),
       notes: notes.trim() || null,
+      timeMin:
+        parsedTimeMin !== null && Number.isFinite(parsedTimeMin)
+          ? parsedTimeMin
+          : null,
       status,
     });
 
@@ -64,6 +73,7 @@ export function LeetCodeProblemForm({
       setQuestionNumber("");
       setTags("");
       setNotes("");
+      setTimeMin("");
       setDifficulty("medium");
       setStatus("to_review");
     }
@@ -137,6 +147,17 @@ export function LeetCodeProblemForm({
             onChange={(event) => setTags(event.target.value)}
             placeholder="Array, Hash Table"
             value={tags}
+          />
+        </label>
+        <label className="grid gap-1.5 text-sm font-medium text-body">
+          Time spent (minutes)
+          <input
+            className={inputClass}
+            disabled={disabled}
+            min={0}
+            onChange={(event) => setTimeMin(event.target.value)}
+            type="number"
+            value={timeMin}
           />
         </label>
         <label className="grid gap-1.5 text-sm font-medium text-body md:col-span-2 xl:col-span-5">

@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { TARGET_ALLOCATION, timeAllocation } from "@/src/modules/prep/prepAllocation";
+import {
+  TARGET_ALLOCATION,
+  timeAllocation,
+} from "@/src/modules/prep/prepAllocation";
 import type { PrepEntry } from "@/src/modules/prep/types";
 
 function entry(
-  overrides: Partial<PrepEntry> & { id: string; entryType: PrepEntry["entryType"] },
+  overrides: Partial<PrepEntry> & {
+    id: string;
+    entryType: PrepEntry["entryType"];
+  },
 ): PrepEntry {
   return {
     topic: null,
@@ -39,7 +45,9 @@ describe("timeAllocation", () => {
     expect(algorithm.targetPct).toBe(TARGET_ALLOCATION.algorithm);
     expect(algorithm.actualPct).toBeCloseTo(100 / totalEligibleMinutes);
 
-    const resumeDeepDive = allocation.find((a) => a.area === "resume_deep_dive")!;
+    const resumeDeepDive = allocation.find(
+      (a) => a.area === "resume_deep_dive",
+    )!;
     expect(resumeDeepDive.minutes).toBe(10);
     expect(resumeDeepDive.actualPct).toBeCloseTo(10 / totalEligibleMinutes);
   });
@@ -55,13 +63,15 @@ describe("timeAllocation", () => {
 
     // If mock minutes leaked into the denominator, this would be far below 1.
     expect(algorithm.actualPct).toBe(1);
-    expect(allocation.some((a) => (a.area as string) === "mock_interview")).toBe(
-      false,
-    );
+    expect(
+      allocation.some((a) => (a.area as string) === "mock_interview"),
+    ).toBe(false);
   });
 
   it("returns null actualPct, not zero, when no eligible minutes are logged", () => {
-    const entries = [entry({ id: "mock", entryType: "mock_interview", durationMin: 60 })];
+    const entries = [
+      entry({ id: "mock", entryType: "mock_interview", durationMin: 60 }),
+    ];
 
     const allocation = timeAllocation(entries);
 
@@ -91,5 +101,22 @@ describe("timeAllocation", () => {
     const algorithm = allocation.find((a) => a.area === "algorithm")!;
 
     expect(algorithm.minutes).toBe(50);
+  });
+
+  it("adds external algorithm minutes to the area and shared denominator", () => {
+    const entries = [
+      entry({ id: "sd", entryType: "system_design", durationMin: 30 }),
+    ];
+
+    const allocation = timeAllocation(entries, undefined, 70);
+    const algorithm = allocation.find((area) => area.area === "algorithm")!;
+    const systemDesign = allocation.find(
+      (area) => area.area === "system_design",
+    )!;
+
+    expect(algorithm.minutes).toBe(70);
+    expect(algorithm.actualPct).toBeCloseTo(0.7);
+    expect(systemDesign.minutes).toBe(30);
+    expect(systemDesign.actualPct).toBeCloseTo(0.3);
   });
 });

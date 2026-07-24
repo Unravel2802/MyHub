@@ -1,11 +1,18 @@
 import { expect, test } from "./fixtures";
 import { FakePrepDb, mockSupabasePrep, prepEntryRow } from "./supabasePrepMock";
+import {
+  FakeLeetCodeDb,
+  leetCodeProblemRow,
+  mockSupabaseLeetCode,
+} from "./supabaseLeetCodeMock";
 
 async function loadPrep(
   page: Parameters<typeof mockSupabasePrep>[0],
   db = new FakePrepDb(),
+  leetCodeDb = new FakeLeetCodeDb(),
 ) {
   await mockSupabasePrep(page, db);
+  await mockSupabaseLeetCode(page, leetCodeDb);
   await page.goto("/prep");
   await expect(
     page.getByRole("heading", { name: "Build measurable reps" }),
@@ -73,6 +80,28 @@ test("logs mock subtypes, resume deep-dives, and renders time allocation", async
   await expect(allocation).toContainText("Algorithms");
   await expect(allocation).toContainText("Resume deep-dive");
   await expect(allocation).toContainText("Mock-interview time excluded");
+});
+
+test("includes LeetCode problem time in algorithm allocation", async ({
+  page,
+}) => {
+  await loadPrep(
+    page,
+    new FakePrepDb(),
+    new FakeLeetCodeDb([
+      leetCodeProblemRow({
+        id: "two-sum",
+        title: "Two Sum",
+        time_min: 45,
+      }),
+    ]),
+  );
+
+  const algorithmAllocation = page
+    .getByRole("region", { name: "Prep time allocation" })
+    .getByText("Algorithms", { exact: true })
+    .locator("..");
+  await expect(algorithmAllocation).toContainText("100%");
 });
 
 test("logs a system design rep and updates the monthly scorecard", async ({

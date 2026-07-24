@@ -1,7 +1,6 @@
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
-import { timeAllocation } from "@/src/modules/prep/prepAllocation";
-import type { PrepEntry } from "@/src/modules/prep/types";
+import type { AreaAllocation } from "@/src/modules/prep/prepAllocation";
 import { PREP_TYPE_HUES } from "@/src/modules/prep/prepTypeHues";
 
 const areaLabels = {
@@ -12,9 +11,11 @@ const areaLabels = {
   resume_deep_dive: "Resume deep-dive",
 } as const;
 
-export function TimeAllocationPanel({ entries }: { entries: PrepEntry[] }) {
-  const allocation = timeAllocation(entries);
-
+export function TimeAllocationPanel({
+  allocation,
+}: {
+  allocation: AreaAllocation[];
+}) {
   return (
     <section
       aria-labelledby="time-allocation-heading"

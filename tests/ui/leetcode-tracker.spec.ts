@@ -203,6 +203,7 @@ test("filters, sorts, and inline edits the problem table", async ({ page }) => {
   await addForm.getByLabel("Problem title").fill("Valid Parentheses");
   await addForm.getByLabel("Difficulty").selectOption("easy");
   await addForm.getByLabel("Tags").fill("Stack");
+  await addForm.getByLabel("Time spent (minutes)").fill("35");
   await addForm
     .getByLabel("Problem notes")
     .fill("Match each closer to the latest opener.");
@@ -221,7 +222,9 @@ test("filters, sorts, and inline edits the problem table", async ({ page }) => {
   await expect(editForm.getByLabel("Problem notes")).toHaveValue(
     "Match each closer to the latest opener.",
   );
+  await expect(editForm.getByLabel("Time spent (minutes)")).toHaveValue("35");
   await editForm.getByLabel("Problem title").fill("Valid Parentheses Revised");
+  await editForm.getByLabel("Time spent (minutes)").fill("25");
   await editForm
     .getByLabel("Problem notes")
     .fill("Use a stack and reject mismatched closers.");
@@ -241,4 +244,12 @@ test("filters, sorts, and inline edits the problem table", async ({ page }) => {
         )?.notes,
     )
     .toBe("Use a stack and reject mismatched closers.");
+  await expect
+    .poll(
+      () =>
+        db.problems.find(
+          (problem) => problem.title === "Valid Parentheses Revised",
+        )?.time_min,
+    )
+    .toBe(25);
 });

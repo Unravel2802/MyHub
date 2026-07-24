@@ -108,6 +108,7 @@ function problemRow(overrides: Record<string, unknown> = {}) {
     difficulty: "easy",
     tags: ["array", "hash-table"],
     notes: null,
+    time_min: null,
     status: "to_review",
     deleted_at: null,
     created_at: timestamp,
@@ -175,6 +176,22 @@ describe("LeetCodeRepository problems", () => {
       status: "solved",
       notes: "Sort first, then move both pointers.",
     });
+  });
+
+  it("maps and writes problem time spent", async () => {
+    const created = await LeetCodeRepository.createProblem({
+      title: "Binary Tree Maximum Path Sum",
+      difficulty: "hard",
+      timeMin: 55,
+    });
+
+    expect(created.timeMin).toBe(55);
+    expect(h.rows("leetcode_problems")[0].time_min).toBe(55);
+
+    const updated = await LeetCodeRepository.updateProblem(created.id, {
+      timeMin: 40,
+    });
+    expect(updated.timeMin).toBe(40);
   });
 
   it("soft-deletes problems", async () => {

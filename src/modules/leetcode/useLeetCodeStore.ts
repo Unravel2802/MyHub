@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { format } from "date-fns";
+import * as LeetCodeRepository from "@/src/modules/leetcode/LeetCodeRepository";
 import type {
   CreateAttemptInput,
   CreateProblemInput,
@@ -12,6 +14,7 @@ import {
   attemptsForProblem as attemptsForProblemFor,
   groupByStatus as groupByStatusFor,
 } from "@/src/modules/leetcode/leetcodeBoard";
+import { emit } from "@/src/lib/events";
 
 // Published store contract for the LeetCode Tracker. One store per module —
 // this must never reach into usePrepStore or vice versa; the only sanctioned
@@ -64,53 +67,250 @@ export interface LeetCodeStore {
   attemptStats: (problemId: string) => ReturnType<typeof attemptStatsFor>;
 }
 
-// Add this back when wiring the action bodies (every other module's store
-// has the identical pair — see usePrepStore.ts/useDesignDrillsStore.ts):
-//
-// const FAILURE_MESSAGE = "Something went wrong, please try again later.";
-// function toUserMessage(error: unknown): string {
-//   console.error(error);
-//   return FAILURE_MESSAGE;
-// }
+const FAILURE_MESSAGE = "Something went wrong, please try again later.";
 
-const NOT_IMPLEMENTED = "Not implemented — see useLeetCodeStore.ts contract.";
+function toUserMessage(error: unknown): string {
+  console.error(error);
+  return FAILURE_MESSAGE;
+}
 
-export const useLeetCodeStore = create<LeetCodeStore>((_set, get) => ({
-  problems: [],
-  attempts: [],
-  isLoading: false,
-  error: null,
-  isCreating: false,
-  pendingIds: [],
+function applyProblemUpdates(
+  problem: LeetCodeProblem,
+  updates: Partial<CreateProblemInput>,
+): LeetCodeProblem {
+  return {
+    ...problem,
+    ...(updates.title !== undefined && { title: updates.title }),
+    ...(updates.url !== undefined && { url: updates.url }),
+    ...(updates.difficulty !== undefined && {
+      difficulty: updates.difficulty,
+    }),
+    ...(updates.tags !== undefined && { tags: updates.tags }),
+    ...(updates.status !== undefined && { status: updates.status }),
+  };
+}
 
-  fetchProblems: async () => {
-    throw new Error(NOT_IMPLEMENTED);
-  },
-  createProblem: async () => {
-    throw new Error(NOT_IMPLEMENTED);
-  },
-  updateProblem: async () => {
-    throw new Error(NOT_IMPLEMENTED);
-  },
-  deleteProblem: async () => {
-    throw new Error(NOT_IMPLEMENTED);
-  },
+function applyAttemptUpdates(
+  attempt: LeetCodeAttempt,
+  updates: Partial<CreateAttemptInput>,
+): LeetCodeAttempt {
+  return {
+    ...attempt,
+    ...(updates.problemId !== undefined && {
+      problemId: updates.problemId,
+    }),
+    ...(updates.date !== undefined && { date: updates.date }),
+    ...(updates.timeToSolveMin !== undefined && {
+      timeToSolveMin: updates.timeToSolveMin,
+    }),
+    ...(updates.outcome !== undefined && { outcome: updates.outcome }),
+    ...(updates.notes !== undefined && { notes: updates.notes }),
+    ...(updates.solutionCode !== undefined && {
+      solutionCode: updates.solutionCode,
+    }),
+    ...(updates.solutionLanguage !== undefined && {
+      solutionLanguage: updates.solutionLanguage,
+    }),
+  };
+}
 
-  fetchAttempts: async () => {
-    throw new Error(NOT_IMPLEMENTED);
-  },
-  createAttempt: async () => {
-    throw new Error(NOT_IMPLEMENTED);
-  },
-  updateAttempt: async () => {
-    throw new Error(NOT_IMPLEMENTED);
-  },
-  deleteAttempt: async () => {
-    throw new Error(NOT_IMPLEMENTED);
-  },
+export const useLeetCodeStore = create<LeetCodeStore>((set, get) => {
+  const addPending = (id: string) =>
+    set({ pendingIds: [...get().pendingIds, id] });
+  const removePending = (id: string) =>
+    set({ pendingIds: get().pendingIds.filter((pending) => pending !== id) });
 
-  groupByStatus: () => groupByStatusFor(get().problems),
-  attemptsForProblem: (problemId) =>
-    attemptsForProblemFor(get().attempts, problemId),
-  attemptStats: (problemId) => attemptStatsFor(get().attempts, problemId),
-}));
+  return {
+    problems: [],
+    attempts: [],
+    isLoading: false,
+    error: null,
+    isCreating: false,
+    pendingIds: [],
+
+    fetchProblems: async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const problems = await LeetCodeRepository.getProblems();
+        set({ problems, isLoading: false });
+      } catch (error) {
+        set({ isLoading: false, error: toUserMessage(error) });
+      }
+    },
+
+    createProblem: async (input) => {
+      const previousProblems = get().problems;
+      const now = new Date().toISOString();
+      const optimistic: LeetCodeProblem = {
+        id: `optimistic-${crypto.randomUUID()}`,
+        title: input.title,
+        url: input.url ?? null,
+        difficulty: input.difficulty,
+        tags: input.tags ?? [],
+        status: input.status ?? "to_review",
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      set({
+        problems: [optimistic, ...previousProblems],
+        isCreating: true,
+        error: null,
+      });
+
+      try {
+        const created = await LeetCodeRepository.createProblem(input);
+        set({
+          problems: get().problems.map((problem) =>
+            problem.id === optimistic.id ? created : problem,
+          ),
+        });
+      } catch (error) {
+        set({ problems: previousProblems, error: toUserMessage(error) });
+      } finally {
+        set({ isCreating: false });
+      }
+    },
+
+    updateProblem: async (id, updates) => {
+      const previousProblems = get().problems;
+      set({
+        problems: previousProblems.map((problem) =>
+          problem.id === id ? applyProblemUpdates(problem, updates) : problem,
+        ),
+        error: null,
+      });
+      addPending(id);
+
+      try {
+        const updated = await LeetCodeRepository.updateProblem(id, updates);
+        set({
+          problems: get().problems.map((problem) =>
+            problem.id === id ? updated : problem,
+          ),
+        });
+      } catch (error) {
+        set({ problems: previousProblems, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    deleteProblem: async (id) => {
+      const previousProblems = get().problems;
+      set({
+        problems: previousProblems.filter((problem) => problem.id !== id),
+        error: null,
+      });
+      addPending(id);
+
+      try {
+        await LeetCodeRepository.deleteProblem(id);
+      } catch (error) {
+        set({ problems: previousProblems, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    fetchAttempts: async () => {
+      try {
+        const attempts = await LeetCodeRepository.getAttempts();
+        set({ attempts });
+      } catch (error) {
+        set({ error: toUserMessage(error) });
+      }
+    },
+
+    createAttempt: async (input) => {
+      const previousAttempts = get().attempts;
+      const now = new Date().toISOString();
+      const optimistic: LeetCodeAttempt = {
+        id: `optimistic-${crypto.randomUUID()}`,
+        problemId: input.problemId,
+        date: input.date ?? format(new Date(), "yyyy-MM-dd"),
+        timeToSolveMin: input.timeToSolveMin ?? null,
+        outcome: input.outcome,
+        notes: input.notes ?? null,
+        solutionCode: input.solutionCode ?? null,
+        solutionLanguage: input.solutionLanguage ?? null,
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      set({
+        attempts: [optimistic, ...previousAttempts],
+        isCreating: true,
+        error: null,
+      });
+
+      try {
+        const created = await LeetCodeRepository.createAttempt(input);
+        set({
+          attempts: get().attempts.map((attempt) =>
+            attempt.id === optimistic.id ? created : attempt,
+          ),
+        });
+        emit({
+          type: "leetcode.attempt_logged",
+          payload: {
+            attemptId: created.id,
+            problemId: created.problemId,
+            outcome: created.outcome,
+          },
+          timestamp: Date.now(),
+        });
+      } catch (error) {
+        set({ attempts: previousAttempts, error: toUserMessage(error) });
+      } finally {
+        set({ isCreating: false });
+      }
+    },
+
+    updateAttempt: async (id, updates) => {
+      const previousAttempts = get().attempts;
+      set({
+        attempts: previousAttempts.map((attempt) =>
+          attempt.id === id ? applyAttemptUpdates(attempt, updates) : attempt,
+        ),
+        error: null,
+      });
+      addPending(id);
+
+      try {
+        const updated = await LeetCodeRepository.updateAttempt(id, updates);
+        set({
+          attempts: get().attempts.map((attempt) =>
+            attempt.id === id ? updated : attempt,
+          ),
+        });
+      } catch (error) {
+        set({ attempts: previousAttempts, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    deleteAttempt: async (id) => {
+      const previousAttempts = get().attempts;
+      set({
+        attempts: previousAttempts.filter((attempt) => attempt.id !== id),
+        error: null,
+      });
+      addPending(id);
+
+      try {
+        await LeetCodeRepository.deleteAttempt(id);
+      } catch (error) {
+        set({ attempts: previousAttempts, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    groupByStatus: () => groupByStatusFor(get().problems),
+    attemptsForProblem: (problemId) =>
+      attemptsForProblemFor(get().attempts, problemId),
+    attemptStats: (problemId) => attemptStatsFor(get().attempts, problemId),
+  };
+});

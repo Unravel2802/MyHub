@@ -26,7 +26,7 @@ import * as LeetCodeRepository from "@/src/modules/leetcode/LeetCodeRepository";
 import {
   problemCountInMonth,
   problemCountThrough,
-  totalTimeMin,
+  totalAttemptTimeMin,
 } from "@/src/modules/leetcode/leetcodeBoard";
 
 interface PrepTrackerProps {
@@ -55,18 +55,26 @@ export function PrepTracker({ children }: PrepTrackerProps) {
   const topics = weakestTopics(3, month);
   const checkpoint = activeCheckpoint(format(new Date(), "yyyy-MM-dd"));
 
-  // LeetCode Tracker problems count as algorithm reps here too (read via its
-  // Repository, mirroring useDashboardStore's cross-module pattern — Prep
-  // doesn't reach into another module's store or components, architecture
-  // rule 1). Refetched on `leetcode.problem_logged` so a problem added in
-  // the LeetCode Tracker section below updates this count without a manual
-  // refresh.
+  // LeetCode problems feed the algorithm rep count. They are read through the
+  // repository and refetched on `leetcode.problem_logged`, without importing
+  // the other module's store or types.
   const [leetcodeProblems, setLeetcodeProblems] = useState<
     Awaited<ReturnType<typeof LeetCodeRepository.getProblems>>
   >([]);
   const fetchLeetcodeProblems = () =>
     LeetCodeRepository.getProblems()
       .then(setLeetcodeProblems)
+      .catch(() => undefined);
+
+  // LeetCode attempts feed time allocation because the attempt form is where
+  // users log solve time. Refetch on `leetcode.attempt_logged` so a newly
+  // logged attempt updates the allocation without a manual refresh.
+  const [leetcodeAttempts, setLeetcodeAttempts] = useState<
+    Awaited<ReturnType<typeof LeetCodeRepository.getAttempts>>
+  >([]);
+  const fetchLeetcodeAttempts = () =>
+    LeetCodeRepository.getAttempts()
+      .then(setLeetcodeAttempts)
       .catch(() => undefined);
 
   const monthlyScorecard = scorecardFor(
@@ -82,14 +90,22 @@ export function PrepTracker({ children }: PrepTrackerProps) {
   const allocation = timeAllocation(
     entries,
     undefined,
-    totalTimeMin(leetcodeProblems),
+    totalAttemptTimeMin(leetcodeAttempts),
   );
 
   useEffect(() => {
-    void Promise.all([fetchEntries(), fetchStories(), fetchLeetcodeProblems()]);
+    void Promise.all([
+      fetchEntries(),
+      fetchStories(),
+      fetchLeetcodeProblems(),
+      fetchLeetcodeAttempts(),
+    ]);
     const unsubscribe = on((event) => {
       if (event.type === "leetcode.problem_logged") {
         void fetchLeetcodeProblems();
+      }
+      if (event.type === "leetcode.attempt_logged") {
+        void fetchLeetcodeAttempts();
       }
     });
     return () => {
@@ -160,6 +176,7 @@ export function PrepTracker({ children }: PrepTrackerProps) {
                   fetchEntries(),
                   fetchStories(),
                   fetchLeetcodeProblems(),
+                  fetchLeetcodeAttempts(),
                 ])
               }
               type="button"

@@ -2,6 +2,7 @@ import { expect, test } from "./fixtures";
 import { FakePrepDb, mockSupabasePrep, prepEntryRow } from "./supabasePrepMock";
 import {
   FakeLeetCodeDb,
+  leetCodeAttemptRow,
   leetCodeProblemRow,
   mockSupabaseLeetCode,
 } from "./supabaseLeetCodeMock";
@@ -82,19 +83,22 @@ test("logs mock subtypes, resume deep-dives, and renders time allocation", async
   await expect(allocation).toContainText("Mock-interview time excluded");
 });
 
-test("includes LeetCode problem time in algorithm allocation", async ({
+test("includes LeetCode attempt time in algorithm allocation", async ({
   page,
 }) => {
   await loadPrep(
     page,
     new FakePrepDb(),
-    new FakeLeetCodeDb([
-      leetCodeProblemRow({
-        id: "two-sum",
-        title: "Two Sum",
-        time_min: 45,
-      }),
-    ]),
+    new FakeLeetCodeDb(
+      [leetCodeProblemRow({ id: "two-sum", title: "Two Sum" })],
+      [
+        leetCodeAttemptRow({
+          id: "two-sum-attempt",
+          problem_id: "two-sum",
+          time_to_solve_min: 45,
+        }),
+      ],
+    ),
   );
 
   const algorithmAllocation = page

@@ -6,7 +6,7 @@ import {
   groupByStatus,
   problemCountInMonth,
   problemCountThrough,
-  totalTimeMin,
+  totalAttemptTimeMin,
 } from "@/src/modules/leetcode/leetcodeBoard";
 import type {
   LeetCodeAttempt,
@@ -23,7 +23,6 @@ function problem(overrides: Partial<LeetCodeProblem> = {}): LeetCodeProblem {
     difficulty: "easy",
     tags: [],
     notes: null,
-    timeMin: null,
     status: "to_review",
     deletedAt: null,
     createdAt: timestamp,
@@ -126,36 +125,36 @@ describe("problemCountThrough", () => {
   });
 });
 
-describe("totalTimeMin", () => {
-  it("sums all problem time and treats null as zero", () => {
-    const problems = [
-      problem({ id: "p1", timeMin: 25 }),
-      problem({ id: "p2", timeMin: null }),
-      problem({ id: "p3", timeMin: 40 }),
+describe("totalAttemptTimeMin", () => {
+  it("sums all attempt time and treats null as zero", () => {
+    const attempts = [
+      attempt({ id: "a1", timeToSolveMin: 25 }),
+      attempt({ id: "a2", timeToSolveMin: null }),
+      attempt({ id: "a3", timeToSolveMin: 40 }),
     ];
 
-    expect(totalTimeMin(problems)).toBe(65);
+    expect(totalAttemptTimeMin(attempts)).toBe(65);
   });
 
-  it("excludes problems added before fromDate", () => {
-    const problems = [
-      problem({
+  it("excludes attempts logged before fromDate", () => {
+    const attempts = [
+      attempt({
         id: "old",
-        timeMin: 60,
-        createdAt: "2026-07-31T23:59:59.000Z",
+        timeToSolveMin: 60,
+        date: "2026-07-31",
       }),
-      problem({
+      attempt({
         id: "boundary",
-        timeMin: 20,
-        createdAt: "2026-08-01T00:00:00.000Z",
+        timeToSolveMin: 20,
+        date: "2026-08-01",
       }),
-      problem({
+      attempt({
         id: "new",
-        timeMin: 30,
-        createdAt: "2026-08-12T00:00:00.000Z",
+        timeToSolveMin: 30,
+        date: "2026-08-12",
       }),
     ];
 
-    expect(totalTimeMin(problems, "2026-08-01")).toBe(50);
+    expect(totalAttemptTimeMin(attempts, "2026-08-01")).toBe(50);
   });
 });

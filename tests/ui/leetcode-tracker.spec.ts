@@ -87,6 +87,32 @@ test("logs an attempt, moves its problem on the board, and shows highlighted his
   ).toHaveCount(3);
 });
 
+test("logging an attempt counts toward Prep Tracker's algorithm checkpoint and monthly count", async ({
+  page,
+}) => {
+  const db = new FakeLeetCodeDb([
+    leetCodeProblemRow({ id: "two-sum", title: "Two Sum" }),
+  ]);
+  await load(page, db);
+
+  const checkpointStat = page.getByText(/\/\d+ algorithms/);
+  await expect(checkpointStat).toContainText("0/");
+  const algorithmsTile = page
+    .locator("section[aria-labelledby='scorecard-heading']")
+    .getByText("Algorithms", { exact: true })
+    .locator("..");
+  await expect(algorithmsTile).toContainText("0");
+
+  await page.getByRole("button", { name: "Two Sum", exact: true }).click();
+  const attemptForm = page.getByRole("form", { name: "Log attempt" });
+  await attemptForm.getByLabel("Outcome").selectOption("solved");
+  await attemptForm.getByRole("button", { name: "Log attempt" }).click();
+  await expect.poll(() => db.attempts).toHaveLength(1);
+
+  await expect(checkpointStat).toContainText("1/");
+  await expect(algorithmsTile).toContainText("1");
+});
+
 test("rolls back a failed attempt create", async ({ page }) => {
   const db = new FakeLeetCodeDb([
     leetCodeProblemRow({ id: "two-sum", title: "Two Sum" }),

@@ -9,7 +9,10 @@ import {
 import type { PrepEntry } from "@/src/modules/prep/types";
 
 function entry(
-  overrides: Partial<PrepEntry> & { id: string; entryType: PrepEntry["entryType"] },
+  overrides: Partial<PrepEntry> & {
+    id: string;
+    entryType: PrepEntry["entryType"];
+  },
 ): PrepEntry {
   return {
     topic: null,
@@ -57,11 +60,26 @@ describe("progressTowardCheckpoint", () => {
       ...manyEntries("mock_interview", 7),
     ];
 
-    const progress = progressTowardCheckpoint(entries, DECEMBER_2026_CHECKPOINT);
+    const progress = progressTowardCheckpoint(
+      entries,
+      DECEMBER_2026_CHECKPOINT,
+    );
 
-    expect(progress.algorithm).toEqual({ actual: 50, target: 75, progress: 50 / 75 });
-    expect(progress.systemDesign).toEqual({ actual: 3, target: 6, progress: 0.5 });
-    expect(progress.mlSystemDesign).toEqual({ actual: 1, target: 2, progress: 0.5 });
+    expect(progress.algorithm).toEqual({
+      actual: 50,
+      target: 75,
+      progress: 50 / 75,
+    });
+    expect(progress.systemDesign).toEqual({
+      actual: 3,
+      target: 6,
+      progress: 0.5,
+    });
+    expect(progress.mlSystemDesign).toEqual({
+      actual: 1,
+      target: 2,
+      progress: 0.5,
+    });
     expect(progress.mockInterview).toEqual({
       actual: 7,
       target: 14,
@@ -72,7 +90,10 @@ describe("progressTowardCheckpoint", () => {
   it("lets progress exceed 1 once the target is beaten, rather than capping", () => {
     const entries = manyEntries("algorithm", 160);
 
-    const progress = progressTowardCheckpoint(entries, FEBRUARY_2027_CHECKPOINT);
+    const progress = progressTowardCheckpoint(
+      entries,
+      FEBRUARY_2027_CHECKPOINT,
+    );
 
     expect(progress.algorithm.actual).toBe(160);
     expect(progress.algorithm.target).toBe(150);
@@ -85,9 +106,32 @@ describe("progressTowardCheckpoint", () => {
       ...manyEntries("algorithm", 40, "2027-01-15"), // after December's cutoff
     ];
 
-    const progress = progressTowardCheckpoint(entries, DECEMBER_2026_CHECKPOINT);
+    const progress = progressTowardCheckpoint(
+      entries,
+      DECEMBER_2026_CHECKPOINT,
+    );
 
     expect(progress.algorithm.actual).toBe(40);
+  });
+
+  it("folds additionalAlgorithmCount into the algorithm actual only", () => {
+    const entries = [
+      ...manyEntries("algorithm", 50),
+      ...manyEntries("system_design", 3),
+    ];
+
+    const progress = progressTowardCheckpoint(
+      entries,
+      DECEMBER_2026_CHECKPOINT,
+      10,
+    );
+
+    expect(progress.algorithm).toEqual({
+      actual: 60,
+      target: 75,
+      progress: 60 / 75,
+    });
+    expect(progress.systemDesign.actual).toBe(3);
   });
 });
 

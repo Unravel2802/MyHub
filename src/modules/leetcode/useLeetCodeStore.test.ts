@@ -29,7 +29,7 @@ function problem(
 ): LeetCodeProblem {
   return {
     title: "Two Sum",
-    url: "https://leetcode.com/problems/two-sum/",
+    questionNumber: 1,
     difficulty: "easy",
     tags: ["Array"],
     status: "to_review",

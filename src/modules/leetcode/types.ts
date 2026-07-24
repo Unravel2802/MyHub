@@ -13,7 +13,9 @@ export type LeetCodeOutcome = "solved" | "partial" | "failed";
 export interface LeetCodeProblem {
   id: string;
   title: string;
-  url: string | null;
+  // LeetCode's own problem number (e.g. 1 for "Two Sum"), not a link — the
+  // simplest thing to type in when logging a problem you just did.
+  questionNumber: number | null;
   difficulty: LeetCodeDifficulty;
   // Free-form pattern/topic tags (e.g. "DP", "Two Pointers") — what the
   // table/board filters and groups by, alongside status and difficulty.

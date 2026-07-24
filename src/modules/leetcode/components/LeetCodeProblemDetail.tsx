@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ExternalLink, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import type {
@@ -88,16 +88,10 @@ export function LeetCodeProblemDetail({
           ) : null}
         </div>
         <div className="flex items-center gap-2">
-          {problem.url ? (
-            <a
-              className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-surface px-3 text-sm font-medium text-body hover:border-input-hover"
-              href={problem.url}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Open problem
-              <ExternalLink aria-hidden="true" className="size-4" />
-            </a>
+          {problem.questionNumber !== null ? (
+            <span className="inline-flex h-9 items-center rounded-md border border-input bg-surface px-3 text-sm font-medium text-body">
+              LeetCode #{problem.questionNumber}
+            </span>
           ) : null}
           <button
             aria-label={`Delete ${problem.title}`}

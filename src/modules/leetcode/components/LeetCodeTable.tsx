@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ExternalLink } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
@@ -273,19 +273,10 @@ export function LeetCodeTable({
                         >
                           {problem.title}
                         </button>
-                        {problem.url ? (
-                          <a
-                            aria-label={`Open ${problem.title} on LeetCode`}
-                            className="text-muted hover:text-foreground"
-                            href={problem.url}
-                            rel="noreferrer"
-                            target="_blank"
-                          >
-                            <ExternalLink
-                              aria-hidden="true"
-                              className="size-3.5"
-                            />
-                          </a>
+                        {problem.questionNumber !== null ? (
+                          <span className="text-xs text-muted">
+                            #{problem.questionNumber}
+                          </span>
                         ) : null}
                       </div>
                     </td>

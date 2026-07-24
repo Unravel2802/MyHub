@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 export type LeetCodeProblemRow = {
   id: string;
   title: string;
-  url: string | null;
+  question_number: number | null;
   difficulty: "easy" | "medium" | "hard";
   tags: string[];
   status: "to_review" | "in_progress" | "solved" | "needs_revisit";
@@ -35,7 +35,7 @@ export function leetCodeProblemRow(
     Pick<LeetCodeProblemRow, "id" | "title">,
 ): LeetCodeProblemRow {
   return {
-    url: null,
+    question_number: null,
     difficulty: "medium",
     tags: [],
     status: "to_review",

@@ -65,6 +65,20 @@ describe("scorecardFor", () => {
     });
   });
 
+  it("folds additionalAlgorithmCount into the algorithm count only", () => {
+    const entries = [
+      entry({ id: "a1", entryType: "algorithm" }),
+      entry({ id: "sd", entryType: "system_design" }),
+    ];
+
+    const scorecard = scorecardFor(entries, "2026-07", 3);
+
+    expect(scorecard.countsByType.algorithm).toBe(4);
+    expect(scorecard.countsByType.system_design).toBe(1);
+    // Not folded into algorithm-specific stats — those stay prep_entries-only.
+    expect(scorecard.attempted).toBe(1);
+  });
+
   it("computes solve rate over judged attempts only", () => {
     const entries = [
       entry({ id: "s1", outcome: "solved" }),

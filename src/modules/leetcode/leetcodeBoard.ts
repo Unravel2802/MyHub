@@ -49,3 +49,25 @@ export function attemptStats(
   const forProblem = attemptsForProblem(attempts, problemId);
   return { count: forProblem.length, lastAttempt: forProblem[0] ?? null };
 }
+
+// Attempts logged within a given yyyy-MM month. Mirrors prepScorecard.ts's
+// monthOf/entriesInMonth — used by Prep Tracker's monthly "Algorithms" count,
+// which counts a LeetCode attempt as an algorithm rep same as a logged
+// prep_entries row.
+export function attemptCountInMonth(
+  attempts: LeetCodeAttempt[],
+  month: string,
+): number {
+  return attempts.filter((attempt) => attempt.date.slice(0, 7) === month)
+    .length;
+}
+
+// Attempts on or before a given yyyy-MM-dd date. Mirrors prepScorecard.ts's
+// cumulativeCountsByType — used by Prep Tracker's cumulative checkpoint
+// progress (prepTargets.ts).
+export function attemptCountThrough(
+  attempts: LeetCodeAttempt[],
+  throughDate: string,
+): number {
+  return attempts.filter((attempt) => attempt.date <= throughDate).length;
+}

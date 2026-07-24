@@ -47,13 +47,27 @@ export function entriesInMonth(
   );
 }
 
-export function scorecardFor(entries: PrepEntry[], month: string): Scorecard {
+// `additionalAlgorithmCount` folds in reps logged outside prep_entries — today
+// that's LeetCode Tracker attempts for the same month (Prep Tracker's
+// component, not this module, computes that count via
+// leetcodeBoard.ts's attemptCountInMonth and passes it in here). Deliberately
+// a plain number, not a LeetCode-typed parameter: this module stays
+// PrepEntry-only and doesn't import another module's types (architecture
+// rule 1). Only folded into countsByType.algorithm — solved/attempted/
+// solveRate/averageTimeToSolveMin stay PrepEntry-algorithm-only, since those
+// need outcome/timing semantics this generic count doesn't carry.
+export function scorecardFor(
+  entries: PrepEntry[],
+  month: string,
+  additionalAlgorithmCount = 0,
+): Scorecard {
   const scoped = entriesInMonth(entries, month);
   const countsByType = { ...EMPTY_COUNTS };
 
   for (const entry of scoped) {
     countsByType[entry.entryType] += 1;
   }
+  countsByType.algorithm += additionalAlgorithmCount;
 
   const algorithms = scoped.filter((entry) => entry.entryType === "algorithm");
   const judged = algorithms.filter((entry) => entry.outcome !== null);

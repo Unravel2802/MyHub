@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   LEETCODE_STATUSES,
+  attemptCountInMonth,
+  attemptCountThrough,
   attemptStats,
   attemptsForProblem,
   groupByStatus,
@@ -91,5 +93,32 @@ describe("attemptStats", () => {
   it("reports zero/null for a problem with no attempts", () => {
     const stats = attemptStats([attempt({ problemId: "other" })], "p1");
     expect(stats).toEqual({ count: 0, lastAttempt: null });
+  });
+});
+
+describe("attemptCountInMonth", () => {
+  it("counts only attempts within the given month", () => {
+    const attempts = [
+      attempt({ id: "a1", date: "2026-07-01" }),
+      attempt({ id: "a2", date: "2026-07-24" }),
+      attempt({ id: "a3", date: "2026-08-01" }),
+    ];
+
+    expect(attemptCountInMonth(attempts, "2026-07")).toBe(2);
+    expect(attemptCountInMonth(attempts, "2026-08")).toBe(1);
+    expect(attemptCountInMonth(attempts, "2026-09")).toBe(0);
+  });
+});
+
+describe("attemptCountThrough", () => {
+  it("counts only attempts on or before the given date", () => {
+    const attempts = [
+      attempt({ id: "a1", date: "2026-07-01" }),
+      attempt({ id: "a2", date: "2026-07-24" }),
+      attempt({ id: "a3", date: "2026-08-01" }),
+    ];
+
+    expect(attemptCountThrough(attempts, "2026-07-24")).toBe(2);
+    expect(attemptCountThrough(attempts, "2026-06-30")).toBe(0);
   });
 });

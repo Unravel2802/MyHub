@@ -136,7 +136,6 @@ export function PrepTracker({ children }: PrepTrackerProps) {
         ) : null}
 
         <div className="grid gap-6">
-          <PrepEntryForm disabled={isCreating} onCreate={createEntry} />
           <StatCard
             hue={
               checkpointProgress.algorithm.actual > 0
@@ -158,6 +157,8 @@ export function PrepTracker({ children }: PrepTrackerProps) {
             />
             <TimeAllocationPanel entries={entries} />
           </div>
+          {children}
+          <PrepEntryForm disabled={isCreating} onCreate={createEntry} />
           <BehavioralStories
             disabled={isCreating}
             onCreate={createStory}
@@ -171,7 +172,6 @@ export function PrepTracker({ children }: PrepTrackerProps) {
             onDelete={confirmEntryDelete}
             pendingIds={pending}
           />
-          {children}
         </div>
       </section>
     </AppShell>

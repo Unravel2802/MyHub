@@ -11,7 +11,7 @@ import { supabase } from "@/src/lib/supabaseClient";
 interface LeetCodeProblemRow {
   id: string;
   title: string;
-  url: string | null;
+  question_number: number | null;
   difficulty: LeetCodeDifficulty;
   tags: string[];
   status: LeetCodeStatus;
@@ -38,7 +38,7 @@ function problemFromRow(row: LeetCodeProblemRow): LeetCodeProblem {
   return {
     id: row.id,
     title: row.title,
-    url: row.url,
+    questionNumber: row.question_number,
     difficulty: row.difficulty,
     tags: row.tags,
     status: row.status,
@@ -70,7 +70,7 @@ function attemptFromRow(row: LeetCodeAttemptRow): LeetCodeAttempt {
 
 export interface CreateProblemInput {
   title: string;
-  url?: string | null;
+  questionNumber?: number | null;
   difficulty: LeetCodeDifficulty;
   tags?: string[];
   status?: LeetCodeStatus;
@@ -79,7 +79,9 @@ export interface CreateProblemInput {
 function problemWrite(input: Partial<CreateProblemInput>) {
   return {
     ...(input.title !== undefined && { title: input.title }),
-    ...(input.url !== undefined && { url: input.url }),
+    ...(input.questionNumber !== undefined && {
+      question_number: input.questionNumber,
+    }),
     ...(input.difficulty !== undefined && { difficulty: input.difficulty }),
     ...(input.tags !== undefined && { tags: input.tags }),
     ...(input.status !== undefined && { status: input.status }),

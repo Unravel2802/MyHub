@@ -16,7 +16,7 @@ function problem(overrides: Partial<LeetCodeProblem> = {}): LeetCodeProblem {
   return {
     id: "p1",
     title: "Two Sum",
-    url: null,
+    questionNumber: null,
     difficulty: "easy",
     tags: [],
     status: "to_review",

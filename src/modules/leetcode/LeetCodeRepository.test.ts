@@ -104,7 +104,7 @@ function problemRow(overrides: Record<string, unknown> = {}) {
   return {
     id: "problem-1",
     title: "Two Sum",
-    url: "https://leetcode.com/problems/two-sum/",
+    question_number: 1,
     difficulty: "easy",
     tags: ["array", "hash-table"],
     status: "to_review",

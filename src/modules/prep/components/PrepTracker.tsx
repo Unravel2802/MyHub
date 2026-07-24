@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { Dumbbell } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/src/components/AppShell";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { StatCard } from "@/src/components/ui/StatCard";
@@ -20,7 +20,11 @@ import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
-export function PrepTracker() {
+interface PrepTrackerProps {
+  children?: ReactNode;
+}
+
+export function PrepTracker({ children }: PrepTrackerProps) {
   const {
     entries,
     stories,
@@ -167,6 +171,7 @@ export function PrepTracker() {
             onDelete={confirmEntryDelete}
             pendingIds={pending}
           />
+          {children}
         </div>
       </section>
     </AppShell>

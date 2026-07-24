@@ -11,6 +11,8 @@ type PrepType =
 
 type DesignDrillCategory = "system_design" | "ml_system_design";
 
+type LeetCodeOutcome = "solved" | "partial" | "failed";
+
 type ApplicationStage =
   | "researching"
   | "applied"
@@ -80,6 +82,18 @@ export type AppEvent =
         attemptId: string;
         drillId: string;
         category: DesignDrillCategory;
+      };
+      timestamp: number;
+    }
+  // Fired when a LeetCode Tracker attempt is logged (migration 0033). Same
+  // "problem bank, not a rep log" split as Design Drills' drill.completed
+  // above — Prep Tracker's 'algorithm' entries stay a separate, unlinked log.
+  | {
+      type: "leetcode.attempt_logged";
+      payload: {
+        attemptId: string;
+        problemId: string;
+        outcome: LeetCodeOutcome;
       };
       timestamp: number;
     };

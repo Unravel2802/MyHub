@@ -158,7 +158,7 @@ test("creates and edits a behavioral story grouped by theme", async ({
 }) => {
   await loadPrep(page);
 
-  await page.getByLabel("Title").fill("Led a migration");
+  await page.getByLabel("Title", { exact: true }).fill("Led a migration");
   await page
     .getByRole("textbox", { name: "Theme" })
     .fill("Technical leadership");

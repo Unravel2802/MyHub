@@ -15,7 +15,6 @@ interface LeetCodeProblemRow {
   difficulty: LeetCodeDifficulty;
   tags: string[];
   notes: string | null;
-  time_min: number | null;
   status: LeetCodeStatus;
   deleted_at: string | null;
   created_at: string;
@@ -44,7 +43,6 @@ function problemFromRow(row: LeetCodeProblemRow): LeetCodeProblem {
     difficulty: row.difficulty,
     tags: row.tags,
     notes: row.notes,
-    timeMin: row.time_min,
     status: row.status,
     deletedAt: row.deleted_at,
     createdAt: row.created_at,
@@ -78,7 +76,6 @@ export interface CreateProblemInput {
   difficulty: LeetCodeDifficulty;
   tags?: string[];
   notes?: string | null;
-  timeMin?: number | null;
   status?: LeetCodeStatus;
 }
 
@@ -91,7 +88,6 @@ function problemWrite(input: Partial<CreateProblemInput>) {
     ...(input.difficulty !== undefined && { difficulty: input.difficulty }),
     ...(input.tags !== undefined && { tags: input.tags }),
     ...(input.notes !== undefined && { notes: input.notes }),
-    ...(input.timeMin !== undefined && { time_min: input.timeMin }),
     ...(input.status !== undefined && { status: input.status }),
   };
 }

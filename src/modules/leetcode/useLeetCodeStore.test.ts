@@ -33,7 +33,6 @@ function problem(
     difficulty: "easy",
     tags: ["Array"],
     notes: null,
-    timeMin: null,
     status: "to_review",
     deletedAt: null,
     createdAt: "2026-07-24T00:00:00.000Z",
@@ -98,7 +97,6 @@ describe("useLeetCodeStore problems", () => {
     const created = problem({
       id: "created",
       notes: "Use complements.",
-      timeMin: 25,
     });
     repository.createProblem.mockResolvedValue(created);
 
@@ -107,7 +105,6 @@ describe("useLeetCodeStore problems", () => {
       difficulty: "easy",
       tags: ["Array"],
       notes: "Use complements.",
-      timeMin: 25,
     });
 
     expect(useLeetCodeStore.getState().problems).toEqual([created]);
@@ -139,7 +136,7 @@ describe("useLeetCodeStore problems", () => {
 
   it("optimistically updates a problem and tracks its pending id", async () => {
     const existing = problem({ id: "problem" });
-    const updated = { ...existing, status: "solved" as const, timeMin: 30 };
+    const updated = { ...existing, status: "solved" as const };
     reset([existing]);
     let resolveUpdate: ((value: LeetCodeProblem) => void) | undefined;
     repository.updateProblem.mockImplementation(
@@ -151,10 +148,9 @@ describe("useLeetCodeStore problems", () => {
 
     const request = useLeetCodeStore
       .getState()
-      .updateProblem("problem", { status: "solved", timeMin: 30 });
+      .updateProblem("problem", { status: "solved" });
 
     expect(useLeetCodeStore.getState().problems[0].status).toBe("solved");
-    expect(useLeetCodeStore.getState().problems[0].timeMin).toBe(30);
     expect(useLeetCodeStore.getState().pendingIds).toEqual(["problem"]);
 
     resolveUpdate?.(updated);

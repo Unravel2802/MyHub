@@ -39,9 +39,9 @@ export interface AreaAllocation {
 // durationMin contribute 0 minutes but still exist — they're not excluded
 // the way mock_interview entries are.
 //
-// `additionalAlgorithmMinutes` folds in LeetCode problem time computed by the
-// caller via leetcodeBoard.ts's totalTimeMin. It stays a plain number so this
-// module remains PrepEntry-only and does not import LeetCode types.
+// `additionalAlgorithmMinutes` folds in LeetCode attempt time computed by the
+// caller via leetcodeBoard.ts's totalAttemptTimeMin. It stays a plain number
+// so this module remains PrepEntry-only and does not import LeetCode types.
 export function timeAllocation(
   entries: PrepEntry[],
   fromDate?: string,

@@ -21,7 +21,6 @@ export interface LeetCodeProblem {
   // table/board filters and groups by, alongside status and difficulty.
   tags: string[];
   notes: string | null;
-  timeMin: number | null;
   status: LeetCodeStatus;
   deletedAt: string | null;
   createdAt: string;

@@ -49,6 +49,19 @@ export function attemptStats(
   return { count: forProblem.length, lastAttempt: forProblem[0] ?? null };
 }
 
+// Total minutes logged across attempts, optionally scoped to attempts on or
+// after fromDate (yyyy-MM-dd, inclusive) — feeds Prep Tracker's time
+// allocation (prepAllocation.ts's additionalAlgorithmMinutes). Attempts with
+// a null timeToSolveMin contribute 0 but still count as logged.
+export function totalAttemptTimeMin(
+  attempts: LeetCodeAttempt[],
+  fromDate?: string,
+): number {
+  return attempts
+    .filter((attempt) => fromDate === undefined || attempt.date >= fromDate)
+    .reduce((total, attempt) => total + (attempt.timeToSolveMin ?? 0), 0);
+}
+
 // Problems added within a given yyyy-MM month, bucketed by createdAt (a
 // problem has no separate "date done" — adding it to the tracker IS the rep,
 // mirroring how Prep Tracker's algorithm reps used to work). Mirrors
@@ -70,21 +83,4 @@ export function problemCountThrough(
   return problems.filter(
     (problem) => problem.createdAt.slice(0, 10) <= throughDate,
   ).length;
-}
-
-// Total minutes spent across problems, optionally scoped to problems added on
-// or after fromDate (yyyy-MM-dd, inclusive) — mirrors prepAllocation.ts's
-// timeAllocation's own fromDate scoping. Problems with a null timeMin
-// contribute 0 but still count as logged, matching prepAllocation's treatment
-// of a null durationMin.
-export function totalTimeMin(
-  problems: LeetCodeProblem[],
-  fromDate?: string,
-): number {
-  return problems
-    .filter(
-      (problem) =>
-        fromDate === undefined || problem.createdAt.slice(0, 10) >= fromDate,
-    )
-    .reduce((total, problem) => total + (problem.timeMin ?? 0), 0);
 }

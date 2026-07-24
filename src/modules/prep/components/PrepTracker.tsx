@@ -22,10 +22,10 @@ import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 import { on } from "@/src/lib/events";
 import * as LeetCodeRepository from "@/src/modules/leetcode/LeetCodeRepository";
-import type { LeetCodeAttempt } from "@/src/modules/leetcode/types";
+import type { LeetCodeProblem } from "@/src/modules/leetcode/types";
 import {
-  attemptCountInMonth,
-  attemptCountThrough,
+  problemCountInMonth,
+  problemCountThrough,
 } from "@/src/modules/leetcode/leetcodeBoard";
 
 interface PrepTrackerProps {
@@ -54,36 +54,36 @@ export function PrepTracker({ children }: PrepTrackerProps) {
   const topics = weakestTopics(3, month);
   const checkpoint = activeCheckpoint(format(new Date(), "yyyy-MM-dd"));
 
-  // LeetCode Tracker attempts count as algorithm reps here too (read via its
+  // LeetCode Tracker problems count as algorithm reps here too (read via its
   // Repository, mirroring useDashboardStore's cross-module pattern — Prep
   // doesn't reach into another module's store or components, architecture
-  // rule 1). Refetched on `leetcode.attempt_logged` so a session logged in
+  // rule 1). Refetched on `leetcode.problem_logged` so a problem added in
   // the LeetCode Tracker section below updates this count without a manual
   // refresh.
-  const [leetcodeAttempts, setLeetcodeAttempts] = useState<LeetCodeAttempt[]>(
+  const [leetcodeProblems, setLeetcodeProblems] = useState<LeetCodeProblem[]>(
     [],
   );
-  const fetchLeetcodeAttempts = () =>
-    LeetCodeRepository.getAttempts()
-      .then(setLeetcodeAttempts)
+  const fetchLeetcodeProblems = () =>
+    LeetCodeRepository.getProblems()
+      .then(setLeetcodeProblems)
       .catch(() => undefined);
 
   const monthlyScorecard = scorecardFor(
     entries,
     month,
-    attemptCountInMonth(leetcodeAttempts, month),
+    problemCountInMonth(leetcodeProblems, month),
   );
   const checkpointProgress = progressTowardCheckpoint(
     entries,
     checkpoint,
-    attemptCountThrough(leetcodeAttempts, checkpoint.throughDate),
+    problemCountThrough(leetcodeProblems, checkpoint.throughDate),
   );
 
   useEffect(() => {
-    void Promise.all([fetchEntries(), fetchStories(), fetchLeetcodeAttempts()]);
+    void Promise.all([fetchEntries(), fetchStories(), fetchLeetcodeProblems()]);
     const unsubscribe = on((event) => {
-      if (event.type === "leetcode.attempt_logged") {
-        void fetchLeetcodeAttempts();
+      if (event.type === "leetcode.problem_logged") {
+        void fetchLeetcodeProblems();
       }
     });
     return () => {

@@ -6,7 +6,6 @@ import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import type { CreateProblemInput } from "@/src/modules/leetcode/LeetCodeRepository";
 import type {
-  LeetCodeAttempt,
   LeetCodeDifficulty,
   LeetCodeProblem,
   LeetCodeStatus,
@@ -20,13 +19,7 @@ import {
   statusLabels,
 } from "@/src/modules/leetcode/components/leetcodeUi";
 
-type AttemptStats = {
-  count: number;
-  lastAttempt: LeetCodeAttempt | null;
-};
-
-type SortKey =
-  "title" | "difficulty" | "status" | "tags" | "attempts" | "lastAttempt";
+type SortKey = "title" | "difficulty" | "status" | "tags";
 
 const difficultyRank: Record<LeetCodeDifficulty, number> = {
   easy: 0,
@@ -74,7 +67,6 @@ function TagsCell({ disabled, problem, onUpdate }: TagsCellProps) {
 }
 
 interface LeetCodeTableProps {
-  attemptStats: (problemId: string) => AttemptStats;
   pendingIds: ReadonlySet<string>;
   problems: LeetCodeProblem[];
   onSelect: (id: string) => void;
@@ -82,7 +74,6 @@ interface LeetCodeTableProps {
 }
 
 export function LeetCodeTable({
-  attemptStats,
   pendingIds,
   problems,
   onSelect,
@@ -113,8 +104,6 @@ export function LeetCodeTable({
     );
 
     return filtered.toSorted((left, right) => {
-      const leftStats = attemptStats(left.id);
-      const rightStats = attemptStats(right.id);
       let comparison = 0;
 
       if (sortKey === "title")
@@ -129,18 +118,9 @@ export function LeetCodeTable({
       if (sortKey === "tags") {
         comparison = left.tags.join(", ").localeCompare(right.tags.join(", "));
       }
-      if (sortKey === "attempts") {
-        comparison = leftStats.count - rightStats.count;
-      }
-      if (sortKey === "lastAttempt") {
-        comparison = (leftStats.lastAttempt?.date ?? "").localeCompare(
-          rightStats.lastAttempt?.date ?? "",
-        );
-      }
-
       return ascending ? comparison : -comparison;
     });
-  }, [ascending, attemptStats, difficulty, problems, sortKey, status, tag]);
+  }, [ascending, difficulty, problems, sortKey, status, tag]);
 
   function toggleSort(nextKey: SortKey) {
     if (nextKey === sortKey) {
@@ -238,7 +218,7 @@ export function LeetCodeTable({
         />
       ) : (
         <div className="max-h-[38rem] max-w-full overflow-auto rounded-lg border border-border">
-          <table className="min-w-[880px] w-full border-collapse text-left text-sm">
+          <table className="min-w-[680px] w-full border-collapse text-left text-sm">
             <thead className="sticky top-0 z-10 bg-surface-subtle text-xs text-muted">
               <tr>
                 <th className="px-3 py-2">{sortButton("Problem", "title")}</th>
@@ -247,17 +227,10 @@ export function LeetCodeTable({
                 </th>
                 <th className="px-3 py-2">{sortButton("Status", "status")}</th>
                 <th className="px-3 py-2">{sortButton("Tags", "tags")}</th>
-                <th className="px-3 py-2 text-right">
-                  {sortButton("Attempts", "attempts")}
-                </th>
-                <th className="px-3 py-2">
-                  {sortButton("Last attempt", "lastAttempt")}
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {visible.map((problem) => {
-                const stats = attemptStats(problem.id);
                 const pending = pendingIds.has(problem.id);
                 return (
                   <tr
@@ -311,12 +284,6 @@ export function LeetCodeTable({
                         onUpdate={onUpdate}
                         problem={problem}
                       />
-                    </td>
-                    <td className="px-3 py-3 text-right tabular-nums text-body">
-                      {stats.count}
-                    </td>
-                    <td className="px-3 py-3 text-muted">
-                      {stats.lastAttempt?.date ?? "Never"}
                     </td>
                   </tr>
                 );

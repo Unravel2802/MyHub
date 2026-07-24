@@ -149,7 +149,6 @@ export function LeetCodeTracker() {
 
       {view === "table" ? (
         <LeetCodeTable
-          attemptStats={attemptStats}
           onSelect={setSelectedId}
           onUpdate={updateProblem}
           pendingIds={pending}

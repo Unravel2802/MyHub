@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   LEETCODE_STATUSES,
-  attemptCountInMonth,
-  attemptCountThrough,
   attemptStats,
   attemptsForProblem,
   groupByStatus,
+  problemCountInMonth,
+  problemCountThrough,
 } from "@/src/modules/leetcode/leetcodeBoard";
 import type {
   LeetCodeAttempt,
@@ -21,6 +21,7 @@ function problem(overrides: Partial<LeetCodeProblem> = {}): LeetCodeProblem {
     questionNumber: null,
     difficulty: "easy",
     tags: [],
+    notes: null,
     status: "to_review",
     deletedAt: null,
     createdAt: timestamp,
@@ -96,29 +97,29 @@ describe("attemptStats", () => {
   });
 });
 
-describe("attemptCountInMonth", () => {
-  it("counts only attempts within the given month", () => {
-    const attempts = [
-      attempt({ id: "a1", date: "2026-07-01" }),
-      attempt({ id: "a2", date: "2026-07-24" }),
-      attempt({ id: "a3", date: "2026-08-01" }),
+describe("problemCountInMonth", () => {
+  it("counts only problems added within the given month", () => {
+    const problems = [
+      problem({ id: "p1", createdAt: "2026-07-01T00:00:00.000Z" }),
+      problem({ id: "p2", createdAt: "2026-07-24T00:00:00.000Z" }),
+      problem({ id: "p3", createdAt: "2026-08-01T00:00:00.000Z" }),
     ];
 
-    expect(attemptCountInMonth(attempts, "2026-07")).toBe(2);
-    expect(attemptCountInMonth(attempts, "2026-08")).toBe(1);
-    expect(attemptCountInMonth(attempts, "2026-09")).toBe(0);
+    expect(problemCountInMonth(problems, "2026-07")).toBe(2);
+    expect(problemCountInMonth(problems, "2026-08")).toBe(1);
+    expect(problemCountInMonth(problems, "2026-09")).toBe(0);
   });
 });
 
-describe("attemptCountThrough", () => {
-  it("counts only attempts on or before the given date", () => {
-    const attempts = [
-      attempt({ id: "a1", date: "2026-07-01" }),
-      attempt({ id: "a2", date: "2026-07-24" }),
-      attempt({ id: "a3", date: "2026-08-01" }),
+describe("problemCountThrough", () => {
+  it("counts only problems added on or before the given date", () => {
+    const problems = [
+      problem({ id: "p1", createdAt: "2026-07-01T00:00:00.000Z" }),
+      problem({ id: "p2", createdAt: "2026-07-24T23:59:59.000Z" }),
+      problem({ id: "p3", createdAt: "2026-08-01T00:00:00.000Z" }),
     ];
 
-    expect(attemptCountThrough(attempts, "2026-07-24")).toBe(2);
-    expect(attemptCountThrough(attempts, "2026-06-30")).toBe(0);
+    expect(problemCountThrough(problems, "2026-07-24")).toBe(2);
+    expect(problemCountThrough(problems, "2026-06-30")).toBe(0);
   });
 });

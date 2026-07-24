@@ -48,9 +48,9 @@ export function entriesInMonth(
 }
 
 // `additionalAlgorithmCount` folds in reps logged outside prep_entries — today
-// that's LeetCode Tracker attempts for the same month (Prep Tracker's
+// that's LeetCode Tracker problems added in the same month (Prep Tracker's
 // component, not this module, computes that count via
-// leetcodeBoard.ts's attemptCountInMonth and passes it in here). Deliberately
+// leetcodeBoard.ts's problemCountInMonth and passes it in here). Deliberately
 // a plain number, not a LeetCode-typed parameter: this module stays
 // PrepEntry-only and doesn't import another module's types (architecture
 // rule 1). Only folded into countsByType.algorithm — solved/attempted/

@@ -39,9 +39,8 @@ export function attemptsForProblem(
   return attempts.filter((attempt) => attempt.problemId === problemId);
 }
 
-// The table view's "Attempts" and "Last attempt" columns, computed rather
-// than stored — a problem's attempt count/recency is always derived from its
-// attempt rows, never duplicated onto leetcode_problems.
+// Attempt count/recency is computed rather than stored, so it is always
+// derived from attempt rows and never duplicated onto leetcode_problems.
 export function attemptStats(
   attempts: LeetCodeAttempt[],
   problemId: string,
@@ -50,24 +49,25 @@ export function attemptStats(
   return { count: forProblem.length, lastAttempt: forProblem[0] ?? null };
 }
 
-// Attempts logged within a given yyyy-MM month. Mirrors prepScorecard.ts's
-// monthOf/entriesInMonth — used by Prep Tracker's monthly "Algorithms" count,
-// which counts a LeetCode attempt as an algorithm rep same as a logged
-// prep_entries row.
-export function attemptCountInMonth(
-  attempts: LeetCodeAttempt[],
+// Problems added within a given yyyy-MM month, bucketed by createdAt (a
+// problem has no separate "date done" — adding it to the tracker IS the rep,
+// mirroring how Prep Tracker's algorithm reps used to work). Mirrors
+// prepScorecard.ts's monthOf/entriesInMonth.
+export function problemCountInMonth(
+  problems: LeetCodeProblem[],
   month: string,
 ): number {
-  return attempts.filter((attempt) => attempt.date.slice(0, 7) === month)
+  return problems.filter((problem) => problem.createdAt.slice(0, 7) === month)
     .length;
 }
 
-// Attempts on or before a given yyyy-MM-dd date. Mirrors prepScorecard.ts's
-// cumulativeCountsByType — used by Prep Tracker's cumulative checkpoint
-// progress (prepTargets.ts).
-export function attemptCountThrough(
-  attempts: LeetCodeAttempt[],
+// Problems added on or before a given yyyy-MM-dd date. Mirrors
+// prepScorecard.ts's cumulativeCountsByType.
+export function problemCountThrough(
+  problems: LeetCodeProblem[],
   throughDate: string,
 ): number {
-  return attempts.filter((attempt) => attempt.date <= throughDate).length;
+  return problems.filter(
+    (problem) => problem.createdAt.slice(0, 10) <= throughDate,
+  ).length;
 }

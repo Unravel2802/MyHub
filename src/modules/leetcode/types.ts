@@ -20,6 +20,7 @@ export interface LeetCodeProblem {
   // Free-form pattern/topic tags (e.g. "DP", "Two Pointers") — what the
   // table/board filters and groups by, alongside status and difficulty.
   tags: string[];
+  notes: string | null;
   status: LeetCodeStatus;
   deletedAt: string | null;
   createdAt: string;

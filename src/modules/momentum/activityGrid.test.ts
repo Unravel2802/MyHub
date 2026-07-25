@@ -10,6 +10,7 @@ const EMPTY: ActivitySnapshot = {
   prepEntries: [],
   applications: [],
   outreachEntries: [],
+  leetcodeAttempts: [],
 };
 
 function prep(overrides: Partial<PrepEntry> & { id: string }): PrepEntry {
@@ -51,7 +52,7 @@ function task(overrides: Partial<Task> & { id: string }): Task {
 }
 
 describe("activityCounts", () => {
-  it("sums all four sources per day", () => {
+  it("sums multiple sources per day", () => {
     const counts = activityCounts({
       ...EMPTY,
       prepEntries: [
@@ -68,7 +69,11 @@ describe("activityCounts", () => {
       ...EMPTY,
       prepEntries: [
         prep({ id: "a", date: "2026-07-13" }),
-        prep({ id: "gone", date: "2026-07-13", deletedAt: "2026-07-14T00:00:00Z" }),
+        prep({
+          id: "gone",
+          date: "2026-07-13",
+          deletedAt: "2026-07-14T00:00:00Z",
+        }),
       ],
     });
     expect(counts.get("2026-07-13")).toBe(1);
@@ -95,13 +100,21 @@ describe("buildActivityGrid", () => {
   const today = new Date("2026-07-15T09:00:00"); // a Wednesday
 
   it("starts each column on Monday", () => {
-    const grid = buildActivityGrid(new Map(), new Date("2026-07-08T00:00:00"), today);
+    const grid = buildActivityGrid(
+      new Map(),
+      new Date("2026-07-08T00:00:00"),
+      today,
+    );
     // First cell of the first week is the Monday on/before `from`.
     expect(grid.weeks[0][0].key).toBe("2026-07-06");
   });
 
   it("marks days after today as future spacers, not empty days", () => {
-    const grid = buildActivityGrid(new Map(), new Date("2026-07-13T00:00:00"), today);
+    const grid = buildActivityGrid(
+      new Map(),
+      new Date("2026-07-13T00:00:00"),
+      today,
+    );
     const flat = grid.weeks.flat();
 
     const wed = flat.find((d) => d.key === "2026-07-15")!; // today
@@ -118,7 +131,11 @@ describe("buildActivityGrid", () => {
       ["2026-07-14", 3], // level 2
       ["2026-07-15", 9], // level 4
     ]);
-    const grid = buildActivityGrid(counts, new Date("2026-07-13T00:00:00"), today);
+    const grid = buildActivityGrid(
+      counts,
+      new Date("2026-07-13T00:00:00"),
+      today,
+    );
     const flat = grid.weeks.flat();
     expect(flat.find((d) => d.key === "2026-07-13")!.level).toBe(1);
     expect(flat.find((d) => d.key === "2026-07-14")!.level).toBe(2);
@@ -126,7 +143,11 @@ describe("buildActivityGrid", () => {
   });
 
   it("keeps an empty past day at level 0 — absence is not activity", () => {
-    const grid = buildActivityGrid(new Map(), new Date("2026-07-13T00:00:00"), today);
+    const grid = buildActivityGrid(
+      new Map(),
+      new Date("2026-07-13T00:00:00"),
+      today,
+    );
     const mon = grid.weeks.flat().find((d) => d.key === "2026-07-13")!;
     expect(mon.count).toBe(0);
     expect(mon.level).toBe(0);
@@ -137,7 +158,11 @@ describe("buildActivityGrid", () => {
       ["2026-07-13", 2],
       ["2026-07-14", 3],
     ]);
-    const grid = buildActivityGrid(counts, new Date("2026-07-13T00:00:00"), today);
+    const grid = buildActivityGrid(
+      counts,
+      new Date("2026-07-13T00:00:00"),
+      today,
+    );
     expect(grid.total).toBe(5);
     expect(grid.activeDays).toBe(2);
   });

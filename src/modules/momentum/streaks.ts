@@ -3,6 +3,7 @@ import type { Task } from "@/src/modules/task/types";
 import type { Application } from "@/src/modules/jobApplications/types";
 import type { PrepEntry } from "@/src/modules/prep/types";
 import type { OutreachEntry } from "@/src/modules/outreach/types";
+import type { LeetCodeAttempt } from "@/src/modules/leetcode/types";
 
 // Streak date math (myhub_plan.md Part B, Phase 5). Pure — the store fetches
 // each module's data through that module's own Repository and hands it here.
@@ -12,6 +13,7 @@ export interface ActivitySnapshot {
   prepEntries: PrepEntry[];
   applications: Application[];
   outreachEntries: OutreachEntry[];
+  leetcodeAttempts: LeetCodeAttempt[];
 }
 
 export interface Streak {
@@ -32,9 +34,9 @@ function safeDayKey(timestamp: string | null | undefined): string | null {
   return Number.isNaN(date.getTime()) ? null : dayKey(date);
 }
 
-// A day counts as active if you did ANY of the four things that move the
+// A day counts as active if you did ANY of the five things that move the
 // roadmap forward: logged a prep rep, completed a task, logged an application,
-// or had an outreach conversation.
+// had an outreach conversation, or logged a LeetCode attempt.
 //
 // Timezone discipline, and the reason this isn't a one-liner: `date` columns
 // (prep, outreach) are already local wall-clock calendar dates and are used
@@ -57,6 +59,11 @@ export function activityDates(snapshot: ActivitySnapshot): Set<string> {
     days.add(entry.date);
   }
 
+  for (const attempt of snapshot.leetcodeAttempts) {
+    if (attempt.deletedAt) continue;
+    days.add(attempt.date);
+  }
+
   for (const task of snapshot.tasks) {
     if (task.deletedAt) continue;
     const day = safeDayKey(task.completedAt);
@@ -73,7 +80,7 @@ export function activityDates(snapshot: ActivitySnapshot): Set<string> {
 }
 
 // The per-day COUNT variant, for the activity heatmap. activityDates answers
-// "was this day active?"; this answers "how active?" — the four sources summed
+// "was this day active?"; this answers "how active?" — the five sources summed
 // per local wall-clock day. Same timezone discipline (safeDayKey, never
 // .slice), same soft-delete filtering, deliberately kept as a sibling rather
 // than folded in so activityDates stays a cheap Set for the streak math.
@@ -91,6 +98,9 @@ export function activityCounts(
   }
   for (const entry of snapshot.outreachEntries) {
     if (!entry.deletedAt) bump(entry.date);
+  }
+  for (const attempt of snapshot.leetcodeAttempts) {
+    if (!attempt.deletedAt) bump(attempt.date);
   }
   for (const task of snapshot.tasks) {
     if (!task.deletedAt) bump(safeDayKey(task.completedAt));

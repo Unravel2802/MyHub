@@ -70,6 +70,10 @@ export function evaluateAchievements(
       prepEntries,
       applications,
       outreachEntries,
+      // LeetCode-based achievements are a separate concern. Keep the existing
+      // achievement streak inputs unchanged while activityDates also serves
+      // Momentum's broader streak and heatmap aggregation.
+      leetcodeAttempts: [],
     }),
     snapshot.today,
   );
@@ -207,8 +211,7 @@ function hasPerfectWeek(
 // achievement, it's an empty checklist.
 function hasCompletedGate(tasks: Task[]): boolean {
   const gateTasks = tasks.filter(
-    (task) =>
-      task.parentTaskId === null && /^gate:\s/i.test(task.title.trim()),
+    (task) => task.parentTaskId === null && /^gate:\s/i.test(task.title.trim()),
   );
 
   return gateTasks.some((gate) => {

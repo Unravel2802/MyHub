@@ -5,6 +5,7 @@ import * as PrepRepository from "@/src/modules/prep/PrepRepository";
 import * as ApplicationRepository from "@/src/modules/jobApplications/ApplicationRepository";
 import * as InterviewRepository from "@/src/modules/jobApplications/InterviewRepository";
 import * as OutreachRepository from "@/src/modules/outreach/OutreachRepository";
+import * as LeetCodeRepository from "@/src/modules/leetcode/LeetCodeRepository";
 import { on } from "@/src/lib/events";
 import {
   evaluateAchievements,
@@ -34,7 +35,7 @@ const ACTIVITY_FROM = new Date("2026-07-01T00:00:00");
 export interface MomentumStore {
   streak: Streak;
   // The activity heatmap grid (docs/color-refresh.md K2). Lives here rather than
-  // on the roadmap store because momentum already fetches all four activity
+  // on the roadmap store because momentum already fetches all five activity
   // sources every refresh, and AppShell mounts this store on every page.
   activityGrid: ActivityGrid;
   unlocked: AchievementUnlock[];
@@ -87,6 +88,7 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
         applications,
         interviews,
         outreachEntries,
+        leetcodeAttempts,
         persistedUnlocks,
       ] = await Promise.all([
         TaskRepository.getTasks(),
@@ -95,11 +97,18 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
         ApplicationRepository.getApplications(),
         InterviewRepository.getInterviews(),
         OutreachRepository.getEntries(),
+        LeetCodeRepository.getAttempts(),
         MomentumRepository.getUnlocks(),
       ]);
 
       const today = new Date();
-      const activityArgs = { tasks, prepEntries, applications, outreachEntries };
+      const activityArgs = {
+        tasks,
+        prepEntries,
+        applications,
+        outreachEntries,
+        leetcodeAttempts,
+      };
       const streak = computeStreak(activityDates(activityArgs), today);
       const activityGrid = buildActivityGrid(
         activityCounts(activityArgs),
@@ -140,7 +149,12 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
         const inserted = await MomentumRepository.insertUnlocks(fresh);
         set({ unlocked: [...inserted, ...persistedUnlocks] });
       } else {
-        set({ streak, activityGrid, unlocked: persistedUnlocks, isLoading: false });
+        set({
+          streak,
+          activityGrid,
+          unlocked: persistedUnlocks,
+          isLoading: false,
+        });
       }
     } catch (error) {
       set({ isLoading: false, error: toUserMessage(error) });
@@ -154,7 +168,7 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
       pendingToasts: get().pendingToasts.filter((pending) => pending !== key),
     }),
 
-  // Recompute whenever anything that feeds an achievement changes. Returns the
+  // Recompute whenever anything that feeds Momentum changes. Returns the
   // unsubscribe function — AppShell calls this in an effect and cleans up.
   subscribeToUpdates: () =>
     on((event) => {
@@ -174,6 +188,7 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
         case "application.stage_changed":
         case "interview.completed":
         case "outreach.logged":
+        case "leetcode.attempt_logged":
           void get().refresh();
           break;
         default:

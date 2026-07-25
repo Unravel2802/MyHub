@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { activityDates, computeStreak } from "@/src/modules/momentum/streaks";
+import {
+  activityCounts,
+  activityDates,
+  computeStreak,
+} from "@/src/modules/momentum/streaks";
 import type { Task } from "@/src/modules/task/types";
 import type { Application } from "@/src/modules/jobApplications/types";
 import type { PrepEntry } from "@/src/modules/prep/types";
 import type { OutreachEntry } from "@/src/modules/outreach/types";
+import type { LeetCodeAttempt } from "@/src/modules/leetcode/types";
 
 function task(overrides: Partial<Task> & { id: string }): Task {
   return {
@@ -78,15 +83,34 @@ function application(
   };
 }
 
+function leetcodeAttempt(
+  overrides: Partial<LeetCodeAttempt> & { id: string },
+): LeetCodeAttempt {
+  return {
+    problemId: "problem-1",
+    date: "2026-07-14",
+    timeToSolveMin: null,
+    outcome: "solved",
+    notes: null,
+    solutionCode: null,
+    solutionLanguage: null,
+    deletedAt: null,
+    createdAt: "2026-07-14T00:00:00.000Z",
+    updatedAt: "2026-07-14T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
 const EMPTY = {
   tasks: [],
   prepEntries: [],
   applications: [],
   outreachEntries: [],
+  leetcodeAttempts: [],
 };
 
 describe("activityDates", () => {
-  it("counts a day active for any of the four activity kinds", () => {
+  it("counts a day active for any of the five activity kinds", () => {
     const days = activityDates({
       tasks: [task({ id: "t", completedAt: "2026-07-10T12:00:00.000Z" })],
       prepEntries: [prepEntry({ id: "p", date: "2026-07-11" })],
@@ -94,6 +118,7 @@ describe("activityDates", () => {
         application({ id: "a", createdAt: "2026-07-12T12:00:00.000Z" }),
       ],
       outreachEntries: [outreachEntry({ id: "o", date: "2026-07-13" })],
+      leetcodeAttempts: [leetcodeAttempt({ id: "lc", date: "2026-07-14" })],
     });
 
     expect([...days].sort()).toEqual([
@@ -101,7 +126,26 @@ describe("activityDates", () => {
       "2026-07-11",
       "2026-07-12",
       "2026-07-13",
+      "2026-07-14",
     ]);
+  });
+
+  it("counts a LeetCode-only day and excludes a soft-deleted attempt", () => {
+    const deletedAt = "2026-07-16T00:00:00.000Z";
+    const snapshot = {
+      ...EMPTY,
+      leetcodeAttempts: [
+        leetcodeAttempt({ id: "active", date: "2026-07-15" }),
+        leetcodeAttempt({
+          id: "deleted",
+          date: "2026-07-16",
+          deletedAt,
+        }),
+      ],
+    };
+
+    expect([...activityDates(snapshot)]).toEqual(["2026-07-15"]);
+    expect([...activityCounts(snapshot)]).toEqual([["2026-07-15", 1]]);
   });
 
   it("ignores tasks that were never completed", () => {
@@ -129,6 +173,13 @@ describe("activityDates", () => {
       applications: [application({ id: "a", deletedAt: deleted })],
       outreachEntries: [
         outreachEntry({ id: "o", date: "2026-07-13", deletedAt: deleted }),
+      ],
+      leetcodeAttempts: [
+        leetcodeAttempt({
+          id: "lc",
+          date: "2026-07-14",
+          deletedAt: deleted,
+        }),
       ],
     });
 

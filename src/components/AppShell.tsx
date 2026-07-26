@@ -7,6 +7,11 @@ import { AuthGate } from "@/src/components/AuthGate";
 import { CommandPalette } from "@/src/components/CommandPalette";
 import { ThemeToggle } from "@/src/components/ThemeToggle";
 import { NAV_ITEMS } from "@/src/components/appNav";
+import {
+  CORE_TOOL_HREFS,
+  MINI_APPS,
+  MINI_APP_HREFS,
+} from "@/src/components/miniApps";
 import { hueFor, hueVar } from "@/src/components/moduleHues";
 import { HUE_NAV_ACTIVE } from "@/src/components/ui/hueClasses";
 import { StreakIndicator } from "@/src/modules/momentum/components/StreakIndicator";
@@ -33,6 +38,17 @@ interface AppShellProps {
   activeHref: string;
   children: React.ReactNode;
 }
+
+const CORE_NAV_ITEMS = NAV_ITEMS.filter((item) =>
+  CORE_TOOL_HREFS.includes(item.href),
+);
+
+const MINI_APP_NAV_GROUPS = MINI_APPS.map((app) => ({
+  app,
+  items: NAV_ITEMS.filter((item) =>
+    MINI_APP_HREFS[app.key].includes(item.href),
+  ),
+}));
 
 export function AppShell({ title, activeHref, children }: AppShellProps) {
   const openPalette = useCommandPaletteStore((state) => state.open);
@@ -142,6 +158,30 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
   // any content. Collapsed by default below `lg`; at `lg` and up the rail is
   // always open and this state is ignored, so the desktop DOM is unchanged.
   const [isNavOpen, setIsNavOpen] = useState(false);
+
+  function renderNavItem(item: (typeof NAV_ITEMS)[number]) {
+    const isActive = item.href === activeHref;
+    const Icon = item.icon;
+    return (
+      <Link
+        aria-current={isActive ? "page" : undefined}
+        className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all duration-200 ease-in-out ${isActive ? HUE_NAV_ACTIVE[hueFor(item.href)] : "text-body hover:bg-surface-subtle hover:text-foreground"}`}
+        href={item.href}
+        key={item.href}
+        onClick={() => setIsNavOpen(false)}
+      >
+        {Icon ? (
+          <Icon
+            aria-hidden="true"
+            className="size-4 shrink-0"
+            style={{ color: hueVar(hueFor(item.href)) }}
+          />
+        ) : null}
+        {item.label}
+      </Link>
+    );
+  }
+
   return (
     <AuthGate>
       <main className="min-h-screen bg-canvas text-foreground">
@@ -192,30 +232,41 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
             {/* `hidden` only below lg, and only while closed — at lg the rail is
                 always expanded, so nothing about the desktop DOM changes. */}
             <div
-              className={`${isNavOpen ? "grid" : "hidden"} gap-6 lg:grid lg:flex-1 lg:grid-rows-[auto_1fr]`}
+              className={`${isNavOpen ? "grid" : "hidden"} gap-6 lg:grid lg:min-h-0 lg:flex-1 lg:grid-rows-[minmax(0,1fr)_auto]`}
               id="app-nav"
             >
-              <nav aria-label="MyHub modules" className="grid gap-1 text-sm">
-                {NAV_ITEMS.map((item) => {
-                  const isActive = item.href === activeHref;
-                  const Icon = item.icon;
+              <nav
+                aria-label="MyHub modules"
+                className="grid gap-4 text-sm lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-1"
+              >
+                <div className="grid gap-1">
+                  {CORE_NAV_ITEMS.map(renderNavItem)}
+                </div>
+
+                {MINI_APP_NAV_GROUPS.map(({ app, items }) => {
+                  const headingId = `mini-app-${app.key}-heading`;
+                  const GroupIcon = app.icon;
                   return (
-                    <Link
-                      aria-current={isActive ? "page" : undefined}
-                      className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all duration-200 ease-in-out ${isActive ? HUE_NAV_ACTIVE[hueFor(item.href)] : "text-body hover:bg-surface-subtle hover:text-foreground"}`}
-                      href={item.href}
-                      key={item.href}
-                      onClick={() => setIsNavOpen(false)}
+                    <div
+                      aria-labelledby={headingId}
+                      className="grid gap-1"
+                      key={app.key}
+                      role="group"
                     >
-                      {Icon ? (
-                        <Icon
+                      <div
+                        className="hue-gradient-text flex items-center gap-2 px-3 pb-1 pt-2 text-[0.6875rem] font-semibold uppercase tracking-widest"
+                        data-mini-app-heading
+                        id={headingId}
+                        style={{ ["--hue" as string]: hueVar(app.hue) }}
+                      >
+                        <GroupIcon
                           aria-hidden="true"
-                          className="size-4 shrink-0"
-                          style={{ color: hueVar(hueFor(item.href)) }}
+                          className="size-3.5 shrink-0"
                         />
-                      ) : null}
-                      {item.label}
-                    </Link>
+                        <span>{app.label}</span>
+                      </div>
+                      {items.map(renderNavItem)}
+                    </div>
                   );
                 })}
               </nav>

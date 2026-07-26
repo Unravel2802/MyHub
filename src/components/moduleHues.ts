@@ -7,6 +7,8 @@
 // and using the hue-* utilities / tokens. Components never name a raw color —
 // that's the rule the whole two-theme system rests on.
 
+import { miniAppFor } from "@/src/components/miniApps";
+
 export type HueName =
   | "amber"
   | "orange"
@@ -34,9 +36,22 @@ export const MODULE_HUES: Record<string, HueName> = {
   "/finance": "lime", // Personal Finance — money reads green; emerald is Offers
 };
 
-// The default for anything not in the map: the brand accent.
+// Resolution is a FALLBACK CHAIN, not a single lookup:
+//
+//   1. the module's own hue, if it has claimed one (above)
+//   2. its mini-app's hue (miniApps.ts)
+//   3. the brand accent
+//
+// Step 2 exists because all ten named hues are claimed, so every module added
+// from here on would otherwise land on generic `accent` — Design Drills already
+// does. Inheriting the mini-app's hue means a new module reads as a sibling of
+// the ones it ships beside instead of as "uncategorised".
+//
+// Deliberately NOT hue-per-mini-app: collapsing the nine Career modules onto
+// one color would throw away the per-module identity docs/color-refresh.md was
+// built to give them. Step 1 always wins.
 export function hueFor(href: string): HueName {
-  return MODULE_HUES[href] ?? "accent";
+  return MODULE_HUES[href] ?? miniAppFor(href)?.hue ?? "accent";
 }
 
 // The CSS value to drop into a `--hue` custom property. `accent` resolves to the

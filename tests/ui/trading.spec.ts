@@ -1,5 +1,9 @@
 import { expect, test } from "./fixtures";
-import { FakeTradingDb, mockSupabaseTrading } from "./supabaseTradingMock";
+import {
+  FakeTradingDb,
+  mockSupabaseTrading,
+  tradingChecklistRunRow,
+} from "./supabaseTradingMock";
 import type { Locator, Page } from "@playwright/test";
 
 async function choose(page: Page, control: Locator, option: string) {
@@ -120,4 +124,86 @@ test("only offers trade and rule-break fields when they are valid", async ({
   await choose(page, form.getByLabel("Signal"), "Buy");
   await expect(form.getByLabel("Linked trade")).toHaveCount(0);
   await expect(form.getByLabel("Entry price")).toBeVisible();
+});
+
+test("persists checklist ticks, completion, and unticks across reloads", async ({
+  page,
+}) => {
+  const db = new FakeTradingDb();
+  await mockSupabaseTrading(page, db);
+  await page.goto("/trading");
+  await page.getByRole("tab", { name: "Pre-trade" }).click();
+
+  const checklist = page
+    .getByRole("heading", { name: "Daily pre-trade checklist" })
+    .locator("xpath=ancestor::section[1]");
+  const signalCheck = checklist.getByRole("checkbox", {
+    name: "I ran signal_check.py today",
+  });
+
+  await expect(checklist.getByText("0/7", { exact: true })).toBeVisible();
+  await expect(
+    checklist.getByText("Not started", { exact: true }),
+  ).toBeVisible();
+  await signalCheck.check();
+  await expect(signalCheck).toBeChecked();
+  await expect(checklist.getByText("1/7", { exact: true })).toBeVisible();
+  await expect
+    .poll(() => db.checklistRuns[0]?.checked_keys)
+    .toEqual(["ran_signal_check"]);
+
+  await page.reload();
+  await page.getByRole("tab", { name: "Pre-trade" }).click();
+  const reloadedChecklist = page
+    .getByRole("heading", { name: "Daily pre-trade checklist" })
+    .locator("xpath=ancestor::section[1]");
+  const reloadedSignalCheck = reloadedChecklist.getByRole("checkbox", {
+    name: "I ran signal_check.py today",
+  });
+  await expect(reloadedSignalCheck).toBeChecked();
+  await expect(
+    reloadedChecklist.getByText("1/7", { exact: true }),
+  ).toBeVisible();
+
+  await reloadedSignalCheck.uncheck();
+  await expect(reloadedSignalCheck).not.toBeChecked();
+  await expect(
+    reloadedChecklist.getByText("0/7", { exact: true }),
+  ).toBeVisible();
+  await expect.poll(() => db.checklistRuns[0]?.checked_keys).toEqual([]);
+});
+
+test("views a persisted checklist for a past date", async ({ page }) => {
+  const pastDate = "2026-07-20";
+  const db = new FakeTradingDb(
+    [],
+    [],
+    [
+      tradingChecklistRunRow({
+        id: "checklist-past",
+        date: pastDate,
+        checked_keys: ["checked_econ_calendar"],
+      }),
+    ],
+  );
+  await mockSupabaseTrading(page, db);
+  await page.goto("/trading");
+  await page.getByRole("tab", { name: "Pre-trade" }).click();
+
+  const checklist = page
+    .getByRole("heading", { name: "Daily pre-trade checklist" })
+    .locator("xpath=ancestor::section[1]");
+  await expect(checklist.getByText("0/7", { exact: true })).toBeVisible();
+  await checklist.getByLabel("Checklist date").fill(pastDate);
+
+  await expect(
+    checklist.getByRole("checkbox", {
+      name: "I checked the economic calendar",
+    }),
+  ).toBeChecked();
+  await expect(checklist.getByText("1/7", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "System rules" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Iron rules" })).toBeVisible();
 });

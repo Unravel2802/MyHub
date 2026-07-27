@@ -44,7 +44,17 @@ export type TradingEntryRow = {
   updated_at: string;
 };
 
-type TableName = "trading_trades" | "trading_entries";
+export type TradingChecklistRunRow = {
+  id: string;
+  date: string;
+  checked_keys: string[];
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type TableName =
+  "trading_trades" | "trading_entries" | "trading_checklist_runs";
 
 const STAMP = "2026-07-27T00:00:00.000Z";
 
@@ -89,14 +99,33 @@ export function tradingEntryRow(
   };
 }
 
+export function tradingChecklistRunRow(
+  overrides: Partial<TradingChecklistRunRow> &
+    Pick<TradingChecklistRunRow, "id" | "date">,
+): TradingChecklistRunRow {
+  return {
+    checked_keys: [],
+    deleted_at: null,
+    created_at: STAMP,
+    updated_at: STAMP,
+    ...overrides,
+  };
+}
+
 export class FakeTradingDb {
   trades: TradingTradeRow[];
   entries: TradingEntryRow[];
+  checklistRuns: TradingChecklistRunRow[];
   private failures: { table: TableName; method: string }[] = [];
 
-  constructor(trades: TradingTradeRow[] = [], entries: TradingEntryRow[] = []) {
+  constructor(
+    trades: TradingTradeRow[] = [],
+    entries: TradingEntryRow[] = [],
+    checklistRuns: TradingChecklistRunRow[] = [],
+  ) {
     this.trades = trades;
     this.entries = entries;
+    this.checklistRuns = checklistRuns;
   }
 
   failNext(table: TableName, method: "POST" | "PATCH") {
@@ -134,13 +163,15 @@ function filteredRows<T extends Record<string, unknown>>(rows: T[], url: URL) {
 
 export async function mockSupabaseTrading(page: Page, db: FakeTradingDb) {
   await page.route(
-    "**/rest/v1/{trading_trades,trading_entries}*",
+    "**/rest/v1/{trading_trades,trading_entries,trading_checklist_runs}*",
     async (route) => {
       const request = route.request();
       const url = new URL(request.url());
-      const table: TableName = url.pathname.includes("trading_entries")
-        ? "trading_entries"
-        : "trading_trades";
+      const table: TableName = url.pathname.includes("trading_checklist_runs")
+        ? "trading_checklist_runs"
+        : url.pathname.includes("trading_entries")
+          ? "trading_entries"
+          : "trading_trades";
       const method = request.method();
 
       if (db.takeFailure(table, method)) {
@@ -163,7 +194,11 @@ export async function mockSupabaseTrading(page: Page, db: FakeTradingDb) {
         });
       };
       const rows = (
-        table === "trading_trades" ? db.trades : db.entries
+        table === "trading_trades"
+          ? db.trades
+          : table === "trading_entries"
+            ? db.entries
+            : db.checklistRuns
       ) as Record<string, unknown>[];
 
       if (method === "GET") {
@@ -178,6 +213,25 @@ export async function mockSupabaseTrading(page: Page, db: FakeTradingDb) {
 
       if (method === "POST") {
         const payload = request.postDataJSON() as Record<string, unknown>;
+        if (table === "trading_checklist_runs") {
+          const existing = db.checklistRuns.find(
+            (run) => run.date === payload.date,
+          );
+          const saved = existing
+            ? Object.assign(existing, payload, { updated_at: STAMP })
+            : {
+                id: crypto.randomUUID(),
+                checked_keys: [],
+                deleted_at: null,
+                created_at: STAMP,
+                updated_at: STAMP,
+                ...payload,
+              };
+          if (!existing) db.checklistRuns.push(saved as TradingChecklistRunRow);
+          await respond([saved]);
+          return;
+        }
+
         const defaults =
           table === "trading_trades"
             ? {

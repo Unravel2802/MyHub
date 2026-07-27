@@ -110,6 +110,7 @@ test("every page has exactly one h1 and a main landmark", async ({ page }) => {
     "/prep",
     "/applications",
     "/finance",
+    "/trading",
   ]) {
     await page.goto(path);
     await expect(page.locator("h1")).toHaveCount(1);

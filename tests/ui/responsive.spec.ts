@@ -12,6 +12,7 @@ const PAGES = [
   "/offers",
   "/notes",
   "/finance",
+  "/trading",
   "/design-drills",
   "/design-drills/url-shortener",
 ];

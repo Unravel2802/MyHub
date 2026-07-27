@@ -75,3 +75,73 @@ export interface TradingEntry {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---------------------------------------------------------------------------
+// Backtests (migration 0040)
+//
+// Everything below is IMPORTED ARTIFACT from the Python lab, not user data —
+// which is why these carry plain floats while the journal above is integer
+// cents. Rounding an r_multiple into cents would destroy the number.
+// ---------------------------------------------------------------------------
+
+// The engine's exit codes, lowercased from the CSV's STOP/SIGNAL/END_OF_DATA.
+// 'end_of_data' means the window ended with the position still open — a
+// censored trade, not a decision the strategy made.
+export type BacktestExitReason = "stop" | "signal" | "end_of_data";
+
+// One strategy's summary row, from backtest_comparison.csv.
+export interface BacktestStrategySummary {
+  // Stable registry handle (e.g. 'donchian_breakout'), from backtestCatalog.ts.
+  key: string;
+  trades: number;
+  // PERCENT (44.88), not a fraction — the _pct suffix runs all the way to the
+  // database so nobody divides by 100 twice.
+  winRatePct: number;
+  avgR: number;
+  profitFactor: number;
+  sharpe: number;
+  sharpeBeforeCosts: number;
+  cagrPct: number;
+  // Negative by convention (-20.63): a drawdown is a fall.
+  maxDdPct: number;
+  endValue: number;
+}
+
+// A strategy as stored, with its display label and row id.
+export interface BacktestStrategy extends BacktestStrategySummary {
+  id: string;
+  // Exactly as backtest_comparison.csv writes it, human noise included
+  // ("EMA9/21 Pullback + Filters (original)").
+  label: string;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// One simulated trade, from a backtest_trades_*.csv row. `strategyKey` comes
+// from the filename — the per-strategy files don't name themselves.
+export interface BacktestTradeRow {
+  strategyKey: string;
+  ticker: string;
+  // yyyy-MM-dd.
+  entryDate: string;
+  exitDate: string;
+  entryPrice: number;
+  stopPrice: number;
+  exitPrice: number;
+  shares: number;
+  exitReason: BacktestExitReason;
+  commission: number;
+  pnlDollars: number;
+  rMultiple: number;
+  holdingDays: number;
+}
+
+// A simulated trade as stored.
+export interface BacktestTrade extends Omit<BacktestTradeRow, "strategyKey"> {
+  id: string;
+  strategyId: string;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

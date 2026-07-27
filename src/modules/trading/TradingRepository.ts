@@ -1,4 +1,7 @@
 import type {
+  BacktestExitReason,
+  BacktestStrategy,
+  BacktestTrade,
   TradingEmotion,
   TradingEntry,
   TradingExitReason,
@@ -307,4 +310,123 @@ export async function deleteEntry(id: string): Promise<void> {
     .eq("id", id);
 
   if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Backtests (migration 0040) — READ ONLY.
+//
+// These rows are an imported artifact from the Python lab, loaded by
+// scripts/seedBacktests.ts and owned by it. The app never writes here, so there
+// is deliberately no create/update/delete surface: the way to change a backtest
+// is to re-run the lab and re-seed, not to edit a result in the UI.
+// ---------------------------------------------------------------------------
+
+interface BacktestStrategyRow {
+  id: string;
+  key: string;
+  label: string;
+  trades: number;
+  win_rate_pct: number;
+  avg_r: number;
+  profit_factor: number;
+  sharpe: number;
+  sharpe_before_costs: number;
+  cagr_pct: number;
+  max_dd_pct: number;
+  end_value: number;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface BacktestTradeRowShape {
+  id: string;
+  strategy_id: string;
+  ticker: string;
+  entry_date: string;
+  exit_date: string;
+  entry_price: number;
+  stop_price: number;
+  exit_price: number;
+  shares: number;
+  exit_reason: BacktestExitReason;
+  commission: number;
+  pnl_dollars: number;
+  r_multiple: number;
+  holding_days: number;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function backtestStrategyFromRow(row: BacktestStrategyRow): BacktestStrategy {
+  return {
+    id: row.id,
+    key: row.key,
+    label: row.label,
+    trades: row.trades,
+    // `double precision` can arrive as a string through PostgREST, same caveat
+    // as `shares` on the journal side — coerce rather than trust.
+    winRatePct: Number(row.win_rate_pct),
+    avgR: Number(row.avg_r),
+    profitFactor: Number(row.profit_factor),
+    sharpe: Number(row.sharpe),
+    sharpeBeforeCosts: Number(row.sharpe_before_costs),
+    cagrPct: Number(row.cagr_pct),
+    maxDdPct: Number(row.max_dd_pct),
+    endValue: Number(row.end_value),
+    deletedAt: row.deleted_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function backtestTradeFromRow(row: BacktestTradeRowShape): BacktestTrade {
+  return {
+    id: row.id,
+    strategyId: row.strategy_id,
+    ticker: row.ticker,
+    entryDate: row.entry_date,
+    exitDate: row.exit_date,
+    entryPrice: Number(row.entry_price),
+    stopPrice: Number(row.stop_price),
+    exitPrice: Number(row.exit_price),
+    shares: Number(row.shares),
+    exitReason: row.exit_reason,
+    commission: Number(row.commission),
+    pnlDollars: Number(row.pnl_dollars),
+    rMultiple: Number(row.r_multiple),
+    holdingDays: row.holding_days,
+    deletedAt: row.deleted_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getBacktestStrategies(): Promise<BacktestStrategy[]> {
+  const { data, error } = await supabase
+    .from("trading_backtest_strategies")
+    .select("*")
+    .is("deleted_at", null)
+    .order("label", { ascending: true });
+
+  if (error) throw error;
+  return data.map(backtestStrategyFromRow);
+}
+
+// Scoped to ONE strategy on purpose. The five files total ~2,900 trades, and
+// the browser only ever shows one strategy at a time — fetching the lot to
+// filter client-side would pull the whole corpus for every view.
+export async function getBacktestTrades(
+  strategyId: string,
+): Promise<BacktestTrade[]> {
+  const { data, error } = await supabase
+    .from("trading_backtest_trades")
+    .select("*")
+    .eq("strategy_id", strategyId)
+    .is("deleted_at", null)
+    .order("exit_date", { ascending: false });
+
+  if (error) throw error;
+  return data.map(backtestTradeFromRow);
 }

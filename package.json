@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:ui": "playwright test",
     "seed:schedule": "tsx scripts/seedWeeklySchedule.ts",
+    "seed:backtests": "tsx scripts/seedBacktests.ts",
     "backup": "tsx scripts/exportData.ts",
     "test:db": "vitest run --config vitest.config.db.ts"
   },

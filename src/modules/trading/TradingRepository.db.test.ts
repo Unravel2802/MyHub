@@ -246,3 +246,157 @@ describe("trading_entries (db)", () => {
     expect(entry.ruleBreak).toBe("chased the entry after the close");
   });
 });
+
+describe("trading backtests (db)", () => {
+  const TEST_KEY = "__dbtest_strategy__";
+
+  const summary = {
+    key: TEST_KEY,
+    label: "__dbtest__ Strategy",
+    trades: 2,
+    win_rate_pct: 44.879898862199745,
+    avg_r: 0.13636244046402102,
+    profit_factor: 1.587690528378505,
+    sharpe: 0.6439756275611636,
+    sharpe_before_costs: 0.739615858650829,
+    cagr_pct: 3.639123435565672,
+    max_dd_pct: -20.633940892779883,
+    end_value: 315.72538081408123,
+  };
+
+  async function upsertStrategy(overrides: Record<string, unknown> = {}) {
+    const { data, error } = await admin
+      .from("trading_backtest_strategies")
+      .upsert({ ...summary, ...overrides }, { onConflict: "key" })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  afterEach(async () => {
+    const { data } = await admin
+      .from("trading_backtest_strategies")
+      .select("id")
+      .eq("key", TEST_KEY);
+
+    for (const row of data ?? []) {
+      await admin
+        .from("trading_backtest_trades")
+        .delete()
+        .eq("strategy_id", row.id);
+    }
+    await admin
+      .from("trading_backtest_strategies")
+      .delete()
+      .eq("key", TEST_KEY);
+  });
+
+  // THE load-bearing one. scripts/seedBacktests.ts upserts on `key`, and a
+  // PARTIAL unique index cannot be an ON CONFLICT target — that is the 42P10
+  // bug that shipped green three times here (migrations 0015/0017/0018). The
+  // Playwright mock accepts any POST, so only this catches it.
+  it("upserts a strategy on key — a partial index would 42P10 here", async () => {
+    const created = await upsertStrategy();
+    expect(created.key).toBe(TEST_KEY);
+
+    // The second call is the ON CONFLICT (key) path. It must UPDATE, not throw
+    // and not duplicate.
+    const updated = await upsertStrategy({ trades: 99 });
+    expect(updated.trades).toBe(99);
+    expect(updated.id).toBe(created.id);
+
+    const { data } = await admin
+      .from("trading_backtest_strategies")
+      .select("id")
+      .eq("key", TEST_KEY);
+    expect(data).toHaveLength(1);
+  });
+
+  it("keeps full float precision — the reason these are not cents", async () => {
+    const created = await upsertStrategy();
+
+    // Rounding any of these into cents would destroy the metric.
+    expect(Number(created.win_rate_pct)).toBeCloseTo(44.879898862199745, 10);
+    expect(Number(created.avg_r)).toBeCloseTo(0.13636244046402102, 10);
+    // Drawdown stays negative rather than being stored as a magnitude.
+    expect(Number(created.max_dd_pct)).toBeLessThan(0);
+  });
+
+  it("round-trips a trade through the read surface", async () => {
+    const strategy = await upsertStrategy();
+
+    const { error } = await admin.from("trading_backtest_trades").insert({
+      strategy_id: strategy.id,
+      ticker: "SPY",
+      entry_date: "1994-05-03",
+      exit_date: "1994-05-09",
+      entry_price: 25.6966176085191,
+      stop_price: 24.88804560893436,
+      exit_price: 25.220239404860155,
+      shares: 2.473496486431805,
+      exit_reason: "stop",
+      commission: 0,
+      pnl_dollars: -1.178319812963098,
+      r_multiple: -0.589159906481549,
+      holding_days: 6,
+    });
+    expect(error).toBeNull();
+
+    const trades = await TradingRepository.getBacktestTrades(strategy.id);
+    expect(trades).toHaveLength(1);
+    expect(trades[0].entryPrice).toBeCloseTo(25.6966176085191, 10);
+    expect(trades[0].shares).toBeCloseTo(2.473496486431805, 10);
+    expect(trades[0].exitReason).toBe("stop");
+    // PostgREST hands `double precision` back as a string often enough that
+    // the Number() coercion in backtestTradeFromRow is load-bearing.
+    expect(typeof trades[0].rMultiple).toBe("number");
+  });
+
+  it("REJECTS a trade that exits before it enters", async () => {
+    const strategy = await upsertStrategy();
+
+    const { error } = await admin.from("trading_backtest_trades").insert({
+      strategy_id: strategy.id,
+      ticker: "SPY",
+      entry_date: "1994-05-09",
+      exit_date: "1994-05-03",
+      entry_price: 25,
+      stop_price: 24,
+      exit_price: 26,
+      shares: 1,
+      exit_reason: "signal",
+      commission: 0,
+      pnl_dollars: 1,
+      r_multiple: 1,
+      holding_days: 1,
+    });
+
+    expect(error).not.toBeNull();
+  });
+
+  it("accepts all three exit reasons the engine emits", async () => {
+    const strategy = await upsertStrategy();
+
+    const { error } = await admin.from("trading_backtest_trades").insert(
+      (["stop", "signal", "end_of_data"] as const).map((reason, index) => ({
+        strategy_id: strategy.id,
+        ticker: "SPY",
+        entry_date: "1994-05-03",
+        exit_date: "1994-05-09",
+        entry_price: 25,
+        stop_price: 24,
+        exit_price: 26,
+        shares: 1,
+        exit_reason: reason,
+        commission: 0,
+        pnl_dollars: index,
+        r_multiple: index,
+        holding_days: 6,
+      })),
+    );
+
+    expect(error).toBeNull();
+  });
+});

@@ -354,6 +354,49 @@ describe("trading backtests (db)", () => {
     expect(typeof trades[0].rMultiple).toBe("number");
   });
 
+  // The bug this exists for: PostgREST caps an un-ranged select at 1000 rows
+  // and reports NO error. macd_momentum has 1,576 trades, so the first version
+  // of getBacktestTrades silently returned 1000 of them — the seed said 2,933
+  // total, the reads said 2,357, and nothing threw.
+  //
+  // The earlier tests here all insert a handful of rows, which is exactly why
+  // they stayed green through it. This one has to cross the boundary.
+  it("returns MORE than 1000 trades — PostgREST truncates silently without paging", async () => {
+    const strategy = await upsertStrategy();
+    const OVER_CAP = 1001;
+
+    const rows = Array.from({ length: OVER_CAP }, (_, index) => ({
+      strategy_id: strategy.id,
+      ticker: "SPY",
+      entry_date: "1994-05-03",
+      exit_date: "1994-05-09",
+      entry_price: 25,
+      stop_price: 24,
+      exit_price: 26,
+      shares: 1,
+      exit_reason: "signal" as const,
+      commission: 0,
+      pnl_dollars: index,
+      r_multiple: 1,
+      holding_days: 6,
+    }));
+
+    for (let i = 0; i < rows.length; i += 500) {
+      const { error } = await admin
+        .from("trading_backtest_trades")
+        .insert(rows.slice(i, i + 500));
+      expect(error).toBeNull();
+    }
+
+    const trades = await TradingRepository.getBacktestTrades(strategy.id);
+    expect(trades).toHaveLength(OVER_CAP);
+
+    // Paging over a non-total order can drop or duplicate rows across page
+    // boundaries, so assert the set is actually distinct rather than merely
+    // the right size.
+    expect(new Set(trades.map((trade) => trade.id)).size).toBe(OVER_CAP);
+  });
+
   it("REJECTS a trade that exits before it enters", async () => {
     const strategy = await upsertStrategy();
 

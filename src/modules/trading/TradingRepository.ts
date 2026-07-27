@@ -417,16 +417,41 @@ export async function getBacktestStrategies(): Promise<BacktestStrategy[]> {
 // Scoped to ONE strategy on purpose. The five files total ~2,900 trades, and
 // the browser only ever shows one strategy at a time — fetching the lot to
 // filter client-side would pull the whole corpus for every view.
+// PostgREST caps an un-ranged response at 1000 rows and reports no error when
+// it does. macd_momentum has 1,576 trades, so the obvious single-select version
+// of this silently returned 1000 of them and the totals just quietly disagreed
+// with the seed — no throw, no warning, nothing to notice in the UI.
+//
+// So page explicitly until a short page arrives. `order` is applied per request
+// and the ordering is total (exit_date, then id as a tiebreak), which it must be
+// — paging over a non-deterministic order can drop and duplicate rows across
+// page boundaries.
+const PAGE_SIZE = 1000;
+
 export async function getBacktestTrades(
   strategyId: string,
 ): Promise<BacktestTrade[]> {
-  const { data, error } = await supabase
-    .from("trading_backtest_trades")
-    .select("*")
-    .eq("strategy_id", strategyId)
-    .is("deleted_at", null)
-    .order("exit_date", { ascending: false });
+  const rows: BacktestTradeRowShape[] = [];
 
-  if (error) throw error;
-  return data.map(backtestTradeFromRow);
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("trading_backtest_trades")
+      .select("*")
+      .eq("strategy_id", strategyId)
+      .is("deleted_at", null)
+      .order("exit_date", { ascending: false })
+      // Without this tiebreak, trades sharing an exit_date could reshuffle
+      // between page requests and land in two pages or none.
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) throw error;
+    rows.push(...data);
+
+    // A short page means the end. Guarding on `< PAGE_SIZE` rather than
+    // `length === 0` saves one round-trip on an exact multiple.
+    if (data.length < PAGE_SIZE) break;
+  }
+
+  return rows.map(backtestTradeFromRow);
 }

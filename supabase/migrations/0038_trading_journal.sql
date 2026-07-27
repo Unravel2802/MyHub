@@ -17,7 +17,7 @@
 -- is one dated log line and a TRADE is the unit of P&L: `pnl_cents` lives on the
 -- trade, once, and the BUY entry and its later SELL entry both point at it.
 --
--- Money is integer CENTS, never floats (src/modules/finance/money.ts) — the
+-- Money is integer CENTS, never floats (src/lib/money.ts) — the
 -- ledger discipline Finance already established. `shares` is the exception and
 -- is numeric: fractional share quantities are real (the source data carries
 -- values like 2.4734964858), and rounding them would corrupt the P&L they

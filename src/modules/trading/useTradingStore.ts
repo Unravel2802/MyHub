@@ -6,7 +6,12 @@ import type {
   CreateEntryInput,
   CreateTradeInput,
 } from "@/src/modules/trading/TradingRepository";
-import type { TradingEntry, TradingTrade } from "@/src/modules/trading/types";
+import type {
+  BacktestStrategy,
+  BacktestTrade,
+  TradingEntry,
+  TradingTrade,
+} from "@/src/modules/trading/types";
 import { equityCurve as equityCurveFor } from "@/src/modules/trading/equityCurve";
 import { tradingStats as tradingStatsFor } from "@/src/modules/trading/tradingStats";
 
@@ -17,13 +22,17 @@ import { tradingStats as tradingStatsFor } from "@/src/modules/trading/tradingSt
 // NO Event Bus emission, deliberately (see migration 0038's header). Momentum
 // must not learn that a trade happened: the career streak stays a career streak.
 //
-// CONTRACT ONLY: the async action bodies are Codex's to implement against
-// TradingRepository.ts (already published and tested) — Supabase round-trips and
-// optimistic-set-then-rollback plumbing, mirroring usePrepStore.ts exactly
-// (optimistic update, roll back `previousX` and set `error` via toUserMessage()
-// on failure, track in-flight ids in `pendingIds`). The SHAPE below is not
-// Codex's to change — if the UI needs something this doesn't expose, flag it
-// rather than widening a type or bypassing the store.
+// The journal actions follow usePrepStore.ts exactly: optimistic update, roll
+// back `previousX` and set `error` via toUserMessage() on failure, track
+// in-flight ids in `pendingIds`.
+//
+// The backtest actions deliberately do NOT, because they are reads — there is
+// nothing to roll back, so a failure leaves the previous data in place and sets
+// `error`.
+//
+// The SHAPE here is the published contract. If the UI needs something it does
+// not expose, extend it here rather than widening a type at the call site or
+// reaching past the store into the repository.
 
 export interface TradingStore {
   trades: TradingTrade[];
@@ -64,6 +73,26 @@ export interface TradingStore {
   stats: () => ReturnType<typeof tradingStatsFor>;
   equityCurve: () => ReturnType<typeof equityCurveFor>;
   entriesForTrade: (tradeId: string) => TradingEntry[];
+
+  // --- Backtests (migration 0040) -----------------------------------------
+  //
+  // READ ONLY. These rows are an imported artifact owned by
+  // scripts/seedBacktests.ts; there is deliberately no create/update/delete
+  // here, matching the repository. Lives in this store rather than a second one
+  // because the rule is one store per MODULE, and backtests are part of Trading.
+
+  backtestStrategies: BacktestStrategy[];
+  // Cached per strategy rather than a flat list. macd_momentum alone is 1,576
+  // trades, and the browser shows one strategy at a time — refetching that on
+  // every tab switch would be pointless traffic. A missing key means "not
+  // fetched yet", which is distinct from an empty array meaning "none".
+  backtestTradesByStrategy: Record<string, BacktestTrade[]>;
+  isLoadingBacktests: boolean;
+
+  fetchBacktestStrategies: () => Promise<void>;
+  // Populates backtestTradesByStrategy[strategyId]. Safe to call repeatedly —
+  // implementations should skip the round-trip when the key is already present.
+  fetchBacktestTrades: (strategyId: string) => Promise<void>;
 }
 
 const FAILURE_MESSAGE = "Something went wrong, please try again later.";
@@ -135,6 +164,9 @@ export const useTradingStore = create<TradingStore>((set, get) => {
     error: null,
     isCreating: false,
     pendingIds: [],
+    backtestStrategies: [],
+    backtestTradesByStrategy: {},
+    isLoadingBacktests: false,
 
     fetchTrades: async () => {
       set({ isLoading: true, error: null });
@@ -380,6 +412,40 @@ export const useTradingStore = create<TradingStore>((set, get) => {
         set({ entries: previousEntries, error: toUserMessage(error) });
       } finally {
         removePending(id);
+      }
+    },
+
+    // Read-only, so no optimistic-then-rollback plumbing: there is nothing to
+    // roll back. On failure the previous data simply stays put and `error` is
+    // set, which is the honest outcome for a fetch.
+    fetchBacktestStrategies: async () => {
+      set({ isLoadingBacktests: true, error: null });
+      try {
+        const backtestStrategies =
+          await TradingRepository.getBacktestStrategies();
+        set({ backtestStrategies, isLoadingBacktests: false });
+      } catch (error) {
+        set({ isLoadingBacktests: false, error: toUserMessage(error) });
+      }
+    },
+
+    fetchBacktestTrades: async (strategyId) => {
+      // Already cached — a strategy's trades never change without a re-seed,
+      // and macd_momentum is 1,576 rows.
+      if (get().backtestTradesByStrategy[strategyId] !== undefined) return;
+
+      set({ isLoadingBacktests: true, error: null });
+      try {
+        const trades = await TradingRepository.getBacktestTrades(strategyId);
+        set({
+          backtestTradesByStrategy: {
+            ...get().backtestTradesByStrategy,
+            [strategyId]: trades,
+          },
+          isLoadingBacktests: false,
+        });
+      } catch (error) {
+        set({ isLoadingBacktests: false, error: toUserMessage(error) });
       }
     },
 

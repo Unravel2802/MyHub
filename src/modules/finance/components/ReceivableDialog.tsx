@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/src/components/ui/select";
 import type { CreateReceivableInput } from "@/src/modules/finance/FinanceRepository";
-import { formatCents, parseAmount } from "@/src/modules/finance/money";
+import { formatCents, parseAmount } from "@/src/lib/money";
 import type { Receivable, ReceivableStatus } from "@/src/modules/finance/types";
 
 type ReceivableDialogProps = {

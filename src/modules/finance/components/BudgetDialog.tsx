@@ -11,7 +11,7 @@ import {
 } from "@/src/components/ui/dialog";
 import { FormField } from "@/src/components/ui/FormField";
 import { categoriesForKind } from "@/src/modules/finance/financeCategories";
-import { formatCents, parseAmount } from "@/src/modules/finance/money";
+import { formatCents, parseAmount } from "@/src/lib/money";
 import type { Budget } from "@/src/modules/finance/types";
 
 type BudgetDialogProps = {

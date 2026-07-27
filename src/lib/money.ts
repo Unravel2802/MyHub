@@ -16,6 +16,18 @@ export function parseAmount(input: string): number | null {
   return Math.round(dollars * 100);
 }
 
+// Parse signed money for values such as realised P&L. This deliberately lives
+// beside parseAmount rather than loosening it: most money inputs remain
+// non-negative, while a loss needs to retain its leading minus sign.
+export function parseSignedAmount(input: string): number | null {
+  const cleaned = input.trim().replace(/[$,\s]/g, "");
+  if (cleaned === "") return null;
+  if (!/^-?\d*(\.\d*)?$/.test(cleaned)) return null;
+  const dollars = Number(cleaned);
+  if (!Number.isFinite(dollars)) return null;
+  return Math.round(dollars * 100);
+}
+
 // Format integer cents as a display string: 1250 -> "$12.50", -1250 ->
 // "-$12.50", 9 -> "$0.09". Handles negatives so a net-cash-flow figure reads
 // correctly.

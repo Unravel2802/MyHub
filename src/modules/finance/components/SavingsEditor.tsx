@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { FormField } from "@/src/components/ui/FormField";
-import { formatCents, parseAmount } from "@/src/modules/finance/money";
+import { formatCents, parseAmount } from "@/src/lib/money";
 
 type SavingsEditorProps = {
   currentSavingsCents: number | null;

@@ -19,7 +19,7 @@ import {
   FINANCE_CATEGORY_HUES,
   type FinanceCategoryKey,
 } from "@/src/modules/finance/financeCategoryHues";
-import { formatCents, parseAmount } from "@/src/modules/finance/money";
+import { formatCents, parseAmount } from "@/src/lib/money";
 import type { UpdateTransactionInput } from "@/src/modules/finance/FinanceRepository";
 import type {
   FinanceTransaction,

@@ -28,7 +28,7 @@ import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
-import { formatCents } from "@/src/modules/finance/money";
+import { formatCents } from "@/src/lib/money";
 
 const targetLabels = [
   ["algorithm", "Algorithms"],

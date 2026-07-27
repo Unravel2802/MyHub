@@ -40,7 +40,7 @@ import {
   type FinanceCategoryKey,
 } from "@/src/modules/finance/financeCategoryHues";
 import { isInMonth } from "@/src/modules/finance/financePeriods";
-import { formatCents } from "@/src/modules/finance/money";
+import { formatCents } from "@/src/lib/money";
 import { FinanceTransactionDialog } from "@/src/modules/finance/components/FinanceTransactionDialog";
 import { FinanceTransactionTable } from "@/src/modules/finance/components/FinanceTransactionTable";
 import {

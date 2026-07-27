@@ -3,6 +3,7 @@ import { expect, test } from "./fixtures";
 const PAGES = [
   "/dashboard",
   "/",
+  "/tasks",
   "/prep",
   "/applications",
   "/outreach",

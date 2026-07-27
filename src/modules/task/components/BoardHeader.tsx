@@ -140,7 +140,7 @@ export function BoardHeader({
         </div>
       }
       eyebrow="Personal productivity"
-      hue={hueFor("/")}
+      hue={hueFor("/tasks")}
       icon={CheckSquare}
       title="Kanban board"
     >
@@ -187,7 +187,7 @@ export function BoardHeader({
           <StatCard
             hue={
               stat.label === "Open tasks" && stat.value > 0
-                ? hueFor("/")
+                ? hueFor("/tasks")
                 : undefined
             }
             key={stat.label}

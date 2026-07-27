@@ -72,7 +72,7 @@ export const MINI_APP_HREFS: Record<MiniAppKey, readonly string[]> = {
 // Explicit rather than "whatever's left over" so a nav entry that was simply
 // forgotten shows up as a test failure (see miniApps.test.ts) instead of
 // silently becoming a core tool.
-export const CORE_TOOL_HREFS: readonly string[] = ["/", "/notes"];
+export const CORE_TOOL_HREFS: readonly string[] = ["/tasks", "/notes"];
 
 const MINI_APP_BY_HREF = new Map<string, MiniApp>(
   MINI_APPS.flatMap((app) =>

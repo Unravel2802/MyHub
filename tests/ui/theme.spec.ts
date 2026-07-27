@@ -4,7 +4,7 @@ import { FakeTaskDb, mockSupabaseTasks, row } from "./supabaseTasksMock";
 
 async function loadBoard(page: Page) {
   await mockSupabaseTasks(page, new FakeTaskDb([]));
-  await page.goto("/");
+  await page.goto("/tasks");
   await expect(
     page.getByRole("heading", { name: "Kanban board" }),
   ).toBeVisible();
@@ -60,14 +60,14 @@ test("the chosen theme survives closing and reopening the app", async ({
 }) => {
   const first = await context.newPage();
   await mockSupabaseTasks(first, new FakeTaskDb([]));
-  await first.goto("/");
+  await first.goto("/tasks");
   await themeControl(first).getByRole("button", { name: "Light" }).click();
   await first.close();
 
   // A fresh tab, as if returning to the app later.
   const second = await context.newPage();
   await mockSupabaseTasks(second, new FakeTaskDb([]));
-  await second.goto("/");
+  await second.goto("/tasks");
   await expect(
     second.getByRole("heading", { name: "Kanban board" }),
   ).toBeVisible();
@@ -82,7 +82,7 @@ test("the theme is applied before first paint", async ({ page }) => {
   // Sample as soon as the HTML is parsed but before React hydrates. The inline
   // <head> script runs in that window; if the theme were applied by a component
   // instead, the page would paint the default first and flash.
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/tasks", { waitUntil: "domcontentloaded" });
   const darkBeforeHydration = await page.evaluate(() =>
     document.documentElement.classList.contains("dark"),
   );
@@ -96,7 +96,7 @@ test("the OS colour scheme does not override the saved choice", async ({
   // A light OS must not drag the app out of its (default) dark theme.
   await page.emulateMedia({ colorScheme: "light" });
   await mockSupabaseTasks(page, new FakeTaskDb([]));
-  await page.goto("/");
+  await page.goto("/tasks");
   await expect(
     page.getByRole("heading", { name: "Kanban board" }),
   ).toBeVisible();
@@ -115,7 +115,7 @@ test("the theme control stays on screen when a column is long", async ({
     }),
   );
   await mockSupabaseTasks(page, new FakeTaskDb(tasks));
-  await page.goto("/");
+  await page.goto("/tasks");
   await expect(themeControl(page)).toBeInViewport();
 
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

@@ -209,9 +209,13 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
             </button>
 
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-widest text-accent-strong">
+              <Link
+                aria-label="MyHub home"
+                className="text-xs font-semibold uppercase tracking-widest text-accent-strong transition-colors hover:text-foreground"
+                href="/"
+              >
                 MyHub
-              </p>
+              </Link>
               <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-foreground lg:mt-2 lg:text-2xl">
                 {title}
               </h1>

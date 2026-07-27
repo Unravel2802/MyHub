@@ -56,7 +56,7 @@ test("the kanban board is fully operable by keyboard", async ({ page }) => {
     row({ id: "t1", title: "Keyboard task", status: "inbox", position: 0 }),
   ]);
   await mockSupabaseTasks(page, db);
-  await page.goto("/");
+  await page.goto("/tasks");
 
   const card = page.getByRole("article", { name: "Task: Keyboard task" });
   await expect(card).toBeVisible();
@@ -106,6 +106,7 @@ test("every page has exactly one h1 and a main landmark", async ({ page }) => {
   for (const path of [
     "/dashboard",
     "/",
+    "/tasks",
     "/prep",
     "/applications",
     "/finance",

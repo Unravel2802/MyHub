@@ -259,7 +259,7 @@ export function TaskBoard() {
   }
 
   return (
-    <AppShell activeHref="/" title="Task Engine">
+    <AppShell activeHref="/tasks" title="Task Engine">
       <TaskBoardCanvas
         activeTask={activeTask}
         archived={archived}

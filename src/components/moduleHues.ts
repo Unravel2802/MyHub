@@ -25,7 +25,7 @@ export type HueName =
 export const MODULE_HUES: Record<string, HueName> = {
   "/dashboard": "accent", // the hub keeps the brand color
   "/roadmap": "violet", // sibling of indigo — the "meta" pages share a family
-  "/": "amber", // Task Engine — its Todo dot is already amber
+  "/tasks": "amber", // Task Engine — its Todo dot is already amber
   "/prep": "cyan", // cool / technical
   "/applications": "blue", // the pipeline
   "/outreach": "rose", // human contact

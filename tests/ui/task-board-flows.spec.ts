@@ -14,7 +14,7 @@ function card(page: Page, title: string) {
 async function loadBoard(page: Page, rows: TaskRow[] = []) {
   const db = new FakeTaskDb(rows);
   await mockSupabaseTasks(page, db);
-  await page.goto("/");
+  await page.goto("/tasks");
   await expect(
     page.getByRole("heading", { name: "Kanban board" }),
   ).toBeVisible();

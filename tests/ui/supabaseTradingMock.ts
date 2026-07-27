@@ -44,7 +44,49 @@ export type TradingEntryRow = {
   updated_at: string;
 };
 
-type TableName = "trading_trades" | "trading_entries";
+export type BacktestStrategyRow = {
+  id: string;
+  key: string;
+  label: string;
+  trades: number;
+  win_rate_pct: number;
+  avg_r: number;
+  profit_factor: number;
+  sharpe: number;
+  sharpe_before_costs: number;
+  cagr_pct: number;
+  max_dd_pct: number;
+  end_value: number;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BacktestTradeRow = {
+  id: string;
+  strategy_id: string;
+  ticker: string;
+  entry_date: string;
+  exit_date: string;
+  entry_price: number;
+  stop_price: number;
+  exit_price: number;
+  shares: number;
+  exit_reason: "stop" | "signal" | "end_of_data";
+  commission: number;
+  pnl_dollars: number;
+  r_multiple: number;
+  holding_days: number;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type TableName =
+  | "trading_trades"
+  | "trading_entries"
+  | "trading_backtest_strategies"
+  | "trading_backtest_trades";
 
 const STAMP = "2026-07-27T00:00:00.000Z";
 
@@ -89,14 +131,67 @@ export function tradingEntryRow(
   };
 }
 
+export function backtestStrategyRow(
+  overrides: Partial<BacktestStrategyRow> &
+    Pick<BacktestStrategyRow, "id" | "key" | "label">,
+): BacktestStrategyRow {
+  return {
+    trades: 100,
+    win_rate_pct: 44.88,
+    avg_r: 0.5,
+    profit_factor: 1.4,
+    sharpe: 0.8,
+    sharpe_before_costs: 1,
+    cagr_pct: 8.25,
+    max_dd_pct: -12.5,
+    end_value: 12500,
+    deleted_at: null,
+    created_at: STAMP,
+    updated_at: STAMP,
+    ...overrides,
+  };
+}
+
+export function backtestTradeRow(
+  overrides: Partial<BacktestTradeRow> &
+    Pick<BacktestTradeRow, "id" | "strategy_id" | "ticker">,
+): BacktestTradeRow {
+  return {
+    entry_date: "2025-01-02",
+    exit_date: "2025-01-10",
+    entry_price: 100,
+    stop_price: 95,
+    exit_price: 110,
+    shares: 10,
+    exit_reason: "signal",
+    commission: 2,
+    pnl_dollars: 98,
+    r_multiple: 1.96,
+    holding_days: 8,
+    deleted_at: null,
+    created_at: STAMP,
+    updated_at: STAMP,
+    ...overrides,
+  };
+}
+
 export class FakeTradingDb {
   trades: TradingTradeRow[];
   entries: TradingEntryRow[];
+  backtestStrategies: BacktestStrategyRow[];
+  backtestTrades: BacktestTradeRow[];
   private failures: { table: TableName; method: string }[] = [];
 
-  constructor(trades: TradingTradeRow[] = [], entries: TradingEntryRow[] = []) {
+  constructor(
+    trades: TradingTradeRow[] = [],
+    entries: TradingEntryRow[] = [],
+    backtestStrategies: BacktestStrategyRow[] = [],
+    backtestTrades: BacktestTradeRow[] = [],
+  ) {
     this.trades = trades;
     this.entries = entries;
+    this.backtestStrategies = backtestStrategies;
+    this.backtestTrades = backtestTrades;
   }
 
   failNext(table: TableName, method: "POST" | "PATCH") {
@@ -134,13 +229,19 @@ function filteredRows<T extends Record<string, unknown>>(rows: T[], url: URL) {
 
 export async function mockSupabaseTrading(page: Page, db: FakeTradingDb) {
   await page.route(
-    "**/rest/v1/{trading_trades,trading_entries}*",
+    "**/rest/v1/{trading_trades,trading_entries,trading_backtest_strategies,trading_backtest_trades}*",
     async (route) => {
       const request = route.request();
       const url = new URL(request.url());
-      const table: TableName = url.pathname.includes("trading_entries")
-        ? "trading_entries"
-        : "trading_trades";
+      const table: TableName = url.pathname.includes(
+        "trading_backtest_strategies",
+      )
+        ? "trading_backtest_strategies"
+        : url.pathname.includes("trading_backtest_trades")
+          ? "trading_backtest_trades"
+          : url.pathname.includes("trading_entries")
+            ? "trading_entries"
+            : "trading_trades";
       const method = request.method();
 
       if (db.takeFailure(table, method)) {
@@ -163,15 +264,39 @@ export async function mockSupabaseTrading(page: Page, db: FakeTradingDb) {
         });
       };
       const rows = (
-        table === "trading_trades" ? db.trades : db.entries
+        table === "trading_trades"
+          ? db.trades
+          : table === "trading_entries"
+            ? db.entries
+            : table === "trading_backtest_strategies"
+              ? db.backtestStrategies
+              : db.backtestTrades
       ) as Record<string, unknown>[];
 
       if (method === "GET") {
-        const matched = filteredRows(rows, url);
-        const dateKey = table === "trading_trades" ? "entry_date" : "date";
-        matched.sort((left, right) =>
-          String(right[dateKey]).localeCompare(String(left[dateKey])),
-        );
+        let matched = filteredRows(rows, url);
+        if (table === "trading_backtest_strategies") {
+          matched.sort((left, right) =>
+            String(left.label).localeCompare(String(right.label)),
+          );
+        } else {
+          const dateKey =
+            table === "trading_entries"
+              ? "date"
+              : table === "trading_backtest_trades"
+                ? "exit_date"
+                : "entry_date";
+          matched.sort(
+            (left, right) =>
+              String(right[dateKey]).localeCompare(String(left[dateKey])) ||
+              String(left.id).localeCompare(String(right.id)),
+          );
+        }
+        const range = request.headers().range;
+        if (range) {
+          const [from, to] = range.split("-").map(Number);
+          matched = matched.slice(from, to + 1);
+        }
         await respond(matched);
         return;
       }

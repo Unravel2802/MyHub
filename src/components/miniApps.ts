@@ -64,7 +64,7 @@ export const MINI_APP_HREFS: Record<MiniAppKey, readonly string[]> = {
     "/review",
     "/offers",
   ],
-  money: ["/finance"],
+  money: ["/finance", "/trading"],
 };
 
 // Cross-cutting tools that deliberately belong to NO mini-app: you reach for

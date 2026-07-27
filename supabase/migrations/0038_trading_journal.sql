@@ -116,7 +116,8 @@ create table trading_entries (
   -- judged, matching how prep_entries treats an unjudged outcome.
   rules_followed boolean,
   -- Only meaningful when rules_followed is false; the CHECK below enforces that
-  -- rather than trusting the form.
+  -- rather than trusting the form. NOTE: that CHECK is corrected in migration
+  -- 0039 — as written here it passes on a NULL rules_followed.
   rule_break text,
   notes text,
   -- How a BUY line and its later SELL line resolve to ONE trade. Null for a

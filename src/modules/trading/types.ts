@@ -145,3 +145,24 @@ export interface BacktestTrade extends Omit<BacktestTradeRow, "strategyKey"> {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---------------------------------------------------------------------------
+// Daily pre-trade checklist (migration 0041)
+// ---------------------------------------------------------------------------
+
+// One day's run of the pre-trade checklist. In the source this was a DOM toggle
+// that reset on reload and stored nothing; persisting it is what lets the app
+// answer "did you actually run the checklist on the days you traded".
+export interface TradingChecklistRun {
+  id: string;
+  // yyyy-MM-dd. One row per day — a PLAIN unique constraint, because this is an
+  // ON CONFLICT target (migration 0041).
+  date: string;
+  // Keys from tradingRulesCatalog.ts's PRE_TRADE_CHECKLIST. A key array rather
+  // than a column per item, so retiring or adding a rule needs no migration.
+  // Keys of retired items linger in old rows and are ignored on read.
+  checkedKeys: string[];
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

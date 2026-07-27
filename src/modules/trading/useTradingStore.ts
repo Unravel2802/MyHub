@@ -9,6 +9,7 @@ import type {
 import type {
   BacktestStrategy,
   BacktestTrade,
+  TradingChecklistRun,
   TradingEntry,
   TradingTrade,
 } from "@/src/modules/trading/types";
@@ -93,6 +94,20 @@ export interface TradingStore {
   // Populates backtestTradesByStrategy[strategyId]. Safe to call repeatedly —
   // implementations should skip the round-trip when the key is already present.
   fetchBacktestTrades: (strategyId: string) => Promise<void>;
+
+  // --- Daily pre-trade checklist (migration 0041) --------------------------
+
+  checklistRuns: TradingChecklistRun[];
+
+  fetchChecklistRuns: () => Promise<void>;
+  // Ticks or unticks ONE item for a day, writing the whole resulting key set.
+  // Optimistic: a checkbox that waits for a round-trip before moving feels
+  // broken, so it moves immediately and rolls back if the write fails.
+  toggleChecklistItem: (date: string, key: string) => Promise<void>;
+
+  // The run for a date, or undefined when the day has none yet — distinct from
+  // a run with an empty `checkedKeys`, which means "opened it, ticked nothing".
+  checklistRunFor: (date: string) => TradingChecklistRun | undefined;
 }
 
 const FAILURE_MESSAGE = "Something went wrong, please try again later.";
@@ -167,6 +182,7 @@ export const useTradingStore = create<TradingStore>((set, get) => {
     backtestStrategies: [],
     backtestTradesByStrategy: {},
     isLoadingBacktests: false,
+    checklistRuns: [],
 
     fetchTrades: async () => {
       set({ isLoading: true, error: null });
@@ -448,6 +464,62 @@ export const useTradingStore = create<TradingStore>((set, get) => {
         set({ isLoadingBacktests: false, error: toUserMessage(error) });
       }
     },
+
+    fetchChecklistRuns: async () => {
+      try {
+        const checklistRuns = await TradingRepository.getChecklistRuns();
+        set({ checklistRuns });
+      } catch (error) {
+        set({ error: toUserMessage(error) });
+      }
+    },
+
+    toggleChecklistItem: async (date, key) => {
+      const previousRuns = get().checklistRuns;
+      const existing = previousRuns.find((run) => run.date === date);
+      const current = existing?.checkedKeys ?? [];
+      const nextKeys = current.includes(key)
+        ? current.filter((checked) => checked !== key)
+        : [...current, key];
+
+      const now = new Date().toISOString();
+      // An optimistic row for a day that has none yet, so the first tick renders
+      // instantly instead of waiting for the insert to come back with an id.
+      const optimistic: TradingChecklistRun = existing
+        ? { ...existing, checkedKeys: nextKeys }
+        : {
+            id: `optimistic-${crypto.randomUUID()}`,
+            date,
+            checkedKeys: nextKeys,
+            deletedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          };
+
+      set({
+        checklistRuns: existing
+          ? previousRuns.map((run) => (run.date === date ? optimistic : run))
+          : [optimistic, ...previousRuns],
+        error: null,
+      });
+
+      try {
+        const saved = await TradingRepository.upsertChecklistRun(
+          date,
+          nextKeys,
+        );
+        set({
+          checklistRuns: get().checklistRuns.map((run) =>
+            run.date === date ? saved : run,
+          ),
+        });
+      } catch (error) {
+        set({ checklistRuns: previousRuns, error: toUserMessage(error) });
+      }
+    },
+
+    checklistRunFor: (date) =>
+      get().checklistRuns.find((run) => run.date === date),
 
     stats: () => tradingStatsFor(get().trades, get().entries),
     equityCurve: () => equityCurveFor(get().trades),

@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   formatCents,
   parseAmount,
+  parseSignedAmount,
   sumCents,
-} from "@/src/modules/finance/money";
+} from "@/src/lib/money";
 
 describe("parseAmount", () => {
   it("parses dollars-and-cents strings to integer cents", () => {
@@ -27,6 +28,15 @@ describe("parseAmount", () => {
     expect(parseAmount("-5")).toBeNull();
     expect(parseAmount("1.2.3")).toBeNull();
     expect(parseAmount(".")).toBeNull();
+  });
+});
+
+describe("parseSignedAmount", () => {
+  it("accepts gains and losses without loosening parseAmount", () => {
+    expect(parseSignedAmount("-12.50")).toBe(-1250);
+    expect(parseSignedAmount("12.50")).toBe(1250);
+    expect(parseSignedAmount("-")).toBeNull();
+    expect(parseAmount("-12.50")).toBeNull();
   });
 });
 

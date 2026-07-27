@@ -22,7 +22,7 @@ export type TradingEmotion =
 // double-counting every closed trade in its own stats; here it lives here, once,
 // and entries point at it.
 //
-// All money is integer CENTS (src/modules/finance/money.ts). `shares` is the
+// All money is integer CENTS (src/lib/money.ts). `shares` is the
 // deliberate exception — fractional quantities are real, and rounding them would
 // corrupt the P&L they multiply into.
 export interface TradingTrade {

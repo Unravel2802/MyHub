@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { Panel } from "@/src/components/ui/Panel";
-import { formatCents } from "@/src/modules/finance/money";
+import { formatCents } from "@/src/lib/money";
 import { ReceivableDialog } from "@/src/modules/finance/components/ReceivableDialog";
 import type { CreateReceivableInput } from "@/src/modules/finance/FinanceRepository";
 import type { Receivable } from "@/src/modules/finance/types";

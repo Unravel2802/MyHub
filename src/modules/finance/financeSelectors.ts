@@ -1,5 +1,5 @@
 import { isInMonth } from "@/src/modules/finance/financePeriods";
-import { sumCents } from "@/src/modules/finance/money";
+import { sumCents } from "@/src/lib/money";
 import type {
   BillDue,
   Budget,

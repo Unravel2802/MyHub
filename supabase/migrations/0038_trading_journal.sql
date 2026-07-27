@@ -17,7 +17,7 @@
 -- is one dated log line and a TRADE is the unit of P&L: `pnl_cents` lives on the
 -- trade, once, and the BUY entry and its later SELL entry both point at it.
 --
--- Money is integer CENTS, never floats (src/modules/finance/money.ts) — the
+-- Money is integer CENTS, never floats (src/lib/money.ts) — the
 -- ledger discipline Finance already established. `shares` is the exception and
 -- is numeric: fractional share quantities are real (the source data carries
 -- values like 2.4734964858), and rounding them would corrupt the P&L they
@@ -116,7 +116,8 @@ create table trading_entries (
   -- judged, matching how prep_entries treats an unjudged outcome.
   rules_followed boolean,
   -- Only meaningful when rules_followed is false; the CHECK below enforces that
-  -- rather than trusting the form.
+  -- rather than trusting the form. NOTE: that CHECK is corrected in migration
+  -- 0039 — as written here it passes on a NULL rules_followed.
   rule_break text,
   notes text,
   -- How a BUY line and its later SELL line resolve to ONE trade. Null for a

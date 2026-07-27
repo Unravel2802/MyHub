@@ -443,3 +443,64 @@ describe("trading backtests (db)", () => {
     expect(error).toBeNull();
   });
 });
+
+describe("trading_checklist_runs (db)", () => {
+  // A date far outside any real usage, so it cannot collide with actual data.
+  const TEST_DATE = "1999-01-04";
+
+  afterEach(async () => {
+    await admin.from("trading_checklist_runs").delete().eq("date", TEST_DATE);
+  });
+
+  // THE load-bearing one. Ticking a box upserts on `date`, and a PARTIAL unique
+  // index cannot be an ON CONFLICT target — PostgREST emits a bare
+  // ON CONFLICT (date) and the write silently rolls back with 42P10. That bug
+  // shipped green three times here because neither the unit suite nor the
+  // Playwright mock can see it.
+  it("upserts a run on date — a partial index would 42P10 here", async () => {
+    const created = await TradingRepository.upsertChecklistRun(TEST_DATE, [
+      "ran_signal_check",
+    ]);
+    expect(created.checkedKeys).toEqual(["ran_signal_check"]);
+
+    // Second call is the ON CONFLICT (date) path: it must UPDATE, not throw,
+    // and not create a second row for the same day.
+    const updated = await TradingRepository.upsertChecklistRun(TEST_DATE, [
+      "ran_signal_check",
+      "not_emotional",
+    ]);
+    expect(updated.checkedKeys).toEqual(["ran_signal_check", "not_emotional"]);
+    expect(updated.id).toBe(created.id);
+
+    const { data } = await admin
+      .from("trading_checklist_runs")
+      .select("id")
+      .eq("date", TEST_DATE);
+    expect(data).toHaveLength(1);
+  });
+
+  it("replaces the key set rather than appending to it", async () => {
+    await TradingRepository.upsertChecklistRun(TEST_DATE, [
+      "ran_signal_check",
+      "not_emotional",
+    ]);
+
+    // Unticking is expressed as a smaller set. If the upsert appended, an item
+    // could never be unticked.
+    const after = await TradingRepository.upsertChecklistRun(TEST_DATE, [
+      "not_emotional",
+    ]);
+    expect(after.checkedKeys).toEqual(["not_emotional"]);
+  });
+
+  it("round-trips an empty key set as empty, not null", async () => {
+    // "Opened the checklist and ticked nothing" is a real, distinct state from
+    // "never opened it" (which is no row at all).
+    const run = await TradingRepository.upsertChecklistRun(TEST_DATE, []);
+    expect(run.checkedKeys).toEqual([]);
+
+    const runs = await TradingRepository.getChecklistRuns();
+    const mine = runs.find((candidate) => candidate.date === TEST_DATE);
+    expect(mine?.checkedKeys).toEqual([]);
+  });
+});

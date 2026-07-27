@@ -2,6 +2,7 @@ import type {
   BacktestExitReason,
   BacktestStrategy,
   BacktestTrade,
+  TradingChecklistRun,
   TradingEmotion,
   TradingEntry,
   TradingExitReason,
@@ -454,4 +455,66 @@ export async function getBacktestTrades(
   }
 
   return rows.map(backtestTradeFromRow);
+}
+
+// ---------------------------------------------------------------------------
+// Daily pre-trade checklist (migration 0041)
+// ---------------------------------------------------------------------------
+
+interface TradingChecklistRunRow {
+  id: string;
+  date: string;
+  checked_keys: string[];
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function checklistRunFromRow(row: TradingChecklistRunRow): TradingChecklistRun {
+  return {
+    id: row.id,
+    date: row.date,
+    // Defensive: a null array column would otherwise crash every consumer that
+    // maps over it, and "no keys" is the honest reading of null here.
+    checkedKeys: row.checked_keys ?? [],
+    deletedAt: row.deleted_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getChecklistRuns(): Promise<TradingChecklistRun[]> {
+  const { data, error } = await supabase
+    .from("trading_checklist_runs")
+    .select("*")
+    .is("deleted_at", null)
+    .order("date", { ascending: false });
+
+  if (error) throw error;
+  return data.map(checklistRunFromRow);
+}
+
+// Writes the whole set of ticked keys for a day, creating the row on first tick.
+//
+// Upsert on `date` — which is why that constraint is a PLAIN unique in
+// migration 0041. A partial unique index cannot be an ON CONFLICT target, and
+// PostgREST emits a bare ON CONFLICT (date): the write would roll back with
+// 42P10 while every unit and Playwright test stayed green. That exact bug
+// shipped three times in this repo.
+//
+// Takes the FULL key set rather than a single toggle so the write is
+// idempotent: replaying it converges on the same row instead of flipping a
+// checkbox back and forth depending on how many times it arrived.
+export async function upsertChecklistRun(
+  date: string,
+  checkedKeys: string[],
+): Promise<TradingChecklistRun> {
+  const { data, error } = await supabase
+    .from("trading_checklist_runs")
+    .upsert({ date, checked_keys: checkedKeys }, { onConflict: "date" })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return checklistRunFromRow(data);
 }

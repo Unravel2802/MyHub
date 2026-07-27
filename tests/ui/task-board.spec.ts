@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 
 test("task board loads with core controls", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/tasks");
 
   await expect(
     page.getByRole("heading", { name: "Kanban board" }),

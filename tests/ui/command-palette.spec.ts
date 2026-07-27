@@ -25,7 +25,7 @@ test("fuzzy-selects a command and moves it into Recent", async ({ page }) => {
 test("module shortcuts and quick add do not fire while typing", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/tasks");
   const search = page.getByLabel("Search tasks");
   const newTask = page.getByLabel("New task title");
 

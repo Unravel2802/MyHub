@@ -4,7 +4,7 @@ import { FakeTaskDb, mockSupabaseTasks } from "./supabaseTasksMock";
 
 async function loadBoard(page: Page) {
   await mockSupabaseTasks(page, new FakeTaskDb([]));
-  await page.goto("/");
+  await page.goto("/tasks");
   await expect(
     page.getByRole("heading", { name: "Kanban board" }),
   ).toBeVisible();

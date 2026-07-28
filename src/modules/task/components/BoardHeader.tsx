@@ -1,13 +1,9 @@
 import type { FormEvent } from "react";
-import { CalendarClock, CheckSquare } from "lucide-react";
-import { StatCard } from "@/src/components/ui/StatCard";
+import { CalendarClock } from "lucide-react";
 import { EmptyState } from "@/src/components/ui/EmptyState";
-import { PageHeader } from "@/src/components/ui/PageHeader";
 import { HUE_DOT } from "@/src/components/ui/hueClasses";
 import { columns } from "@/src/modules/task/taskBoardConfig";
-import type { TaskStats } from "@/src/modules/task/taskBoardUtils";
 import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
-import { hueFor } from "@/src/components/moduleHues";
 
 const weekdays: { value: Weekday; label: string }[] = [
   { value: 1, label: "Monday" },
@@ -21,142 +17,132 @@ const weekdays: { value: Weekday; label: string }[] = [
 
 type BoardHeaderProps = {
   columnFilters: TaskStatus[];
-  error: string | null;
+  templates: Task[];
+  disabledTemplateIds: ReadonlySet<string>;
+  onDeleteTemplate: (id: string, title: string) => void;
+  onToggleColumn: (status: TaskStatus) => void;
+};
+
+type BoardActionsProps = {
   isBusy: boolean;
   newTaskTitle: string;
   newTaskRecursWeekly: boolean;
   newTaskWeekday: Weekday;
   searchTerm: string;
-  stats: TaskStats[];
-  templates: Task[];
-  disabledTemplateIds: ReadonlySet<string>;
   onCreateTask: (event: FormEvent<HTMLFormElement>) => void;
-  onDeleteTemplate: (id: string, title: string) => void;
   onRefresh: () => void;
   onRecursWeeklyChange: (value: boolean) => void;
   onSearchChange: (value: string) => void;
   onTitleChange: (value: string) => void;
-  onToggleColumn: (status: TaskStatus) => void;
   onWeekdayChange: (value: Weekday) => void;
 };
 
+export function BoardActions(props: BoardActionsProps) {
+  const {
+    isBusy,
+    newTaskTitle,
+    newTaskRecursWeekly,
+    newTaskWeekday,
+    searchTerm,
+    onCreateTask,
+    onRefresh,
+    onRecursWeeklyChange,
+    onSearchChange,
+    onTitleChange,
+    onWeekdayChange,
+  } = props;
+
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <label className="sr-only" htmlFor="task-search">
+        Search tasks
+      </label>
+      <input
+        id="task-search"
+        className="h-10 min-w-0 rounded-md border border-input bg-surface px-3 text-sm text-foreground outline-none transition-colors placeholder:text-subtle focus:border-accent sm:w-64"
+        onChange={(event) => onSearchChange(event.target.value)}
+        placeholder="Search tasks"
+        type="search"
+        value={searchTerm}
+      />
+      <form
+        className="flex flex-wrap items-center gap-2"
+        onSubmit={onCreateTask}
+      >
+        <label className="sr-only" htmlFor="new-task-title">
+          New task title
+        </label>
+        <input
+          id="new-task-title"
+          className="h-10 min-w-0 rounded-md border border-input bg-surface px-3 text-sm text-foreground outline-none transition-colors placeholder:text-subtle focus:border-accent sm:w-56"
+          disabled={isBusy}
+          onChange={(event) => onTitleChange(event.target.value)}
+          placeholder={
+            newTaskRecursWeekly ? "New weekly task" : "New inbox task"
+          }
+          value={newTaskTitle}
+        />
+        <label className="flex h-10 items-center gap-2 rounded-md border border-input bg-surface px-3 text-xs font-medium text-body">
+          <input
+            checked={newTaskRecursWeekly}
+            disabled={isBusy}
+            onChange={(event) => onRecursWeeklyChange(event.target.checked)}
+            type="checkbox"
+          />
+          Repeats weekly
+        </label>
+        {newTaskRecursWeekly ? (
+          <label className="sr-only" htmlFor="new-task-weekday">
+            Weekday
+          </label>
+        ) : null}
+        {newTaskRecursWeekly ? (
+          <select
+            className="h-10 rounded-md border border-input bg-surface px-3 text-sm text-foreground outline-none focus:border-accent"
+            disabled={isBusy}
+            id="new-task-weekday"
+            onChange={(event) =>
+              onWeekdayChange(Number(event.target.value) as Weekday)
+            }
+            value={newTaskWeekday}
+          >
+            {weekdays.map((weekday) => (
+              <option key={weekday.value} value={weekday.value}>
+                {weekday.label}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        <button
+          className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-disabled"
+          disabled={isBusy || !newTaskTitle.trim()}
+        >
+          Add
+        </button>
+      </form>
+      <button
+        className="h-10 rounded-md border border-input bg-surface px-4 text-sm font-medium text-body transition-colors hover:border-input-hover hover:text-foreground disabled:cursor-not-allowed disabled:text-subtle"
+        disabled={isBusy}
+        onClick={onRefresh}
+      >
+        Refresh
+      </button>
+    </div>
+  );
+}
+
 export function BoardHeader({
   columnFilters,
-  error,
-  isBusy,
-  newTaskTitle,
-  newTaskRecursWeekly,
-  newTaskWeekday,
-  searchTerm,
-  stats,
   templates,
   disabledTemplateIds,
-  onCreateTask,
   onDeleteTemplate,
-  onRefresh,
-  onRecursWeeklyChange,
-  onSearchChange,
-  onTitleChange,
   onToggleColumn,
-  onWeekdayChange,
 }: BoardHeaderProps) {
   return (
-    <PageHeader
-      actions={
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="sr-only" htmlFor="task-search">
-            Search tasks
-          </label>
-          <input
-            id="task-search"
-            className="h-10 min-w-0 rounded-md border border-input bg-surface px-3 text-sm text-foreground outline-none transition-colors placeholder:text-subtle focus:border-accent sm:w-64"
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search tasks"
-            type="search"
-            value={searchTerm}
-          />
-          <form
-            className="flex flex-wrap items-center gap-2"
-            onSubmit={onCreateTask}
-          >
-            <label className="sr-only" htmlFor="new-task-title">
-              New task title
-            </label>
-            <input
-              id="new-task-title"
-              className="h-10 min-w-0 rounded-md border border-input bg-surface px-3 text-sm text-foreground outline-none transition-colors placeholder:text-subtle focus:border-accent sm:w-56"
-              disabled={isBusy}
-              onChange={(event) => onTitleChange(event.target.value)}
-              placeholder={
-                newTaskRecursWeekly ? "New weekly task" : "New inbox task"
-              }
-              value={newTaskTitle}
-            />
-            <label className="flex h-10 items-center gap-2 rounded-md border border-input bg-surface px-3 text-xs font-medium text-body">
-              <input
-                checked={newTaskRecursWeekly}
-                disabled={isBusy}
-                onChange={(event) => onRecursWeeklyChange(event.target.checked)}
-                type="checkbox"
-              />
-              Repeats weekly
-            </label>
-            {newTaskRecursWeekly ? (
-              <label className="sr-only" htmlFor="new-task-weekday">
-                Weekday
-              </label>
-            ) : null}
-            {newTaskRecursWeekly ? (
-              <select
-                className="h-10 rounded-md border border-input bg-surface px-3 text-sm text-foreground outline-none focus:border-accent"
-                disabled={isBusy}
-                id="new-task-weekday"
-                onChange={(event) =>
-                  onWeekdayChange(Number(event.target.value) as Weekday)
-                }
-                value={newTaskWeekday}
-              >
-                {weekdays.map((weekday) => (
-                  <option key={weekday.value} value={weekday.value}>
-                    {weekday.label}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            <button
-              className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-disabled"
-              disabled={isBusy || !newTaskTitle.trim()}
-            >
-              Add
-            </button>
-          </form>
-          <button
-            className="h-10 rounded-md border border-input bg-surface px-4 text-sm font-medium text-body transition-colors hover:border-input-hover hover:text-foreground disabled:cursor-not-allowed disabled:text-subtle"
-            disabled={isBusy}
-            onClick={onRefresh}
-          >
-            Refresh
-          </button>
-        </div>
-      }
-      eyebrow="Personal productivity"
-      hue={hueFor("/tasks")}
-      icon={CheckSquare}
-      title="Kanban board"
-    >
-      {error ? (
-        <p
-          aria-live="assertive"
-          className="mt-4 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
-
+    <div className="grid gap-5">
       <div
         aria-label="Filter columns"
-        className="mt-4 flex flex-wrap gap-2"
+        className="flex flex-wrap gap-2"
         role="group"
       >
         {columns.map((column) => {
@@ -182,26 +168,10 @@ export function BoardHeader({
         })}
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        {stats.map((stat) => (
-          <StatCard
-            hue={
-              stat.label === "Open tasks" && stat.value > 0
-                ? hueFor("/tasks")
-                : undefined
-            }
-            key={stat.label}
-            label={stat.label}
-            size={stat.label === "Open tasks" ? "hero" : "default"}
-            value={stat.value}
-          />
-        ))}
-      </div>
-
       <div
         aria-label="Weekly tasks"
         aria-labelledby="recurring-rules-heading"
-        className="mt-5 rounded-lg border border-border bg-surface-subtle p-4"
+        className="rounded-lg border border-border bg-surface-subtle p-4"
       >
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -256,6 +226,6 @@ export function BoardHeader({
           </ul>
         )}
       </div>
-    </PageHeader>
+    </div>
   );
 }

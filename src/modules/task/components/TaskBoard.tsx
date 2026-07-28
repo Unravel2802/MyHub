@@ -10,7 +10,10 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { AppShell } from "@/src/components/AppShell";
+import { CheckSquare } from "lucide-react";
+import { hueFor } from "@/src/components/moduleHues";
+import { PageTemplate } from "@/src/components/ui/PageTemplate";
+import { StatCard } from "@/src/components/ui/StatCard";
 import {
   filterVisibleTasks,
   getDropPosition,
@@ -25,6 +28,10 @@ import { canAddSubtask, taskDepth } from "@/src/modules/task/taskTree";
 import type { Task, TaskStatus, Weekday } from "@/src/modules/task/types";
 import { useTaskStore } from "@/src/modules/task/useTaskStore";
 import { archivedTasks, boardTasks } from "@/src/modules/task/taskArchive";
+import {
+  BoardActions,
+  BoardHeader,
+} from "@/src/modules/task/components/BoardHeader";
 import { TaskBoardCanvas } from "@/src/modules/task/components/TaskBoardCanvas";
 import { format } from "date-fns";
 import { register, unregister } from "@/src/lib/commandPalette";
@@ -258,48 +265,76 @@ export function TaskBoard() {
     });
   }
 
+  const [openTasksStat, ...secondaryStats] = stats;
+
   return (
-    <AppShell activeHref="/tasks" title="Task Engine">
+    <PageTemplate
+      actions={
+        <BoardActions
+          isBusy={isBusy}
+          newTaskRecursWeekly={newTaskRecursWeekly}
+          newTaskTitle={newTaskTitle}
+          newTaskWeekday={newTaskWeekday}
+          onCreateTask={handleCreateTask}
+          onRecursWeeklyChange={setNewTaskRecursWeekly}
+          onRefresh={() => void fetchTasks()}
+          onSearchChange={setSearchTerm}
+          onTitleChange={setNewTaskTitle}
+          onWeekdayChange={setNewTaskWeekday}
+          searchTerm={searchTerm}
+        />
+      }
+      error={error}
+      eyebrow="Personal productivity"
+      hero={
+        openTasksStat ? (
+          <StatCard
+            hue={openTasksStat.value > 0 ? hueFor("/tasks") : undefined}
+            label={openTasksStat.label}
+            size="hero"
+            value={openTasksStat.value}
+            whenAbsent="Add your first task"
+          />
+        ) : null
+      }
+      href="/tasks"
+      icon={CheckSquare}
+      navTitle="Task Engine"
+      stats={secondaryStats.map((stat) => (
+        <StatCard key={stat.label} label={stat.label} value={stat.value} />
+      ))}
+      title="Kanban board"
+    >
+      <BoardHeader
+        columnFilters={columnFilters}
+        disabledTemplateIds={pendingTaskIds}
+        onDeleteTemplate={handleDeleteTemplate}
+        onToggleColumn={handleToggleColumn}
+        templates={templates}
+      />
       <TaskBoardCanvas
         activeTask={activeTask}
         archived={archived}
         canAddSubtaskIds={canAddSubtaskIds}
         childCounts={childCounts}
-        columnFilters={columnFilters}
         depths={depths}
-        error={error}
-        isBusy={isBusy}
         isCreating={isCreating}
         isLoading={isLoading}
-        newTaskRecursWeekly={newTaskRecursWeekly}
-        newTaskTitle={newTaskTitle}
-        newTaskWeekday={newTaskWeekday}
         pendingTaskIds={pendingTaskIds}
-        searchTerm={searchTerm}
         sensors={sensors}
-        stats={stats}
         tasksByStatus={tasksByStatus}
-        templates={templates}
         visibleColumns={visibleColumns}
         onCreateSubtask={handleCreateSubtask}
-        onCreateTask={handleCreateTask}
         onDeleteTask={handleDeleteTask}
-        onDeleteTemplate={handleDeleteTemplate}
         onDragCancel={() => setActiveTask(null)}
         onDragEnd={(event) => void handleDragEnd(event)}
         onDragStart={handleDragStart}
         onArchiveTask={handleArchiveTask}
-        onRefresh={() => void fetchTasks()}
-        onRecursWeeklyChange={setNewTaskRecursWeekly}
         onReopenTask={handleReopenTask}
-        onSearchChange={setSearchTerm}
-        onTitleChange={setNewTaskTitle}
-        onToggleColumn={handleToggleColumn}
         onUpdateDueDate={handleUpdateDueDate}
         onUpdateStatus={handleUpdateStatus}
         onUpdateTitle={handleUpdateTitle}
-        onWeekdayChange={setNewTaskWeekday}
       />
-    </AppShell>
+    </PageTemplate>
   );
 }

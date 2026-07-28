@@ -3,10 +3,18 @@
 import {
   CandlestickChart,
   ClipboardCheck,
+  Library,
   RefreshCw,
   ScrollText,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { hueFor } from "@/src/components/moduleHues";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 import { Panel } from "@/src/components/ui/Panel";
@@ -18,7 +26,7 @@ import { TradingPositionsPanel } from "@/src/modules/trading/components/TradingP
 import { TradingStatsGrid } from "@/src/modules/trading/components/TradingStatsGrid";
 import { useTradingStore } from "@/src/modules/trading/useTradingStore";
 
-type TradingTab = "journal" | "checklist";
+type TradingTab = "journal" | "checklist" | "references";
 
 const tabs: {
   id: TradingTab;
@@ -27,9 +35,14 @@ const tabs: {
 }[] = [
   { id: "journal", label: "Journal", icon: ScrollText },
   { id: "checklist", label: "Pre-trade", icon: ClipboardCheck },
+  { id: "references", label: "References", icon: Library },
 ];
 
-export function TradingJournal() {
+interface TradingJournalProps {
+  referenceContent: ReactNode;
+}
+
+export function TradingJournal({ referenceContent }: TradingJournalProps) {
   const {
     trades,
     entries,
@@ -58,6 +71,7 @@ export function TradingJournal() {
   }, [fetchEntries, fetchTrades]);
 
   function refresh() {
+    if (activeTab === "references") return;
     if (activeTab === "checklist") {
       void fetchChecklistRuns();
       return;
@@ -94,24 +108,26 @@ export function TradingJournal() {
       <div className="mx-auto grid max-w-7xl gap-6">
         <PageHeader
           actions={
-            <button
-              aria-label={`Refresh ${
-                activeTab === "checklist"
-                  ? "pre-trade checklist"
-                  : "trading journal"
-              }`}
-              className="inline-flex size-10 items-center justify-center rounded-md border border-input bg-surface text-body hover:border-input-hover disabled:opacity-60"
-              disabled={activeTab === "journal" && isLoading}
-              onClick={refresh}
-              type="button"
-            >
-              <RefreshCw
-                aria-hidden="true"
-                className={`size-4 ${
-                  activeTab === "journal" && isLoading ? "animate-spin" : ""
+            activeTab === "references" ? null : (
+              <button
+                aria-label={`Refresh ${
+                  activeTab === "checklist"
+                    ? "pre-trade checklist"
+                    : "trading journal"
                 }`}
-              />
-            </button>
+                className="inline-flex size-10 items-center justify-center rounded-md border border-input bg-surface text-body hover:border-input-hover disabled:opacity-60"
+                disabled={activeTab === "journal" && isLoading}
+                onClick={refresh}
+                type="button"
+              >
+                <RefreshCw
+                  aria-hidden="true"
+                  className={`size-4 ${
+                    activeTab === "journal" && isLoading ? "animate-spin" : ""
+                  }`}
+                />
+              </button>
+            )
           }
           bleed
           description="Keep daily decisions separate from realised trade outcomes."
@@ -200,8 +216,10 @@ export function TradingJournal() {
 
               <TradingJournalList entries={entries} />
             </div>
-          ) : (
+          ) : activeTab === "checklist" ? (
             <TradingChecklistPanel />
+          ) : (
+            referenceContent
           )}
         </div>
       </div>

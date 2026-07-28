@@ -42,7 +42,7 @@ export function PrepEntryList({
       </h2>
       {entries.length === 0 ? (
         <EmptyState
-          description="Your first rep starts the December count. Log one above to begin."
+          description="Your first rep starts the December count. Log one below to begin."
           title="Start the December count"
         />
       ) : (

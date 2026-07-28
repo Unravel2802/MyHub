@@ -11,8 +11,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { useEffect } from "react";
-import { AppShell } from "@/src/components/AppShell";
-import { PageHeader } from "@/src/components/ui/PageHeader";
+import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { EmptyState } from "@/src/components/ui/EmptyState";
@@ -95,369 +94,350 @@ export function DailyDashboard() {
   );
 
   return (
-    <AppShell activeHref="/dashboard" title="Daily Dashboard">
-      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <PageHeader
-          actions={
-            <button
-              className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover disabled:opacity-60"
-              disabled={dashboard.isLoading}
-              id="dashboard-refresh"
-              onClick={() => void fetchAll()}
-              type="button"
+    <PageTemplate
+      actions={
+        <button
+          className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover disabled:opacity-60"
+          disabled={dashboard.isLoading}
+          id="dashboard-refresh"
+          onClick={() => void fetchAll()}
+          type="button"
+        >
+          Refresh
+        </button>
+      }
+      error={dashboard.error}
+      eyebrow={format(new Date(), "EEEE, MMMM d")}
+      hero={
+        dashboard.weeklyCadence ? (
+          <StatCard
+            label="Streak + this week's cadence"
+            hue={streak.current > 0 ? hueFor("/dashboard") : undefined}
+            size="hero"
+            tone={streak.current > 0 ? "accent" : "default"}
+            value={`${streak.current} days · ${dashboard.weeklyCadence.applications.count} applications · ${dashboard.weeklyCadence.outreach.count} outreach`}
+            hint={`${dashboard.weeklyCadence.mockInterviews.count} mock interviews logged${streak.activeToday ? " · Streak fed today" : " · Feed the streak today"}`}
+          />
+        ) : null
+      }
+      href="/dashboard"
+      icon={LayoutDashboard}
+      navTitle="Daily Dashboard"
+      title="Keep the week honest"
+    >
+      <div className="grid gap-6 xl:grid-cols-2">
+        <section
+          aria-labelledby="bills-due-heading"
+          className="fade-up rounded-lg border border-border bg-surface p-5"
+          style={{ ["--i" as string]: 0 }}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-lg font-semibold" id="bills-due-heading">
+              Bills due this month
+            </h3>
+            <Link
+              className="text-sm text-hue-lime hover:underline"
+              href="/finance"
             >
-              Refresh
-            </button>
-          }
-          bleed
-          className="mb-6"
-          eyebrow={format(new Date(), "EEEE, MMMM d")}
-          hue={hueFor("/dashboard")}
-          icon={LayoutDashboard}
-          title="Keep the week honest"
-        />
-
-        {dashboard.error ? (
-          <p
-            aria-live="assertive"
-            className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
-            role="alert"
-          >
-            {dashboard.error}
-          </p>
-        ) : null}
-
-        {dashboard.weeklyCadence ? (
-          <div className="mb-6">
-            <StatCard
-              label="Streak + this week's cadence"
-              hue={streak.current > 0 ? hueFor("/dashboard") : undefined}
-              size="hero"
-              tone={streak.current > 0 ? "accent" : "default"}
-              value={`${streak.current} days · ${dashboard.weeklyCadence.applications.count} applications · ${dashboard.weeklyCadence.outreach.count} outreach`}
-              hint={`${dashboard.weeklyCadence.mockInterviews.count} mock interviews logged${streak.activeToday ? " · Streak fed today" : " · Feed the streak today"}`}
-            />
+              Open ledger
+            </Link>
           </div>
-        ) : null}
-
-        <div className="grid gap-6 xl:grid-cols-2">
-          <section
-            aria-labelledby="bills-due-heading"
-            className="fade-up rounded-lg border border-border bg-surface p-5"
-            style={{ ["--i" as string]: 0 }}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold" id="bills-due-heading">
-                Bills due this month
-              </h3>
-              <Link
-                className="text-sm text-hue-lime hover:underline"
-                href="/finance"
-              >
-                Open ledger
-              </Link>
-            </div>
-            {dashboard.billsDue.length === 0 ? (
-              <EmptyState
-                compact
-                className="mt-3"
-                description="Recurring bills will appear here when their monthly ledger entries are due."
-                icon={CalendarClock}
-                title="No bills due"
-              />
-            ) : (
-              <ul className="mt-3 grid gap-2">
-                {dashboard.billsDue.map((bill) => (
-                  <li
-                    className="flex items-center justify-between gap-3 rounded-md bg-surface-subtle px-3 py-2"
-                    key={bill.transactionId}
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {bill.name}
-                      </p>
-                      <p className="mt-1 text-xs text-muted">
-                        Due {format(parseISO(bill.occurredOn), "MMM d")}
-                      </p>
-                    </div>
-                    <span className="shrink-0 font-semibold tabular-nums text-danger">
-                      {formatCents(bill.amountCents)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section
-            aria-labelledby="month-spend-heading"
-            className="fade-up rounded-lg border border-border bg-surface p-5"
-            style={{ ["--i" as string]: 1 }}
-          >
-            <div className="flex items-center gap-2">
-              <WalletCards aria-hidden="true" className="size-5 text-muted" />
-              <h3 className="text-lg font-semibold" id="month-spend-heading">
-                Month-to-date
-              </h3>
-            </div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <StatCard
-                hint="Settled expenses"
-                label="Spent"
-                tone={
-                  dashboard.monthSpend && dashboard.monthSpend.spentCents > 0
-                    ? "danger"
-                    : "default"
-                }
-                value={
-                  dashboard.monthSpend && dashboard.monthSpend.spentCents > 0
-                    ? formatCents(dashboard.monthSpend.spentCents)
-                    : "—"
-                }
-              />
-              <StatCard
-                hint="Income minus settled expenses"
-                hue={
-                  dashboard.monthSpend && dashboard.monthSpend.netCents > 0
-                    ? "lime"
-                    : undefined
-                }
-                label="Net"
-                tone={
-                  dashboard.monthSpend && dashboard.monthSpend.netCents < 0
-                    ? "danger"
-                    : "default"
-                }
-                value={
-                  dashboard.monthSpend && dashboard.monthSpend.netCents !== 0
-                    ? formatCents(dashboard.monthSpend.netCents)
-                    : "—"
-                }
-              />
-            </div>
-          </section>
-
-          <section
-            aria-labelledby="schedule-heading"
-            className="fade-up rounded-lg border border-border bg-surface p-5"
-            style={{ ["--i" as string]: 2 }}
-          >
-            <h3 className="text-lg font-semibold" id="schedule-heading">
-              This week&apos;s schedule
-            </h3>
-            {dashboard.scheduleBlocks.length === 0 ? (
-              <EmptyState
-                description="Give the week a reliable shape by turning a recurring task into a scheduled block."
-                action={<Link href="/tasks">Create a recurring task</Link>}
-                icon={CalendarDays}
-                title="No recurring blocks yet"
-              />
-            ) : (
-              <ul className="mt-3 grid gap-2">
-                {dashboard.scheduleBlocks.map((task) => (
-                  <li
-                    className="flex items-center justify-between gap-3 rounded-md bg-surface-subtle px-3 py-2"
-                    key={task.id}
-                  >
-                    <span className="text-sm font-medium">{task.title}</span>
-                    <span className="text-xs text-muted">
-                      {task.occurrenceDate}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section
-            aria-labelledby="cadence-heading"
-            className="fade-up rounded-lg border border-border bg-surface p-5"
-            style={{ ["--i" as string]: 3 }}
-          >
-            <h3 className="text-lg font-semibold" id="cadence-heading">
-              Weekly cadence
-            </h3>
-            {dashboard.weeklyCadence ? (
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                <CadenceCard
-                  style={{ ["--i" as string]: 0 }}
-                  label="Applications"
-                  count={dashboard.weeklyCadence.applications.count}
-                  target={dashboard.weeklyCadence.applications.target}
-                />
-                <CadenceCard
-                  style={{ ["--i" as string]: 1 }}
-                  label="Outreach"
-                  count={dashboard.weeklyCadence.outreach.count}
-                  target={dashboard.weeklyCadence.outreach.target}
-                />
-                <CadenceCard
-                  style={{ ["--i" as string]: 2 }}
-                  label="Mock interviews"
-                  count={dashboard.weeklyCadence.mockInterviews.count}
-                  target={dashboard.weeklyCadence.mockInterviews.target}
-                />
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-muted">Loading cadence...</p>
-            )}
-          </section>
-
-          <section
-            aria-labelledby="prep-heading"
-            className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
-            style={{ ["--i" as string]: 4 }}
-          >
-            <div className="flex flex-wrap items-baseline justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold" id="prep-heading">
-                  Prep checkpoint
-                </h3>
-                <p className="mt-1 text-sm text-muted">
-                  {dashboard.checkpointProgress?.checkpoint.label ??
-                    "Loading targets..."}
-                </p>
-              </div>
-              <div className="text-sm text-muted">
-                Behavioral stories:{" "}
-                {dashboard.behavioralStoryProgress
-                  ? `${dashboard.behavioralStoryProgress.actual}/${dashboard.behavioralStoryProgress.target}`
-                  : "..."}
-              </div>
-            </div>
-            {dashboard.checkpointProgress ? (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {targetLabels.map(([key, label], index) => (
-                  <TargetCard
-                    key={key}
-                    style={{ ["--i" as string]: index }}
-                    label={label}
-                    target={dashboard.checkpointProgress![key]}
-                  />
-                ))}
-              </div>
-            ) : null}
-          </section>
-
-          <section
-            aria-labelledby="followups-heading"
-            className="fade-up rounded-lg border border-border bg-surface p-5"
-            style={{ ["--i" as string]: 5 }}
-          >
-            <h3 className="text-lg font-semibold" id="followups-heading">
-              Applications needing follow-up
-            </h3>
-            {dashboard.followUps.length === 0 ? (
-              <EmptyState
-                description="Your pipeline is clear. Keep it that way by logging the next follow-up when a conversation happens."
-                action={<Link href="/applications">Review applications</Link>}
-                icon={Clock3}
-                title="No follow-ups due"
-              />
-            ) : (
-              <ul className="mt-3 grid gap-2">
-                {dashboard.followUps.map((application) => (
-                  <li
-                    className="rounded-md bg-surface-subtle px-3 py-2"
-                    key={application.id}
-                  >
-                    <p className="text-sm font-medium">
-                      {application.roleTitle}
+          {dashboard.billsDue.length === 0 ? (
+            <EmptyState
+              compact
+              className="mt-3"
+              description="Recurring bills will appear here when their monthly ledger entries are due."
+              icon={CalendarClock}
+              title="No bills due"
+            />
+          ) : (
+            <ul className="mt-3 grid gap-2">
+              {dashboard.billsDue.map((bill) => (
+                <li
+                  className="flex items-center justify-between gap-3 rounded-md bg-surface-subtle px-3 py-2"
+                  key={bill.transactionId}
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {bill.name}
                     </p>
                     <p className="mt-1 text-xs text-muted">
-                      {application.stage.replaceAll("_", " ")}
+                      Due {format(parseISO(bill.occurredOn), "MMM d")}
                     </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section
-            aria-labelledby="postmortem-heading"
-            className="fade-up rounded-lg border border-border bg-surface p-5"
-            style={{ ["--i" as string]: 6 }}
-          >
-            <h3 className="text-lg font-semibold" id="postmortem-heading">
-              Interview post-mortems
-            </h3>
-            {dashboard.postMortemReminders.length === 0 ? (
-              <EmptyState
-                description="Complete an interview and capture what you learned while the details are still fresh."
-                action={<Link href="/applications">Open interview log</Link>}
-                icon={MessageSquareText}
-                title="No post-mortems due"
-              />
-            ) : (
-              <ul className="mt-3 grid gap-2">
-                {dashboard.postMortemReminders.map(
-                  ({ interview, isOverdue }) => (
-                    <li
-                      className="rounded-md bg-surface-subtle px-3 py-2"
-                      key={interview.id}
-                    >
-                      <p className="text-sm font-medium">
-                        {interview.roundType.replaceAll("_", " ")}
-                      </p>
-                      <p
-                        className={`mt-1 text-xs ${isOverdue ? "text-danger" : "text-muted"}`}
-                      >
-                        {isOverdue ? "Overdue" : "Due within 24 hours"}
-                      </p>
-                    </li>
-                  ),
-                )}
-              </ul>
-            )}
-          </section>
-
-          <section
-            aria-label="Recent activity"
-            className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
-            style={{ ["--i" as string]: 7 }}
-          >
-            <ActivityHeatmap grid={activityGrid} />
-          </section>
-
-          <section
-            aria-labelledby="gate-heading"
-            className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
-            style={{ ["--i" as string]: 8 }}
-          >
-            <h3 className="text-lg font-semibold" id="gate-heading">
-              Current gate checklist
-            </h3>
-            {currentGate ? (
-              <>
-                <div className="mt-3 flex items-center justify-between text-sm">
-                  <span>
-                    {currentGate.metCount}/{currentGate.totalCount} complete
+                  </div>
+                  <span className="shrink-0 font-semibold tabular-nums text-danger">
+                    {formatCents(bill.amountCents)}
                   </span>
-                  <span className="text-muted">{currentGate.month.label}</span>
-                </div>
-                <ProgressBar
-                  progress={
-                    currentGate.totalCount === 0
-                      ? 0
-                      : currentGate.metCount / currentGate.totalCount
-                  }
-                />
-                <p className="mt-3 text-sm leading-relaxed text-muted">
-                  {currentGate.month.gate ||
-                    "No gate text is defined for this month."}
-                </p>
-              </>
-            ) : (
-              <EmptyState
-                description="The roadmap gate will appear once the current month is loaded."
-                action={<Link href="/roadmap">Open Roadmap</Link>}
-                icon={MapIcon}
-                title="Loading the current gate"
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section
+          aria-labelledby="month-spend-heading"
+          className="fade-up rounded-lg border border-border bg-surface p-5"
+          style={{ ["--i" as string]: 1 }}
+        >
+          <div className="flex items-center gap-2">
+            <WalletCards aria-hidden="true" className="size-5 text-muted" />
+            <h3 className="text-lg font-semibold" id="month-spend-heading">
+              Month-to-date
+            </h3>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <StatCard
+              hint="Settled expenses"
+              label="Spent"
+              tone={
+                dashboard.monthSpend && dashboard.monthSpend.spentCents > 0
+                  ? "danger"
+                  : "default"
+              }
+              value={
+                dashboard.monthSpend && dashboard.monthSpend.spentCents > 0
+                  ? formatCents(dashboard.monthSpend.spentCents)
+                  : "—"
+              }
+            />
+            <StatCard
+              hint="Income minus settled expenses"
+              hue={
+                dashboard.monthSpend && dashboard.monthSpend.netCents > 0
+                  ? "lime"
+                  : undefined
+              }
+              label="Net"
+              tone={
+                dashboard.monthSpend && dashboard.monthSpend.netCents < 0
+                  ? "danger"
+                  : "default"
+              }
+              value={
+                dashboard.monthSpend && dashboard.monthSpend.netCents !== 0
+                  ? formatCents(dashboard.monthSpend.netCents)
+                  : "—"
+              }
+            />
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="schedule-heading"
+          className="fade-up rounded-lg border border-border bg-surface p-5"
+          style={{ ["--i" as string]: 2 }}
+        >
+          <h3 className="text-lg font-semibold" id="schedule-heading">
+            This week&apos;s schedule
+          </h3>
+          {dashboard.scheduleBlocks.length === 0 ? (
+            <EmptyState
+              description="Give the week a reliable shape by turning a recurring task into a scheduled block."
+              action={<Link href="/tasks">Create a recurring task</Link>}
+              icon={CalendarDays}
+              title="No recurring blocks yet"
+            />
+          ) : (
+            <ul className="mt-3 grid gap-2">
+              {dashboard.scheduleBlocks.map((task) => (
+                <li
+                  className="flex items-center justify-between gap-3 rounded-md bg-surface-subtle px-3 py-2"
+                  key={task.id}
+                >
+                  <span className="text-sm font-medium">{task.title}</span>
+                  <span className="text-xs text-muted">
+                    {task.occurrenceDate}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section
+          aria-labelledby="cadence-heading"
+          className="fade-up rounded-lg border border-border bg-surface p-5"
+          style={{ ["--i" as string]: 3 }}
+        >
+          <h3 className="text-lg font-semibold" id="cadence-heading">
+            Weekly cadence
+          </h3>
+          {dashboard.weeklyCadence ? (
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <CadenceCard
+                style={{ ["--i" as string]: 0 }}
+                label="Applications"
+                count={dashboard.weeklyCadence.applications.count}
+                target={dashboard.weeklyCadence.applications.target}
               />
-            )}
-          </section>
-        </div>
-      </section>
-    </AppShell>
+              <CadenceCard
+                style={{ ["--i" as string]: 1 }}
+                label="Outreach"
+                count={dashboard.weeklyCadence.outreach.count}
+                target={dashboard.weeklyCadence.outreach.target}
+              />
+              <CadenceCard
+                style={{ ["--i" as string]: 2 }}
+                label="Mock interviews"
+                count={dashboard.weeklyCadence.mockInterviews.count}
+                target={dashboard.weeklyCadence.mockInterviews.target}
+              />
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-muted">Loading cadence...</p>
+          )}
+        </section>
+
+        <section
+          aria-labelledby="prep-heading"
+          className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
+          style={{ ["--i" as string]: 4 }}
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold" id="prep-heading">
+                Prep checkpoint
+              </h3>
+              <p className="mt-1 text-sm text-muted">
+                {dashboard.checkpointProgress?.checkpoint.label ??
+                  "Loading targets..."}
+              </p>
+            </div>
+            <div className="text-sm text-muted">
+              Behavioral stories:{" "}
+              {dashboard.behavioralStoryProgress
+                ? `${dashboard.behavioralStoryProgress.actual}/${dashboard.behavioralStoryProgress.target}`
+                : "..."}
+            </div>
+          </div>
+          {dashboard.checkpointProgress ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {targetLabels.map(([key, label], index) => (
+                <TargetCard
+                  key={key}
+                  style={{ ["--i" as string]: index }}
+                  label={label}
+                  target={dashboard.checkpointProgress![key]}
+                />
+              ))}
+            </div>
+          ) : null}
+        </section>
+
+        <section
+          aria-labelledby="followups-heading"
+          className="fade-up rounded-lg border border-border bg-surface p-5"
+          style={{ ["--i" as string]: 5 }}
+        >
+          <h3 className="text-lg font-semibold" id="followups-heading">
+            Applications needing follow-up
+          </h3>
+          {dashboard.followUps.length === 0 ? (
+            <EmptyState
+              description="Your pipeline is clear. Keep it that way by logging the next follow-up when a conversation happens."
+              action={<Link href="/applications">Review applications</Link>}
+              icon={Clock3}
+              title="No follow-ups due"
+            />
+          ) : (
+            <ul className="mt-3 grid gap-2">
+              {dashboard.followUps.map((application) => (
+                <li
+                  className="rounded-md bg-surface-subtle px-3 py-2"
+                  key={application.id}
+                >
+                  <p className="text-sm font-medium">{application.roleTitle}</p>
+                  <p className="mt-1 text-xs text-muted">
+                    {application.stage.replaceAll("_", " ")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section
+          aria-labelledby="postmortem-heading"
+          className="fade-up rounded-lg border border-border bg-surface p-5"
+          style={{ ["--i" as string]: 6 }}
+        >
+          <h3 className="text-lg font-semibold" id="postmortem-heading">
+            Interview post-mortems
+          </h3>
+          {dashboard.postMortemReminders.length === 0 ? (
+            <EmptyState
+              description="Complete an interview and capture what you learned while the details are still fresh."
+              action={<Link href="/applications">Open interview log</Link>}
+              icon={MessageSquareText}
+              title="No post-mortems due"
+            />
+          ) : (
+            <ul className="mt-3 grid gap-2">
+              {dashboard.postMortemReminders.map(({ interview, isOverdue }) => (
+                <li
+                  className="rounded-md bg-surface-subtle px-3 py-2"
+                  key={interview.id}
+                >
+                  <p className="text-sm font-medium">
+                    {interview.roundType.replaceAll("_", " ")}
+                  </p>
+                  <p
+                    className={`mt-1 text-xs ${isOverdue ? "text-danger" : "text-muted"}`}
+                  >
+                    {isOverdue ? "Overdue" : "Due within 24 hours"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section
+          aria-label="Recent activity"
+          className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
+          style={{ ["--i" as string]: 7 }}
+        >
+          <ActivityHeatmap grid={activityGrid} />
+        </section>
+
+        <section
+          aria-labelledby="gate-heading"
+          className="fade-up rounded-lg border border-border bg-surface p-5 xl:col-span-2"
+          style={{ ["--i" as string]: 8 }}
+        >
+          <h3 className="text-lg font-semibold" id="gate-heading">
+            Current gate checklist
+          </h3>
+          {currentGate ? (
+            <>
+              <div className="mt-3 flex items-center justify-between text-sm">
+                <span>
+                  {currentGate.metCount}/{currentGate.totalCount} complete
+                </span>
+                <span className="text-muted">{currentGate.month.label}</span>
+              </div>
+              <ProgressBar
+                progress={
+                  currentGate.totalCount === 0
+                    ? 0
+                    : currentGate.metCount / currentGate.totalCount
+                }
+              />
+              <p className="mt-3 text-sm leading-relaxed text-muted">
+                {currentGate.month.gate ||
+                  "No gate text is defined for this month."}
+              </p>
+            </>
+          ) : (
+            <EmptyState
+              description="The roadmap gate will appear once the current month is loaded."
+              action={<Link href="/roadmap">Open Roadmap</Link>}
+              icon={MapIcon}
+              title="Loading the current gate"
+            />
+          )}
+        </section>
+      </div>
+    </PageTemplate>
   );
 }

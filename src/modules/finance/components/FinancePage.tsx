@@ -21,11 +21,9 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { AppShell } from "@/src/components/AppShell";
-import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
-import { PageHeader } from "@/src/components/ui/PageHeader";
+import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { Panel } from "@/src/components/ui/Panel";
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
@@ -222,47 +220,36 @@ export function FinancePage() {
   }
 
   return (
-    <AppShell activeHref="/finance" title="Finances">
-      <section className="page-fade min-w-0 max-w-full overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
-        <PageHeader
-          actions={
-            <div className="flex flex-wrap gap-2">
-              <button
-                className="h-10 rounded-md border border-input bg-surface px-4 text-sm font-medium text-body hover:bg-surface-subtle"
-                onClick={() => setDialogBill("new")}
-                type="button"
-              >
-                Add recurring bill
-              </button>
-              <button
-                className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
-                id="add-transaction-button"
-                onClick={() => setDialogTransaction("new")}
-                type="button"
-              >
-                Add transaction
-              </button>
-            </div>
-          }
-          bleed
-          className="mb-6"
-          description="Track income and expenses in exact cents, one month at a time."
-          eyebrow="Personal ledger"
-          hue={hueFor("/finance")}
-          icon={Wallet}
-          title="Know where the month went"
-        />
-
-        {store.error ? (
-          <p
-            aria-live="assertive"
-            className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
-            role="alert"
+    <PageTemplate
+      actions={
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="h-10 rounded-md border border-input bg-surface px-4 text-sm font-medium text-body hover:bg-surface-subtle"
+            onClick={() => setDialogBill("new")}
+            type="button"
           >
-            {store.error}
-          </p>
-        ) : null}
-
+            Add recurring bill
+          </button>
+          <button
+            className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
+            id="add-transaction-button"
+            onClick={() => setDialogTransaction("new")}
+            type="button"
+          >
+            Add transaction
+          </button>
+        </div>
+      }
+      description="Track income and expenses in exact cents, one month at a time."
+      error={store.error}
+      eyebrow="Personal ledger"
+      hero={null}
+      href="/finance"
+      icon={Wallet}
+      navTitle="Finances"
+      title="Know where the month went"
+    >
+      <div className="grid min-w-0 max-w-full gap-6 overflow-x-hidden">
         <Panel
           aside={
             <div
@@ -297,7 +284,6 @@ export function FinancePage() {
               </button>
             </div>
           }
-          className="mb-6"
           description="Every figure and row below is scoped to this month."
           overline="Ledger month"
           title={format(selectedMonth, "MMMM yyyy")}
@@ -333,7 +319,6 @@ export function FinancePage() {
 
         <Panel
           aside={<Badge tone="neutral">{store.bills.length}</Badge>}
-          className="mb-6"
           description="Templates create one due ledger entry each month. Paused bills remain available to edit."
           overline="Monthly obligations"
           title="Recurring bills"
@@ -416,11 +401,9 @@ export function FinancePage() {
           )}
         </Panel>
 
-        <div className="mb-6">
-          <ReceivablesPanel />
-        </div>
+        <ReceivablesPanel />
 
-        <div className="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(20rem,1fr)]">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(20rem,1fr)]">
           <Panel
             aside={
               <button
@@ -742,7 +725,7 @@ export function FinancePage() {
             onSubmit={store.upsertBudget}
           />
         ) : null}
-      </section>
-    </AppShell>
+      </div>
+    </PageTemplate>
   );
 }

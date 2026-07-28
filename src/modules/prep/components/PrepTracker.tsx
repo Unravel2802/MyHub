@@ -3,8 +3,7 @@
 import { format } from "date-fns";
 import { Dumbbell } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { AppShell } from "@/src/components/AppShell";
-import { PageHeader } from "@/src/components/ui/PageHeader";
+import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { BehavioralStories } from "@/src/modules/prep/components/BehavioralStories";
 import { PrepEntryForm } from "@/src/modules/prep/components/PrepEntryForm";
@@ -163,84 +162,70 @@ export function PrepTracker({ children }: PrepTrackerProps) {
   }
 
   return (
-    <AppShell activeHref="/prep" title="Prep Tracker">
-      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <PageHeader
-          actions={
-            <button
-              className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
-              disabled={isLoading}
-              id="prep-refresh"
-              onClick={() =>
-                void Promise.all([
-                  fetchEntries(),
-                  fetchStories(),
-                  fetchLeetcodeProblems(),
-                  fetchLeetcodeAttempts(),
-                ])
-              }
-              type="button"
-            >
-              Refresh
-            </button>
+    <PageTemplate
+      actions={
+        <button
+          className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
+          disabled={isLoading}
+          id="prep-refresh"
+          onClick={() =>
+            void Promise.all([
+              fetchEntries(),
+              fetchStories(),
+              fetchLeetcodeProblems(),
+              fetchLeetcodeAttempts(),
+            ])
           }
-          bleed
-          className="mb-6"
-          eyebrow="Interview preparation"
-          hue={hueFor("/prep")}
-          icon={Dumbbell}
-          title="Build measurable reps"
+          type="button"
+        >
+          Refresh
+        </button>
+      }
+      compose={<PrepEntryForm disabled={isCreating} onCreate={createEntry} />}
+      error={error}
+      eyebrow="Interview preparation"
+      hero={
+        <StatCard
+          hue={
+            checkpointProgress.algorithm.actual > 0
+              ? hueFor("/prep")
+              : undefined
+          }
+          hint={`${checkpointProgress.algorithm.actual}/${checkpointProgress.algorithm.target} algorithms · ${checkpointProgress.systemDesign.actual}/${checkpointProgress.systemDesign.target} system design`}
+          label={checkpoint.label}
+          size="hero"
+          value={`${Math.round(Math.min(checkpointProgress.algorithm.progress, 1) * 100)}%`}
         />
-
-        {error ? (
-          <p
-            aria-live="assertive"
-            className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
-            role="alert"
-          >
-            {error}
-          </p>
-        ) : null}
-
-        <div className="grid gap-6">
-          <StatCard
-            hue={
-              checkpointProgress.algorithm.actual > 0
-                ? hueFor("/prep")
-                : undefined
-            }
-            hint={`${checkpointProgress.algorithm.actual}/${checkpointProgress.algorithm.target} algorithms · ${checkpointProgress.systemDesign.actual}/${checkpointProgress.systemDesign.target} system design`}
-            label={checkpoint.label}
-            size="hero"
-            value={`${Math.round(Math.min(checkpointProgress.algorithm.progress, 1) * 100)}%`}
-          />
-          <div className="grid content-start gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <PrepScorecard
-              entries={entries}
-              month={month}
-              onMonthChange={setMonth}
-              scorecard={monthlyScorecard}
-              topics={topics}
-            />
-            <TimeAllocationPanel allocation={allocation} />
-          </div>
-          {children}
-          <PrepEntryForm disabled={isCreating} onCreate={createEntry} />
-          <BehavioralStories
-            disabled={isCreating}
-            onCreate={createStory}
-            onDelete={confirmStoryDelete}
-            onUpdate={updateStory}
-            pendingIds={pending}
-            stories={stories}
-          />
-          <PrepEntryList
-            entries={entries}
-            onDelete={confirmEntryDelete}
-            pendingIds={pending}
-          />
-        </div>
-      </section>
-    </AppShell>
+      }
+      href="/prep"
+      icon={Dumbbell}
+      navTitle="Prep Tracker"
+      title="Build measurable reps"
+    >
+      <div className="grid content-start gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <PrepScorecard
+          entries={entries}
+          month={month}
+          onMonthChange={setMonth}
+          scorecard={monthlyScorecard}
+          topics={topics}
+        />
+        <TimeAllocationPanel allocation={allocation} />
+      </div>
+      {children}
+      <BehavioralStories
+        disabled={isCreating}
+        onCreate={createStory}
+        onDelete={confirmStoryDelete}
+        onUpdate={updateStory}
+        pendingIds={pending}
+        stories={stories}
+      />
+      <PrepEntryList
+        entries={entries}
+        onDelete={confirmEntryDelete}
+        pendingIds={pending}
+      />
+    </PageTemplate>
   );
 }

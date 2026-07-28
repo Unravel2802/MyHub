@@ -3,12 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Map } from "lucide-react";
-import { AppShell } from "@/src/components/AppShell";
+import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { RoadmapTimeline } from "@/src/modules/roadmap/components/RoadmapTimeline";
 import { ReadinessRadar } from "@/src/modules/roadmap/components/ReadinessRadar";
 import { ActivityHeatmap } from "@/src/modules/momentum/components/ActivityHeatmap";
-import { PageHeader } from "@/src/components/ui/PageHeader";
 import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
 import { hueFor } from "@/src/components/moduleHues";
@@ -79,75 +78,59 @@ export function RoadmapPage() {
   const activityGrid = useMomentumStore((state) => state.activityGrid);
 
   return (
-    <AppShell activeHref="/roadmap" title="Roadmap">
-      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <PageHeader
-          bleed
-          eyebrow="Engineering-first roadmap"
+    <PageTemplate
+      error={store.error}
+      eyebrow="Engineering-first roadmap"
+      hero={
+        <StatCard
+          hint="until graduation"
+          label="May 2027"
+          size="hero"
           hue={hueFor("/roadmap")}
-          icon={Map}
-          title="Where you stand"
+          value={`${store.daysLeft} days`}
+        />
+      }
+      href="/roadmap"
+      icon={Map}
+      stats={[
+        <StatCard
+          hint="criteria met across the plan"
+          key="overall-progress"
+          label="Overall progress"
+          tone={store.progress > 0 ? "success" : "default"}
+          value={`${Math.round(store.progress * 100)}%`}
+        />,
+        <StatCard
+          hint={missed > 0 ? "months you can't get back" : "nothing missed yet"}
+          key="missed-months"
+          label="Missed months"
+          tone={missed > 0 ? "danger" : "default"}
+          value={missed}
+        />,
+      ]}
+      title="Where you stand"
+    >
+      <div className="grid gap-10">
+        <RoadmapTimeline
+          currentMonth={store.currentMonth}
+          months={store.months}
+          onSelectMonth={setSelectedMonth}
+          onToggleCriterion={(key, next) =>
+            void store.toggleCriterion(key, next)
+          }
+          pendingKeys={pending}
+          selectedMonth={activeMonth}
         />
 
-        {store.error ? (
-          <p
-            aria-live="assertive"
-            className="mt-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
-            role="alert"
-          >
-            {store.error}
-          </p>
-        ) : null}
+        <ActivityHeatmap grid={activityGrid} />
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          {/* The one number that never stops mattering. */}
-          <StatCard
-            hint="until graduation"
-            label="May 2027"
-            size="hero"
-            hue={hueFor("/roadmap")}
-            value={`${store.daysLeft} days`}
-          />
-          <StatCard
-            hint="criteria met across the plan"
-            label="Overall progress"
-            tone={store.progress > 0 ? "success" : "default"}
-            value={`${Math.round(store.progress * 100)}%`}
-          />
-          {/* Never tint a zero — a card highlighting the absence of misses would
-              be celebrating nothing. Only turns red when there IS something. */}
-          <StatCard
-            hint={
-              missed > 0 ? "months you can't get back" : "nothing missed yet"
-            }
-            label="Missed months"
-            tone={missed > 0 ? "danger" : "default"}
-            value={missed}
-          />
-        </div>
-
-        <div className="mt-8 grid gap-10">
-          <RoadmapTimeline
-            currentMonth={store.currentMonth}
-            months={store.months}
-            onSelectMonth={setSelectedMonth}
-            onToggleCriterion={(key, next) =>
-              void store.toggleCriterion(key, next)
-            }
-            pendingKeys={pending}
-            selectedMonth={activeMonth}
-          />
-
-          <ActivityHeatmap grid={activityGrid} />
-
-          <ReadinessRadar
-            evidenceFor={store.evidenceFor}
-            onSetLevel={(area, level) => void store.setReadiness(area, level)}
-            pendingKeys={pending}
-            readiness={store.readiness}
-          />
-        </div>
-      </section>
-    </AppShell>
+        <ReadinessRadar
+          evidenceFor={store.evidenceFor}
+          onSetLevel={(area, level) => void store.setReadiness(area, level)}
+          pendingKeys={pending}
+          readiness={store.readiness}
+        />
+      </div>
+    </PageTemplate>
   );
 }

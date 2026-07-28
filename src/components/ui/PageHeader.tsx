@@ -49,7 +49,16 @@ export function PageHeader({
             <p className="mt-2 max-w-2xl text-sm text-muted">{description}</p>
           ) : null}
         </div>
-        {actions}
+        {/* Actions must not stretch. As a bare child of this `flex-col` they
+            inherited `align-items: stretch` and went full-bleed below 2xl —
+            that, not a Dashboard mistake, is why Refresh renders as a wide bar
+            across the top of the page (docs/ui-upgrade-wave3.md §1.6). Pages
+            whose action is a fixed-size icon button hid the bug by accident. */}
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 self-start 2xl:self-end">
+            {actions}
+          </div>
+        ) : null}
       </div>
       {children}
     </header>

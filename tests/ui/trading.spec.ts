@@ -207,3 +207,32 @@ test("views a persisted checklist for a past date", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Iron rules" })).toBeVisible();
 });
+
+test("renders the static trading plan and all technical references", async ({
+  page,
+}) => {
+  await mockSupabaseTrading(page, new FakeTradingDb());
+  await page.goto("/trading");
+  await page.getByRole("tab", { name: "References" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Systematic Trading Plan" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "The Scaling Roadmap" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Technical Deep Dive" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "07 · Position Sizing Math" }),
+  ).toBeVisible();
+
+  const contents = page.getByRole("navigation", {
+    name: "Technical deep dive chapters",
+  });
+  await expect(contents.getByRole("link")).toHaveCount(13);
+  await expect(
+    contents.getByRole("link", { name: "13 · The Full Python Stack" }),
+  ).toHaveAttribute("href", "#technical-13-the-full-python-stack");
+});

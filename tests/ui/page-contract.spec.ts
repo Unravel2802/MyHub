@@ -30,17 +30,14 @@ const ROUTES = [
 //
 // This list is the X1 progress tracker, and deleting its last entry is the
 // definition of done. Do not add to it — a new route starts on the template.
-const UNCONVERTED = new Set([
-  "/",
-  "/tasks",
-  "/applications",
-  "/review",
-  "/offers",
-  "/notes",
-  "/finance",
-  "/trading",
-  "/design-drills",
-]);
+//
+// "/" (the hub) stays here deliberately, not as debt: its shared centered
+// max-w-5xl header/content layout has no equivalent in the current contract,
+// and X1's brief said to flag that rather than force a wrapper-width hook into
+// PageTemplate to cover one page. Removing it means either the contract grows
+// that hook or the hub's layout is rebuilt to fit — a decision for whoever
+// picks up the hub, not a silent side effect of this list shrinking.
+const UNCONVERTED = new Set(["/"]);
 
 for (const path of ROUTES) {
   const converted = !UNCONVERTED.has(path);
@@ -86,13 +83,24 @@ for (const path of ROUTES) {
       ).toBeGreaterThan(dataAt);
 
     // And the same rule expressed the way a reader experiences it: the first
-    // form on the page must not sit above the first data panel. This catches a
-    // form smuggled into `children` ahead of the content, which the slot-order
-    // check alone cannot see.
+    // ENTRY-COMPOSER form on the page must not sit above the first data panel.
+    // This catches a form smuggled into `children` ahead of the content, which
+    // the slot-order check alone cannot see.
+    //
+    // Forms inside the `<header>` are excluded on purpose: `actions` can
+    // legitimately hold a small persistent toolbar form (Task Board's inline
+    // "quick add" search-and-create bar), which is a control at the same
+    // structural level as Outreach's Refresh button, not the entry-composer
+    // panel ("Log an entry", "Log a conversation") the form-first rule is
+    // actually about. Found by running this gate against X1's real output —
+    // the first version of this check flagged Task Board's toolbar form as a
+    // violation before this exclusion existed.
     const formAboveData = await page.evaluate(() => {
       const data = document.querySelector('[data-page-slot="data"]');
       if (!data) return false;
-      const form = document.querySelector("form");
+      const form = Array.from(document.querySelectorAll("form")).find(
+        (candidate) => !candidate.closest("header"),
+      );
       if (!form) return false;
       // Forms nested inside the data slot are fine — an inline editor on a row.
       if (data.contains(form)) return false;

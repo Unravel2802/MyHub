@@ -84,10 +84,10 @@ describe("PageTemplate slots", () => {
   it("omits absent slots rather than emitting empty wrappers", () => {
     const html = markup({ hero: null });
 
-    expect(html).not.toContain('data-slot="hero"');
-    expect(html).not.toContain('data-slot="stats"');
-    expect(html).not.toContain('data-slot="compose"');
-    expect(html).toContain('data-slot="data"');
+    expect(html).not.toContain('data-page-slot="hero"');
+    expect(html).not.toContain('data-page-slot="stats"');
+    expect(html).not.toContain('data-page-slot="compose"');
+    expect(html).toContain('data-page-slot="data"');
   });
 
   it("renders the error banner assertively only when there is an error", () => {

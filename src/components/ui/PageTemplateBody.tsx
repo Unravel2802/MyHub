@@ -73,12 +73,23 @@ export interface PageTemplateBodyProps {
   children: ReactNode;
   /** Entry forms and composers. Structurally forced below the data. */
   compose?: ReactNode;
+  /**
+   * `"full"` (default): header washes edge-to-edge, matching every workspace
+   * page. `"narrow"`: header and every slot share one centered `max-w-5xl`
+   * column instead, and the header's bleed wash is turned off — the hub's
+   * distinct landing-page identity, not a workspace. Reach for `"full"`
+   * unless the page is explicitly a nav index rather than a workspace; a
+   * second `"narrow"` caller should mean the app now has two kinds of
+   * landing page, not that `"narrow"` has become the default choice.
+   */
+  contentWidth?: "full" | "narrow";
 }
 
 export function PageTemplateBody({
   actions,
   children,
   compose,
+  contentWidth = "full",
   description,
   error = null,
   eyebrow,
@@ -110,11 +121,11 @@ export function PageTemplateBody({
     compose: compose ?? null,
   };
 
-  return (
-    <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+  const inner = (
+    <>
       <PageHeader
         actions={actions}
-        bleed
+        bleed={contentWidth === "full"}
         className="mb-6"
         description={description}
         eyebrow={eyebrow}
@@ -147,6 +158,16 @@ export function PageTemplateBody({
             {slots[slot]}
           </div>
         ) : null,
+      )}
+    </>
+  );
+
+  return (
+    <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      {contentWidth === "narrow" ? (
+        <div className="mx-auto w-full max-w-5xl">{inner}</div>
+      ) : (
+        inner
       )}
     </section>
   );

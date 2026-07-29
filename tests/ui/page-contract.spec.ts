@@ -2,9 +2,8 @@ import { expect, test } from "./fixtures";
 
 // The page contract gate (docs/ui-upgrade-wave3.md Part 3).
 //
-// PageTemplate makes "data before forms" structural, but only for routes that
-// actually use it. This asserts the contract holds on every converted route,
-// and — via UNCONVERTED below — tracks the ones still to go.
+// PageTemplate makes "data before forms" structural. This asserts the
+// contract holds on every route.
 //
 // Trading is why this exists: it shipped a nine-field entry form above its
 // equity curve and journal, the exact defect docs/visual-refresh.md §1.5 had
@@ -26,25 +25,8 @@ const ROUTES = [
   "/design-drills",
 ];
 
-// Routes not yet migrated to PageTemplate (X1).
-//
-// This list is the X1 progress tracker, and deleting its last entry is the
-// definition of done. Do not add to it — a new route starts on the template.
-//
-// "/" (the hub) stays here deliberately, not as debt: its shared centered
-// max-w-5xl header/content layout has no equivalent in the current contract,
-// and X1's brief said to flag that rather than force a wrapper-width hook into
-// PageTemplate to cover one page. Removing it means either the contract grows
-// that hook or the hub's layout is rebuilt to fit — a decision for whoever
-// picks up the hub, not a silent side effect of this list shrinking.
-const UNCONVERTED = new Set(["/"]);
-
 for (const path of ROUTES) {
-  const converted = !UNCONVERTED.has(path);
-
-  test(`page contract: ${path}${converted ? "" : " (unconverted)"}`, async ({
-    page,
-  }) => {
+  test(`page contract: ${path}`, async ({ page }) => {
     await page.goto(path);
     await page.waitForTimeout(1000);
 
@@ -53,17 +35,6 @@ for (const path of ROUTES) {
         el.getAttribute("data-page-slot"),
       ),
     );
-
-    if (!converted) {
-      // Keeps the allowlist honest in both directions: once a route is
-      // converted, this fails until it is removed from UNCONVERTED, so the
-      // tracker cannot silently go stale.
-      expect(
-        slots,
-        `${path} is on PageTemplate now — remove it from UNCONVERTED`,
-      ).toHaveLength(0);
-      return;
-    }
 
     // A page has at most one focal point. `hero={null}` is a legitimate choice
     // for content-first pages, so zero is allowed; two never is.

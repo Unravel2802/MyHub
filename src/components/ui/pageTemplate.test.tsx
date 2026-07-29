@@ -109,3 +109,21 @@ describe("PageTemplate slots", () => {
     spy.mockRestore();
   });
 });
+
+describe("PageTemplate contentWidth", () => {
+  it("defaults to a bled, full-width header", () => {
+    const html = markup();
+
+    expect(html).toContain("-mx-4");
+    expect(html).not.toContain("max-w-5xl");
+  });
+
+  it("narrow turns off the bleed and centers the whole page in one column", () => {
+    const html = markup({ contentWidth: "narrow" });
+
+    expect(html).toContain("max-w-5xl");
+    // The bleed wash's negative-margin classes must be absent, not just
+    // outnumbered — a stray "-mx-4" would break out of the centered column.
+    expect(html).not.toContain("-mx-4");
+  });
+});

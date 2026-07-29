@@ -231,6 +231,33 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Density (docs/ui-upgrade-wave3.md §2.3, C3). The app is spacious when
+     empty and will be dense when full — backwards for a dashboard. Panels
+     were picking a gap/padding number ad hoc per page (p-4, p-5, p-6, p-8,
+     gap-6, gap-8, gap-10 all appear across modules with no system behind the
+     choice), which is how the 16–64px spread happened. Four named stops,
+     tightened to an 8–32px ramp, so X4/X6 apply `gap-xs`…`gap-lg` and
+     `p-xs`…`p-lg` — Tailwind v4 generates those automatically from a spacing
+     scale key, no @utility needed — rather than picking a literal each time.
+     Verified against src/lib/density.test.ts, the same read-globals.css-as-
+     data approach palette.test.ts uses for color. */
+  --spacing-xs: 0.5rem; /* 8px  — inside a tight stat tile */
+  --spacing-sm: 1rem; /* 16px — the floor for most panel padding */
+  --spacing-md: 1.5rem; /* 24px — panel padding, page-level gaps */
+  --spacing-lg: 2rem; /* 32px — the ceiling; nothing in a data-dense page
+                          needs more air than this */
+
+  /* "Empty containers cap at min-h-[120px]. A Kanban column with nothing in
+     it is a slot, not a room." (§2.3) — one token instead of `min-h-[120px]`
+     copy-pasted into every column/panel that needs the floor, so the number
+     lives in one place if it ever needs retuning. Deliberately its own token,
+     not folded into the xs–lg ramp above: 120px is a FLOOR HEIGHT for one
+     specific situation (an empty state's container), not a spacing step, and
+     giving it its own name (`min-h-empty`) makes call sites self-documenting
+     — `min-h-empty` reads as "the height of a container with nothing in it,"
+     not as an arbitrary size pulled from a general-purpose scale. */
+  --spacing-empty: 7.5rem; /* 120px */
 }
 
 body {

@@ -133,11 +133,17 @@ export function PageTemplateBody({
         </p>
       ) : null}
 
-      {/* `data-slot` is not decoration: the Playwright page contract asserts
-          against these markers that no page renders `compose` before `data`. */}
+      {/* `data-page-slot` is not decoration: tests/ui/page-contract.spec.ts
+          asserts against these markers that no page renders `compose` before
+          `data`.
+
+          Named `data-page-slot`, not `data-slot`: the generated shadcn
+          primitives (dialog, select, command) already put `data-slot` on 32
+          elements, so the plain name cannot distinguish a page section from a
+          dropdown's trigger. The gate found this on its first run. */}
       {SLOT_ORDER.map((slot) =>
         slots[slot] ? (
-          <div className="mb-6 last:mb-0" data-slot={slot} key={slot}>
+          <div className="mb-6 last:mb-0" data-page-slot={slot} key={slot}>
             {slots[slot]}
           </div>
         ) : null,

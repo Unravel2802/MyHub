@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarCheck } from "lucide-react";
-import { AppShell } from "@/src/components/AppShell";
-import { PageHeader } from "@/src/components/ui/PageHeader";
+import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import {
   QUARTERLY_QUESTIONS,
@@ -13,7 +12,6 @@ import {
 import type { QuarterlyAnswers } from "@/src/modules/review/types";
 import { useReviewStore } from "@/src/modules/review/useReviewStore";
 import { ReviewSnapshotStats } from "@/src/modules/review/components/ReviewSnapshotStats";
-import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
@@ -102,34 +100,10 @@ export function WeeklyReview() {
   const field =
     "min-h-24 w-full rounded-md border border-input bg-surface px-3 py-2 text-sm";
   return (
-    <AppShell activeHref="/review" title="Weekly Review">
-      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <PageHeader
-          bleed
-          description="Look honestly at this week, then choose one fix for the next."
-          eyebrow="Sunday ritual"
-          hue={hueFor("/review")}
-          icon={CalendarCheck}
-          title="Weekly Review"
-        />
-
-        {store.error ? (
-          <p
-            aria-live="assertive"
-            className="mt-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
-            role="alert"
-          >
-            {store.error}
-          </p>
-        ) : null}
-
-        <div className="mt-6 grid gap-3">
-          <h3 className="text-xl font-semibold">This week</h3>
-          <ReviewSnapshotStats snapshot={store.currentSnapshot} />
-        </div>
-
+    <PageTemplate
+      compose={
         <form
-          className="mt-8 grid gap-4 rounded-lg border border-border bg-surface p-5"
+          className="grid gap-4 rounded-lg border border-border bg-surface p-5"
           onSubmit={(event) => {
             event.preventDefault();
             void save();
@@ -195,55 +169,62 @@ export function WeeklyReview() {
             {store.isSaving ? "Saving..." : "Save review"}
           </button>
         </form>
+      }
+      description="Look honestly at this week, then choose one fix for the next."
+      error={store.error}
+      eyebrow="Sunday ritual"
+      hero={null}
+      href="/review"
+      icon={CalendarCheck}
+      title="Weekly Review"
+    >
+      <div className="grid gap-3">
+        <h3 className="text-xl font-semibold">This week</h3>
+        <ReviewSnapshotStats snapshot={store.currentSnapshot} />
+      </div>
 
-        <section
-          aria-labelledby="past-reviews-heading"
-          className="mt-8 grid gap-4"
-        >
-          <h3 className="text-xl font-semibold" id="past-reviews-heading">
-            Past reviews
-          </h3>
-          {store.reviews.length === 0 ? (
-            <EmptyState
-              description="Save this week's reflection to create a frozen record you can trust later."
-              title="No past reviews yet"
-            />
-          ) : (
-            <div className="grid max-h-[36rem] gap-4 overflow-y-auto overscroll-contain pr-1">
-              {store.reviews.map((review) => (
-                <article
-                  className="grid gap-4 rounded-lg border border-border bg-surface p-5"
-                  key={review.id}
-                >
-                  <div>
-                    <h4 className="font-semibold">
-                      Week of {review.weekStart}
-                    </h4>
-                    <ReviewSnapshotStats snapshot={review.snapshot} />
-                  </div>
-                  <div className="grid gap-2 text-sm">
-                    {review.wentWell ? (
-                      <p>
-                        <strong>Went well:</strong> {review.wentWell}
-                      </p>
-                    ) : null}
-                    {review.needsWork ? (
-                      <p>
-                        <strong>Needs work:</strong> {review.needsWork}
-                      </p>
-                    ) : null}
-                    {review.nextWeekFix ? (
-                      <p>
-                        <strong>Next week:</strong> {review.nextWeekFix}
-                      </p>
-                    ) : null}
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
+      <section aria-labelledby="past-reviews-heading" className="grid gap-4">
+        <h3 className="text-xl font-semibold" id="past-reviews-heading">
+          Past reviews
+        </h3>
+        {store.reviews.length === 0 ? (
+          <EmptyState
+            description="Save this week's reflection to create a frozen record you can trust later."
+            title="No past reviews yet"
+          />
+        ) : (
+          <div className="grid max-h-[36rem] gap-4 overflow-y-auto overscroll-contain pr-1">
+            {store.reviews.map((review) => (
+              <article
+                className="grid gap-4 rounded-lg border border-border bg-surface p-5"
+                key={review.id}
+              >
+                <div>
+                  <h4 className="font-semibold">Week of {review.weekStart}</h4>
+                  <ReviewSnapshotStats snapshot={review.snapshot} />
+                </div>
+                <div className="grid gap-2 text-sm">
+                  {review.wentWell ? (
+                    <p>
+                      <strong>Went well:</strong> {review.wentWell}
+                    </p>
+                  ) : null}
+                  {review.needsWork ? (
+                    <p>
+                      <strong>Needs work:</strong> {review.needsWork}
+                    </p>
+                  ) : null}
+                  {review.nextWeekFix ? (
+                    <p>
+                      <strong>Next week:</strong> {review.nextWeekFix}
+                    </p>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
-    </AppShell>
+    </PageTemplate>
   );
 }

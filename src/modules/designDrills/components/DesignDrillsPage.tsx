@@ -4,10 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Dumbbell, SearchX } from "lucide-react";
-import { AppShell } from "@/src/components/AppShell";
 import { EmptyState } from "@/src/components/ui/EmptyState";
-import { PageHeader } from "@/src/components/ui/PageHeader";
-import { hueFor } from "@/src/components/moduleHues";
+import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 import { DrillList } from "@/src/modules/designDrills/components/DrillList";
@@ -107,109 +105,91 @@ export function DesignDrillsPage({ slug }: DesignDrillsPageProps) {
   }
 
   return (
-    <AppShell activeHref="/design-drills" title="Design Drills">
-      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <PageHeader
-          actions={
-            <button
-              className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
-              disabled={isLoading}
-              id="drills-refresh"
-              onClick={() =>
-                void Promise.all([
-                  fetchDrills(),
-                  fetchAttempts(),
-                  fetchBookmarks(),
-                ])
-              }
-              type="button"
-            >
-              Refresh
-            </button>
+    <PageTemplate
+      actions={
+        <button
+          className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
+          disabled={isLoading}
+          id="drills-refresh"
+          onClick={() =>
+            void Promise.all([fetchDrills(), fetchAttempts(), fetchBookmarks()])
           }
-          bleed
-          className="mb-6"
-          eyebrow="Interview preparation"
-          hue={hueFor("/design-drills")}
-          icon={Dumbbell}
-          title="Design Drills"
+          type="button"
+        >
+          Refresh
+        </button>
+      }
+      error={error}
+      eyebrow="Interview preparation"
+      hero={null}
+      href="/design-drills"
+      icon={Dumbbell}
+      title="Design Drills"
+    >
+      {activeDrill && activeAttempt ? (
+        <DrillWorkspace
+          attempt={activeAttempt}
+          drill={activeDrill}
+          onExit={() => setActiveAttemptId(null)}
+          onSaveNotes={(notes) =>
+            void saveAttemptNotes(activeAttempt.id, notes)
+          }
+          onSubmit={(input) => submitAttempt(activeAttempt.id, input)}
+          pastAttempts={attempts.filter(
+            (attempt) =>
+              attempt.drillId === activeDrill.id &&
+              attempt.id !== activeAttempt.id,
+          )}
+          pending={pendingIds.includes(activeAttempt.id)}
         />
-
-        {error ? (
-          <p
-            aria-live="assertive"
-            className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
-            role="alert"
-          >
-            {error}
-          </p>
-        ) : null}
-
-        {activeDrill && activeAttempt ? (
-          <DrillWorkspace
-            attempt={activeAttempt}
-            drill={activeDrill}
-            onExit={() => setActiveAttemptId(null)}
-            onSaveNotes={(notes) =>
-              void saveAttemptNotes(activeAttempt.id, notes)
-            }
-            onSubmit={(input) => submitAttempt(activeAttempt.id, input)}
-            pastAttempts={attempts.filter(
-              (attempt) =>
-                attempt.drillId === activeDrill.id &&
-                attempt.id !== activeAttempt.id,
-            )}
-            pending={pendingIds.includes(activeAttempt.id)}
+      ) : slug && !drillsLoaded ? (
+        <EmptyState
+          description="Loading the drill and your previous attempts."
+          icon={Dumbbell}
+          title="Loading drill…"
+        />
+      ) : slug && focusedDrill ? (
+        <DrillDetail
+          bookmarked={isBookmarked(focusedDrill.id)}
+          bookmarkPending={pendingIds.includes(focusedDrill.id)}
+          drill={focusedDrill}
+          isStarting={isStarting && startingDrillId === focusedDrill.id}
+          onBack={() => router.push("/design-drills")}
+          onStart={() => void handleStart(focusedDrill.id)}
+          onToggleBookmark={() => void toggleBookmark(focusedDrill.id)}
+          pastAttempts={attempts.filter(
+            (attempt) => attempt.drillId === focusedDrill.id,
+          )}
+        />
+      ) : slug ? (
+        <EmptyState
+          action={
+            <Link
+              className="inline-flex h-10 items-center rounded-md border border-input bg-surface px-4 text-sm font-medium text-body hover:border-input-hover"
+              href="/design-drills"
+            >
+              Browse all drills
+            </Link>
+          }
+          description="This drill may have moved or the link may be incorrect."
+          icon={SearchX}
+          title="Drill not found"
+        />
+      ) : (
+        <div className="grid gap-6">
+          <DrillProgressOverview attempts={attempts} drills={drills} />
+          <DrillList
+            attempts={attempts}
+            drills={drills}
+            isBookmarked={isBookmarked}
+            isStarting={isStarting}
+            onStart={handleStart}
+            onToggleBookmark={(drillId) => void toggleBookmark(drillId)}
+            pendingIds={pendingIds}
+            startingDrillId={startingDrillId}
           />
-        ) : slug && !drillsLoaded ? (
-          <EmptyState
-            description="Loading the drill and your previous attempts."
-            icon={Dumbbell}
-            title="Loading drill…"
-          />
-        ) : slug && focusedDrill ? (
-          <DrillDetail
-            bookmarked={isBookmarked(focusedDrill.id)}
-            bookmarkPending={pendingIds.includes(focusedDrill.id)}
-            drill={focusedDrill}
-            isStarting={isStarting && startingDrillId === focusedDrill.id}
-            onBack={() => router.push("/design-drills")}
-            onStart={() => void handleStart(focusedDrill.id)}
-            onToggleBookmark={() => void toggleBookmark(focusedDrill.id)}
-            pastAttempts={attempts.filter(
-              (attempt) => attempt.drillId === focusedDrill.id,
-            )}
-          />
-        ) : slug ? (
-          <EmptyState
-            action={
-              <Link
-                className="inline-flex h-10 items-center rounded-md border border-input bg-surface px-4 text-sm font-medium text-body hover:border-input-hover"
-                href="/design-drills"
-              >
-                Browse all drills
-              </Link>
-            }
-            description="This drill may have moved or the link may be incorrect."
-            icon={SearchX}
-            title="Drill not found"
-          />
-        ) : (
-          <div className="grid gap-6">
-            <DrillProgressOverview attempts={attempts} drills={drills} />
-            <DrillList
-              attempts={attempts}
-              drills={drills}
-              isBookmarked={isBookmarked}
-              isStarting={isStarting}
-              onStart={handleStart}
-              onToggleBookmark={(drillId) => void toggleBookmark(drillId)}
-              pendingIds={pendingIds}
-              startingDrillId={startingDrillId}
-            />
-          </div>
-        )}
-      </section>
-    </AppShell>
+        </div>
+      )}
+    </PageTemplate>
   );
 }

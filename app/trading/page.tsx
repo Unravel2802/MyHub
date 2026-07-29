@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { AppShell } from "@/src/components/AppShell";
 import { TradingJournal } from "@/src/modules/trading/components/TradingJournal";
 import { TradingReferenceLibrary } from "@/src/modules/trading/components/TradingReferenceLibrary";
 
@@ -18,15 +17,13 @@ export default async function TradingPage() {
   ]);
 
   return (
-    <AppShell activeHref="/trading" title="Trading">
-      <TradingJournal
-        referenceContent={
-          <TradingReferenceLibrary
-            systematicPlan={systematicPlan}
-            technicalDeepDive={technicalDeepDive}
-          />
-        }
-      />
-    </AppShell>
+    <TradingJournal
+      referenceContent={
+        <TradingReferenceLibrary
+          systematicPlan={systematicPlan}
+          technicalDeepDive={technicalDeepDive}
+        />
+      }
+    />
   );
 }

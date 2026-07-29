@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { Briefcase } from "lucide-react";
-import { AppShell } from "@/src/components/AppShell";
+import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { ApplicationForm } from "@/src/modules/jobApplications/components/ApplicationForm";
 import {
   ApplicationPipeline,
@@ -13,8 +13,6 @@ import { CompanyPanel } from "@/src/modules/jobApplications/components/CompanyPa
 import { InterviewPanel } from "@/src/modules/jobApplications/components/InterviewPanel";
 import type { ApplicationStage } from "@/src/modules/jobApplications/types";
 import { useApplicationStore } from "@/src/modules/jobApplications/useApplicationStore";
-import { hueFor } from "@/src/components/moduleHues";
-import { PageHeader } from "@/src/components/ui/PageHeader";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
@@ -94,60 +92,32 @@ export function JobApplicationCrm() {
   }
 
   return (
-    <AppShell activeHref="/applications" title="Job CRM">
-      <section className="page-fade min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-        <PageHeader
-          actions={
-            <button
-              className="h-10 rounded-md border border-input bg-surface px-4 text-sm"
-              disabled={store.isLoading}
-              id="job-crm-refresh"
-              onClick={() => void store.fetchAll()}
-              type="button"
-            >
-              Refresh
-            </button>
-          }
-          eyebrow="Job search funnel"
-          bleed
-          hue={hueFor("/applications")}
-          icon={Briefcase}
-          title="Applications and interviews"
-          className="mb-6"
-        />
-        {store.error ? (
-          <p
-            aria-live="assertive"
-            className="mb-5 rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
-            role="alert"
-          >
-            {store.error}
-          </p>
-        ) : null}
-
-        <div className="grid gap-8">
-          <FunnelPanel funnel={store.funnel()} />
-          <div className="overflow-x-auto">
-            <ApplicationPipeline
-              applications={store.applications}
-              companies={store.companies}
-              onDelete={deleteApplication}
-              onStageChange={changeStage}
-              pendingIds={pending}
-              onSaveRejectionTakeaway={saveRejectionTakeaway}
-            />
-          </div>
-        </div>
-
-        {/* `open` by default. Collapsing the form outright doesn't just fail the
-              specs — it hides the primary action from anyone tabbing through, and
-              a disclosure you must find before you can do anything is worse than a
-              form you can scroll past. Data-first is achieved by putting the form
-              BELOW the data, not by hiding it. */}
-        <details
-          className="mb-6 rounded-lg border border-border bg-surface"
-          open
+    <PageTemplate
+      actions={
+        <button
+          className="h-10 rounded-md border border-input bg-surface px-4 text-sm"
+          disabled={store.isLoading}
+          id="job-crm-refresh"
+          onClick={() => void store.fetchAll()}
+          type="button"
         >
+          Refresh
+        </button>
+      }
+      error={store.error}
+      eyebrow="Job search funnel"
+      hero={null}
+      href="/applications"
+      icon={Briefcase}
+      navTitle="Job CRM"
+      title="Applications and interviews"
+      compose={
+        /* `open` by default. Collapsing the form outright doesn't just fail the
+           specs — it hides the primary action from anyone tabbing through, and
+           a disclosure you must find before you can do anything is worse than a
+           form you can scroll past. The template keeps this composer after the
+           pipeline data without hiding it. */
+        <details className="rounded-lg border border-border bg-surface" open>
           <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
             Add to your pipeline
           </summary>
@@ -180,7 +150,19 @@ export function JobApplicationCrm() {
             />
           </div>
         </details>
-      </section>
-    </AppShell>
+      }
+    >
+      <FunnelPanel funnel={store.funnel()} />
+      <div className="overflow-x-auto">
+        <ApplicationPipeline
+          applications={store.applications}
+          companies={store.companies}
+          onDelete={deleteApplication}
+          onStageChange={changeStage}
+          pendingIds={pending}
+          onSaveRejectionTakeaway={saveRejectionTakeaway}
+        />
+      </div>
+    </PageTemplate>
   );
 }

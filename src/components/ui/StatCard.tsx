@@ -134,7 +134,10 @@ export function StatCard({
       {heroFallback ? (
         // Prose, not a number: no tabular-nums, and a size that reads as a
         // sentence while still carrying the page.
-        <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+        <p
+          className="mt-1 text-2xl font-semibold tracking-tight text-foreground"
+          data-stat-value
+        >
           {heroFallback}
         </p>
       ) : isPending ? (
@@ -142,7 +145,12 @@ export function StatCard({
         // one. Label weight, subtle colour — the `hint` beside it carries the
         // meaning. The text stays exactly "—": tests/ui/trading.spec.ts matches
         // it with `getByText("—", { exact: true })`.
-        <p className="mt-1 text-base font-normal leading-8 text-subtle">—</p>
+        <p
+          className="mt-1 text-base font-normal leading-8 text-subtle"
+          data-stat-value
+        >
+          —
+        </p>
       ) : (
         // tabular-nums so a value ticking 9 -> 10 doesn't shift the tile's width
         <p
@@ -152,6 +160,13 @@ export function StatCard({
             isHero && effectiveHue ? "hue-gradient-text" : "",
             colors?.value ?? valueClasses[effectiveTone],
           ].join(" ")}
+          // Lets tests/ui/page-contract.spec.ts read the value on its own,
+          // without the label and hint around it. That is what makes "never
+          // headline absence" checkable for preformatted values — a hero whose
+          // value is a template string ("0 days · 0 applications") is invisible
+          // to the null/zero detection above, and every real hero in this app
+          // is exactly that.
+          data-stat-value
         >
           {value}
         </p>

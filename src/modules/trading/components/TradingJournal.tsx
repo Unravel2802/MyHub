@@ -15,8 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { hueFor } from "@/src/components/moduleHues";
-import { PageHeader } from "@/src/components/ui/PageHeader";
+import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { Panel } from "@/src/components/ui/Panel";
 import { TradingChecklistPanel } from "@/src/modules/trading/components/TradingChecklistPanel";
 import { TradingEntryForm } from "@/src/modules/trading/components/TradingEntryForm";
@@ -104,49 +103,55 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
   }
 
   return (
-    <div className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-6">
-        <PageHeader
-          actions={
-            activeTab === "references" ? null : (
-              <button
-                aria-label={`Refresh ${
-                  activeTab === "checklist"
-                    ? "pre-trade checklist"
-                    : "trading journal"
-                }`}
-                className="inline-flex size-10 items-center justify-center rounded-md border border-input bg-surface text-body hover:border-input-hover disabled:opacity-60"
-                disabled={activeTab === "journal" && isLoading}
-                onClick={refresh}
-                type="button"
-              >
-                <RefreshCw
-                  aria-hidden="true"
-                  className={`size-4 ${
-                    activeTab === "journal" && isLoading ? "animate-spin" : ""
-                  }`}
-                />
-              </button>
-            )
-          }
-          bleed
-          description="Keep daily decisions separate from realised trade outcomes."
-          eyebrow="Money"
-          hue={hueFor("/trading")}
-          icon={CandlestickChart}
-          title="Trading Journal"
-        />
-
-        {error ? (
-          <p
-            aria-live="assertive"
-            className="rounded-md border border-danger-border bg-danger-surface px-3 py-2 text-sm text-danger"
-            role="alert"
+    <PageTemplate
+      actions={
+        activeTab === "references" ? null : (
+          <button
+            aria-label={`Refresh ${
+              activeTab === "checklist"
+                ? "pre-trade checklist"
+                : "trading journal"
+            }`}
+            className="inline-flex size-10 items-center justify-center rounded-md border border-input bg-surface text-body hover:border-input-hover disabled:opacity-60"
+            disabled={activeTab === "journal" && isLoading}
+            onClick={refresh}
+            type="button"
           >
-            {error}
-          </p>
-        ) : null}
-
+            <RefreshCw
+              aria-hidden="true"
+              className={`size-4 ${
+                activeTab === "journal" && isLoading ? "animate-spin" : ""
+              }`}
+            />
+          </button>
+        )
+      }
+      compose={
+        activeTab === "journal" ? (
+          <div className="mx-auto w-full max-w-7xl">
+            <Panel
+              description="Capture the signal and the decision. Buy entries can open a position in the same submit."
+              title="Log an entry"
+            >
+              <TradingEntryForm
+                disabled={isCreating}
+                onCreateEntry={createEntry}
+                onCreateTrade={createTrade}
+                openTrades={openTrades}
+              />
+            </Panel>
+          </div>
+        ) : null
+      }
+      description="Keep daily decisions separate from realised trade outcomes."
+      error={error}
+      eyebrow="Money"
+      hero={null}
+      href="/trading"
+      icon={CandlestickChart}
+      title="Trading Journal"
+    >
+      <div className="mx-auto grid w-full max-w-7xl gap-6">
         <div
           aria-label="Trading views"
           className="flex items-end gap-1 border-b border-border"
@@ -192,18 +197,6 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
             <div className="grid min-w-0 gap-6">
               <TradingStatsGrid stats={stats()} />
 
-              <Panel
-                description="Capture the signal and the decision. Buy entries can open a position in the same submit."
-                title="Log an entry"
-              >
-                <TradingEntryForm
-                  disabled={isCreating}
-                  onCreateEntry={createEntry}
-                  onCreateTrade={createTrade}
-                  openTrades={openTrades}
-                />
-              </Panel>
-
               <div className="grid min-w-0 gap-6 xl:grid-cols-2">
                 <TradingEquityCurve curve={equityCurve()} />
                 <TradingPositionsPanel
@@ -223,6 +216,6 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
           )}
         </div>
       </div>
-    </div>
+    </PageTemplate>
   );
 }

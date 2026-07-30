@@ -39,7 +39,7 @@ export function ActivityHeatmap({ grid }: { grid: ActivityGrid }) {
       </div>
 
       <div className="overflow-x-auto pb-1">
-        <div className="flex gap-1">
+        <div className="mx-auto flex w-max min-w-full justify-center gap-1">
           {grid.weeks.map((week) => (
             <div className="grid gap-1" key={week[0].key}>
               {week.map((day) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import { PanelLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Home, PanelLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AuthGate } from "@/src/components/AuthGate";
@@ -42,6 +42,22 @@ interface AppShellProps {
 const CORE_NAV_ITEMS = NAV_ITEMS.filter((item) =>
   CORE_TOOL_HREFS.includes(item.href),
 );
+
+// Deliberately NOT in NAV_ITEMS: it's neither a core tool nor a mini-app
+// member, and miniApps.test.ts's classification gate would fail on it either
+// way (nowhere to put it that isn't wrong — a "core tool" reading makes the
+// hub render itself as one of its own cards, since app/page.tsx filters
+// NAV_ITEMS by CORE_TOOL_HREFS too). The hub already had a way back — the
+// small "MyHub" wordmark above this nav — but that's branding chrome, not a
+// nav destination: it never highlights as "current page" and isn't styled
+// like anything else you can navigate to. This makes the hub a first-class,
+// consistently-styled destination instead of something you have to notice is
+// clickable.
+const HOME_NAV_ITEM: (typeof NAV_ITEMS)[number] = {
+  href: "/",
+  label: "Home",
+  icon: Home,
+};
 
 const MINI_APP_NAV_GROUPS = MINI_APPS.map((app) => ({
   app,
@@ -243,6 +259,8 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
                 aria-label="MyHub modules"
                 className="grid gap-4 text-sm lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-1"
               >
+                <div className="grid gap-1">{renderNavItem(HOME_NAV_ITEM)}</div>
+
                 <div className="grid gap-1">
                   {CORE_NAV_ITEMS.map(renderNavItem)}
                 </div>

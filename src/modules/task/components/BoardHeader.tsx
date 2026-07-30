@@ -171,7 +171,7 @@ export function BoardHeader({
       <div
         aria-label="Weekly tasks"
         aria-labelledby="recurring-rules-heading"
-        className="rounded-lg border border-border bg-surface-subtle p-4"
+        className="rounded-lg border border-border bg-surface-subtle p-sm"
       >
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -192,6 +192,8 @@ export function BoardHeader({
 
         {templates.length === 0 ? (
           <EmptyState
+            className="mt-xs min-h-empty"
+            compact
             description="Turn a repeated commitment into a fresh Todo task every week."
             icon={CalendarClock}
             title="No weekly rules yet"

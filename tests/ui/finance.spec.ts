@@ -384,7 +384,10 @@ test("adds, edits, and deletes a transaction with live summary updates", async (
   await page.getByRole("button", { name: "Delete Groceries" }).click();
   await expect(page.getByText("No transactions this month")).toBeVisible();
   await expect(page.getByText("$200.00", { exact: true })).toHaveCount(0);
-  await expect(monthSummary.getByText("—", { exact: true })).toHaveCount(3);
+  await expect(monthSummary.getByText("—", { exact: true })).toHaveCount(2);
+  await expect(
+    page.getByText("Add this month's first transaction", { exact: true }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Add recurring bill" }).click();
   const billDialog = page.getByRole("dialog", { name: "Add recurring bill" });
@@ -404,7 +407,7 @@ test("adds, edits, and deletes a transaction with live summary updates", async (
   await expect(page.getByText("Electricity")).toHaveCount(2);
   await expect(page.getByText("Due", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Mark paid" })).toBeVisible();
-  await expect(monthSummary.getByText("—", { exact: true })).toHaveCount(3);
+  await expect(monthSummary.getByText("—", { exact: true })).toHaveCount(2);
 
   await page.getByRole("button", { name: "Mark paid" }).click();
   await expect(page.getByText("Due", { exact: true })).toHaveCount(0);

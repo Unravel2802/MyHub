@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { TrendingUp } from "lucide-react";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { Panel } from "@/src/components/ui/Panel";
@@ -8,16 +9,24 @@ const WIDTH = 640;
 const HEIGHT = 220;
 const PADDING = 24;
 
-export function TradingEquityCurve({ curve }: { curve: EquityCurve }) {
+interface TradingEquityCurveProps {
+  curve: EquityCurve;
+  stats: ReactNode;
+}
+
+export function TradingEquityCurve({ curve, stats }: TradingEquityCurveProps) {
   if (curve.points.length === 0) {
     return (
       <Panel title="Equity curve">
-        <EmptyState
-          compact
-          description="Close a position to plot realised P&L over time."
-          icon={TrendingUp}
-          title="No realised trades yet"
-        />
+        <div className="grid gap-4">
+          {stats}
+          <EmptyState
+            compact
+            description="Close a position to plot realised P&L over time."
+            icon={TrendingUp}
+            title="No realised trades yet"
+          />
+        </div>
       </Panel>
     );
   }
@@ -70,38 +79,41 @@ export function TradingEquityCurve({ curve }: { curve: EquityCurve }) {
       }
       title="Equity curve"
     >
-      <svg
-        aria-label={`Equity curve ending at ${formatCents(curve.finalCents)}`}
-        className="h-auto w-full"
-        role="img"
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      >
-        <line
-          className="stroke-border"
-          strokeDasharray="4 4"
-          x1={PADDING}
-          x2={WIDTH - PADDING}
-          y1={zeroY}
-          y2={zeroY}
-        />
-        <polyline
-          className={`fill-none ${strokeClass}`}
-          points={points}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="3"
-        />
-        {coordinates.map(({ x, y }, index) => (
-          <circle
-            className={`${strokeClass} fill-surface`}
-            cx={x}
-            cy={y}
-            key={curve.points[index].tradeId}
-            r="4"
-            strokeWidth="2"
+      <div className="grid gap-4">
+        {stats}
+        <svg
+          aria-label={`Equity curve ending at ${formatCents(curve.finalCents)}`}
+          className="h-auto w-full"
+          role="img"
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        >
+          <line
+            className="stroke-border"
+            strokeDasharray="4 4"
+            x1={PADDING}
+            x2={WIDTH - PADDING}
+            y1={zeroY}
+            y2={zeroY}
           />
-        ))}
-      </svg>
+          <polyline
+            className={`fill-none ${strokeClass}`}
+            points={points}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="3"
+          />
+          {coordinates.map(({ x, y }, index) => (
+            <circle
+              className={`${strokeClass} fill-surface`}
+              cx={x}
+              cy={y}
+              key={curve.points[index].tradeId}
+              r="4"
+              strokeWidth="2"
+            />
+          ))}
+        </svg>
+      </div>
     </Panel>
   );
 }

@@ -23,10 +23,7 @@ async function fillBuy(page: Page) {
 }
 
 function statCard(page: Page, label: string) {
-  return page
-    .getByRole("region", { name: "Performance" })
-    .getByText(label, { exact: true })
-    .locator("..");
+  return page.getByText(label, { exact: true }).locator("..");
 }
 
 test("logs one linked buy and counts its close exactly once", async ({

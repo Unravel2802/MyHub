@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { BriefcaseBusiness } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
 import { Badge } from "@/src/components/ui/Badge";
 import {
   Dialog,
@@ -194,6 +194,7 @@ interface TradingPositionsPanelProps {
   onCloseTrade: (id: string, input: CloseTradeInput) => Promise<void>;
   onReopenTrade: (id: string) => Promise<void>;
   pendingIds: Set<string>;
+  stats: ReactNode;
   trades: TradingTrade[];
 }
 
@@ -201,6 +202,7 @@ export function TradingPositionsPanel({
   onCloseTrade,
   onReopenTrade,
   pendingIds,
+  stats,
   trades,
 }: TradingPositionsPanelProps) {
   return (
@@ -208,74 +210,77 @@ export function TradingPositionsPanel({
       aside={<Badge tone="neutral">{trades.length}</Badge>}
       title="Positions"
     >
-      {trades.length === 0 ? (
-        <EmptyState
-          compact
-          description="Log a buy signal to create the first position."
-          icon={BriefcaseBusiness}
-          title="No positions yet"
-        />
-      ) : (
-        <ul className="grid max-h-[32rem] gap-3 overflow-y-auto overscroll-contain pr-1">
-          {trades.map((trade) => {
-            const closed = trade.exitDate !== null;
-            const pending = pendingIds.has(trade.id);
-            return (
-              <li
-                className="rounded-md border border-border bg-surface-subtle p-3"
-                id={`trade-${trade.id}`}
-                key={trade.id}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-foreground">
-                        {trade.ticker}
-                      </span>
-                      <Badge tone={closed ? "neutral" : "success"}>
-                        {closed ? "Closed" : "Open"}
-                      </Badge>
-                    </div>
-                    <p className="mt-1 text-sm text-muted">
-                      {trade.entryDate} · {trade.shares.toFixed(4)} shares at{" "}
-                      {formatCents(trade.entryPriceCents)}
-                    </p>
-                    {closed && trade.pnlCents !== null ? (
-                      <p
-                        className={`mt-1 text-sm font-medium ${
-                          trade.pnlCents > 0
-                            ? "text-success"
-                            : trade.pnlCents < 0
-                              ? "text-danger"
-                              : "text-body"
-                        }`}
-                      >
-                        {formatCents(trade.pnlCents)} · {trade.exitDate}
+      <div className="grid gap-4">
+        {stats}
+        {trades.length === 0 ? (
+          <EmptyState
+            compact
+            description="Log a buy signal to create the first position."
+            icon={BriefcaseBusiness}
+            title="No positions yet"
+          />
+        ) : (
+          <ul className="grid max-h-[32rem] gap-3 overflow-y-auto overscroll-contain pr-1">
+            {trades.map((trade) => {
+              const closed = trade.exitDate !== null;
+              const pending = pendingIds.has(trade.id);
+              return (
+                <li
+                  className="rounded-md border border-border bg-surface-subtle p-3"
+                  id={`trade-${trade.id}`}
+                  key={trade.id}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold text-foreground">
+                          {trade.ticker}
+                        </span>
+                        <Badge tone={closed ? "neutral" : "success"}>
+                          {closed ? "Closed" : "Open"}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-sm text-muted">
+                        {trade.entryDate} · {trade.shares.toFixed(4)} shares at{" "}
+                        {formatCents(trade.entryPriceCents)}
                       </p>
-                    ) : null}
+                      {closed && trade.pnlCents !== null ? (
+                        <p
+                          className={`mt-1 text-sm font-medium ${
+                            trade.pnlCents > 0
+                              ? "text-success"
+                              : trade.pnlCents < 0
+                                ? "text-danger"
+                                : "text-body"
+                          }`}
+                        >
+                          {formatCents(trade.pnlCents)} · {trade.exitDate}
+                        </p>
+                      ) : null}
+                    </div>
+                    {closed ? (
+                      <button
+                        className="h-9 rounded-md border border-input px-3 text-sm font-medium text-body hover:border-input-hover hover:text-foreground disabled:opacity-60"
+                        disabled={pending}
+                        onClick={() => void onReopenTrade(trade.id)}
+                        type="button"
+                      >
+                        Reopen
+                      </button>
+                    ) : (
+                      <CloseTradeDialog
+                        disabled={pending}
+                        onCloseTrade={onCloseTrade}
+                        trade={trade}
+                      />
+                    )}
                   </div>
-                  {closed ? (
-                    <button
-                      className="h-9 rounded-md border border-input px-3 text-sm font-medium text-body hover:border-input-hover hover:text-foreground disabled:opacity-60"
-                      disabled={pending}
-                      onClick={() => void onReopenTrade(trade.id)}
-                      type="button"
-                    >
-                      Reopen
-                    </button>
-                  ) : (
-                    <CloseTradeDialog
-                      disabled={pending}
-                      onCloseTrade={onCloseTrade}
-                      trade={trade}
-                    />
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </Panel>
   );
 }

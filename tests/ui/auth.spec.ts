@@ -13,6 +13,7 @@ test("redirects unauthenticated users to login", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(page.locator("form")).toHaveCSS("max-width", "448px");
 });
 
 test("failed login shows a generic error", async ({ page }) => {

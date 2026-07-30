@@ -31,7 +31,7 @@ export function LoginForm() {
   return (
     <main className="grid min-h-screen place-items-center bg-canvas px-4 text-foreground">
       <form
-        className="grid w-full max-w-md gap-4 rounded-lg border border-border bg-surface p-6"
+        className="grid w-full max-w-[28rem] gap-4 rounded-lg border border-border bg-surface p-6"
         onSubmit={submit}
       >
         <div>

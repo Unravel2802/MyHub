@@ -5,8 +5,13 @@ import Link from "next/link";
 import { Dumbbell, Search } from "lucide-react";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { hueFor } from "@/src/components/moduleHues";
+import { HUE_BADGE } from "@/src/components/ui/hueClasses";
 import { DrillBookmarkButton } from "@/src/modules/designDrills/components/DrillBookmarkButton";
-import { DESIGN_DRILL_CATEGORY_HUES } from "@/src/modules/designDrills/designDrillHues";
+import {
+  DESIGN_DRILL_CATEGORY_HUES,
+  DESIGN_DRILL_DIFFICULTY_HUES,
+} from "@/src/modules/designDrills/designDrillHues";
 import { filterDesignDrills } from "@/src/modules/designDrills/filterDesignDrills";
 import type {
   DesignDrill,
@@ -24,15 +29,6 @@ const difficultyLabels: Record<DesignDrillDifficulty, string> = {
   warmup: "Warmup",
   core: "Core",
   advanced: "Advanced",
-};
-
-const difficultyTone: Record<
-  DesignDrillDifficulty,
-  "success" | "accent" | "danger"
-> = {
-  warmup: "success",
-  core: "accent",
-  advanced: "danger",
 };
 
 const selectClass =
@@ -61,6 +57,7 @@ export function DrillList({
   onStart,
   onToggleBookmark,
 }: DrillListProps) {
+  const moduleHue = hueFor("/design-drills");
   const [category, setCategory] = useState<DesignDrillCategory | "all">("all");
   const [difficulty, setDifficulty] = useState<DesignDrillDifficulty | "all">(
     "all",
@@ -162,7 +159,7 @@ export function DrillList({
           aria-pressed={bookmarkedOnly}
           className={`h-10 rounded-md border px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ${
             bookmarkedOnly
-              ? "border-accent-border bg-accent-surface text-accent-strong"
+              ? HUE_BADGE[moduleHue]
               : "border-input bg-surface text-body hover:border-input-hover"
           }`}
           onClick={() => {
@@ -183,7 +180,7 @@ export function DrillList({
               aria-pressed={tag === null}
               className={`rounded-full border px-3 py-1 text-xs font-medium ${
                 tag === null
-                  ? "border-accent-border bg-accent-surface text-accent-strong"
+                  ? HUE_BADGE[moduleHue]
                   : "border-border bg-surface-subtle text-muted hover:border-input-hover hover:text-body"
               }`}
               onClick={() => {
@@ -199,7 +196,7 @@ export function DrillList({
                 aria-pressed={tag === candidate}
                 className={`rounded-full border px-3 py-1 text-xs font-medium ${
                   tag === candidate
-                    ? "border-accent-border bg-accent-surface text-accent-strong"
+                    ? HUE_BADGE[moduleHue]
                     : "border-border bg-surface-subtle text-muted hover:border-input-hover hover:text-body"
                 }`}
                 key={candidate}
@@ -254,7 +251,9 @@ export function DrillList({
                         <Badge hue={DESIGN_DRILL_CATEGORY_HUES[drill.category]}>
                           {categoryLabels[drill.category]}
                         </Badge>
-                        <Badge tone={difficultyTone[drill.difficulty]}>
+                        <Badge
+                          hue={DESIGN_DRILL_DIFFICULTY_HUES[drill.difficulty]}
+                        >
                           {difficultyLabels[drill.difficulty]}
                         </Badge>
                       </div>
@@ -318,7 +317,7 @@ export function DrillList({
                     aria-label={`Page ${pageNumber}`}
                     className={`size-9 rounded-md border text-sm font-medium ${
                       pageNumber === page
-                        ? "border-accent-border bg-accent-surface text-accent-strong"
+                        ? HUE_BADGE[moduleHue]
                         : "border-input bg-surface text-body hover:border-input-hover"
                     }`}
                     key={pageNumber}

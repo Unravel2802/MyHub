@@ -1,7 +1,9 @@
 import { BookOpenText } from "lucide-react";
 import Link from "next/link";
+import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { Panel } from "@/src/components/ui/Panel";
 import { formatCents } from "@/src/lib/money";
 import type { TradingEntry, TradingSignal } from "@/src/modules/trading/types";
@@ -23,6 +25,7 @@ function ruleBadge(entry: TradingEntry) {
 }
 
 export function TradingJournalList({ entries }: { entries: TradingEntry[] }) {
+  const moduleHue = hueFor("/trading");
   const newestFirst = [...entries].sort(
     (left, right) =>
       right.date.localeCompare(left.date) ||
@@ -31,8 +34,12 @@ export function TradingJournalList({ entries }: { entries: TradingEntry[] }) {
 
   return (
     <Panel
-      aside={<Badge tone="neutral">{entries.length}</Badge>}
-      title="Journal"
+      aside={
+        <Badge hue={entries.length > 0 ? moduleHue : undefined}>
+          {entries.length}
+        </Badge>
+      }
+      title={<span className={HUE_TEXT[moduleHue]}>Journal</span>}
     >
       {newestFirst.length === 0 ? (
         <EmptyState
@@ -53,7 +60,10 @@ export function TradingJournalList({ entries }: { entries: TradingEntry[] }) {
                     <span className="font-semibold text-foreground">
                       {entry.ticker}
                     </span>
-                    <Badge tone={signalTone[entry.signal]}>
+                    <Badge
+                      tone={signalTone[entry.signal]}
+                      hue={entry.signal === "hold" ? moduleHue : undefined}
+                    >
                       {entry.signal.toUpperCase()}
                     </Badge>
                     {ruleBadge(entry)}
@@ -70,7 +80,7 @@ export function TradingJournalList({ entries }: { entries: TradingEntry[] }) {
                 </div>
                 {entry.tradeId ? (
                   <Link
-                    className="text-sm font-medium text-accent-strong hover:text-foreground"
+                    className={`text-sm font-medium hover:opacity-80 ${HUE_TEXT[moduleHue]}`}
                     href={`#trade-${entry.tradeId}`}
                   >
                     View trade

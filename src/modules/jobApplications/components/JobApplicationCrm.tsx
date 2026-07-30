@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { Briefcase } from "lucide-react";
+import { RefreshButton } from "@/src/components/ui/RefreshButton";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { ApplicationForm } from "@/src/modules/jobApplications/components/ApplicationForm";
 import {
@@ -94,15 +95,11 @@ export function JobApplicationCrm() {
   return (
     <PageTemplate
       actions={
-        <button
-          className="h-10 rounded-md border border-input bg-surface px-4 text-sm"
-          disabled={store.isLoading}
+        <RefreshButton
           id="job-crm-refresh"
+          isRefreshing={store.isLoading}
           onClick={() => void store.fetchAll()}
-          type="button"
-        >
-          Refresh
-        </button>
+        />
       }
       error={store.error}
       eyebrow="Job search funnel"

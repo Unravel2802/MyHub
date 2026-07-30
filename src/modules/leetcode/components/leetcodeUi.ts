@@ -10,15 +10,6 @@ export const difficultyLabels: Record<LeetCodeDifficulty, string> = {
   hard: "Hard",
 };
 
-export const difficultyTones: Record<
-  LeetCodeDifficulty,
-  "success" | "accent" | "danger"
-> = {
-  easy: "success",
-  medium: "accent",
-  hard: "danger",
-};
-
 export const statusLabels: Record<LeetCodeStatus, string> = {
   to_review: "To review",
   in_progress: "In progress",
@@ -30,15 +21,6 @@ export const outcomeLabels: Record<LeetCodeOutcome, string> = {
   solved: "Solved",
   partial: "Partial",
   failed: "Failed",
-};
-
-export const outcomeTones: Record<
-  LeetCodeOutcome,
-  "success" | "accent" | "danger"
-> = {
-  solved: "success",
-  partial: "accent",
-  failed: "danger",
 };
 
 export const inputClass =

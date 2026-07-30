@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import { CalendarClock } from "lucide-react";
+import { RefreshButton } from "@/src/components/ui/RefreshButton";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { HUE_DOT } from "@/src/components/ui/hueClasses";
 import { columns } from "@/src/modules/task/taskBoardConfig";
@@ -120,13 +121,7 @@ export function BoardActions(props: BoardActionsProps) {
           Add
         </button>
       </form>
-      <button
-        className="h-10 rounded-md border border-input bg-surface px-4 text-sm font-medium text-body transition-colors hover:border-input-hover hover:text-foreground disabled:cursor-not-allowed disabled:text-subtle"
-        disabled={isBusy}
-        onClick={onRefresh}
-      >
-        Refresh
-      </button>
+      <RefreshButton isRefreshing={isBusy} onClick={onRefresh} />
     </div>
   );
 }

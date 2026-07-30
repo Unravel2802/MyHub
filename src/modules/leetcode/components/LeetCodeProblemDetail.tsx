@@ -1,8 +1,10 @@
 "use client";
 
 import { ArrowLeft, Trash2 } from "lucide-react";
+import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import type {
   CreateAttemptInput,
   CreateProblemInput,
@@ -16,11 +18,14 @@ import { LeetCodeProblemForm } from "@/src/modules/leetcode/components/LeetCodeP
 import { LeetCodeSolutionCode } from "@/src/modules/leetcode/components/LeetCodeSolutionCode";
 import {
   difficultyLabels,
-  difficultyTones,
   outcomeLabels,
-  outcomeTones,
   statusLabels,
 } from "@/src/modules/leetcode/components/leetcodeUi";
+import {
+  LEETCODE_DIFFICULTY_HUES,
+  LEETCODE_OUTCOME_HUES,
+  LEETCODE_STATUS_HUES,
+} from "@/src/modules/leetcode/leetcodeHues";
 
 interface LeetCodeProblemDetailProps {
   attempts: LeetCodeAttempt[];
@@ -48,6 +53,7 @@ export function LeetCodeProblemDetail({
   onDeleteProblem,
   onUpdateProblem,
 }: LeetCodeProblemDetailProps) {
+  const moduleHue = hueFor("/prep");
   return (
     <section
       aria-labelledby="leetcode-detail-heading"
@@ -65,15 +71,15 @@ export function LeetCodeProblemDetail({
           </button>
           <div className="flex flex-wrap items-center gap-2">
             <h3
-              className="text-xl font-semibold tracking-tight text-foreground"
+              className={`text-xl font-semibold tracking-tight ${HUE_TEXT[moduleHue]}`}
               id="leetcode-detail-heading"
             >
               {problem.title}
             </h3>
-            <Badge tone={difficultyTones[problem.difficulty]}>
+            <Badge hue={LEETCODE_DIFFICULTY_HUES[problem.difficulty]}>
               {difficultyLabels[problem.difficulty]}
             </Badge>
-            <Badge tone={problem.status === "solved" ? "success" : "neutral"}>
+            <Badge hue={LEETCODE_STATUS_HUES[problem.status]}>
               {statusLabels[problem.status]}
             </Badge>
           </div>
@@ -130,8 +136,12 @@ export function LeetCodeProblemDetail({
 
       <div>
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h4 className="font-semibold text-foreground">Attempt history</h4>
-          <Badge tone="neutral">{attempts.length}</Badge>
+          <h4 className={`font-semibold ${HUE_TEXT[moduleHue]}`}>
+            Attempt history
+          </h4>
+          <Badge hue={attempts.length > 0 ? moduleHue : undefined}>
+            {attempts.length}
+          </Badge>
         </div>
         {attempts.length === 0 ? (
           <EmptyState
@@ -151,7 +161,7 @@ export function LeetCodeProblemDetail({
                     <p className="font-medium text-foreground">
                       {attempt.date}
                     </p>
-                    <Badge tone={outcomeTones[attempt.outcome]}>
+                    <Badge hue={LEETCODE_OUTCOME_HUES[attempt.outcome]}>
                       {outcomeLabels[attempt.outcome]}
                     </Badge>
                     <span className="text-xs text-muted">

@@ -1,4 +1,5 @@
 import { Badge } from "@/src/components/ui/Badge";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { Markdown } from "@/src/components/ui/Markdown";
 import { Panel } from "@/src/components/ui/Panel";
 import { cn } from "@/src/lib/cn";
@@ -42,7 +43,9 @@ export function SolutionEditorial({
       </Panel>
 
       <nav aria-label="Solution outline">
-        <p className="text-xs font-medium uppercase tracking-widest text-muted">
+        <p
+          className={`text-xs font-medium uppercase tracking-widest ${HUE_TEXT[hue]}`}
+        >
           Outline
         </p>
         <ol className="mt-2 flex flex-wrap gap-2">
@@ -70,7 +73,7 @@ export function SolutionEditorial({
             <div className="mb-3 flex items-start gap-3">
               <Badge hue={hue}>{String(index + 1).padStart(2, "0")}</Badge>
               <h3
-                className="text-lg font-semibold tracking-tight text-foreground"
+                className={`text-lg font-semibold tracking-tight ${HUE_TEXT[hue]}`}
                 id={`${section.id}-heading`}
               >
                 {section.heading}
@@ -116,7 +119,9 @@ export function SolutionEditorial({
                     >
                       {estimate.label}
                     </th>
-                    <td className="px-3 py-2 font-mono text-accent-strong tabular-nums">
+                    <td
+                      className={`px-3 py-2 font-mono tabular-nums ${HUE_TEXT[hue]}`}
+                    >
                       {estimate.value}
                     </td>
                     <td className="px-3 py-2 text-muted">
@@ -133,7 +138,7 @@ export function SolutionEditorial({
       {references.length > 0 ? (
         <section aria-labelledby="solution-references-heading">
           <h3
-            className="text-sm font-semibold text-foreground"
+            className={`text-sm font-semibold ${HUE_TEXT[hue]}`}
             id="solution-references-heading"
           >
             References
@@ -142,7 +147,7 @@ export function SolutionEditorial({
             {references.map((reference) => (
               <li key={`${reference.label}-${reference.url}`}>
                 <a
-                  className="font-medium text-accent-strong underline underline-offset-2 hover:text-accent"
+                  className={`font-medium underline underline-offset-2 hover:opacity-80 ${HUE_TEXT[hue]}`}
                   href={reference.url}
                   rel="noopener noreferrer"
                   target="_blank"

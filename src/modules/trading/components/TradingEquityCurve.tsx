@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { TrendingUp } from "lucide-react";
+import { hueFor, hueVar } from "@/src/components/moduleHues";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { Panel } from "@/src/components/ui/Panel";
 import { formatCents } from "@/src/lib/money";
 import type { EquityCurve } from "@/src/modules/trading/equityCurve";
@@ -15,9 +17,10 @@ interface TradingEquityCurveProps {
 }
 
 export function TradingEquityCurve({ curve, stats }: TradingEquityCurveProps) {
+  const moduleHue = hueFor("/trading");
   if (curve.points.length === 0) {
     return (
-      <Panel title="Equity curve">
+      <Panel title={<span className={HUE_TEXT[moduleHue]}>Equity curve</span>}>
         <div className="grid gap-4">
           {stats}
           <EmptyState
@@ -55,7 +58,9 @@ export function TradingEquityCurve({ curve, stats }: TradingEquityCurveProps) {
       ? "stroke-success"
       : curve.finalCents < 0
         ? "stroke-danger"
-        : "stroke-accent";
+        : "";
+  const moduleStroke =
+    curve.finalCents === 0 ? { stroke: hueVar(moduleHue) } : undefined;
 
   return (
     <Panel
@@ -77,7 +82,7 @@ export function TradingEquityCurve({ curve, stats }: TradingEquityCurveProps) {
           ? undefined
           : `Max drawdown ${formatCents(curve.maxDrawdownCents)}`
       }
-      title="Equity curve"
+      title={<span className={HUE_TEXT[moduleHue]}>Equity curve</span>}
     >
       <div className="grid gap-4">
         {stats}
@@ -98,6 +103,7 @@ export function TradingEquityCurve({ curve, stats }: TradingEquityCurveProps) {
           <polyline
             className={`fill-none ${strokeClass}`}
             points={points}
+            style={moduleStroke}
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="3"
@@ -109,6 +115,7 @@ export function TradingEquityCurve({ curve, stats }: TradingEquityCurveProps) {
               cy={y}
               key={curve.points[index].tradeId}
               r="4"
+              style={moduleStroke}
               strokeWidth="2"
             />
           ))}

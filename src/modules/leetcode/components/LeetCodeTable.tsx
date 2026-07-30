@@ -2,8 +2,10 @@
 
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useMemo, useState } from "react";
+import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import type { CreateProblemInput } from "@/src/modules/leetcode/LeetCodeRepository";
 import type {
   LeetCodeDifficulty,
@@ -13,11 +15,11 @@ import type {
 import { LEETCODE_STATUSES } from "@/src/modules/leetcode/leetcodeBoard";
 import {
   difficultyLabels,
-  difficultyTones,
   inputClass,
   parseTags,
   statusLabels,
 } from "@/src/modules/leetcode/components/leetcodeUi";
+import { LEETCODE_DIFFICULTY_HUES } from "@/src/modules/leetcode/leetcodeHues";
 
 type SortKey = "title" | "difficulty" | "status" | "tags";
 
@@ -79,6 +81,7 @@ export function LeetCodeTable({
   onSelect,
   onUpdate,
 }: LeetCodeTableProps) {
+  const moduleHue = hueFor("/prep");
   const [difficulty, setDifficulty] = useState<LeetCodeDifficulty | "all">(
     "all",
   );
@@ -143,7 +146,7 @@ export function LeetCodeTable({
         {sortKey === key ? (
           <Icon
             aria-label={ascending ? "ascending" : "descending"}
-            className="size-3.5"
+            className={`size-3.5 ${HUE_TEXT[moduleHue]}`}
           />
         ) : null}
       </button>
@@ -254,7 +257,7 @@ export function LeetCodeTable({
                       </div>
                     </td>
                     <td className="px-3 py-3">
-                      <Badge tone={difficultyTones[problem.difficulty]}>
+                      <Badge hue={LEETCODE_DIFFICULTY_HUES[problem.difficulty]}>
                         {difficultyLabels[problem.difficulty]}
                       </Badge>
                     </td>

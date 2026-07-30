@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 import { Dumbbell } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { RefreshButton } from "@/src/components/ui/RefreshButton";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { BehavioralStories } from "@/src/modules/prep/components/BehavioralStories";
@@ -164,10 +165,9 @@ export function PrepTracker({ children }: PrepTrackerProps) {
   return (
     <PageTemplate
       actions={
-        <button
-          className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
-          disabled={isLoading}
+        <RefreshButton
           id="prep-refresh"
+          isRefreshing={isLoading}
           onClick={() =>
             void Promise.all([
               fetchEntries(),
@@ -176,10 +176,7 @@ export function PrepTracker({ children }: PrepTrackerProps) {
               fetchLeetcodeAttempts(),
             ])
           }
-          type="button"
-        >
-          Refresh
-        </button>
+        />
       }
       compose={<PrepEntryForm disabled={isCreating} onCreate={createEntry} />}
       error={error}

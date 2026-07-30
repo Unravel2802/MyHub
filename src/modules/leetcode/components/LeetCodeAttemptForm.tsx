@@ -2,6 +2,8 @@
 
 import { format } from "date-fns";
 import { type FormEvent, useState } from "react";
+import { hueFor } from "@/src/components/moduleHues";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import type { CreateAttemptInput } from "@/src/modules/leetcode/LeetCodeRepository";
 import type { LeetCodeOutcome } from "@/src/modules/leetcode/types";
 import {
@@ -30,6 +32,7 @@ export function LeetCodeAttemptForm({
   problemId,
   onSubmit,
 }: LeetCodeAttemptFormProps) {
+  const moduleHue = hueFor("/prep");
   const [date, setDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [timeToSolveMin, setTimeToSolveMin] = useState("");
   const [outcome, setOutcome] = useState<LeetCodeOutcome>("solved");
@@ -61,7 +64,9 @@ export function LeetCodeAttemptForm({
       onSubmit={handleSubmit}
     >
       <div>
-        <h3 className="font-semibold text-foreground">Log an attempt</h3>
+        <h3 className={`font-semibold ${HUE_TEXT[moduleHue]}`}>
+          Log an attempt
+        </h3>
         <p className="mt-1 text-sm text-muted">
           Record this sitting without overwriting earlier solutions.
         </p>

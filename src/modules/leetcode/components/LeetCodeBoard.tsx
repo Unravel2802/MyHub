@@ -12,8 +12,10 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
+import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { HUE_BADGE, HUE_TEXT } from "@/src/components/ui/hueClasses";
 import type { CreateProblemInput } from "@/src/modules/leetcode/LeetCodeRepository";
 import { LEETCODE_STATUSES } from "@/src/modules/leetcode/leetcodeBoard";
 import type {
@@ -23,9 +25,12 @@ import type {
 } from "@/src/modules/leetcode/types";
 import {
   difficultyLabels,
-  difficultyTones,
   statusLabels,
 } from "@/src/modules/leetcode/components/leetcodeUi";
+import {
+  LEETCODE_DIFFICULTY_HUES,
+  LEETCODE_STATUS_HUES,
+} from "@/src/modules/leetcode/leetcodeHues";
 
 type AttemptStats = {
   count: number;
@@ -87,7 +92,7 @@ function ProblemCard({
         </button>
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        <Badge tone={difficultyTones[problem.difficulty]}>
+        <Badge hue={LEETCODE_DIFFICULTY_HUES[problem.difficulty]}>
           {difficultyLabels[problem.difficulty]}
         </Badge>
         {problem.tags.slice(0, 3).map((tag) => (
@@ -122,23 +127,28 @@ function StatusColumn({
   onSelect,
 }: StatusColumnProps) {
   const { isOver, setNodeRef } = useDroppable({ id: status });
+  const moduleHue = hueFor("/prep");
 
   return (
     <section
       aria-labelledby={`leetcode-${status}-heading`}
       className={`flex min-h-64 min-w-64 flex-col overflow-hidden rounded-lg border bg-surface-subtle ${
-        isOver ? "border-accent bg-accent-surface" : "border-border"
+        isOver ? HUE_BADGE[moduleHue] : "border-border"
       }`}
       ref={setNodeRef}
     >
       <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-3">
         <h4
-          className="font-semibold text-foreground"
+          className={`font-semibold ${HUE_TEXT[LEETCODE_STATUS_HUES[status]]}`}
           id={`leetcode-${status}-heading`}
         >
           {statusLabels[status]}
         </h4>
-        <Badge tone="neutral">{problems.length}</Badge>
+        <Badge
+          hue={problems.length > 0 ? LEETCODE_STATUS_HUES[status] : undefined}
+        >
+          {problems.length}
+        </Badge>
       </div>
       <div className="flex max-h-[32rem] flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-3">
         {problems.length === 0 ? (

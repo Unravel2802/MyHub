@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Send } from "lucide-react";
+import { RefreshButton } from "@/src/components/ui/RefreshButton";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import * as CompanyRepository from "@/src/modules/jobApplications/CompanyRepository";
 import type { Company } from "@/src/modules/jobApplications/types";
@@ -111,15 +112,11 @@ export function OutreachLog() {
   return (
     <PageTemplate
       actions={
-        <button
-          className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
-          disabled={isLoading}
+        <RefreshButton
           id="outreach-refresh"
+          isRefreshing={isLoading}
           onClick={() => void fetchEntries()}
-          type="button"
-        >
-          Refresh
-        </button>
+        />
       }
       // Both failures are page-level and mutually exclusive in practice; the
       // template owns the one banner so it can't drift from the other twelve.

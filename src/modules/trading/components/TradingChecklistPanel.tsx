@@ -5,6 +5,7 @@ import { BookOpenCheck, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { Panel } from "@/src/components/ui/Panel";
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import {
@@ -31,8 +32,12 @@ function RulesReference({
   rules: readonly TradingRule[];
   title: string;
 }) {
+  const moduleHue = hueFor("/trading");
   return (
-    <Panel description={description} title={title}>
+    <Panel
+      description={description}
+      title={<span className={HUE_TEXT[moduleHue]}>{title}</span>}
+    >
       <ol className="grid gap-3">
         {rules.map((rule) => (
           <li
@@ -62,6 +67,7 @@ function RulesReference({
 }
 
 export function TradingChecklistPanel() {
+  const moduleHue = hueFor("/trading");
   const [date, setDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const { checklistRunFor, fetchChecklistRuns, toggleChecklistItem } =
     useTradingStore();
@@ -80,12 +86,17 @@ export function TradingChecklistPanel() {
     <div className="grid min-w-0 gap-6">
       <Panel
         aside={
-          <Badge tone={ready ? "success" : "neutral"}>
+          <Badge
+            tone={ready ? "success" : "neutral"}
+            hue={!ready && run ? moduleHue : undefined}
+          >
             {ready ? "Ready to trade" : run ? "Not ready" : "Not started"}
           </Badge>
         }
         description="Run the ritual before placing an order. Every date keeps its own persisted checklist."
-        title="Daily pre-trade checklist"
+        title={
+          <span className={HUE_TEXT[moduleHue]}>Daily pre-trade checklist</span>
+        }
       >
         <div className="grid gap-5">
           <div className="grid gap-4 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] sm:items-end">
@@ -105,7 +116,7 @@ export function TradingChecklistPanel() {
                   {completedCount}/{PRE_TRADE_CHECKLIST.length}
                 </p>
               </div>
-              <ProgressBar hue={hueFor("/trading")} progress={completion} />
+              <ProgressBar hue={moduleHue} progress={completion} />
             </div>
           </div>
 

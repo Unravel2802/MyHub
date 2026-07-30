@@ -2,6 +2,8 @@
 
 import { useId, useRef, useState } from "react";
 import { BookOpenCheck, FileText } from "lucide-react";
+import { hueFor } from "@/src/components/moduleHues";
+import { HUE_BADGE } from "@/src/components/ui/hueClasses";
 import { Markdown } from "@/src/components/ui/Markdown";
 import { SolutionEditorial } from "@/src/modules/designDrills/components/SolutionEditorial";
 import type { DesignDrill } from "@/src/modules/designDrills/types";
@@ -25,6 +27,7 @@ interface DrillBriefProps {
 }
 
 export function DrillBrief({ drill }: DrillBriefProps) {
+  const moduleHue = hueFor("/design-drills");
   const [activeTab, setActiveTab] = useState<BriefTab>("prompt");
   const id = useId();
   const tabRefs = useRef<Partial<Record<BriefTab, HTMLButtonElement>>>({});
@@ -69,7 +72,7 @@ export function DrillBrief({ drill }: DrillBriefProps) {
               aria-selected={selected}
               className={`-mb-px flex items-center gap-1.5 rounded-t-md border-x border-t px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ${
                 selected
-                  ? "border-border bg-surface text-accent-strong"
+                  ? HUE_BADGE[moduleHue]
                   : "border-transparent text-muted hover:bg-surface/60 hover:text-body"
               }`}
               id={`${id}-${tab.id}-tab`}

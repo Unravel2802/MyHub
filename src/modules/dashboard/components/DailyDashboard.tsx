@@ -11,6 +11,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { useEffect } from "react";
+import { RefreshButton } from "@/src/components/ui/RefreshButton";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
@@ -96,15 +97,11 @@ export function DailyDashboard() {
   return (
     <PageTemplate
       actions={
-        <button
-          className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover disabled:opacity-60"
-          disabled={dashboard.isLoading}
+        <RefreshButton
           id="dashboard-refresh"
+          isRefreshing={dashboard.isLoading}
           onClick={() => void fetchAll()}
-          type="button"
-        >
-          Refresh
-        </button>
+        />
       }
       error={dashboard.error}
       eyebrow={format(new Date(), "EEEE, MMMM d")}

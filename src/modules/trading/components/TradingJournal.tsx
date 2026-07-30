@@ -22,7 +22,12 @@ import { TradingEntryForm } from "@/src/modules/trading/components/TradingEntryF
 import { TradingEquityCurve } from "@/src/modules/trading/components/TradingEquityCurve";
 import { TradingJournalList } from "@/src/modules/trading/components/TradingJournalList";
 import { TradingPositionsPanel } from "@/src/modules/trading/components/TradingPositionsPanel";
-import { TradingStatsGrid } from "@/src/modules/trading/components/TradingStatsGrid";
+import {
+  TradingEquityStats,
+  TradingPositionStats,
+  TradingStatsHero,
+  tradingSecondaryStats,
+} from "@/src/modules/trading/components/TradingStatsGrid";
 import { useTradingStore } from "@/src/modules/trading/useTradingStore";
 
 type TradingTab = "journal" | "checklist" | "references";
@@ -64,6 +69,7 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
   const tabRefs = useRef<Partial<Record<TradingTab, HTMLButtonElement>>>({});
   const pending = useMemo(() => new Set(pendingIds), [pendingIds]);
   const openTrades = trades.filter((trade) => trade.exitDate === null);
+  const performance = stats();
 
   useEffect(() => {
     void Promise.all([fetchTrades(), fetchEntries()]);
@@ -146,9 +152,16 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
       description="Keep daily decisions separate from realised trade outcomes."
       error={error}
       eyebrow="Money"
-      hero={null}
+      hero={
+        activeTab === "journal" ? (
+          <TradingStatsHero stats={performance} />
+        ) : null
+      }
       href="/trading"
       icon={CandlestickChart}
+      stats={
+        activeTab === "journal" ? tradingSecondaryStats(performance) : undefined
+      }
       title="Trading Journal"
     >
       <div className="mx-auto grid w-full max-w-7xl gap-6">
@@ -195,14 +208,16 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
         >
           {activeTab === "journal" ? (
             <div className="grid min-w-0 gap-6">
-              <TradingStatsGrid stats={stats()} />
-
               <div className="grid min-w-0 gap-6 xl:grid-cols-2">
-                <TradingEquityCurve curve={equityCurve()} />
+                <TradingEquityCurve
+                  curve={equityCurve()}
+                  stats={<TradingEquityStats stats={performance} />}
+                />
                 <TradingPositionsPanel
                   onCloseTrade={closeTrade}
                   onReopenTrade={reopenTrade}
                   pendingIds={pending}
+                  stats={<TradingPositionStats stats={performance} />}
                   trades={trades}
                 />
               </div>

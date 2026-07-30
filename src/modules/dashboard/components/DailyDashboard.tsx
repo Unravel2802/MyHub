@@ -108,11 +108,17 @@ export function DailyDashboard() {
       hero={
         dashboard.weeklyCadence ? (
           <StatCard
+            absent={
+              streak.current === 0 &&
+              dashboard.weeklyCadence.applications.count === 0 &&
+              dashboard.weeklyCadence.outreach.count === 0
+            }
             label="Streak + this week's cadence"
             hue={streak.current > 0 ? hueFor("/dashboard") : undefined}
             size="hero"
             tone={streak.current > 0 ? "accent" : "default"}
             value={`${streak.current} days · ${dashboard.weeklyCadence.applications.count} applications · ${dashboard.weeklyCadence.outreach.count} outreach`}
+            whenAbsent="Log a task today"
             hint={`${dashboard.weeklyCadence.mockInterviews.count} mock interviews logged${streak.activeToday ? " · Streak fed today" : " · Feed the streak today"}`}
           />
         ) : null

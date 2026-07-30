@@ -60,12 +60,30 @@ win rate and profit factor make sense next to the equity curve, average win/loss
 Where exactly each one lands is your call; the constraint is just that all nine non-hero numbers stay
 visible somewhere, with the four most important promoted to the page-level `stats` slot.
 
-Wire the hero through `whenAbsent` — a fresh account's P&L is `$0.00`, which is a MEASURED zero, not
-absence (see `StatCard`'s three-state comment: measured zero is never demoted, only `null`/pending
-is). So this specific hero likely does NOT need `whenAbsent` if you pick total P&L — a `$0.00`
-hero is legitimate data. If you pick a metric that seems fine as a hero but a fresh account renders
-as `null` (win rate, profit factor), you do need `whenAbsent`, or the dev-mode console.error in
-`StatCard` will tell you so at build time.
+**Correction, found by the gate rather than by this doc:** the paragraph that used to be here claimed
+a `$0.00` total-P&L hero is "measured, not absence," so it wouldn't need `whenAbsent`. That was
+wrong, and `tests/ui/page-contract.spec.ts` caught it in the first review pass — the hero rendered
+"$0.00" on a fresh account and failed the "never headline absence" check.
+
+The reasoning error: `totalPnlCents` is `pnls.reduce((total, pnl) => total + pnl, 0)` — a sum over
+CLOSED trades. Zero closed trades forces it to `0` whether or not there's anything to measure; it's
+arithmetic, not a signal. That's indistinguishable, semantically, from the Dashboard's original
+"0 days · 0 applications" — both are sums over empty activity, dressed up as data. Compare to
+Roadmap's "Missed months: 0", which stays meaningful at zero because it's evaluated against a fixed
+timeline that exists whether or not the user does anything — that zero is a real accomplishment, not
+an artifact of an empty sum. The test isn't "is the number zero," it's "would this number be zero
+purely because nothing happened yet, independent of what actually happened."
+
+`StatCard` can't tell these apart on its own — it only ever receives the pre-formatted string
+`"$0.00"`, not the trade count that makes THIS zero vacuous. That's exactly the gap the `absent` prop
+exists to cover (see `StatCard`'s own doc comment): pass `absent={stats.closedTrades === 0}` and
+`whenAbsent="Log your first trade"` on the P&L hero. Once there's a real closed trade, a genuine
+`$0.00` (a breakeven result) renders as ordinary full-weight data again — `absent` only fires while
+`closedTrades` is actually zero.
+
+The lesson for the rest of this pass, not just this one stat: before deciding a zero is "measured,
+not absent," ask whether the zero would be forced to that value by having done nothing at all. If
+yes, it needs `absent` + `whenAbsent` regardless of what the raw number looks like.
 
 Remove the `<h2>Performance</h2>` overline and the standalone `<section>` — the four/five
 secondary stats become the page's own `stats` prop, and the promoted ones move into `children`

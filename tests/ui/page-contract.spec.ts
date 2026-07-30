@@ -123,4 +123,4 @@ function headlinesAbsence(text: string): boolean {
 // next instead of what has not happened.
 //
 // This list only shrinks. Emptying it completes X7.
-const HEADLINES_ABSENCE = new Set<string>(["/achievements", "/prep"]);
+const HEADLINES_ABSENCE = new Set<string>(["/prep"]);

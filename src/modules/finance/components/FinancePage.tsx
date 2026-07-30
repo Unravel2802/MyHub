@@ -243,7 +243,18 @@ export function FinancePage() {
       description="Track income and expenses in exact cents, one month at a time."
       error={store.error}
       eyebrow="Personal ledger"
-      hero={null}
+      hero={
+        <StatCard
+          absent={!hasCashActivity}
+          hint="Income minus expenses for the selected month"
+          hue={summary.netCents > 0 ? "lime" : undefined}
+          label="Net this month"
+          size="hero"
+          tone={summary.netCents < 0 ? "danger" : "default"}
+          value={formatCents(summary.netCents)}
+          whenAbsent="Add this month's first transaction"
+        />
+      }
       href="/finance"
       icon={Wallet}
       navTitle="Finances"
@@ -288,7 +299,7 @@ export function FinancePage() {
           overline="Ledger month"
           title={format(selectedMonth, "MMMM yyyy")}
         >
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <StatCard
               hint="Settled income"
               hue={summary.incomeCents > 0 ? "lime" : undefined}
@@ -306,13 +317,6 @@ export function FinancePage() {
                   ? formatCents(summary.expenseCents)
                   : "—"
               }
-            />
-            <StatCard
-              hint="Income minus expenses"
-              hue={summary.netCents > 0 ? "lime" : undefined}
-              label="Net"
-              tone={summary.netCents < 0 ? "danger" : "default"}
-              value={hasCashActivity ? formatCents(summary.netCents) : "—"}
             />
           </div>
         </Panel>

@@ -23,6 +23,7 @@ export function ReviewSnapshotStats({
         label="Applications"
         size="hero"
         value={snapshot.cadence.applications.count}
+        whenAbsent="Log an application this week"
         hint={`Target ${targetLabel(snapshot.cadence.applications.target)}`}
       />
       <StatCard

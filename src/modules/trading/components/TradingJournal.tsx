@@ -15,6 +15,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { hueFor } from "@/src/components/moduleHues";
+import { HUE_BADGE, HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { Panel } from "@/src/components/ui/Panel";
 import { TradingChecklistPanel } from "@/src/modules/trading/components/TradingChecklistPanel";
@@ -47,6 +49,7 @@ interface TradingJournalProps {
 }
 
 export function TradingJournal({ referenceContent }: TradingJournalProps) {
+  const moduleHue = hueFor("/trading");
   const {
     trades,
     entries,
@@ -137,7 +140,7 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
           <div className="mx-auto w-full max-w-7xl">
             <Panel
               description="Capture the signal and the decision. Buy entries can open a position in the same submit."
-              title="Log an entry"
+              title={<span className={HUE_TEXT[moduleHue]}>Log an entry</span>}
             >
               <TradingEntryForm
                 disabled={isCreating}
@@ -179,7 +182,7 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
                 aria-selected={selected}
                 className={`-mb-px flex items-center gap-1.5 rounded-t-md border-x border-t px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ${
                   selected
-                    ? "border-border bg-surface text-accent-strong"
+                    ? HUE_BADGE[moduleHue]
                     : "border-transparent text-muted hover:bg-surface/60 hover:text-body"
                 }`}
                 id={`${tabId}-${tab.id}-tab`}

@@ -1,6 +1,8 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
+import { hueFor } from "@/src/components/moduleHues";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import type { CreateProblemInput } from "@/src/modules/leetcode/LeetCodeRepository";
 import type {
   LeetCodeDifficulty,
@@ -26,6 +28,7 @@ export function LeetCodeProblemForm({
   initialProblem,
   onSubmit,
 }: LeetCodeProblemFormProps) {
+  const moduleHue = hueFor("/prep");
   const [title, setTitle] = useState(initialProblem?.title ?? "");
   const [questionNumber, setQuestionNumber] = useState(
     initialProblem?.questionNumber?.toString() ?? "",
@@ -76,7 +79,7 @@ export function LeetCodeProblemForm({
       onSubmit={handleSubmit}
     >
       <div>
-        <h3 className="font-semibold text-foreground">
+        <h3 className={`font-semibold ${HUE_TEXT[moduleHue]}`}>
           {initialProblem ? "Edit problem" : "Add a problem"}
         </h3>
         {!initialProblem ? (

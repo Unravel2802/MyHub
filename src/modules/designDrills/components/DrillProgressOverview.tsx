@@ -3,13 +3,18 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import type { HueName } from "@/src/components/moduleHues";
+import { hueFor, type HueName } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { Panel } from "@/src/components/ui/Panel";
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
-import { DESIGN_DRILL_CATEGORY_HUES } from "@/src/modules/designDrills/designDrillHues";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
+import {
+  DESIGN_DRILL_CATEGORY_HUES,
+  DESIGN_DRILL_DIFFICULTY_HUES,
+  DESIGN_DRILL_RATING_HUES,
+} from "@/src/modules/designDrills/designDrillHues";
 import {
   drillCoverage,
   reviewQueue,
@@ -32,18 +37,6 @@ const difficultyLabels: Record<DesignDrillDifficulty, string> = {
   warmup: "Warmup",
   core: "Core",
   advanced: "Advanced",
-};
-
-const difficultyHues: Record<DesignDrillDifficulty, HueName> = {
-  warmup: "emerald",
-  core: "amber",
-  advanced: "rose",
-};
-
-const ratingHues: Record<DesignDrillSelfRating, HueName> = {
-  strong: "emerald",
-  solid: "blue",
-  weak: "rose",
 };
 
 const ratingLabels: Record<DesignDrillSelfRating, string> = {
@@ -93,6 +86,7 @@ export function DrillProgressOverview({
   attempts,
   drills,
 }: DrillProgressOverviewProps) {
+  const moduleHue = hueFor("/design-drills");
   const coverage = useMemo(
     () => drillCoverage(drills, attempts),
     [attempts, drills],
@@ -109,19 +103,23 @@ export function DrillProgressOverview({
       <Panel
         description="Distinct drills with at least one completed, self-graded attempt."
         overline="Progress"
-        title="Coverage"
+        title={<span className={HUE_TEXT[moduleHue]}>Coverage</span>}
       >
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             hint="Drills attempted across the full bank"
-            hue="teal"
+            hue={coverage.overall.attempted > 0 ? moduleHue : undefined}
             label="Overall coverage"
             value={`${coverage.overall.attempted} / ${coverage.overall.total}`}
           />
           {(["strong", "solid", "weak"] as const).map((rating) => (
             <StatCard
               hint="Most recent completed rating"
-              hue={ratingHues[rating]}
+              hue={
+                coverage.latestRatingCounts[rating] > 0
+                  ? DESIGN_DRILL_RATING_HUES[rating]
+                  : undefined
+              }
               key={rating}
               label={ratingLabels[rating]}
               value={coverage.latestRatingCounts[rating]}
@@ -132,7 +130,7 @@ export function DrillProgressOverview({
         <div className="mt-5 grid gap-5 border-t border-border pt-5 sm:grid-cols-2">
           <section aria-labelledby="coverage-category-heading">
             <h3
-              className="text-xs font-medium uppercase tracking-widest text-muted"
+              className={`text-xs font-medium uppercase tracking-widest ${HUE_TEXT[moduleHue]}`}
               id="coverage-category-heading"
             >
               By category
@@ -153,7 +151,7 @@ export function DrillProgressOverview({
 
           <section aria-labelledby="coverage-difficulty-heading">
             <h3
-              className="text-xs font-medium uppercase tracking-widest text-muted"
+              className={`text-xs font-medium uppercase tracking-widest ${HUE_TEXT[moduleHue]}`}
               id="coverage-difficulty-heading"
             >
               By difficulty
@@ -162,7 +160,7 @@ export function DrillProgressOverview({
               {(["warmup", "core", "advanced"] as const).map((difficulty) => (
                 <CoverageRow
                   bucket={coverage.byDifficulty[difficulty]}
-                  hue={difficultyHues[difficulty]}
+                  hue={DESIGN_DRILL_DIFFICULTY_HUES[difficulty]}
                   key={difficulty}
                   label={difficultyLabels[difficulty]}
                 />
@@ -175,7 +173,7 @@ export function DrillProgressOverview({
       <Panel
         description="New drills and completed reps whose review interval has elapsed."
         overline="Review queue"
-        title="Revisit weak drills"
+        title={<span className={HUE_TEXT[moduleHue]}>Revisit weak drills</span>}
       >
         {revisitItems.length === 0 ? (
           <EmptyState
@@ -201,14 +199,19 @@ export function DrillProgressOverview({
                       <Badge
                         tone={
                           item.reason === "never_attempted"
-                            ? "accent"
+                            ? undefined
                             : "danger"
+                        }
+                        hue={
+                          item.reason === "never_attempted"
+                            ? moduleHue
+                            : undefined
                         }
                       >
                         {reasonLabel(item)}
                       </Badge>
                       {item.lastRating ? (
-                        <Badge hue={ratingHues[item.lastRating]}>
+                        <Badge hue={DESIGN_DRILL_RATING_HUES[item.lastRating]}>
                           Last: {ratingLabels[item.lastRating]}
                         </Badge>
                       ) : (

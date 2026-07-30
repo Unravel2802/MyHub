@@ -1,10 +1,15 @@
 import { ArrowLeft, Check, ChevronDown, CircleX } from "lucide-react";
+import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { HUE_DOT, HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { Markdown } from "@/src/components/ui/Markdown";
 import { DrillBookmarkButton } from "@/src/modules/designDrills/components/DrillBookmarkButton";
 import { DrillBrief } from "@/src/modules/designDrills/components/DrillBrief";
-import { DESIGN_DRILL_CATEGORY_HUES } from "@/src/modules/designDrills/designDrillHues";
+import {
+  DESIGN_DRILL_CATEGORY_HUES,
+  DESIGN_DRILL_RATING_HUES,
+} from "@/src/modules/designDrills/designDrillHues";
 import type {
   DesignDrill,
   DesignDrillAttempt,
@@ -24,11 +29,11 @@ function formatDuration(totalSec: number): string {
 
 const ratingDetails: Record<
   DesignDrillSelfRating,
-  { height: string; label: string; tone: "danger" | "accent" | "success" }
+  { height: string; label: string }
 > = {
-  weak: { height: "h-2", label: "Weak", tone: "danger" },
-  solid: { height: "h-4", label: "Solid", tone: "accent" },
-  strong: { height: "h-6", label: "Strong", tone: "success" },
+  weak: { height: "h-2", label: "Weak" },
+  solid: { height: "h-4", label: "Solid" },
+  strong: { height: "h-6", label: "Strong" },
 };
 
 function SelfRatingTrend({ attempts }: { attempts: DesignDrillAttempt[] }) {
@@ -68,13 +73,7 @@ function SelfRatingTrend({ attempts }: { attempts: DesignDrillAttempt[] }) {
             return (
               <span
                 aria-hidden
-                className={`w-5 rounded-sm ${rating.height} ${
-                  rating.tone === "success"
-                    ? "bg-success"
-                    : rating.tone === "danger"
-                      ? "bg-danger"
-                      : "bg-accent"
-                }`}
+                className={`w-5 rounded-sm ${rating.height} ${HUE_DOT[DESIGN_DRILL_RATING_HUES[attempt.selfRating]]}`}
                 key={attempt.id}
                 title={rating.label}
               />
@@ -112,6 +111,7 @@ export function DrillDetail({
   onToggleBookmark,
   onStart,
 }: DrillDetailProps) {
+  const moduleHue = hueFor("/design-drills");
   const completedAttempts = pastAttempts
     .filter(
       (attempt): attempt is DesignDrillAttempt & { completedAt: string } =>
@@ -155,7 +155,9 @@ export function DrillDetail({
       <section className="min-w-0 overflow-hidden rounded-lg border border-border bg-surface">
         <div className="px-5 pb-4 pt-5">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <h2
+              className={`text-xl font-semibold tracking-tight ${HUE_TEXT[moduleHue]}`}
+            >
               {drill.title}
             </h2>
             <Badge hue={DESIGN_DRILL_CATEGORY_HUES[drill.category]}>
@@ -174,7 +176,7 @@ export function DrillDetail({
         className="rounded-lg border border-border bg-surface p-5"
       >
         <h2
-          className="text-lg font-semibold tracking-tight text-foreground"
+          className={`text-lg font-semibold tracking-tight ${HUE_TEXT[moduleHue]}`}
           id="past-attempts-heading"
         >
           Your past attempts
@@ -210,7 +212,7 @@ export function DrillDetail({
                         : formatDuration(attempt.durationSec)}
                     </span>
                     {attempt.selfRating ? (
-                      <Badge tone={ratingDetails[attempt.selfRating].tone}>
+                      <Badge hue={DESIGN_DRILL_RATING_HUES[attempt.selfRating]}>
                         {ratingDetails[attempt.selfRating].label}
                       </Badge>
                     ) : null}
@@ -247,7 +249,9 @@ export function DrillDetail({
 
                   {attempt.notes ? (
                     <details className="group mt-3 border-t border-border pt-3">
-                      <summary className="flex cursor-pointer list-none items-center gap-1.5 font-medium text-accent-strong hover:text-accent">
+                      <summary
+                        className={`flex cursor-pointer list-none items-center gap-1.5 font-medium ${HUE_TEXT[moduleHue]} hover:opacity-80`}
+                      >
                         <ChevronDown
                           aria-hidden
                           className="size-4 transition-transform group-open:rotate-180"

@@ -1,6 +1,8 @@
 "use client";
 
 import { type KeyboardEvent, useId, useRef, useState } from "react";
+import { hueFor } from "@/src/components/moduleHues";
+import { HUE_BADGE } from "@/src/components/ui/hueClasses";
 import { Markdown } from "@/src/components/ui/Markdown";
 import type { DrillSolutionCodeExample } from "@/src/modules/designDrills/types";
 
@@ -9,6 +11,7 @@ interface SolutionCodeTabsProps {
 }
 
 export function SolutionCodeTabs({ examples }: SolutionCodeTabsProps) {
+  const moduleHue = hueFor("/design-drills");
   const [activeIndex, setActiveIndex] = useState(0);
   const id = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -53,7 +56,7 @@ export function SolutionCodeTabs({ examples }: SolutionCodeTabsProps) {
               aria-selected={selected}
               className={`-mb-px rounded-t-md border-x border-t px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ${
                 selected
-                  ? "border-border bg-surface text-accent-strong"
+                  ? HUE_BADGE[moduleHue]
                   : "border-transparent text-muted hover:bg-surface/60 hover:text-body"
               }`}
               id={`${id}-${example.language}-tab`}

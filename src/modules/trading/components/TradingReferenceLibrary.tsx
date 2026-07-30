@@ -1,3 +1,5 @@
+import { hueFor } from "@/src/components/moduleHues";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { Markdown } from "@/src/components/ui/Markdown";
 import { Panel } from "@/src/components/ui/Panel";
 
@@ -46,20 +48,23 @@ export function TradingReferenceLibrary({
   systematicPlan,
   technicalDeepDive,
 }: TradingReferenceLibraryProps) {
+  const moduleHue = hueFor("/trading");
   const deepDive = splitDeepDive(technicalDeepDive);
 
   return (
     <div className="grid min-w-0 gap-6">
       <Panel
         description="Strategy framing, signal generator, broker setup, and the milestone-based capital ladder."
-        title="Systematic Trading Plan"
+        title={
+          <span className={HUE_TEXT[moduleHue]}>Systematic Trading Plan</span>
+        }
       >
         <Markdown>{systematicPlan}</Markdown>
       </Panel>
 
       <Panel
         description="The math, market structure, risk discipline, and Python behind the system."
-        title="Technical Deep Dive"
+        title={<span className={HUE_TEXT[moduleHue]}>Technical Deep Dive</span>}
       >
         {deepDive.introduction ? (
           <Markdown>{deepDive.introduction}</Markdown>
@@ -69,14 +74,14 @@ export function TradingReferenceLibrary({
           aria-label="Technical deep dive chapters"
           className="mt-5 rounded-md border border-border bg-surface-subtle p-4"
         >
-          <p className="text-sm font-semibold text-foreground">
+          <p className={`text-sm font-semibold ${HUE_TEXT[moduleHue]}`}>
             Table of contents
           </p>
           <ol className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
             {deepDive.chapters.map((chapter) => (
               <li key={chapter.id}>
                 <a
-                  className="text-sm font-medium text-accent-strong underline-offset-2 hover:text-accent hover:underline"
+                  className={`text-sm font-medium underline-offset-2 hover:underline ${HUE_TEXT[moduleHue]}`}
                   href={`#${chapter.id}`}
                 >
                   {chapter.label}

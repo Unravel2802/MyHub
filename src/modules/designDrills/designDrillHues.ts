@@ -1,5 +1,9 @@
 import type { HueName } from "@/src/components/moduleHues";
-import type { DesignDrillCategory } from "@/src/modules/designDrills/types";
+import type {
+  DesignDrillCategory,
+  DesignDrillDifficulty,
+  DesignDrillSelfRating,
+} from "@/src/modules/designDrills/types";
 
 // Reuses Prep Tracker's exact system_design / ml_system_design hues
 // (src/modules/prep/prepTypeHues.ts) so the same concept reads as the same
@@ -8,4 +12,20 @@ export const DESIGN_DRILL_CATEGORY_HUES: Record<DesignDrillCategory, HueName> =
   {
     system_design: "blue",
     ml_system_design: "violet",
+  };
+
+export const DESIGN_DRILL_DIFFICULTY_HUES: Record<
+  DesignDrillDifficulty,
+  HueName
+> = {
+  warmup: "emerald",
+  core: "amber",
+  advanced: "rose",
+};
+
+export const DESIGN_DRILL_RATING_HUES: Record<DesignDrillSelfRating, HueName> =
+  {
+    strong: "emerald",
+    solid: "blue",
+    weak: "rose",
   };

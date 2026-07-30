@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 import { BriefcaseBusiness } from "lucide-react";
 import { type FormEvent, type ReactNode, useState } from "react";
+import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
 import {
   Dialog,
@@ -16,6 +17,7 @@ import {
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { FormField } from "@/src/components/ui/FormField";
 import { Panel } from "@/src/components/ui/Panel";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import {
   Select,
   SelectContent,
@@ -205,10 +207,15 @@ export function TradingPositionsPanel({
   stats,
   trades,
 }: TradingPositionsPanelProps) {
+  const moduleHue = hueFor("/trading");
   return (
     <Panel
-      aside={<Badge tone="neutral">{trades.length}</Badge>}
-      title="Positions"
+      aside={
+        <Badge hue={trades.length > 0 ? moduleHue : undefined}>
+          {trades.length}
+        </Badge>
+      }
+      title={<span className={HUE_TEXT[moduleHue]}>Positions</span>}
     >
       <div className="grid gap-4">
         {stats}
@@ -236,7 +243,10 @@ export function TradingPositionsPanel({
                         <span className="font-semibold text-foreground">
                           {trade.ticker}
                         </span>
-                        <Badge tone={closed ? "neutral" : "success"}>
+                        <Badge
+                          tone="neutral"
+                          hue={closed ? undefined : moduleHue}
+                        >
                           {closed ? "Closed" : "Open"}
                         </Badge>
                       </div>

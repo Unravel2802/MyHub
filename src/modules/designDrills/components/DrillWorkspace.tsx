@@ -2,9 +2,14 @@
 
 import { useEffect, useId, useState } from "react";
 import { ArrowLeft, Check, Clock, Loader2, Pause, Play } from "lucide-react";
+import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import type { SubmitAttemptInput } from "@/src/modules/designDrills/DesignDrillsRepository";
-import { DESIGN_DRILL_CATEGORY_HUES } from "@/src/modules/designDrills/designDrillHues";
+import {
+  DESIGN_DRILL_CATEGORY_HUES,
+  DESIGN_DRILL_RATING_HUES,
+} from "@/src/modules/designDrills/designDrillHues";
 import { DrillBrief } from "@/src/modules/designDrills/components/DrillBrief";
 import { CodePad } from "@/src/modules/designDrills/components/CodePad";
 import type {
@@ -52,6 +57,7 @@ export function DrillWorkspace({
   onSubmit,
   onExit,
 }: DrillWorkspaceProps) {
+  const moduleHue = hueFor("/design-drills");
   const [notes, setNotes] = useState(attempt.notes ?? "");
   const [revealed, setRevealed] = useState(false);
   const [rubricHits, setRubricHits] = useState<Set<number>>(new Set());
@@ -179,7 +185,9 @@ export function DrillWorkspace({
         <section className="overflow-hidden rounded-lg border border-border bg-surface lg:h-[calc(100vh-11rem)] lg:overflow-y-auto">
           <div className="px-5 pb-4 pt-5">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              <h2
+                className={`text-xl font-semibold tracking-tight ${HUE_TEXT[moduleHue]}`}
+              >
                 {drill.title}
               </h2>
               <Badge hue={DESIGN_DRILL_CATEGORY_HUES[drill.category]}>
@@ -195,7 +203,9 @@ export function DrillWorkspace({
 
           {completedPastAttempts.length > 0 ? (
             <div className="border-t border-border px-5 pb-5 pt-4">
-              <h3 className="text-xs font-medium uppercase tracking-widest text-muted">
+              <h3
+                className={`text-xs font-medium uppercase tracking-widest ${HUE_TEXT[moduleHue]}`}
+              >
                 Your past attempts
               </h3>
               <ul className="mt-2 grid gap-1.5 text-sm text-body">
@@ -208,7 +218,9 @@ export function DrillWorkspace({
                       {past.durationSec ? formatElapsed(past.durationSec) : "—"}
                     </span>
                     {past.selfRating ? (
-                      <Badge tone="neutral">{past.selfRating}</Badge>
+                      <Badge hue={DESIGN_DRILL_RATING_HUES[past.selfRating]}>
+                        {past.selfRating}
+                      </Badge>
                     ) : null}
                   </li>
                 ))}
@@ -260,7 +272,9 @@ export function DrillWorkspace({
             </button>
           ) : (
             <div className="rounded-lg border border-border bg-surface p-5">
-              <h3 className="text-lg font-semibold tracking-tight text-foreground">
+              <h3
+                className={`text-lg font-semibold tracking-tight ${HUE_TEXT[moduleHue]}`}
+              >
                 Self-grade against the rubric
               </h3>
               <p className="mt-1 text-sm text-muted">

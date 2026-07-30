@@ -2,7 +2,9 @@
 
 import { Code2, LayoutGrid, RefreshCw, TableProperties } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
+import { HUE_BADGE, HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { LeetCodeBoard } from "@/src/modules/leetcode/components/LeetCodeBoard";
 import { LeetCodeProblemDetail } from "@/src/modules/leetcode/components/LeetCodeProblemDetail";
 import { LeetCodeProblemForm } from "@/src/modules/leetcode/components/LeetCodeProblemForm";
@@ -12,6 +14,7 @@ import { useLeetCodeStore } from "@/src/modules/leetcode/useLeetCodeStore";
 type View = "table" | "board";
 
 export function LeetCodeTracker() {
+  const moduleHue = hueFor("/prep");
   const {
     problems,
     isLoading,
@@ -74,14 +77,19 @@ export function LeetCodeTracker() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Code2 aria-hidden="true" className="size-5 text-accent-strong" />
+            <Code2
+              aria-hidden="true"
+              className={`size-5 ${HUE_TEXT[moduleHue]}`}
+            />
             <h2
-              className="text-lg font-semibold tracking-tight text-foreground"
+              className={`text-lg font-semibold tracking-tight ${HUE_TEXT[moduleHue]}`}
               id="leetcode-tracker-heading"
             >
               LeetCode Tracker
             </h2>
-            <Badge tone="neutral">{problems.length}</Badge>
+            <Badge hue={problems.length > 0 ? moduleHue : undefined}>
+              {problems.length}
+            </Badge>
           </div>
           <p className="mt-1 text-sm text-muted">
             Keep the problem bank separate from each attempt and solution.
@@ -97,7 +105,7 @@ export function LeetCodeTracker() {
               aria-pressed={view === "table"}
               className={`inline-flex h-8 items-center gap-2 rounded px-3 text-sm font-medium ${
                 view === "table"
-                  ? "bg-surface text-accent-strong shadow-sm"
+                  ? `${HUE_BADGE[moduleHue]} shadow-sm`
                   : "text-muted hover:text-foreground"
               }`}
               onClick={() => setView("table")}
@@ -110,7 +118,7 @@ export function LeetCodeTracker() {
               aria-pressed={view === "board"}
               className={`inline-flex h-8 items-center gap-2 rounded px-3 text-sm font-medium ${
                 view === "board"
-                  ? "bg-surface text-accent-strong shadow-sm"
+                  ? `${HUE_BADGE[moduleHue]} shadow-sm`
                   : "text-muted hover:text-foreground"
               }`}
               onClick={() => setView("board")}

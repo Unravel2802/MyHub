@@ -146,6 +146,38 @@ test("column filters narrow the board and restore it when cleared", async ({
   await expect(columns).toHaveCount(4);
 });
 
+test("empty column descriptions use the available column width", async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 844, width: 390 });
+  await loadBoard(page);
+
+  async function expectDescriptionToUseColumnWidth() {
+    const description = page
+      .getByRole("region", { name: "Done" })
+      .getByText("Completed tasks will show up here.", { exact: true });
+    const widths = await description.evaluate((element) => ({
+      description: element.getBoundingClientRect().width,
+      emptyState: element.parentElement?.getBoundingClientRect().width ?? 0,
+    }));
+
+    expect(widths.description).toBeGreaterThan(widths.emptyState * 0.5);
+  }
+
+  await expectDescriptionToUseColumnWidth();
+  await page.setViewportSize({ height: 900, width: 1280 });
+  await expectDescriptionToUseColumnWidth();
+
+  await page
+    .getByRole("group", { name: "Theme" })
+    .getByRole("button", { name: "Light" })
+    .click();
+  await expectDescriptionToUseColumnWidth();
+
+  await page.setViewportSize({ height: 844, width: 390 });
+  await expectDescriptionToUseColumnWidth();
+});
+
 test("overflowing columns scroll without shrinking task cards", async ({
   page,
 }) => {

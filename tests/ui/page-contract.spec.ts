@@ -123,8 +123,4 @@ function headlinesAbsence(text: string): boolean {
 // next instead of what has not happened.
 //
 // This list only shrinks. Emptying it completes X7.
-const HEADLINES_ABSENCE = new Set([
-  "/dashboard", // "0 days · 0 applications · 0 outreach" — the app's front door
-  "/achievements", // "0 days"
-  "/prep", // "0%"
-]);
+const HEADLINES_ABSENCE = new Set<string>();

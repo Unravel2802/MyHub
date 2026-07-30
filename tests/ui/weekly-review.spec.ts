@@ -16,6 +16,9 @@ async function load(
 
 test("saves a review and upserts the same week", async ({ page }) => {
   const db = await load(page);
+  await expect(
+    page.getByText("Log an application this week", { exact: true }),
+  ).toBeVisible();
   const weekStart = format(
     startOfWeek(new Date(), { weekStartsOn: 1 }),
     "yyyy-MM-dd",

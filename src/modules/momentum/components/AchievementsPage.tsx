@@ -67,11 +67,13 @@ export function AchievementsPage() {
         /* Only tint the streak once there IS one. Highlighting a zero draws
            the eye to nothing and reads as celebrating it. */
         <StatCard
+          absent={streak.current === 0}
           label="Current streak"
           hue={streak.current > 0 ? hueFor("/achievements") : undefined}
           size="hero"
           tone={streak.current > 0 ? "accent" : "default"}
           value={`${streak.current} days`}
+          whenAbsent="Start today's streak"
           hint={
             streak.current > 0 && !streak.activeToday
               ? "Log something today to keep it"

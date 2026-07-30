@@ -183,6 +183,7 @@ export function PrepTracker({ children }: PrepTrackerProps) {
       eyebrow="Interview preparation"
       hero={
         <StatCard
+          absent={checkpointProgress.algorithm.actual === 0}
           hue={
             checkpointProgress.algorithm.actual > 0
               ? hueFor("/prep")
@@ -192,6 +193,7 @@ export function PrepTracker({ children }: PrepTrackerProps) {
           label={checkpoint.label}
           size="hero"
           value={`${Math.round(Math.min(checkpointProgress.algorithm.progress, 1) * 100)}%`}
+          whenAbsent="Log your first prep session"
         />
       }
       href="/prep"

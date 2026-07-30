@@ -178,6 +178,32 @@ test("empty column descriptions use the available column width", async ({
   await expectDescriptionToUseColumnWidth();
 });
 
+test("empty board surfaces use the shared compact floor", async ({ page }) => {
+  await loadBoard(page);
+
+  const doneColumn = page.getByRole("region", { name: "Done" });
+  const weeklyTasks = page.getByLabel("Weekly tasks");
+  const weeklyEmptyState = weeklyTasks
+    .getByText("No weekly rules yet", { exact: true })
+    .locator("..");
+
+  const columnLayout = await doneColumn.evaluate((element) => ({
+    alignSelf: getComputedStyle(element).alignSelf,
+    height: element.getBoundingClientRect().height,
+    minHeight: getComputedStyle(element).minHeight,
+  }));
+  expect(columnLayout.minHeight).toBe("120px");
+  expect(columnLayout.alignSelf).toBe("flex-start");
+  expect(columnLayout.height).toBeLessThan(520);
+
+  const weeklyLayout = await weeklyEmptyState.evaluate((element) => ({
+    height: element.getBoundingClientRect().height,
+    minHeight: getComputedStyle(element).minHeight,
+  }));
+  expect(weeklyLayout.minHeight).toBe("120px");
+  expect(weeklyLayout.height).toBeLessThan(290);
+});
+
 test("overflowing columns scroll without shrinking task cards", async ({
   page,
 }) => {

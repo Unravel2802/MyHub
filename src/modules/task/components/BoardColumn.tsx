@@ -51,7 +51,7 @@ export function BoardColumn({
   return (
     <section
       aria-label={column.title}
-      className="fade-up flex min-h-[520px] min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface"
+      className="fade-up flex min-h-empty min-w-0 self-start flex-col overflow-hidden rounded-lg border border-border bg-surface"
       ref={setNodeRef}
       style={style}
     >
@@ -104,6 +104,7 @@ export function BoardColumn({
           ) : (
             <EmptyState
               className="flex-1"
+              compact
               description={column.emptyCopy}
               icon={Inbox}
               title="Ready for the next task"

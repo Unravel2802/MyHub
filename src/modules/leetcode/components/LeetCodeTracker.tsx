@@ -1,7 +1,8 @@
 "use client";
 
-import { Code2, LayoutGrid, RefreshCw, TableProperties } from "lucide-react";
+import { Code2, LayoutGrid, TableProperties } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { RefreshButton } from "@/src/components/ui/RefreshButton";
 import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
 import { HUE_BADGE, HUE_TEXT } from "@/src/components/ui/hueClasses";
@@ -128,18 +129,12 @@ export function LeetCodeTracker() {
               Board
             </button>
           </div>
-          <button
-            aria-label="Refresh LeetCode tracker"
-            className="inline-flex size-10 items-center justify-center rounded-md border border-input bg-surface text-body hover:border-input-hover disabled:opacity-60"
-            disabled={isLoading}
+          <RefreshButton
+            variant="icon"
+            ariaLabel="Refresh LeetCode tracker"
+            isRefreshing={isLoading}
             onClick={() => void Promise.all([fetchProblems(), fetchAttempts()])}
-            type="button"
-          >
-            <RefreshCw
-              aria-hidden="true"
-              className={`size-4 ${isLoading ? "animate-spin" : ""}`}
-            />
-          </button>
+          />
         </div>
       </div>
 

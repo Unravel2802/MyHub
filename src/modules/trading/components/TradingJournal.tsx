@@ -4,9 +4,9 @@ import {
   CandlestickChart,
   ClipboardCheck,
   Library,
-  RefreshCw,
   ScrollText,
 } from "lucide-react";
+import { RefreshButton } from "@/src/components/ui/RefreshButton";
 import {
   type ReactNode,
   useEffect,
@@ -115,24 +115,16 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
     <PageTemplate
       actions={
         activeTab === "references" ? null : (
-          <button
-            aria-label={`Refresh ${
+          <RefreshButton
+            variant="icon"
+            ariaLabel={`Refresh ${
               activeTab === "checklist"
                 ? "pre-trade checklist"
                 : "trading journal"
             }`}
-            className="inline-flex size-10 items-center justify-center rounded-md border border-input bg-surface text-body hover:border-input-hover disabled:opacity-60"
-            disabled={activeTab === "journal" && isLoading}
+            isRefreshing={activeTab === "journal" && isLoading}
             onClick={refresh}
-            type="button"
-          >
-            <RefreshCw
-              aria-hidden="true"
-              className={`size-4 ${
-                activeTab === "journal" && isLoading ? "animate-spin" : ""
-              }`}
-            />
-          </button>
+          />
         )
       }
       compose={

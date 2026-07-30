@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Dumbbell, SearchX } from "lucide-react";
 import { EmptyState } from "@/src/components/ui/EmptyState";
+import { RefreshButton } from "@/src/components/ui/RefreshButton";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
@@ -107,17 +108,13 @@ export function DesignDrillsPage({ slug }: DesignDrillsPageProps) {
   return (
     <PageTemplate
       actions={
-        <button
-          className="h-10 rounded-md border border-input bg-surface px-4 text-sm text-body hover:border-input-hover"
-          disabled={isLoading}
+        <RefreshButton
           id="drills-refresh"
+          isRefreshing={isLoading}
           onClick={() =>
             void Promise.all([fetchDrills(), fetchAttempts(), fetchBookmarks()])
           }
-          type="button"
-        >
-          Refresh
-        </button>
+        />
       }
       error={error}
       eyebrow="Interview preparation"

@@ -59,3 +59,13 @@ export function hueFor(href: string): HueName {
 export function hueVar(hue: HueName): string {
   return hue === "accent" ? "var(--accent)" : `var(--hue-${hue})`;
 }
+
+// The matching SURFACE token, for the same reason hueVar exists: `accent` is
+// the one hue whose tokens aren't named `--hue-*`, so callers building a fill
+// from a hue name would otherwise emit `var(--hue-accent-surface)`, which
+// doesn't exist, and silently lose the color.
+export function hueSurfaceVar(hue: HueName): string {
+  return hue === "accent"
+    ? "var(--accent-surface)"
+    : `var(--hue-${hue}-surface)`;
+}

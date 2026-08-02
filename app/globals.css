@@ -501,6 +501,65 @@ body {
   animation: pulse-glow 2.4s ease-in-out infinite;
 }
 
+/* --- The hub's orbital scene (src/components/home/OrbitalHub.tsx) -----------
+   The orbit itself is driven by requestAnimationFrame in the component (it
+   needs per-frame depth math CSS can't express). These are the ambient parts
+   that ARE pure CSS. All of them are decorative, so the reduced-motion block
+   below freezing them loses nothing. */
+
+/* Sonar rings expanding off the center hub. */
+@keyframes orbit-hub-pulse {
+  0% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+
+.orbit-hub-pulse {
+  animation: orbit-hub-pulse 3.6s ease-out infinite;
+}
+
+.orbit-hub-pulse-delayed {
+  animation-delay: 1.8s;
+}
+
+/* The hub "breathes" — a slow scale that keeps the centre from reading as a
+   flat sticker next to the moving planets. */
+@keyframes orbit-hub-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.045);
+  }
+}
+
+.orbit-hub-breathe {
+  animation: orbit-hub-breathe 4.2s ease-in-out infinite;
+}
+
+/* --depth-scale is written per frame by the rAF loop (near planets bigger, far
+   ones smaller); the hover bump multiplies on top of it, so the two can't
+   fight over the transform. The overshoot easing is the spring the prototype
+   got from its animation library. */
+.orbit-node {
+  --depth-scale: 1;
+  --hover-scale: 1;
+  transform: translate(-50%, -50%)
+    scale(calc(var(--depth-scale) * var(--hover-scale)));
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.orbit-node:hover,
+.orbit-node:focus-visible {
+  --hover-scale: 1.22;
+}
+
 /* Anyone who asked their OS for less motion gets none of it. */
 @media (prefers-reduced-motion: reduce) {
   *,

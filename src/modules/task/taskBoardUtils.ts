@@ -96,6 +96,31 @@ export function getDropPosition(
   return positionBetween(previousTask?.position ?? null, nextTask.position);
 }
 
+// For the Home hub's "Today's focus" strip (docs/handoff pending): the tasks
+// most worth surfacing outside the board itself — overdue or due today,
+// still open, most overdue first. Deliberately excludes tasks with no
+// dueDate: an undated task is always "not urgent yet" by definition, and
+// including the whole backlog here would make the strip meaningless within a
+// day of any board with more than a handful of items.
+export function focusTasks(
+  tasks: Task[],
+  today: string,
+  limit: number,
+): Task[] {
+  return tasks
+    .filter(
+      (task) =>
+        !task.deletedAt &&
+        !task.archivedAt &&
+        !task.recursWeekly &&
+        task.status !== "done" &&
+        task.dueDate !== null &&
+        task.dueDate <= today,
+    )
+    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+    .slice(0, limit);
+}
+
 export function getTaskStats(tasks: Task[], today: string): TaskStats[] {
   const activeTasks = tasks.filter((task) => !task.deletedAt);
 

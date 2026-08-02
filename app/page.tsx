@@ -3,6 +3,9 @@ import { ArrowRight } from "lucide-react";
 import { NAV_ITEMS } from "@/src/components/appNav";
 import { CORE_TOOL_HREFS, MINI_APPS } from "@/src/components/miniApps";
 import { hueFor } from "@/src/components/moduleHues";
+import { HomeFocusStrip } from "@/src/components/home/HomeFocusStrip";
+import { HomeMomentumPanel } from "@/src/components/home/HomeMomentumPanel";
+import { OrbitalHub } from "@/src/components/home/OrbitalHub";
 import { HUE_DOT, HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { HueIconChip } from "@/src/components/ui/HueIconChip";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
@@ -15,13 +18,15 @@ export default function Home() {
 
   return (
     <PageTemplate
-      contentWidth="narrow"
+      contentWidth="full"
       description="Choose a workspace and get back to the work that matters."
       eyebrow="Home"
-      hero={null}
+      hero={<OrbitalHub idlePanel={<HomeMomentumPanel />} />}
       href="/"
       title="Your apps"
     >
+      <HomeFocusStrip />
+
       <div className="grid gap-6 md:grid-cols-2">
         {MINI_APPS.map((app) => {
           const Icon = app.icon;

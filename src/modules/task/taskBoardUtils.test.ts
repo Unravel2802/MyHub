@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   filterVisibleTasks,
+  focusTasks,
   formatDueDate,
   formatStatus,
   getDropPosition,
@@ -124,5 +125,39 @@ describe("task board helpers", () => {
     expect(getDropPosition(tasks, "a", "c")).toBe(2500);
     expect(getDropPosition(tasks, "a", null)).toBe(4000);
     expect(getDropPosition([], "a", null)).toBe(0);
+  });
+
+  it("surfaces overdue-or-due-today open tasks, most overdue first", () => {
+    const tasks = [
+      task({ id: "a", title: "Due today", dueDate: "2026-07-14" }),
+      task({ id: "b", title: "Overdue", dueDate: "2026-07-10" }),
+      task({
+        id: "c",
+        title: "Done, overdue",
+        dueDate: "2026-07-01",
+        status: "done",
+      }),
+      task({ id: "d", title: "No due date" }),
+      task({ id: "e", title: "Due tomorrow", dueDate: "2026-07-15" }),
+      task({
+        id: "f",
+        title: "Archived",
+        dueDate: "2026-07-01",
+        archivedAt: "2026-07-14T00:00:00.000Z",
+      }),
+      task({
+        id: "g",
+        title: "Recurrence template",
+        dueDate: "2026-07-01",
+        recursWeekly: true,
+        weekday: 1,
+      }),
+    ];
+
+    expect(focusTasks(tasks, "2026-07-14", 5).map((t) => t.id)).toEqual([
+      "b",
+      "a",
+    ]);
+    expect(focusTasks(tasks, "2026-07-14", 1).map((t) => t.id)).toEqual(["b"]);
   });
 });

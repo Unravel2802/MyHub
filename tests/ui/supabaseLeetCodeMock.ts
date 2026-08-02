@@ -163,11 +163,19 @@ export async function mockSupabaseLeetCode(page: Page, db: FakeLeetCodeDb) {
 
       if (method === "POST") {
         const payload = request.postDataJSON() as Record<string, unknown>;
+        // A real INSERT gets `now()` from Postgres, not this file's fixture
+        // STAMP — the repository never sends created_at (confirmed above),
+        // so nothing here should either. Getting this right matters: this
+        // test's "algorithm checkpoint AND monthly count" assertion filters
+        // problems by "is this row's created_at in the current calendar
+        // month", and every day this stayed on the fixed STAMP was another
+        // day closer to that month rolling over and permanently failing —
+        // which is exactly what happened.
         const created = {
           id: crypto.randomUUID(),
           deleted_at: null,
-          created_at: STAMP,
-          updated_at: STAMP,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
           ...payload,
         };
         rows.push(created);

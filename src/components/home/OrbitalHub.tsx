@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -88,18 +88,40 @@ const HUB_BACKGROUND = `
   radial-gradient(circle at 50% 50%, var(--accent) 0%, color-mix(in srgb, var(--accent) 48%, var(--canvas)) 100%)
 `;
 
-function WorkspacePanel({ workspace }: { workspace: HomeWorkspace }) {
+function WorkspacePanel({
+  locked,
+  onClose,
+  workspace,
+}: {
+  locked: boolean;
+  onClose: () => void;
+  workspace: HomeWorkspace;
+}) {
   const Icon = workspace.icon;
   return (
     <Panel
       aside={
-        <Link
-          className={`inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-80 ${HUE_TEXT[workspace.hue]}`}
-          href={workspace.href}
-        >
-          Open {workspace.label}
-          <ArrowRight aria-hidden="true" className="size-4" />
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            className={`inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-80 ${HUE_TEXT[workspace.hue]}`}
+            href={workspace.href}
+          >
+            Open {workspace.label}
+            <ArrowRight aria-hidden="true" className="size-4" />
+          </Link>
+          {/* Only when locked (a click opened this panel): hovering doesn't
+              need a close button since leaving IS closing it. */}
+          {locked ? (
+            <button
+              aria-label="Close and resume orbiting"
+              className="text-muted transition-colors hover:text-foreground"
+              onClick={onClose}
+              type="button"
+            >
+              <X aria-hidden="true" className="size-4" />
+            </button>
+          ) : null}
+        </div>
       }
       title={
         <span className="flex items-center gap-2">
@@ -148,13 +170,23 @@ function WorkspacePanel({ workspace }: { workspace: HomeWorkspace }) {
 
 function OrbitalCanvas({
   activeKey,
-  onActivate,
+  locked,
+  onHover,
+  onHoverEnd,
+  onToggleLock,
+  onClearLock,
 }: {
+  // What's actually shown in the info panel right now — `locked` if
+  // something is locked, otherwise whatever's hovered/focused.
   activeKey: string | null;
-  onActivate: (key: string | null) => void;
+  locked: boolean;
+  onHover: (key: string) => void;
+  onHoverEnd: () => void;
+  onToggleLock: (key: string) => void;
+  onClearLock: () => void;
 }) {
   const reducedMotion = useReducedMotion();
-  const nodeRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const nodeRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const labelRefs = useRef<Record<string, HTMLSpanElement | null>>({});
   const spokeRefs = useRef<Record<string, SVGLineElement | null>>({});
   const anglesRef = useRef<Record<string, number>>(
@@ -179,6 +211,15 @@ function OrbitalCanvas({
   // everything on approach means you aim at a stationary scene and pick.
   const canvasHoveredRef = useRef(false);
 
+  // A locked workspace keeps the scene paused even after the pointer leaves
+  // entirely — you clicked a planet specifically to stop and read about it,
+  // and having it drift off again the moment you move the mouse to the panel
+  // would defeat the point.
+  const lockedRef = useRef(locked);
+  useEffect(() => {
+    lockedRef.current = locked;
+  }, [locked]);
+
   // 1 = full speed, 0 = stopped. Eased toward its target every frame rather
   // than snapped, so approaching the scene glides it to a halt instead of
   // stopping it dead mid-arc.
@@ -199,7 +240,7 @@ function OrbitalCanvas({
       // Time-corrected exponential smoothing (not a fixed per-frame lerp, which
       // would ease at different rates on 60Hz and 120Hz displays). ~180ms to
       // settle.
-      const targetSpeed = canvasHoveredRef.current ? 0 : 1;
+      const targetSpeed = canvasHoveredRef.current || lockedRef.current ? 0 : 1;
       speedRef.current +=
         (targetSpeed - speedRef.current) * (1 - Math.exp(-elapsed / 180));
 
@@ -257,12 +298,16 @@ function OrbitalCanvas({
   return (
     <div
       className="relative w-full max-w-[560px] shrink-0"
+      // A click that reaches this div, rather than being stopped by a node's
+      // own click handler, is a click on empty space (the starfield, the
+      // hub, the orbit ring) — that's "click away to deselect."
+      onClick={onClearLock}
       onMouseEnter={() => {
         canvasHoveredRef.current = true;
       }}
       onMouseLeave={() => {
         canvasHoveredRef.current = false;
-        onActivate(null);
+        onHoverEnd();
       }}
       style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
     >
@@ -442,29 +487,51 @@ function OrbitalCanvas({
       {HOME_WORKSPACES.map((workspace) => {
         const Icon = workspace.icon;
         const isActive = activeKey === workspace.key;
+        const isLocked = locked && isActive;
+        const possessiveLabel = workspace.label.endsWith("s")
+          ? `${workspace.label}'`
+          : `${workspace.label}'s`;
         return (
-          <Link
+          <button
+            aria-label={
+              isLocked
+                ? `Hide ${possessiveLabel} modules`
+                : `Show ${possessiveLabel} modules`
+            }
+            aria-pressed={isLocked}
             // NOT a flex column containing the label: the node is translated by
             // -50%/-50% onto its point on the ellipse, so whatever this box
             // contains is what gets centred there. With the label inside, the
             // box is sphere+label tall and the SPHERE ends up sitting above the
             // orbit path. The label is positioned out of flow below instead, so
             // this box is exactly the sphere.
-            className="orbit-node absolute block"
-            href={workspace.href}
+            //
+            // A <button>, not a <Link>: clicking a node selects it, it doesn't
+            // navigate. Getting to the actual page happens inside the panel
+            // this opens (its module list, or the "Open X" link) — see
+            // WorkspacePanel.
+            className="orbit-node absolute block cursor-pointer appearance-none border-0 bg-transparent p-0"
             key={workspace.key}
             onBlur={() => {
               canvasHoveredRef.current = false;
-              onActivate(null);
+              onHoverEnd();
             }}
-            // Keyboard focus settles the scene for the same reason hover does:
-            // a tabbed-to planet that keeps drifting is disorienting.
+            // Keyboard focus previews the same way hover does; Enter/Space
+            // then fires onClick natively, same as a mouse click.
             onFocus={() => {
               canvasHoveredRef.current = true;
-              onActivate(workspace.key);
+              onHover(workspace.key);
             }}
-            onMouseEnter={() => onActivate(workspace.key)}
-            onMouseLeave={() => onActivate(null)}
+            onMouseEnter={() => onHover(workspace.key)}
+            onMouseLeave={() => onHoverEnd()}
+            // Stops the click reaching the canvas's own onClick, which treats
+            // any click it sees as "clicked empty space, clear the lock" —
+            // without this, selecting a node would clear itself in the same
+            // event.
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleLock(workspace.key);
+            }}
             ref={(el) => {
               nodeRefs.current[workspace.key] = el;
             }}
@@ -473,15 +540,16 @@ function OrbitalCanvas({
               ["--hue-surface" as string]: hueSurfaceVar(workspace.hue),
               width: `${NODE_PCT}%`,
             }}
+            type="button"
           >
-            {/* The sphere, not the outer <Link>, owns the hover/focus scale:
+            {/* The sphere, not the outer <button>, owns the hover/focus scale:
                 the outer element's transform is written every frame by the
                 rAF loop (position + depth scale) via direct DOM mutation, and
                 motion manages its own transform on whatever element it's
                 given — the two would fight over the same CSS property if
                 they shared one. Driven by `isActive` (already tracked for the
                 info panel) rather than motion's own whileHover/whileFocus,
-                since the focusable element is the parent Link, not this
+                since the focusable element is the parent button, not this
                 span. */}
             <motion.span
               animate={{ scale: isActive ? 1.22 : 1 }}
@@ -533,7 +601,7 @@ function OrbitalCanvas({
             >
               {workspace.label}
             </span>
-          </Link>
+          </button>
         );
       })}
     </div>
@@ -549,11 +617,27 @@ interface OrbitalHubProps {
 
 export function OrbitalHub({ idlePanel }: OrbitalHubProps) {
   const reducedMotion = useReducedMotion();
-  const [activeKey, setActiveKey] = useState<string | null>(null);
+  // Two separate ideas: `hoveredKey` is a transient preview (mouse/focus,
+  // cleared the instant it leaves), `lockedKey` is a click's sticky choice
+  // that survives the pointer moving away. Locked always wins what's shown —
+  // once you've clicked a planet, casually hovering another one while
+  // reading the panel shouldn't swap it out from under you.
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [lockedKey, setLockedKey] = useState<string | null>(null);
+  const activeKey = lockedKey ?? hoveredKey;
   const active = HOME_WORKSPACES.find((ws) => ws.key === activeKey) ?? null;
   const panelTransition = reducedMotion
     ? { duration: 0 }
     : { duration: 0.22, ease: [0.16, 1, 0.3, 1] as const };
+
+  useEffect(() => {
+    if (!lockedKey) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setLockedKey(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lockedKey]);
 
   return (
     // items-start, not items-center: the panel beside the canvas changes height
@@ -561,7 +645,16 @@ export function OrbitalHub({ idlePanel }: OrbitalHubProps) {
     // shorter). Centering re-flows that difference into the canvas's position,
     // which slides the planet out from under the cursor mid-hover.
     <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start">
-      <OrbitalCanvas activeKey={activeKey} onActivate={setActiveKey} />
+      <OrbitalCanvas
+        activeKey={activeKey}
+        locked={lockedKey !== null}
+        onClearLock={() => setLockedKey(null)}
+        onHover={setHoveredKey}
+        onHoverEnd={() => setHoveredKey(null)}
+        onToggleLock={(key) =>
+          setLockedKey((prev) => (prev === key ? null : key))
+        }
+      />
 
       {/* Deliberately NO min-height: reserving the tallest panel's height stops
           the page reflowing on hover, but leaves a dead band of empty canvas
@@ -577,7 +670,15 @@ export function OrbitalHub({ idlePanel }: OrbitalHubProps) {
             key={activeKey ?? "idle"}
             transition={panelTransition}
           >
-            {active ? <WorkspacePanel workspace={active} /> : idlePanel}
+            {active ? (
+              <WorkspacePanel
+                locked={lockedKey !== null}
+                onClose={() => setLockedKey(null)}
+                workspace={active}
+              />
+            ) : (
+              idlePanel
+            )}
           </motion.div>
         </AnimatePresence>
       </div>

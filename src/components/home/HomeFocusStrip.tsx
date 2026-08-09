@@ -3,28 +3,42 @@
 import { format } from "date-fns";
 import { CheckSquare } from "lucide-react";
 import { useEffect } from "react";
-import { hueFor, hueVar } from "@/src/components/moduleHues";
+import { hueVar, type HueName } from "@/src/components/moduleHues";
 import { focusTasks, formatDueDate } from "@/src/modules/task/taskBoardUtils";
 import { useTaskStore } from "@/src/modules/task/useTaskStore";
 import type { Task } from "@/src/modules/task/types";
 
 const FOCUS_LIMIT = 3;
 
-// Task Engine's own hue, so a focus card reads as belonging to the module it
-// came from rather than inventing a colour for the hub.
-const TASK_HUE = hueFor("/tasks");
+// Real tasks aren't tagged to a source module (Task Engine is one flat list,
+// unlike the mockup's fake "Career · Prep Tracker" sub-labels), so there's no
+// actual data to color these by. Rotating a fixed hue per POSITION is
+// decorative variety only, not a claim about what a card belongs to — see
+// HomeWorkspace's hues for what a real per-module color looks like. Amber
+// first (Task Engine's own hue everywhere else in the app), then two more
+// for visual distinction across the row.
+const FOCUS_HUE_ROTATION: readonly HueName[] = ["amber", "violet", "emerald"];
 
-function FocusCard({ task, today }: { task: Task; today: string }) {
+function FocusCard({
+  index,
+  task,
+  today,
+}: {
+  index: number;
+  task: Task;
+  today: string;
+}) {
   const updateStatus = useTaskStore((state) => state.updateStatus);
   const pendingIds = useTaskStore((state) => state.pendingIds);
   const isPending = pendingIds.includes(task.id);
   const isOverdue = task.dueDate !== null && task.dueDate < today;
+  const hue = FOCUS_HUE_ROTATION[index % FOCUS_HUE_ROTATION.length];
 
   return (
     <div
       className="relative overflow-hidden rounded-xl px-4 py-3.5 transition-opacity"
       style={{
-        ["--hue" as string]: hueVar(TASK_HUE),
+        ["--hue" as string]: hueVar(hue),
         background: "var(--surface)",
         boxShadow:
           "0 0 0 0.5px color-mix(in srgb, var(--hue) 32%, transparent), inset 0 1px 0 color-mix(in srgb, white 6%, transparent), 0 0 0 3px color-mix(in srgb, var(--hue) 6%, transparent), 0 4px 16px color-mix(in srgb, black 22%, transparent)",
@@ -113,8 +127,8 @@ export function HomeFocusStrip() {
         Today&apos;s focus
       </h2>
       <div className="grid gap-3 sm:grid-cols-3">
-        {items.map((task) => (
-          <FocusCard key={task.id} task={task} today={today} />
+        {items.map((task, index) => (
+          <FocusCard index={index} key={task.id} task={task} today={today} />
         ))}
       </div>
     </section>

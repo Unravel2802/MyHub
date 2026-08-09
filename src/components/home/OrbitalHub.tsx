@@ -33,9 +33,10 @@ const NODE_R = 36;
 const CENTER_PCT = ((CENTER_R * 2) / CANVAS_W) * 100;
 const NODE_PCT = ((NODE_R * 2) / CANVAS_W) * 100;
 
-// Radians per millisecond. One lap takes ~39s — slow enough to be ambient
-// rather than something competing with the content beside it for attention.
-const SPEED = 0.00016;
+// Radians per millisecond. One lap takes ~14s — fast enough that the motion
+// reads as alive at a glance, without being so quick it fights the content
+// beside it for attention.
+const SPEED = 0.00045;
 
 // depth runs 0 (far side, top of the ellipse) to 1 (near side, bottom).
 // It drives three things at once, which together are the 3D illusion:

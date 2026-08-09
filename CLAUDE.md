@@ -38,6 +38,14 @@ rather than picking a "reasonable" alternative.
 - Class utilities: `clsx` + `tailwind-merge` via the `cn()` helper (`src/lib/cn.ts`);
   `class-variance-authority` (CVA), used by generated shadcn components.
 - Icons: `lucide-react`.
+- Animation: `motion` (import from `motion/react`, never the deprecated `framer-motion` package
+  name) — approved 2026-08-09 for the Home hub's orbital view: spring-physics hover on the
+  workspace nodes, `AnimatePresence` for the info panel's hover/idle crossfade, and the center
+  hub's pulse rings. The orbit's own position/depth/occlusion math stays outside it — a
+  `requestAnimationFrame` loop mutating `ref`-held DOM nodes directly, with zero React
+  re-renders per frame — `motion` only owns the parts that are naturally spring/exit
+  animations. Don't reach for it as a general replacement for the CSS transitions and
+  `@keyframes` used everywhere else in the app; those still apply.
 - Markdown rendering: `react-markdown` + `remark-gfm` + `rehype-highlight` — added 2026-07-21 for
   the Design Drills LeetCode-editorial solutions. This reverses the earlier "no markdown renderer"
   call (migration 0025's comment), which the Lead Architect approved. Render **only** through the

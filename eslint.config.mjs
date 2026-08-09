@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     ".claude/**",
     ".codex/**",
+    // A standalone Figma-export reference project kept for design comparison,
+    // not app code — see tsconfig.json's matching exclude.
+    "Redesign landing page (1)/**",
   ]),
 ]);
 

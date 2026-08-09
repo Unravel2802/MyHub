@@ -36,6 +36,11 @@ a "reasonable" alternative.
 - Class utilities: `clsx` + `tailwind-merge` via the `cn()` helper (`src/lib/cn.ts`);
   `class-variance-authority` (CVA), used by generated shadcn components.
 - Icons: `lucide-react`.
+- Animation: `motion` (import from `motion/react`, never the deprecated `framer-motion` package
+  name) — approved 2026-08-09 for the Home hub's orbital view: spring-physics hover, panel
+  crossfade via `AnimatePresence`, and pulse rings. Keep it scoped to genuinely spring/exit
+  animations — don't reach for it as a replacement for the CSS transitions/`@keyframes` used
+  everywhere else.
 - Markdown rendering: `react-markdown` + `remark-gfm` + `rehype-highlight` — added 2026-07-21 for
   the Design Drills LeetCode-editorial solutions. Render **only** through the shared
   `src/components/ui/Markdown.tsx` wrapper — never add `rehype-raw` or render raw HTML from the DB,

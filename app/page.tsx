@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { NAV_ITEMS } from "@/src/components/appNav";
 import { CORE_TOOL_HREFS, MINI_APPS } from "@/src/components/miniApps";
 import { hueFor } from "@/src/components/moduleHues";
+import { HomeBackground } from "@/src/components/home/HomeBackground";
 import { HomeFocusStrip } from "@/src/components/home/HomeFocusStrip";
 import { HomeMomentumPanel } from "@/src/components/home/HomeMomentumPanel";
 import { OrbitalHub } from "@/src/components/home/OrbitalHub";
@@ -21,7 +22,11 @@ export default function Home() {
       contentWidth="full"
       description="Choose a workspace and get back to the work that matters."
       eyebrow="Home"
-      hero={<OrbitalHub idlePanel={<HomeMomentumPanel />} />}
+      hero={
+        <HomeBackground>
+          <OrbitalHub idlePanel={<HomeMomentumPanel />} />
+        </HomeBackground>
+      }
       href="/"
       title="Your apps"
     >

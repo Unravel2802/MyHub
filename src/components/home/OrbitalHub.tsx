@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Panel } from "@/src/components/ui/Panel";
@@ -32,11 +33,9 @@ const NODE_R = 36;
 const CENTER_PCT = ((CENTER_R * 2) / CANVAS_W) * 100;
 const NODE_PCT = ((NODE_R * 2) / CANVAS_W) * 100;
 
-// Radians per millisecond. One lap takes ~18s — fast enough that the motion
-// is legible at a glance instead of needing to stare at the scene to confirm
-// anything is moving at all, but still well short of competing with the
-// content beside it for attention.
-const SPEED = 0.00035;
+// Radians per millisecond. One lap takes ~39s — slow enough to be ambient
+// rather than something competing with the content beside it for attention.
+const SPEED = 0.00016;
 
 // depth runs 0 (far side, top of the ellipse) to 1 (near side, bottom).
 // It drives three things at once, which together are the 3D illusion:
@@ -153,6 +152,7 @@ function OrbitalCanvas({
   activeKey: string | null;
   onActivate: (key: string | null) => void;
 }) {
+  const reducedMotion = useReducedMotion();
   const nodeRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const labelRefs = useRef<Record<string, HTMLSpanElement | null>>({});
   const spokeRefs = useRef<Record<string, SVGLineElement | null>>({});
@@ -381,10 +381,33 @@ function OrbitalCanvas({
         className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
         style={{ left: "50%", top: "50%", width: `${CENTER_PCT}%` }}
       >
-        <span className="orbit-hub-pulse absolute inset-0 rounded-full border border-accent" />
-        <span className="orbit-hub-pulse orbit-hub-pulse-delayed absolute inset-0 rounded-full border border-accent" />
+        {/* Two concentric sonar rings, out of phase (1.2s stagger) so they
+            never pulse in lockstep. Static (no animate prop) under reduced
+            motion rather than omitted — the rings are still meaningful as a
+            resting halo around the hub, just not moving. */}
+        {[1.9, 1.5].map((scale, index) => (
+          <motion.span
+            animate={
+              reducedMotion
+                ? undefined
+                : {
+                    opacity: [0.06, 0.14, 0.06],
+                    scale: [scale, scale * 1.04, scale],
+                  }
+            }
+            className="absolute inset-0 rounded-full border border-accent"
+            initial={{ opacity: 0.06, scale }}
+            key={scale}
+            transition={{
+              delay: index * 1.2,
+              duration: 3.5 + index * 1.2,
+              ease: "easeInOut",
+              repeat: Infinity,
+            }}
+          />
+        ))}
         <div
-          className="orbit-hub-breathe relative flex aspect-square w-full items-center justify-center rounded-full"
+          className="relative flex aspect-square w-full items-center justify-center rounded-full"
           style={{
             background: HUB_BACKGROUND,
             border:
@@ -405,14 +428,19 @@ function OrbitalCanvas({
               width: "32%",
             }}
           />
-          <span className="relative text-lg font-bold text-accent-strong">
+          <motion.span
+            animate={reducedMotion ? undefined : { scale: [1, 1.04, 1] }}
+            className="relative text-lg font-bold text-accent-strong"
+            transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
+          >
             M
-          </span>
+          </motion.span>
         </div>
       </div>
 
       {HOME_WORKSPACES.map((workspace) => {
         const Icon = workspace.icon;
+        const isActive = activeKey === workspace.key;
         return (
           <Link
             // NOT a flex column containing the label: the node is translated by
@@ -445,7 +473,17 @@ function OrbitalCanvas({
               width: `${NODE_PCT}%`,
             }}
           >
-            <span
+            {/* The sphere, not the outer <Link>, owns the hover/focus scale:
+                the outer element's transform is written every frame by the
+                rAF loop (position + depth scale) via direct DOM mutation, and
+                motion manages its own transform on whatever element it's
+                given — the two would fight over the same CSS property if
+                they shared one. Driven by `isActive` (already tracked for the
+                info panel) rather than motion's own whileHover/whileFocus,
+                since the focusable element is the parent Link, not this
+                span. */}
+            <motion.span
+              animate={{ scale: isActive ? 1.22 : 1 }}
               className="relative flex aspect-square w-full items-center justify-center rounded-full"
               style={{
                 background: SPHERE_BACKGROUND,
@@ -453,9 +491,11 @@ function OrbitalCanvas({
                 // flat disc with an outline.
                 border:
                   "1px solid color-mix(in srgb, var(--hue) 30%, transparent)",
-                boxShadow:
-                  "inset 0 1px 0 color-mix(in srgb, white 14%, transparent), inset 0 -2px 4px color-mix(in srgb, black 30%, transparent), 0 0 0 6px color-mix(in srgb, var(--hue) 9%, transparent), 0 0 20px color-mix(in srgb, var(--hue) 28%, transparent), 0 0 44px color-mix(in srgb, var(--hue) 12%, transparent)",
+                boxShadow: isActive
+                  ? `inset 0 1px 0 color-mix(in srgb, white 18%, transparent), inset 0 -2px 4px color-mix(in srgb, black 35%, transparent), 0 0 0 6px color-mix(in srgb, var(--hue) 18%, transparent), 0 0 28px color-mix(in srgb, var(--hue) 45%, transparent), 0 0 56px color-mix(in srgb, var(--hue) 18%, transparent)`
+                  : `inset 0 1px 0 color-mix(in srgb, white 14%, transparent), inset 0 -2px 4px color-mix(in srgb, black 30%, transparent), 0 0 0 6px color-mix(in srgb, var(--hue) 9%, transparent), 0 0 20px color-mix(in srgb, var(--hue) 28%, transparent), 0 0 44px color-mix(in srgb, var(--hue) 12%, transparent)`,
               }}
+              transition={{ damping: 24, stiffness: 360, type: "spring" }}
             >
               <span
                 aria-hidden="true"
@@ -473,7 +513,7 @@ function OrbitalCanvas({
                 className="relative size-[38%]"
                 style={{ color: "var(--hue)" }}
               />
-            </span>
+            </motion.span>
             {/* A translucent tint rather than HUE_BADGE's opaque surface: over
                 a dark starfield the solid pill reads as a sticker sitting on
                 top of the scene instead of a tag belonging to the planet. */}
@@ -507,8 +547,12 @@ interface OrbitalHubProps {
 }
 
 export function OrbitalHub({ idlePanel }: OrbitalHubProps) {
+  const reducedMotion = useReducedMotion();
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const active = HOME_WORKSPACES.find((ws) => ws.key === activeKey) ?? null;
+  const panelTransition = reducedMotion
+    ? { duration: 0 }
+    : { duration: 0.22, ease: [0.16, 1, 0.3, 1] as const };
 
   return (
     // items-start, not items-center: the panel beside the canvas changes height
@@ -518,18 +562,23 @@ export function OrbitalHub({ idlePanel }: OrbitalHubProps) {
     <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start">
       <OrbitalCanvas activeKey={activeKey} onActivate={setActiveKey} />
 
-      {/* `key` restarts the entrance animation on every swap, so the panel
-          crossfades between workspaces instead of its text silently changing.
-
-          Deliberately NO min-height: reserving the tallest panel's height stops
+      {/* Deliberately NO min-height: reserving the tallest panel's height stops
           the page reflowing on hover, but leaves a dead band of empty canvas
           under the idle panel that's far more obvious than the reflow it fixes.
           The canvas is anchored with items-start, so a taller panel grows
           downward and never moves the orbit. */}
-      <div className="w-full min-w-0 flex-1" key={activeKey ?? "idle"}>
-        <div className="page-fade">
-          {active ? <WorkspacePanel workspace={active} /> : idlePanel}
-        </div>
+      <div className="w-full min-w-0 flex-1">
+        <AnimatePresence mode="wait">
+          <motion.div
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: 10 }}
+            key={activeKey ?? "idle"}
+            transition={panelTransition}
+          >
+            {active ? <WorkspacePanel workspace={active} /> : idlePanel}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

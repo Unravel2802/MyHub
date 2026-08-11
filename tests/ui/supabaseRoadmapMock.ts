@@ -92,7 +92,11 @@ export async function mockSupabaseRoadmap(page: Page, db: FakeRoadmapDb) {
           created_at: TIMESTAMP,
           updated_at: TIMESTAMP,
         });
-      await route.fulfill({ status: 201, contentType: "application/json", body: "[]" });
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: "[]",
+      });
       return;
     }
 

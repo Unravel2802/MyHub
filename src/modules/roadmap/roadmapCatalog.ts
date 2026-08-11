@@ -129,7 +129,8 @@ export const ROADMAP_MONTHS: RoadmapMonth[] = [
         kind: "auto",
         key: "2026-09.system_design",
         label: "One backend system-design case",
-        source: "§6.5 September — two system-design cases (one backend, one ML)",
+        source:
+          "§6.5 September — two system-design cases (one backend, one ML)",
         target: 1,
         measure: { source: "prep", entryType: "system_design", scope: "month" },
       },
@@ -137,7 +138,8 @@ export const ROADMAP_MONTHS: RoadmapMonth[] = [
         kind: "auto",
         key: "2026-09.ml_system_design",
         label: "One ML-flavored system-design case",
-        source: "§6.5 September — two system-design cases (one backend, one ML)",
+        source:
+          "§6.5 September — two system-design cases (one backend, one ML)",
         target: 1,
         measure: {
           source: "prep",
@@ -295,7 +297,11 @@ export const ROADMAP_MONTHS: RoadmapMonth[] = [
         label: "75 algorithm problems (cumulative)",
         source: "§6.5 December — semester review, target 75–100",
         target: 75,
-        measure: { source: "prep", entryType: "algorithm", scope: "cumulative" },
+        measure: {
+          source: "prep",
+          entryType: "algorithm",
+          scope: "cumulative",
+        },
       },
       {
         kind: "auto",
@@ -393,7 +399,11 @@ export const ROADMAP_MONTHS: RoadmapMonth[] = [
         label: "150 algorithm problems (cumulative)",
         source: "§6.5 February — 150+ total",
         target: 150,
-        measure: { source: "prep", entryType: "algorithm", scope: "cumulative" },
+        measure: {
+          source: "prep",
+          entryType: "algorithm",
+          scope: "cumulative",
+        },
       },
       {
         kind: "auto",
@@ -511,16 +521,14 @@ export const READINESS_AREAS: ReadinessArea[] = [
     key: "backend",
     label: "Backend",
     minimum: "Ship a reliable service",
-    strong:
-      "Own API, storage, caching, queueing, observability, load testing",
+    strong: "Own API, storage, caching, queueing, observability, load testing",
     evidence: null,
   },
   {
     key: "distributed_systems",
     label: "Distributed systems",
     minimum: "Explain core concepts",
-    strong:
-      "Implement and evaluate failure/consistency/scaling tradeoffs",
+    strong: "Implement and evaluate failure/consistency/scaling tradeoffs",
     evidence: null,
   },
   {

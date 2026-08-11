@@ -72,7 +72,8 @@ export function measureCriterion(
     case "prep":
       return live(snapshot.prepEntries).filter(
         (entry) =>
-          entry.entryType === measure.entryType && inScope(monthOfDate(entry.date)),
+          entry.entryType === measure.entryType &&
+          inScope(monthOfDate(entry.date)),
       ).length;
 
     case "applications":

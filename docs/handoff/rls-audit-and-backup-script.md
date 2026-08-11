@@ -48,7 +48,7 @@ scripts (`docs/handoff/seed-scripts.md`) also use: `tsx` (added as a
 devDependency — flagging this since it's new, not previously on the approved
 list), `process.loadEnvFile(".env.local")` for env vars, dynamic `import()`
 inside `main()` rather than static top-level imports (needed so the env file
-loads *before* `src/lib/supabaseClient.ts` is evaluated — a static import
+loads _before_ `src/lib/supabaseClient.ts` is evaluated — a static import
 would be hoisted ahead of the `loadEnvFile` call), and `export {};` at the
 bottom of every script file (otherwise TypeScript treats a file with no
 top-level import/export as a global script, and multiple scripts' top-level

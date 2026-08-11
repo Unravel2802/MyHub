@@ -9,7 +9,11 @@ import { FakePrepDb, mockSupabasePrep, prepEntryRow } from "./supabasePrepMock";
 // The roadmap page. Its whole job is to tell the truth about where you stand —
 // so these pin the places where it could quietly lie.
 
-async function load(page: Parameters<typeof mockSupabaseRoadmap>[0], db: FakeRoadmapDb, prep?: FakePrepDb) {
+async function load(
+  page: Parameters<typeof mockSupabaseRoadmap>[0],
+  db: FakeRoadmapDb,
+  prep?: FakePrepDb,
+) {
   await mockSupabasePrep(page, prep ?? new FakePrepDb());
   await mockSupabaseRoadmap(page, db);
   await page.goto("/roadmap");
@@ -18,7 +22,9 @@ async function load(page: Parameters<typeof mockSupabaseRoadmap>[0], db: FakeRoa
   ).toBeVisible();
 }
 
-test("renders the timeline with a station per roadmap month", async ({ page }) => {
+test("renders the timeline with a station per roadmap month", async ({
+  page,
+}) => {
   await load(page, new FakeRoadmapDb());
 
   const timeline = page.getByRole("region", { name: "The line to graduation" });
@@ -43,9 +49,7 @@ test("an auto criterion reflects real prep data and has NO checkbox", async ({
   );
   await load(page, new FakeRoadmapDb(), prep);
 
-  await page
-    .getByRole("button", { name: /September 2026/ })
-    .click();
+  await page.getByRole("button", { name: /September 2026/ }).click();
 
   // "15 algorithm problems" in September, 12 logged.
   await expect(page.getByText("12/15")).toBeVisible();
@@ -69,7 +73,9 @@ test("ticking a manual criterion persists it", async ({ page }) => {
   await resumes.check();
 
   await expect
-    .poll(() => db.rows.find((r) => r.item_key === "2026-07.resumes")?.completed_at)
+    .poll(
+      () => db.rows.find((r) => r.item_key === "2026-07.resumes")?.completed_at,
+    )
     .toBeTruthy();
 });
 
@@ -95,9 +101,10 @@ test("a past month with unmet criteria shows as missed, not rolled forward", asy
   await page.clock.install({ time: new Date("2026-10-15T09:00:00") });
   await load(page, new FakeRoadmapDb());
 
-  await expect(
-    page.getByRole("button", { name: /July 2026/ }),
-  ).toHaveAttribute("aria-label", /Missed/);
+  await expect(page.getByRole("button", { name: /July 2026/ })).toHaveAttribute(
+    "aria-label",
+    /Missed/,
+  );
   await expect(
     page.getByRole("button", { name: /October 2026/ }),
   ).toHaveAttribute("aria-label", /In progress/);
@@ -106,7 +113,9 @@ test("a past month with unmet criteria shows as missed, not rolled forward", asy
   ).toHaveAttribute("aria-label", /Upcoming/);
 });
 
-test("the readiness radar renders and a level can be claimed", async ({ page }) => {
+test("the readiness radar renders and a level can be claimed", async ({
+  page,
+}) => {
   const db = new FakeRoadmapDb();
   await load(page, db);
 

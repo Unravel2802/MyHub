@@ -4,14 +4,14 @@ Published contract. Wave 2, Phase 4 (`myhub_plan.md` Part B).
 
 ## What's already landed
 
-| File | State |
-|---|---|
-| `supabase/migrations/0009_crm_notes_and_interview_timestamps.sql` | Done — `applications.notes`, `interviews.completed_at`, `interviews.post_mortem_logged_at`, with best-effort backfills |
-| `src/modules/jobApplications/types.ts` | Done — `Application.notes`, `Interview.completedAt`, `Interview.postMortemLoggedAt` |
-| `src/modules/jobApplications/funnelStats.ts` (new) | Done + fully tested — `funnelStats(applications, interviews) → FunnelStats` |
-| `src/modules/jobApplications/interviewTimestamps.ts` (new) | Done + fully tested — `postMortemLoggedAtFor()`, the write-once rule |
-| `ApplicationRepository.ts` / `InterviewRepository.ts` | Done — all three columns round-trip; `UpdateApplicationInput.notes`, `UpdateInterviewInput.completedAt`/`.postMortemLoggedAt` |
-| `useApplicationStore.ts` | Done — `markInterviewCompleted` stamps `completedAt`; `updateInterview` stamps `postMortemLoggedAt` on the post-mortem's first write; new `funnel()` selector on the store |
+| File                                                              | State                                                                                                                                                                      |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supabase/migrations/0009_crm_notes_and_interview_timestamps.sql` | Done — `applications.notes`, `interviews.completed_at`, `interviews.post_mortem_logged_at`, with best-effort backfills                                                     |
+| `src/modules/jobApplications/types.ts`                            | Done — `Application.notes`, `Interview.completedAt`, `Interview.postMortemLoggedAt`                                                                                        |
+| `src/modules/jobApplications/funnelStats.ts` (new)                | Done + fully tested — `funnelStats(applications, interviews) → FunnelStats`                                                                                                |
+| `src/modules/jobApplications/interviewTimestamps.ts` (new)        | Done + fully tested — `postMortemLoggedAtFor()`, the write-once rule                                                                                                       |
+| `ApplicationRepository.ts` / `InterviewRepository.ts`             | Done — all three columns round-trip; `UpdateApplicationInput.notes`, `UpdateInterviewInput.completedAt`/`.postMortemLoggedAt`                                              |
+| `useApplicationStore.ts`                                          | Done — `markInterviewCompleted` stamps `completedAt`; `updateInterview` stamps `postMortemLoggedAt` on the post-mortem's first write; new `funnel()` selector on the store |
 
 Full gate green: typecheck, lint, 188 unit, 32 E2E.
 

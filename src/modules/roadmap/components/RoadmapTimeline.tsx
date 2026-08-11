@@ -31,13 +31,15 @@ const statusLabel: Record<MonthStatus, string> = {
   missed: "Missed",
 };
 
-const badgeTone: Record<MonthStatus, "success" | "accent" | "neutral" | "danger"> =
-  {
-    done: "success",
-    in_progress: "accent",
-    upcoming: "neutral",
-    missed: "danger",
-  };
+const badgeTone: Record<
+  MonthStatus,
+  "success" | "accent" | "neutral" | "danger"
+> = {
+  done: "success",
+  in_progress: "accent",
+  upcoming: "neutral",
+  missed: "danger",
+};
 
 export function RoadmapTimeline({
   months,
@@ -56,9 +58,7 @@ export function RoadmapTimeline({
   const doneBefore = months.findIndex(
     (state) => state.month.key === currentMonth,
   );
-  const currentState = months.find(
-    (state) => state.month.key === currentMonth,
-  );
+  const currentState = months.find((state) => state.month.key === currentMonth);
   const withinCurrent =
     currentState && currentState.totalCount > 0
       ? currentState.metCount / currentState.totalCount
@@ -94,7 +94,10 @@ export function RoadmapTimeline({
               const isCurrent = state.month.key === currentMonth;
               const isSelected = state.month.key === selectedMonth;
               return (
-                <li className="flex flex-col items-center" key={state.month.key}>
+                <li
+                  className="flex flex-col items-center"
+                  key={state.month.key}
+                >
                   <button
                     aria-current={isCurrent ? "step" : undefined}
                     aria-expanded={isSelected}
@@ -103,7 +106,11 @@ export function RoadmapTimeline({
                     onClick={() => onSelectMonth(state.month.key)}
                     type="button"
                   >
-                    {state.status === "done" ? "✓" : state.status === "missed" ? "!" : ""}
+                    {state.status === "done"
+                      ? "✓"
+                      : state.status === "missed"
+                        ? "!"
+                        : ""}
                   </button>
                   <span
                     className={`mt-2 text-xs font-medium ${isCurrent ? "text-accent-strong" : "text-muted"}`}
@@ -165,8 +172,12 @@ export function RoadmapTimeline({
                         {actual}/{target}
                       </span>
                     </div>
-                    <ProgressBar progress={target === 0 ? 1 : actual / target} />
-                    <span className="text-xs text-subtle">{criterion.source}</span>
+                    <ProgressBar
+                      progress={target === 0 ? 1 : actual / target}
+                    />
+                    <span className="text-xs text-subtle">
+                      {criterion.source}
+                    </span>
                   </li>
                 );
               }

@@ -9,12 +9,12 @@ nesting, no cascades, one optional FK.
 
 ## What's already landed
 
-| File                                            | State                                     |
-| ------------------------------------------------ | ------------------------------------------ |
-| `supabase/migrations/0006_outreach_log.sql`     | Done — apply in the Supabase SQL editor   |
-| `src/modules/outreach/types.ts`                 | Done — `OutreachEntry`, `OutreachChannel` |
-| `src/modules/outreach/OutreachRepository.ts`    | **Stubs — yours**                         |
-| `src/modules/outreach/useOutreachStore.ts`      | **Stubs — yours**                         |
+| File                                         | State                                     |
+| -------------------------------------------- | ----------------------------------------- |
+| `supabase/migrations/0006_outreach_log.sql`  | Done — apply in the Supabase SQL editor   |
+| `src/modules/outreach/types.ts`              | Done — `OutreachEntry`, `OutreachChannel` |
+| `src/modules/outreach/OutreachRepository.ts` | **Stubs — yours**                         |
+| `src/modules/outreach/useOutreachStore.ts`   | **Stubs — yours**                         |
 
 No Event Bus type for this module — nothing downstream reacts to a logged
 conversation. The Dashboard's weekly-cadence panel reads this table's entries

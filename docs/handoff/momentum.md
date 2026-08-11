@@ -6,16 +6,16 @@ Wave 2.
 
 ## What's already landed
 
-| File | State |
-|---|---|
-| `supabase/migrations/0010_achievements.sql` | Done — `achievements` table + partial unique index on `(key) where deleted_at is null` |
-| `src/lib/events.ts` | Done — new `outreach.logged` event in the `AppEvent` union |
-| `src/modules/outreach/useOutreachStore.ts` | Done — emits `outreach.logged` on create |
-| `src/modules/momentum/streaks.ts` | Done + tested — `activityDates()`, `computeStreak()` |
-| `src/modules/momentum/achievementCatalog.ts` | Done — 23 achievements, each with `key` / `title` / `description` / `category` / `source` |
-| `src/modules/momentum/achievementEngine.ts` | Done + tested — `evaluateAchievements()`, `newUnlocks()` |
-| `src/modules/momentum/MomentumRepository.ts` | Done — `getUnlocks()`, `insertUnlocks()` (ignore-duplicates upsert) |
-| `src/modules/momentum/useMomentumStore.ts` | Done — `{ streak, unlocked, pendingToasts, isLoading, error, refresh, dismissToast, subscribeToUpdates }`, with three-layer idempotency |
+| File                                         | State                                                                                                                                   |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `supabase/migrations/0010_achievements.sql`  | Done — `achievements` table + partial unique index on `(key) where deleted_at is null`                                                  |
+| `src/lib/events.ts`                          | Done — new `outreach.logged` event in the `AppEvent` union                                                                              |
+| `src/modules/outreach/useOutreachStore.ts`   | Done — emits `outreach.logged` on create                                                                                                |
+| `src/modules/momentum/streaks.ts`            | Done + tested — `activityDates()`, `computeStreak()`                                                                                    |
+| `src/modules/momentum/achievementCatalog.ts` | Done — 23 achievements, each with `key` / `title` / `description` / `category` / `source`                                               |
+| `src/modules/momentum/achievementEngine.ts`  | Done + tested — `evaluateAchievements()`, `newUnlocks()`                                                                                |
+| `src/modules/momentum/MomentumRepository.ts` | Done — `getUnlocks()`, `insertUnlocks()` (ignore-duplicates upsert)                                                                     |
+| `src/modules/momentum/useMomentumStore.ts`   | Done — `{ streak, unlocked, pendingToasts, isLoading, error, refresh, dismissToast, subscribeToUpdates }`, with three-layer idempotency |
 
 Full gate green: typecheck, lint, 188 unit, 32 E2E.
 
@@ -25,7 +25,7 @@ Full gate green: typecheck, lint, 188 unit, 32 E2E.
 tied to a real roadmap number — each carries a `source` field citing the roadmap section it came
 from. Don't add a "total score" anywhere.
 
-**The streak has a grace day.** `computeStreak` counts a run ending today *or yesterday*, and
+**The streak has a grace day.** `computeStreak` counts a run ending today _or yesterday_, and
 reports `activeToday` separately. So at 9am, before you've logged anything, `current` is still
 (say) 12 and `activeToday` is `false`. The indicator should read as **alive but not yet fed** in
 that state — dimmed flame, not a zero. Showing 0 every morning would be both wrong and exactly
@@ -62,7 +62,7 @@ working toward. Header `StatCard`s: current streak, longest streak, `n/23` unloc
 
 ### 4. `tests/ui/fixtures.ts` (new) — **do this first, it unblocks everything else**
 
-AppShell now mounts the momentum store on *every* page, so every existing spec will suddenly see
+AppShell now mounts the momentum store on _every_ page, so every existing spec will suddenly see
 unrouted Supabase calls (`prep_entries`, `applications`, `outreach_log`, `achievements`).
 
 Create a Playwright `test` extended with an automatic before-each installing a **baseline

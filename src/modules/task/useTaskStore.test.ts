@@ -493,7 +493,11 @@ describe("useTaskStore un-completion events", () => {
 
   it("archiving keeps the task and does NOT emit an un-completion", async () => {
     // Archiving must not shrink the streak — that's the whole point.
-    const done = task({ id: "t", status: "done", completedAt: "2026-07-14T02:00:00.000Z" });
+    const done = task({
+      id: "t",
+      status: "done",
+      completedAt: "2026-07-14T02:00:00.000Z",
+    });
     resetStore([done]);
     repository.archiveTask.mockResolvedValue({
       ...done,

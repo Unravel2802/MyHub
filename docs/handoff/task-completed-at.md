@@ -6,13 +6,13 @@ E2E slice.
 
 ## What's already landed
 
-| File | State |
-|---|---|
-| `supabase/migrations/0007_task_completed_at.sql` | Done — adds `tasks.completed_at`, backfills done tasks from `updated_at`, indexes it |
-| `src/modules/task/types.ts` | Done — `Task.completedAt: string \| null` |
-| `src/modules/task/TaskRepository.ts` | Done — `fromRow` maps it; `updateTaskStatus`/`moveTask` set `completed_at` to now/`null` whenever status changes; `completeDescendants` stamps it (guarded by `.neq("status", "done")` so an already-done descendant keeps its original timestamp); `autoCompleteAncestors` stamps; `revertAncestorsToIncomplete` nulls |
-| `src/modules/task/useTaskStore.ts` | Done — the optimistic mirrors (`completeDoneAncestors`, `revertDoneAncestors`, `completeTaskDescendants`) set/clear `completedAt` locally to match |
-| `src/modules/task/TaskRepository.test.ts`, `useTaskStore.test.ts` | Done — cases for stamp-on-complete, clear-on-revert, and already-done descendants keeping their original timestamp |
+| File                                                              | State                                                                                                                                                                                                                                                                                                                   |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supabase/migrations/0007_task_completed_at.sql`                  | Done — adds `tasks.completed_at`, backfills done tasks from `updated_at`, indexes it                                                                                                                                                                                                                                    |
+| `src/modules/task/types.ts`                                       | Done — `Task.completedAt: string \| null`                                                                                                                                                                                                                                                                               |
+| `src/modules/task/TaskRepository.ts`                              | Done — `fromRow` maps it; `updateTaskStatus`/`moveTask` set `completed_at` to now/`null` whenever status changes; `completeDescendants` stamps it (guarded by `.neq("status", "done")` so an already-done descendant keeps its original timestamp); `autoCompleteAncestors` stamps; `revertAncestorsToIncomplete` nulls |
+| `src/modules/task/useTaskStore.ts`                                | Done — the optimistic mirrors (`completeDoneAncestors`, `revertDoneAncestors`, `completeTaskDescendants`) set/clear `completedAt` locally to match                                                                                                                                                                      |
+| `src/modules/task/TaskRepository.test.ts`, `useTaskStore.test.ts` | Done — cases for stamp-on-complete, clear-on-revert, and already-done descendants keeping their original timestamp                                                                                                                                                                                                      |
 
 Everything else in this phase is yours.
 

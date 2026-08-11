@@ -6,10 +6,10 @@ painful.
 
 ## What's already landed
 
-| File | State |
-|---|---|
+| File                                      | State                                                                                             |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | `supabase/migrations/0012_enable_rls.sql` | Done — RLS enabled + `for all to authenticated using (true) with check (true)` on all nine tables |
-| `src/lib/auth.ts` | Done — `getSession`, `signIn`, `signOut`, `onAuthChange`, `SignInError` |
+| `src/lib/auth.ts`                         | Done — `getSession`, `signIn`, `signOut`, `onAuthChange`, `SignInError`                           |
 
 ## The security model, so you don't accidentally weaken it
 
@@ -53,8 +53,9 @@ Apply it automatically in the fixture's before-each, so every already-migrated s
 with no per-file change.
 
 New `tests/ui/auth.spec.ts`:
+
 - No session → redirected to `/login`.
-- Failed login → the generic message (assert it does *not* leak Supabase's wording).
+- Failed login → the generic message (assert it does _not_ leak Supabase's wording).
 - `getSession()` resolves against the seeded storage. This one exists to **pin the storage-key
   shape**: if a supabase-js upgrade changes it, this test fails loudly instead of every other
   spec failing mysteriously.

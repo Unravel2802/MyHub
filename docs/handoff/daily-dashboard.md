@@ -7,13 +7,13 @@ changed, so `fetchAll()` needs updating, not just extending.
 
 ## What's already landed
 
-| File                                                | State                                        |
-| ----------------------------------------------------- | ----------------------------------------------- |
-| `src/modules/dashboard/dashboardSelectors.ts`       | Done — pure aggregation, no DB                |
-| `src/modules/dashboard/dashboardSelectors.test.ts`  | Done — 19 unit tests, all passing             |
-| `src/modules/prep/prepTargets.ts`                   | Done (2026-07-13) — roadmap checkpoint targets |
-| `src/modules/outreach/*`                            | Contract published, separate handoff doc      |
-| `src/modules/dashboard/useDashboardStore.ts`        | **Stub — yours**                              |
+| File                                               | State                                          |
+| -------------------------------------------------- | ---------------------------------------------- |
+| `src/modules/dashboard/dashboardSelectors.ts`      | Done — pure aggregation, no DB                 |
+| `src/modules/dashboard/dashboardSelectors.test.ts` | Done — 19 unit tests, all passing              |
+| `src/modules/prep/prepTargets.ts`                  | Done (2026-07-13) — roadmap checkpoint targets |
+| `src/modules/outreach/*`                           | Contract published, separate handoff doc       |
+| `src/modules/dashboard/useDashboardStore.ts`       | **Stub — yours**                               |
 
 No migration, no repository for this module — myhub_plan.md Part A §A.2 is explicit that Daily
 Dashboard owns no table of its own.
@@ -51,7 +51,7 @@ Only the Repository read path is shared across modules.
      to add this fifth call, it's not in the four above) against
      `prepTargets.FEBRUARY_2027_BEHAVIORAL_STORY_TARGET` → `behavioralStoryProgress`
    - **New:** `dashboardSelectors.weeklyCadence(applications, outreachEntries, prepEntries, new
-     Date())` → `weeklyCadence`
+Date())` → `weeklyCadence`
 3. Standard `isLoading`/`error` handling, same shape as the other stores.
 
 ### `subscribeToUpdates()` — currently throws `not implemented`

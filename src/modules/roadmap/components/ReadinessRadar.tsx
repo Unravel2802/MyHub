@@ -33,9 +33,7 @@ function vertex(index: number, count: number, value: number) {
 }
 
 const polygon = (values: number[]) =>
-  values
-    .map((value, i) => vertex(i, values.length, value).join(","))
-    .join(" ");
+  values.map((value, i) => vertex(i, values.length, value).join(",")).join(" ");
 
 // §6.1's target is literally "strong across the board" — so make "across the
 // board" a SHAPE. Pure SVG; no chart library (not on the approved list, and not
@@ -95,7 +93,11 @@ export function ReadinessRadar({
                 gradient gives the shape depth against the near-black canvas. */}
             <linearGradient id="radar-claimed" x1="0" x2="1" y1="0" y2="1">
               <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="var(--hue-violet)" stopOpacity="0.2" />
+              <stop
+                offset="100%"
+                stopColor="var(--hue-violet)"
+                stopOpacity="0.2"
+              />
             </linearGradient>
           </defs>
 
@@ -137,7 +139,9 @@ export function ReadinessRadar({
               when the data backed you. */}
           <polygon
             className={
-              hasContradiction ? "fill-none stroke-danger" : "fill-none stroke-subtle"
+              hasContradiction
+                ? "fill-none stroke-danger"
+                : "fill-none stroke-subtle"
             }
             points={polygon(measured)}
             strokeDasharray="4 3"
@@ -215,8 +219,8 @@ export function ReadinessRadar({
 
       {hasContradiction ? (
         <p className="rounded-md border border-danger-border bg-danger-surface p-3 text-sm text-danger">
-          The dashed line sits inside your claim on at least one area — your data
-          doesn&apos;t yet back the level you&apos;ve given yourself.
+          The dashed line sits inside your claim on at least one area — your
+          data doesn&apos;t yet back the level you&apos;ve given yourself.
         </p>
       ) : null}
     </section>

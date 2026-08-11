@@ -86,9 +86,15 @@ describe("offerScore", () => {
   });
 
   it("clamps out-of-range ratings rather than producing a nonsense score", () => {
-    expect(offerScore(ratings({ tc: 99 }))).toBe(offerScore(ratings({ tc: 10 })));
-    expect(offerScore(ratings({ tc: -5 }))).toBe(offerScore(ratings({ tc: 1 })));
-    expect(offerScore(ratings({ tc: NaN }))).toBe(offerScore(ratings({ tc: 1 })));
+    expect(offerScore(ratings({ tc: 99 }))).toBe(
+      offerScore(ratings({ tc: 10 })),
+    );
+    expect(offerScore(ratings({ tc: -5 }))).toBe(
+      offerScore(ratings({ tc: 1 })),
+    );
+    expect(offerScore(ratings({ tc: NaN }))).toBe(
+      offerScore(ratings({ tc: 1 })),
+    );
   });
 });
 
@@ -116,11 +122,23 @@ describe("bestOffer", () => {
     // mediocre everywhere else should NOT beat a well-rounded one.
     const bigMoney = {
       name: "big-money",
-      ratings: ratings({ tc: 10, equity_quality: 10, learning_rate: 3, scope: 3, depth: 3 }),
+      ratings: ratings({
+        tc: 10,
+        equity_quality: 10,
+        learning_rate: 3,
+        scope: 3,
+        depth: 3,
+      }),
     };
     const wellRounded = {
       name: "well-rounded",
-      ratings: ratings({ learning_rate: 9, scope: 9, depth: 9, team: 9, tc: 6 }),
+      ratings: ratings({
+        learning_rate: 9,
+        scope: 9,
+        depth: 9,
+        team: 9,
+        tc: 6,
+      }),
     };
 
     expect(bestOffer([bigMoney, wellRounded])?.name).toBe("well-rounded");

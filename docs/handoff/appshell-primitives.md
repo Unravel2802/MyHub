@@ -7,8 +7,8 @@ items in Phase 5/6/8).
 
 ## What's already landed
 
-| File | State |
-|---|---|
+| File                       | State                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
 | `src/components/appNav.ts` | Done — `NavItem` type + `NAV_ITEMS` (the same five links every page currently hand-writes) |
 
 Everything else in this phase is yours.
@@ -39,7 +39,7 @@ Copy `Sidebar.tsx`'s markup and Tailwind classes **verbatim** (don't restyle any
 extraction, not redesign) into `AppShell`, but:
 
 - Wrap it in the outer `<main>`/`<div className="grid ...">` shown above, so `AppShell` owns the
-  *whole* page frame, not just the sidebar. `children` renders where each page's content
+  _whole_ page frame, not just the sidebar. `children` renders where each page's content
   currently sits, as the grid's second column.
 - Replace the five hand-written `<Link>`s with a `.map()` over `NAV_ITEMS` from
   `@/src/components/appNav`. Set `aria-current="page"` and the active styling

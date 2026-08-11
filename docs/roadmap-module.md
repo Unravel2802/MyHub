@@ -14,20 +14,20 @@ wherever the data already exists, ticked by hand where nothing can infer it.
 
 ## The one thing that makes this cheap
 
-**MyHub already tracks most of this.** The roadmap page is largely a *view* over existing selectors,
+**MyHub already tracks most of this.** The roadmap page is largely a _view_ over existing selectors,
 not new tracking:
 
-| Roadmap criterion | Already computed by |
-|---|---|
-| "20 algorithm problems" | `prepScorecard.cumulativeCountsByType` |
-| "2 system-design cases" | same |
-| "one mock interview per week" | `dashboardSelectors.weeklyCadence` |
-| "8 behavioral stories, both versions" | `achievementEngine` (already counts *complete* stories) |
-| "40–60 target companies" | `companies` count |
-| "applications live and active" | `funnelStats` |
-| Dec / Feb technical targets | `prepTargets.progressTowardCheckpoint` |
+| Roadmap criterion                     | Already computed by                                     |
+| ------------------------------------- | ------------------------------------------------------- |
+| "20 algorithm problems"               | `prepScorecard.cumulativeCountsByType`                  |
+| "2 system-design cases"               | same                                                    |
+| "one mock interview per week"         | `dashboardSelectors.weeklyCadence`                      |
+| "8 behavioral stories, both versions" | `achievementEngine` (already counts _complete_ stories) |
+| "40–60 target companies"              | `companies` count                                       |
+| "applications live and active"        | `funnelStats`                                           |
+| Dec / Feb technical targets           | `prepTargets.progressTowardCheckpoint`                  |
 
-So the new domain logic is mostly *composition*, not computation.
+So the new domain logic is mostly _composition_, not computation.
 
 ---
 
@@ -49,9 +49,14 @@ your **progress** is data.
 
 ```ts
 type Criterion =
-  | { kind: "auto"; key: string; label: string; source: string;
+  | {
+      kind: "auto";
+      key: string;
+      label: string;
+      source: string;
       // Derived. Never ticked by hand — the number IS the truth.
-      metric: (snapshot: RoadmapSnapshot) => { actual: number; target: number } }
+      metric: (snapshot: RoadmapSnapshot) => { actual: number; target: number };
+    }
   | { kind: "manual"; key: string; label: string; source: string };
 ```
 
@@ -73,29 +78,29 @@ drift for a semester without noticing — which is precisely the failure §16 ("
 
 ### The 11 months (§6.5)
 
-| Month | Theme | Gate |
-|---|---|---|
-| Jul 2026 | Setup and positioning | Two resumes, target list, diagnostic baselines, design doc |
-| Aug 2026 | Backend refresh, retrieval v0 | Locally runnable BM25 retrieval service, tested, documented |
-| Sep 2026 | Dense + hybrid search; **applications begin** | Hybrid retrieval end-to-end; funnel open and active |
-| Oct 2026 | Multi-hop, refusal, evaluation harness | Demonstrates ML judgment, not API plumbing |
-| Nov 2026 | Deployment, load testing, RL sidecar begins | Deployable, observable, load-tested; failure modes known |
-| Dec 2026 | **Flagship v1.0 + semester review** | The 75–100 algo / 6 SD / 2 ML / 14 mock checkpoint |
-| Jan 2027 | RL sidecar; full interview loops | Trained policy beating a baseline |
-| Feb 2027 | Interview volume and polish | Both projects complete; performance consistent |
-| Mar 2027 | External evidence | At least one PR / post / talk beyond your own repos |
-| Apr 2027 | Packaging, negotiation, decisions | — |
-| May 2027 | Graduate and transition | — |
+| Month    | Theme                                         | Gate                                                        |
+| -------- | --------------------------------------------- | ----------------------------------------------------------- |
+| Jul 2026 | Setup and positioning                         | Two resumes, target list, diagnostic baselines, design doc  |
+| Aug 2026 | Backend refresh, retrieval v0                 | Locally runnable BM25 retrieval service, tested, documented |
+| Sep 2026 | Dense + hybrid search; **applications begin** | Hybrid retrieval end-to-end; funnel open and active         |
+| Oct 2026 | Multi-hop, refusal, evaluation harness        | Demonstrates ML judgment, not API plumbing                  |
+| Nov 2026 | Deployment, load testing, RL sidecar begins   | Deployable, observable, load-tested; failure modes known    |
+| Dec 2026 | **Flagship v1.0 + semester review**           | The 75–100 algo / 6 SD / 2 ML / 14 mock checkpoint          |
+| Jan 2027 | RL sidecar; full interview loops              | Trained policy beating a baseline                           |
+| Feb 2027 | Interview volume and polish                   | Both projects complete; performance consistent              |
+| Mar 2027 | External evidence                             | At least one PR / post / talk beyond your own repos         |
+| Apr 2027 | Packaging, negotiation, decisions             | —                                                           |
+| May 2027 | Graduate and transition                       | —                                                           |
 
 ### The 7 readiness areas (§6.1)
 
 Algorithms · Backend · Distributed systems · ML systems · System design · Portfolio · Recruiting.
 
-Each has a **Minimum** and a **Strong** bar, verbatim from the matrix. Target is *Strong across the
-board*. Level is `not_started | minimum | strong`.
+Each has a **Minimum** and a **Strong** bar, verbatim from the matrix. Target is _Strong across the
+board_. Level is `not_started | minimum | strong`.
 
 **Mostly self-assessed, and that's correct** — "Lead 45-min designs with capacity and failure
-analysis" is a judgment, not a count. But two areas can be *evidenced* rather than merely claimed:
+analysis" is a judgment, not a count. But two areas can be _evidenced_ rather than merely claimed:
 
 - **Algorithms** — the matrix's Strong bar is "most mediums in 20–30 min", and `prepScorecard`
   already computes `averageTimeToSolveMin` and `solveRate`. Show that number next to the
@@ -104,7 +109,7 @@ analysis" is a judgment, not a count. But two areas can be *evidenced* rather th
 - **Recruiting** — "tracked funnel, active mock loops" is literally what `funnelStats` and the
   weekly cadence measure.
 
-That tension — *claimed* level vs *measured* evidence — is the most useful thing this page can
+That tension — _claimed_ level vs _measured_ evidence — is the most useful thing this page can
 surface, and it's the reason the skill tree earns its place next to the timeline.
 
 ---
@@ -122,7 +127,7 @@ the Kanban, the Roadmap page wouldn't know, and one of them would quietly become
 - `seed:gates` is retired.
 - The roadmap can auto-fill criteria a task subtask never could ("20 algorithms — 12/20").
 
-Tasks stay what they're good at: today's work. The roadmap owns what the *month* means.
+Tasks stay what they're good at: today's work. The roadmap owns what the _month_ means.
 
 ---
 
@@ -146,7 +151,7 @@ Jul ●━━━━━● Aug ━━━━━● Sep ━━━━━◉ Oct ─ 
 The details are what make it feel alive:
 
 - **The track fills as you progress.** Solid accent behind you, dashed muted ahead, and the segment
-  you're *inside* fills proportionally to that month's completion. The line literally advances as you
+  you're _inside_ fills proportionally to that month's completion. The line literally advances as you
   tick things off.
 - **"You are here" reuses `pulse-glow`** — the same keyframe as the streak flame. Same signal: this
   is live, this is now.
@@ -160,7 +165,7 @@ The details are what make it feel alive:
 
 ### The radar chart, second panel
 
-§6.1's target is literally **"strong across the board"** — so make "across the board" a *shape*.
+§6.1's target is literally **"strong across the board"** — so make "across the board" a _shape_.
 ~60 lines of SVG, no library.
 
 ```
@@ -188,7 +193,7 @@ picture of self-image versus reality — uncomfortable in the way that's useful.
 - **Countdown hero** — "May 2027 · 289 days". The one number that never stops mattering, and it makes
   the page feel like it's moving even on a day you do nothing.
 - **Gate completion reuses the achievement toaster.** Already built, already announces to screen
-  readers. Clearing a gate should *feel* like the milestone it is.
+  readers. Clearing a gate should _feel_ like the milestone it is.
 - **Density strip** under the timeline — a tick per active day, so the streak has somewhere to live
   visually and you can see the shape of the year.
 
@@ -218,9 +223,10 @@ partial unique index on `(item_key) where deleted_at is null` — the same idemp
 section. Transcribed, not invented.
 
 **R3 — `roadmapProgress.ts`** (pure, tested — the correctness-critical part)
+
 - `evaluateMonth(month, snapshot, ticks) → { status, criteria: CriterionState[] }`
 - `currentMonth(today)` — which node is "you are here"
-- `readinessEvidence(area, snapshot)` — the *measured* number to show beside a claimed level
+- `readinessEvidence(area, snapshot)` — the _measured_ number to show beside a claimed level
 - **Date discipline: `format()`, never `.slice(0,10)`.** This bug class has recurred repeatedly in
   this codebase (streaks, archive, board stats). Month boundaries are local wall-clock.
 - Boundary tests: a month with zero criteria met before it starts (`upcoming`, not `missed`); a past
@@ -242,7 +248,8 @@ beside it where we have it.
 reflects real prep data; a past month with unmet criteria shows `missed`.
 
 **Rules that keep biting** (all three have been made and fixed in this codebase already):
-- Never tint a card showing a zero or an em-dash — it highlights *absence*.
+
+- Never tint a card showing a zero or an em-dash — it highlights _absence_.
 - No raw zinc/indigo in components; semantic tokens only, or it's invisible in light mode.
 - Don't hide data behind a disclosure.
 

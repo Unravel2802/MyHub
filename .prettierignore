@@ -1,0 +1,14 @@
+# Build output and generated artifacts.
+.next/
+out/
+build/
+coverage/
+playwright-report/
+test-results/
+
+# Database backups — generated JSON dumps, not source.
+backups/
+
+# A standalone Figma-export reference project kept for design comparison, not
+# app code. Matches the excludes in tsconfig.json and eslint.config.mjs.
+Redesign landing page (1)/

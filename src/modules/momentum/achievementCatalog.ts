@@ -58,7 +58,8 @@ export const ACHIEVEMENTS = [
   {
     key: "algorithms_100",
     title: "December Ceiling",
-    description: "Solve 100 algorithm problems — the top of the December range.",
+    description:
+      "Solve 100 algorithm problems — the top of the December range.",
     category: "prep",
     source: "§6.5 — December semester review, upper bound",
   },

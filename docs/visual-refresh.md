@@ -16,10 +16,10 @@ Supersedes `docs/handoff/visual-refresh.md` (delete it).
 
 ### ★ 1.1 Light mode has no figure/ground (measured)
 
-| Pair | Contrast | Verdict |
-|---|---|---|
-| `surface` `#ffffff` vs `canvas` `#fafaf9` | **1.04 : 1** | Effectively invisible |
-| `border` `#e4e4e7` vs `surface` | 1.27 : 1 | A hairline doing all the work |
+| Pair                                      | Contrast     | Verdict                       |
+| ----------------------------------------- | ------------ | ----------------------------- |
+| `surface` `#ffffff` vs `canvas` `#fafaf9` | **1.04 : 1** | Effectively invisible         |
+| `border` `#e4e4e7` vs `surface`           | 1.27 : 1     | A hairline doing all the work |
 
 The page background, the cards, and the tiles inside the cards are three shades of the same
 near-white. Nothing separates a card from the page except a 1px border. In light mode the app
@@ -27,11 +27,11 @@ reads as unfinished — **dark mode is carrying the entire product.**
 
 ### ★ 1.2 WCAG AA failures (measured)
 
-| Token | On surface | AA (4.5) |
-|---|---|---|
-| `--subtle` light `#a1a1aa` | **2.56 : 1** | ✗ fails |
-| `--subtle` dark `#71717a` | **3.67 : 1** | ✗ fails |
-| `--muted` light `#71717a` | 4.83 : 1 | ✓ barely |
+| Token                      | On surface   | AA (4.5) |
+| -------------------------- | ------------ | -------- |
+| `--subtle` light `#a1a1aa` | **2.56 : 1** | ✗ fails  |
+| `--subtle` dark `#71717a`  | **3.67 : 1** | ✗ fails  |
+| `--muted` light `#71717a`  | 4.83 : 1     | ✓ barely |
 
 `--subtle` fails AA in **both** themes. It's used for secondary text throughout.
 
@@ -58,13 +58,13 @@ and you largely cannot see where you are. This is a hard blocker for WCAG AA.
 The structural reason it feels lifeless:
 
 - **Job CRM** opens with **three empty forms side by side** filling the viewport (Companies, New
-  Application, Real Interviews). The funnel and the pipeline — the actual content — are *below the
-  fold*. A CRM must open on your pipeline.
+  Application, Real Interviews). The funnel and the pipeline — the actual content — are _below the
+  fold_. A CRM must open on your pipeline.
 - **Prep Tracker** leads with "Log a prep session"; the scorecard is secondary.
 - **Outreach Log** is a form plus an empty list, with ~40% dead canvas and **no cadence shown at
   all** — despite 2–3 conversations/week being the entire point of the page.
 
-You open MyHub to see *where you stand*, not to do data entry. No amount of styling fixes this;
+You open MyHub to see _where you stand_, not to do data entry. No amount of styling fixes this;
 only moving things does.
 
 ### ★ 1.6 Component-level defects
@@ -91,7 +91,7 @@ app is the unlock toast.
 
 **Design philosophy: "Premium Developer Tool"** — the Linear / Vercel register. Crisp, dense,
 high-contrast, quiet. Nothing decorative; everything earns its place. The feeling to chase is
-*precision*, not personality.
+_precision_, not personality.
 
 ### 2.0 One architectural decision, made up front ★ read this
 
@@ -101,7 +101,7 @@ variables and is what makes the light/dark switch a single block of overrides ra
 variant on every utility in the codebase.
 
 **We keep the token layer and re-point its values at the palette below.** So a card is still
-`bg-surface border-border`; `--surface` simply *becomes* `zinc-900` in dark and its light-mode
+`bg-surface border-border`; `--surface` simply _becomes_ `zinc-900` in dark and its light-mode
 counterpart in light. This is not a deviation from the brief — it delivers exactly the specified
 look, and it's the only way to get it in **both themes** without hardcoding `dark:bg-zinc-900` on
 every element in the app.
@@ -113,35 +113,35 @@ component is a bug — it will be invisible in light mode.
 
 **Base — monochromatic, high contrast.** Dark mode uses deep greys, never pure black.
 
-| Token | Dark | Light |
-|---|---|---|
-| `--canvas` | `zinc-950` `#09090b` | `zinc-100` `#f4f4f5` |
-| `--surface` | `zinc-900` `#18181b` | `#ffffff` |
-| `--surface-subtle` | `zinc-800` `#27272a` | `zinc-50` `#fafafa` |
-| `--border` | `zinc-800` `#27272a` | `zinc-200` `#e4e4e7` |
+| Token              | Dark                 | Light                |
+| ------------------ | -------------------- | -------------------- |
+| `--canvas`         | `zinc-950` `#09090b` | `zinc-100` `#f4f4f5` |
+| `--surface`        | `zinc-900` `#18181b` | `#ffffff`            |
+| `--surface-subtle` | `zinc-800` `#27272a` | `zinc-50` `#fafafa`  |
+| `--border`         | `zinc-800` `#27272a` | `zinc-200` `#e4e4e7` |
 
 Note the light column: canvas steps **down** to `zinc-100` while surface stays white. That's what
-fixes the 1.04:1 figure/ground failure in §1.1 — cards finally sit *on* something.
+fixes the 1.04:1 figure/ground failure in §1.1 — cards finally sit _on_ something.
 
 **Accent — a single vibrant colour.** Moving from the current teal to **Indigo/Violet**.
 
-| Token | Dark | Light |
-|---|---|---|
-| `--accent` | `indigo-500` `#6366f1` | `indigo-600` `#4f46e5` |
-| `--accent-strong` | `indigo-400` `#818cf8` | `indigo-700` `#4338ca` |
-| `--accent-surface` | `#1e1b4b` (deep, never pale) | `indigo-50` `#eef2ff` |
-| `--accent-border` | `indigo-900` | `indigo-200` |
+| Token              | Dark                         | Light                  |
+| ------------------ | ---------------------------- | ---------------------- |
+| `--accent`         | `indigo-500` `#6366f1`       | `indigo-600` `#4f46e5` |
+| `--accent-strong`  | `indigo-400` `#818cf8`       | `indigo-700` `#4338ca` |
+| `--accent-surface` | `#1e1b4b` (deep, never pale) | `indigo-50` `#eef2ff`  |
+| `--accent-border`  | `indigo-900`                 | `indigo-200`           |
 
 Used for: primary actions, active nav, focus rings, **and the streak flame**.
 
 **Text — hierarchy by contrast.**
 
-| Token | Dark | Light | Role |
-|---|---|---|---|
-| `--foreground` | `zinc-50` | `zinc-950` | Primary |
-| `--body` | `zinc-300` | `zinc-700` | Paragraph |
-| `--muted` | `zinc-400` | `zinc-500` | Secondary |
-| `--subtle` | `zinc-400` | `zinc-500` | **Raised to pass AA — see §1.2** |
+| Token          | Dark       | Light      | Role                             |
+| -------------- | ---------- | ---------- | -------------------------------- |
+| `--foreground` | `zinc-50`  | `zinc-950` | Primary                          |
+| `--body`       | `zinc-300` | `zinc-700` | Paragraph                        |
+| `--muted`      | `zinc-400` | `zinc-500` | Secondary                        |
+| `--subtle`     | `zinc-400` | `zinc-500` | **Raised to pass AA — see §1.2** |
 
 `--subtle` currently fails WCAG AA in both themes (2.56:1 / 3.67:1). It does not get to stay
 decorative; every value above must clear **4.5:1** on its own surface, verified, not assumed.
@@ -150,13 +150,13 @@ decorative; every value above must clear **4.5:1** on its own surface, verified,
 
 Font stack is already Geist — modern, keep it.
 
-| Role | Spec |
-|---|---|
-| Hero (one per page) | `text-5xl`/`text-6xl`, `tracking-tight`, `tabular-nums` |
-| Page title | `text-3xl`, `tracking-tight` |
-| Section | `text-xl`, `tracking-tight` |
-| Body | `text-sm`, `leading-relaxed` |
-| **Overline / section header** | `text-xs uppercase tracking-widest text-muted` |
+| Role                          | Spec                                                    |
+| ----------------------------- | ------------------------------------------------------- |
+| Hero (one per page)           | `text-5xl`/`text-6xl`, `tracking-tight`, `tabular-nums` |
+| Page title                    | `text-3xl`, `tracking-tight`                            |
+| Section                       | `text-xl`, `tracking-tight`                             |
+| Body                          | `text-sm`, `leading-relaxed`                            |
+| **Overline / section header** | `text-xs uppercase tracking-widest text-muted`          |
 
 `tracking-tight` on every heading; `leading-relaxed` on every paragraph. The uppercase, wide-tracked
 overline is the workhorse for breaking up dense data panels — use it hard.
@@ -181,7 +181,7 @@ backdrop-blur-md  +  border border-border  +  shadow-xl shadow-black/50
   (`hover:scale-[1.02]`) — StatCards and achievement trophies especially.
 - **Focus (accessibility-critical, see §1.4):**
   `focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
-  focus-visible:ring-offset-canvas`
+focus-visible:ring-offset-canvas`
   The app currently has **one** focus rule in the entire stylesheet. This is a global fix.
 - All motion `motion-reduce:`-guarded. `scale` and `transition-all` both get suppressed.
 
@@ -196,7 +196,7 @@ Codex owns the application of them.** Codex is blocked until Claude's commits la
 
 **C1 — Token foundation** ✅ **DONE** — `3a31087`
 Re-point every token at §2.1: zinc base, the fixed light ramp (canvas steps down to `zinc-100` so
-cards finally sit *on* something), **teal → indigo/violet accent**, and `--subtle` raised until it
+cards finally sit _on_ something), **teal → indigo/violet accent**, and `--subtle` raised until it
 clears 4.5:1 in both themes — measured, not eyeballed. Add the display type step, the
 `fade-up` / `pulse-glow` keyframes, and the **global `focus-visible` ring** (§2.4 — one rule, fixes
 §1.4 across the entire app).
@@ -205,6 +205,7 @@ Because components already speak in semantic names, this single file changes the
 appearance without touching a component. That's the payoff of §2.0.
 
 **C2 — Primitive contracts** ✅ **DONE** — `17f7d7f`
+
 - `ProgressBar` — mount at 0 so the transition actually fires; a visible "not started" treatment so
   0% stops looking broken.
 - `StatCard` — add `size?: "default" | "hero"`; hover lift (`hover:scale-[1.02]`, motion-reduce
@@ -226,7 +227,7 @@ Shell-level, so it's mine.
 43/43 E2E). Job CRM now opens on the funnel + pipeline with the forms collapsed below into "Add to
 your pipeline"; Prep and Outreach lead with progress rather than a form.
 
-*Follow-ups spotted during that review, fold into X4:* the CRM pipeline columns overflow and clip
+_Follow-ups spotted during that review, fold into X4:_ the CRM pipeline columns overflow and clip
 the last stage; the `<details>` form section defaults to `open` (consider closed); empty pipeline
 columns are large dead boxes.
 
@@ -238,14 +239,14 @@ mechanical.
 
 **X3 — Hero pass** — one oversized focal point per page via `StatCard size="hero"`:
 
-| Page | Hero |
-|---|---|
-| Dashboard | Streak + this week's cadence |
-| Prep Tracker | December checkpoint |
-| Job CRM | Funnel response rate |
-| Task Engine | Open / completed this week |
-| Achievements | Current streak |
-| Weekly Review | This week's cadence |
+| Page          | Hero                         |
+| ------------- | ---------------------------- |
+| Dashboard     | Streak + this week's cadence |
+| Prep Tracker  | December checkpoint          |
+| Job CRM       | Funnel response rate         |
+| Task Engine   | Open / completed this week   |
+| Achievements  | Current streak               |
+| Weekly Review | This week's cadence          |
 
 **Do the Dashboard alone first, then stop for review** — don't invent the vocabulary six times and
 discover it was wrong six times.
@@ -257,7 +258,7 @@ card lifts; the `text-xs uppercase tracking-widest` overline used hard to break 
 streak must never look celebratory; `success` surfaces on anything genuinely good (passed mock, hit
 target, unlocked achievement, `offer` stage).
 
-**Two traps already hit once each — don't repeat them.** Do not tint a card that shows a *zero* or a
+**Two traps already hit once each — don't repeat them.** Do not tint a card that shows a _zero_ or a
 `—`: the "Current streak: 0 days" card was accent-tinted, drawing the eye to nothing, and the Job CRM
 "Offer rate" card still does it today while displaying `—`. Highlight state, not absence.
 
@@ -282,7 +283,7 @@ unlock toaster and error banners; verify AA against the new tokens; check 375px 
 - **Tailwind + the existing semantic tokens only.** No new dependencies — the approved list has no
   animation library and plain CSS covers all of this. Do not reach for framer-motion.
 - ★ **No raw zinc/indigo in components.** `bg-zinc-900` in a component is a bug: it will be
-  *invisible in light mode*. Only `globals.css` names a colour; components say `bg-surface`,
+  _invisible in light mode_. Only `globals.css` names a colour; components say `bg-surface`,
   `text-muted`, `ring-accent`. If a semantic token you need doesn't exist, **flag it — don't hardcode
   around it.** (See §2.0. This is the rule the entire two-theme system rests on.)
 - **Both themes, every time.** Dark surfaces are deep-tinted, never pale (see `--danger-surface` →
@@ -313,7 +314,7 @@ announcements); X4 is applied styling across six pages.
 
 **Note on collisions.** Codex started X2 before C2/C3 landed and had 20 files in flight against the
 old primitives. Nothing was lost — the work was stashed, replayed on top, and only two files
-conflicted (both *convergently*: Codex had independently reached the same `size="hero"` API and the
+conflicted (both _convergently_: Codex had independently reached the same `size="hero"` API and the
 same "don't tint a null rate" rule). But it cost a merge. **Pull before starting a task.**
 
 ---
@@ -338,7 +339,7 @@ The keyframes and primitives exist and are unused. This is the pass that spends 
   section defaults to `open` (consider closed); empty pipeline columns are large dead boxes.
 
 **The one rule that keeps biting:** never tint a card showing a zero or an em-dash. It highlights
-*absence*. Two components have already made this mistake and been fixed.
+_absence_. Two components have already made this mistake and been fixed.
 
 ## X5 — Claude: accessibility sweep
 

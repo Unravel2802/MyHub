@@ -122,7 +122,9 @@ function completeTaskDescendants(tasks: Task[], taskId: string): Task[] {
   const idsToComplete = new Set(descendantIds(tasks, taskId));
   const completedAt = new Date().toISOString();
   return tasks.map((task) =>
-    idsToComplete.has(task.id) ? { ...task, status: "done", completedAt } : task,
+    idsToComplete.has(task.id)
+      ? { ...task, status: "done", completedAt }
+      : task,
   );
 }
 

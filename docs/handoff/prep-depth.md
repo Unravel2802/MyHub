@@ -4,18 +4,18 @@ Published contract. Wave 2, Phase 3 (`myhub_plan.md` Part B).
 
 ## What's already landed
 
-| File | State |
-|---|---|
-| `supabase/migrations/0008_prep_subtypes.sql` | Done — `mock_subtype` enum + nullable `prep_entries.mock_subtype` (CHECKed to `mock_interview` rows only) + `resume_deep_dive` added to `prep_entry_type` |
-| `src/modules/prep/types.ts` | Done — `MockSubtype`, `PrepEntryType` gains `resume_deep_dive`, `PrepEntry.mockSubtype: MockSubtype \| null` |
-| `src/modules/prep/PrepRepository.ts` | Done — `mock_subtype` round-trips through `entryFromRow`/`entryWrite`/`CreatePrepEntryInput.mockSubtype`. This is the minimal mechanical mapping needed for the contract to compile — no UI-facing behavior yet |
-| `src/modules/prep/usePrepStore.ts` | Done — optimistic-create literal and `applyEntryUpdates` both carry `mockSubtype` through, same pattern as every other field |
-| `src/lib/events.ts` | Done — `PrepType` (the `prep.logged` event payload) gains `resume_deep_dive` |
-| `src/modules/prep/prepScorecard.ts` | Done — `EMPTY_COUNTS` gains `resume_deep_dive: 0` |
-| `src/modules/prep/prepTargets.ts` | Done — `CumulativeCheckpoint.bySubtype`, `DECEMBER_2026_CHECKPOINT.bySubtype = { coding: 6, system_design: 6, ml_system_design: 2 }`, new `mockSubtypeProgress(entries, checkpoint) → MockSubtypeProgress \| null` |
-| `src/modules/prep/prepAllocation.ts` (new) | Done — `TARGET_ALLOCATION` (algorithm .35 / system_design .25 / behavioral .15 / ml_system_design .15 / resume_deep_dive .10) + `timeAllocation(entries, fromDate?)`, excluding `mock_interview` from both numerator and denominator |
-| `src/modules/prep/components/PrepEntryList.tsx` | Touched minimally — added a `"Resume deep-dive"` label to the existing `labels` map so the file compiles against the widened `PrepEntryType`. **Not styled/reviewed beyond that** — restyle freely if it doesn't fit |
-| Tests | `prepTargets.test.ts` (mockSubtypeProgress: split-by-subtype, legacy-NULL-counts-as-unclassified, null-when-no-bySubtype), `prepAllocation.test.ts` (new, full coverage), `prepScorecard.test.ts` fixed for the new enum member |
+| File                                            | State                                                                                                                                                                                                                                |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `supabase/migrations/0008_prep_subtypes.sql`    | Done — `mock_subtype` enum + nullable `prep_entries.mock_subtype` (CHECKed to `mock_interview` rows only) + `resume_deep_dive` added to `prep_entry_type`                                                                            |
+| `src/modules/prep/types.ts`                     | Done — `MockSubtype`, `PrepEntryType` gains `resume_deep_dive`, `PrepEntry.mockSubtype: MockSubtype \| null`                                                                                                                         |
+| `src/modules/prep/PrepRepository.ts`            | Done — `mock_subtype` round-trips through `entryFromRow`/`entryWrite`/`CreatePrepEntryInput.mockSubtype`. This is the minimal mechanical mapping needed for the contract to compile — no UI-facing behavior yet                      |
+| `src/modules/prep/usePrepStore.ts`              | Done — optimistic-create literal and `applyEntryUpdates` both carry `mockSubtype` through, same pattern as every other field                                                                                                         |
+| `src/lib/events.ts`                             | Done — `PrepType` (the `prep.logged` event payload) gains `resume_deep_dive`                                                                                                                                                         |
+| `src/modules/prep/prepScorecard.ts`             | Done — `EMPTY_COUNTS` gains `resume_deep_dive: 0`                                                                                                                                                                                    |
+| `src/modules/prep/prepTargets.ts`               | Done — `CumulativeCheckpoint.bySubtype`, `DECEMBER_2026_CHECKPOINT.bySubtype = { coding: 6, system_design: 6, ml_system_design: 2 }`, new `mockSubtypeProgress(entries, checkpoint) → MockSubtypeProgress \| null`                   |
+| `src/modules/prep/prepAllocation.ts` (new)      | Done — `TARGET_ALLOCATION` (algorithm .35 / system_design .25 / behavioral .15 / ml_system_design .15 / resume_deep_dive .10) + `timeAllocation(entries, fromDate?)`, excluding `mock_interview` from both numerator and denominator |
+| `src/modules/prep/components/PrepEntryList.tsx` | Touched minimally — added a `"Resume deep-dive"` label to the existing `labels` map so the file compiles against the widened `PrepEntryType`. **Not styled/reviewed beyond that** — restyle freely if it doesn't fit                 |
+| Tests                                           | `prepTargets.test.ts` (mockSubtypeProgress: split-by-subtype, legacy-NULL-counts-as-unclassified, null-when-no-bySubtype), `prepAllocation.test.ts` (new, full coverage), `prepScorecard.test.ts` fixed for the new enum member      |
 
 Full gate green: typecheck, lint, 146 unit tests, 30 E2E — zero regressions.
 

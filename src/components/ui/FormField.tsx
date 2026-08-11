@@ -22,15 +22,11 @@ export function FormField({ label, hint, error, children }: FormFieldProps) {
   const id = useId();
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
-  const describedBy =
-    [errorId, hintId].filter(Boolean).join(" ") || undefined;
+  const describedBy = [errorId, hintId].filter(Boolean).join(" ") || undefined;
 
   return (
     <div className="grid gap-1.5">
-      <label
-        className="text-sm font-medium text-body"
-        htmlFor={id}
-      >
+      <label className="text-sm font-medium text-body" htmlFor={id}>
         {label}
       </label>
       {children({

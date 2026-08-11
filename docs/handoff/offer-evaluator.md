@@ -5,8 +5,8 @@ no migration, no table, no store.
 
 ## What's already landed
 
-| File | State |
-|---|---|
+| File                               | State                                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `src/modules/offers/offerScore.ts` | Done + tested — `OFFER_FACTORS`, `offerScore(ratings)`, `bestOffer(offers)`, `RATING_MIN`/`RATING_MAX` |
 
 Seven factors, weights summing to 100: learning_rate 20, tc 20, equity_quality 15, scope 15,

@@ -1,6 +1,6 @@
 # Color refresh — plan
 
-The "Premium Developer Tool" pass (docs/visual-refresh.md) was *deliberately* monochromatic: zinc
+The "Premium Developer Tool" pass (docs/visual-refresh.md) was _deliberately_ monochromatic: zinc
 shell, one indigo accent, and a green/red pair that barely appears. It fixed the broken parts —
 light-mode figure/ground, AA contrast, the focus ring — but the result is austere. Evidence from
 driving every page this session: the achievements page is a wall of identical grey cards, the CRM
@@ -15,7 +15,7 @@ mode must not regress and stays AA.
 
 ## Philosophy: color must mean something
 
-Three channels, and *only* these three. A color that encodes nothing is noise and gets cut.
+Three channels, and _only_ these three. A color that encodes nothing is noise and gets cut.
 
 1. **Place** — which module am I in? Each module owns a hue; nav, header, and the page's ambient
    wash carry it. The app becomes a set of rooms instead of one long grey corridor.
@@ -25,7 +25,7 @@ Three channels, and *only* these three. A color that encodes nothing is noise an
    gradient hero numbers, a halo on the lit flame, a soft wash bleeding from each page header.
 
 What stays monochrome, deliberately: card surfaces, borders, body text, forms. The shell is the
-premium feel; color sits *on* it, never replaces it.
+premium feel; color sits _on_ it, never replaces it.
 
 ---
 
@@ -35,11 +35,11 @@ The standing rule holds: **only `globals.css` names a color.** Components speak 
 Rather than 9 modules × 3 variants × 2 themes of bespoke tokens, define a shared kit of eight
 named hues, each with three roles, in both themes:
 
-| Role | Dark example (cyan) | Light example | Use |
-|---|---|---|---|
-| `--hue-cyan` | `cyan-400` `#22d3ee` | `cyan-700` `#0e7490` | text, icons, strokes — **must clear 4.5:1 on `--surface`** |
-| `--hue-cyan-surface` | deep tint `#083344` | `cyan-50` `#ecfeff` | fills, badges, tinted cards |
-| `--hue-cyan-border` | `cyan-900` | `cyan-200` | borders on tinted elements |
+| Role                 | Dark example (cyan)  | Light example        | Use                                                        |
+| -------------------- | -------------------- | -------------------- | ---------------------------------------------------------- |
+| `--hue-cyan`         | `cyan-400` `#22d3ee` | `cyan-700` `#0e7490` | text, icons, strokes — **must clear 4.5:1 on `--surface`** |
+| `--hue-cyan-surface` | deep tint `#083344`  | `cyan-50` `#ecfeff`  | fills, badges, tinted cards                                |
+| `--hue-cyan-border`  | `cyan-900`           | `cyan-200`           | borders on tinted elements                                 |
 
 Hues: **amber, orange, rose, violet, blue, cyan, teal, emerald.** (Indigo already exists as
 `--accent`.) Dark surfaces are deep-tinted, never pale — same rule as `--danger-surface` →
@@ -50,17 +50,17 @@ Hues: **amber, orange, rose, violet, blue, cyan, teal, emerald.** (Indigo alread
 A TS constant, not CSS — the mapping is app knowledge, and one import gives every consumer the
 same answer (`src/components/moduleHues.ts`, keyed by nav href):
 
-| Module | Hue | Why |
-|---|---|---|
-| Dashboard | indigo (brand accent) | The hub keeps the brand color |
-| Roadmap | violet | Sibling of indigo — the "meta" pages share a family |
-| Task Engine | amber | The board's Todo dot is already amber |
-| Prep Tracker | cyan | Cool/technical |
-| Job CRM | blue | The pipeline |
-| Outreach Log | rose | Human contact |
-| Achievements | orange | The flame 🔥 — the one obvious choice |
-| Weekly Review | teal | Calm, reflective |
-| Offer Evaluator | emerald | Money and go-signals |
+| Module          | Hue                   | Why                                                 |
+| --------------- | --------------------- | --------------------------------------------------- |
+| Dashboard       | indigo (brand accent) | The hub keeps the brand color                       |
+| Roadmap         | violet                | Sibling of indigo — the "meta" pages share a family |
+| Task Engine     | amber                 | The board's Todo dot is already amber               |
+| Prep Tracker    | cyan                  | Cool/technical                                      |
+| Job CRM         | blue                  | The pipeline                                        |
+| Outreach Log    | rose                  | Human contact                                       |
+| Achievements    | orange                | The flame 🔥 — the one obvious choice               |
+| Weekly Review   | teal                  | Calm, reflective                                    |
+| Offer Evaluator | emerald               | Money and go-signals                                |
 
 ### The contrast gate becomes a test
 
@@ -107,13 +107,14 @@ a discovery.
 The one genuinely new element — the classic "color as data" component, and it was already promised
 in the roadmap visualization spec ("density strip") but never built. A GitHub-style contribution
 grid: one cell per day since July 2026, emerald ramp by activity count (prep entries + completions
-+ applications + outreach that day — `activityDates` already computes the union; this needs the
-per-day *count* variant). Lives on the Roadmap page under the timeline; the streak finally has a
-place to *see itself*.
 
-- Empty cells are `--surface-subtle`, **not** green-0 — an empty day is absence, and absence is
+- applications + outreach that day — `activityDates` already computes the union; this needs the
+  per-day _count_ variant). Lives on the Roadmap page under the timeline; the streak finally has a
+  place to _see itself_.
+
+* Empty cells are `--surface-subtle`, **not** green-0 — an empty day is absence, and absence is
   never tinted (three strikes already: streak card, offer rate, radar evidence).
-- Date math is the four-time-offender zone: local wall-clock days via `format()`, never
+* Date math is the four-time-offender zone: local wall-clock days via `format()`, never
   `.toISOString().slice()`. The grid's week columns are Monday-start, same as everything else.
 
 ### 2.4 Light (dark-mode effects)
@@ -146,10 +147,10 @@ place to *see itself*.
 
 ## Part 4 — Work split (≈35% Claude / 65% Codex)
 
-**Division principle.** Claude is the tech lead: own the *system* (tokens, contracts, the AA gate,
-correctness-critical logic) and the *review*, and hand the *volume* — per-page application across
+**Division principle.** Claude is the tech lead: own the _system_ (tokens, contracts, the AA gate,
+correctness-critical logic) and the _review_, and hand the _volume_ — per-page application across
 nine surfaces — to Codex. The target ratio is roughly **35% Claude / 65% Codex by code**, and it's
-deliberate: the lead's leverage is in deciding *what* and guarding *correctness*, not in typing the
+deliberate: the lead's leverage is in deciding _what_ and guarding _correctness_, not in typing the
 application. Everything colour-as-place and colour-as-decoration is Codex's; Claude writes only
 what can't be safely delegated.
 
@@ -165,7 +166,7 @@ what can't be safely delegated.
 
 **Claude going forward = review only.** No more application code from Claude on this refresh. The
 AA test fails CI if a token regresses; the browser review at each gate catches what code can't see.
-If Codex needs a token or a data→hue map that doesn't exist, Claude adds *that one contract* and
+If Codex needs a token or a data→hue map that doesn't exist, Claude adds _that one contract_ and
 hands it back — it does not take over the page.
 
 ### Codex — the application (all of X1–X3, ~65%)
@@ -197,5 +198,5 @@ Full gate before every commit. Dark mode reviewed in the browser at each gate �
 that matters here, and screenshots-by-code has missed things all session that looking caught.
 
 > **Note on the ratio.** With K1–K3 at ~660 lines, X1–X3 across nine pages lands the whole refresh
-> near 35/65 on its own — *provided Claude adds no further application code*. Holding the line is
+> near 35/65 on its own — _provided Claude adds no further application code_. Holding the line is
 > the discipline; the number takes care of itself.

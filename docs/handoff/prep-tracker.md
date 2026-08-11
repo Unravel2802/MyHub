@@ -7,17 +7,17 @@ Everything below is decided. If it's wrong or missing, **flag it — do not patc
 
 ## What's already landed
 
-| File                                        | State                                                          |
-| -------------------------------------------- | ---------------------------------------------------------------- |
-| `supabase/migrations/0003_prep_tracker.sql` | Done — apply in the Supabase SQL editor before testing         |
-| `src/modules/prep/types.ts`                 | Done — `PrepEntry`, `BehavioralStory`, outcome unions           |
+| File                                        | State                                                             |
+| ------------------------------------------- | ----------------------------------------------------------------- |
+| `supabase/migrations/0003_prep_tracker.sql` | Done — apply in the Supabase SQL editor before testing            |
+| `src/modules/prep/types.ts`                 | Done — `PrepEntry`, `BehavioralStory`, outcome unions             |
 | `src/modules/prep/prepScorecard.ts`         | Done — pure aggregation, no DB, includes `cumulativeCountsByType` |
-| `src/modules/prep/prepScorecard.test.ts`    | Done — 16 unit tests, all passing                               |
-| `src/modules/prep/prepTargets.ts`           | Done (2026-07-13) — roadmap checkpoint targets, see below       |
-| `src/modules/prep/prepTargets.test.ts`      | Done — 6 unit tests, all passing                                 |
-| `src/lib/events.ts`                         | Done — `prep.logged` added to the union                         |
-| `src/modules/prep/PrepRepository.ts`        | **Done — implemented and merged**                                |
-| `src/modules/prep/usePrepStore.ts`          | **Done — implemented and merged**                                |
+| `src/modules/prep/prepScorecard.test.ts`    | Done — 16 unit tests, all passing                                 |
+| `src/modules/prep/prepTargets.ts`           | Done (2026-07-13) — roadmap checkpoint targets, see below         |
+| `src/modules/prep/prepTargets.test.ts`      | Done — 6 unit tests, all passing                                  |
+| `src/lib/events.ts`                         | Done — `prep.logged` added to the union                           |
+| `src/modules/prep/PrepRepository.ts`        | **Done — implemented and merged**                                 |
+| `src/modules/prep/usePrepStore.ts`          | **Done — implemented and merged**                                 |
 
 ## New (2026-07-13): checkpoint-progress UI
 
@@ -78,7 +78,7 @@ force those in without flagging it first.
 - `prepTargets.activeCheckpoint(todayString)` picks the relevant checkpoint (December until it
   passes, then February).
 - `prepTargets.progressTowardCheckpoint(entries, checkpoint)` returns `{ algorithm, systemDesign,
-  mlSystemDesign, mockInterview }`, each an `{ actual, target, progress }` — `entries` is just
+mlSystemDesign, mockInterview }`, each an `{ actual, target, progress }` — `entries` is just
   `usePrepStore().entries`, already in state, no new store action needed.
 - **`progress` is uncapped** — it can exceed `1` once a target is beaten. Render that as "beat the
   target" (e.g. "160/150 — target met"), not as a progress bar stuck at 100%; the whole point of

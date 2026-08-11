@@ -24,8 +24,9 @@ function interview(overrides: Partial<Interview> = {}): Interview {
 
 describe("postMortemLoggedAtFor", () => {
   it("stamps the first time notes go empty -> non-empty", () => {
-    expect(postMortemLoggedAtFor(interview(), "Bombed the DP question", NOW))
-      .toBe(NOW);
+    expect(
+      postMortemLoggedAtFor(interview(), "Bombed the DP question", NOW),
+    ).toBe(NOW);
   });
 
   it("never overwrites an existing timestamp on a later edit", () => {
@@ -36,7 +37,9 @@ describe("postMortemLoggedAtFor", () => {
 
     // A typo fix days later must not move the timestamp — the 24h achievement
     // measures when you FIRST wrote the post-mortem.
-    expect(postMortemLoggedAtFor(current, "First draft, fixed", NOW)).toBeUndefined();
+    expect(
+      postMortemLoggedAtFor(current, "First draft, fixed", NOW),
+    ).toBeUndefined();
   });
 
   it("does not re-stamp when notes are cleared and rewritten", () => {

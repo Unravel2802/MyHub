@@ -65,10 +65,16 @@ describe("isArchived — by age", () => {
     // Sunday 23:59 of last week -> archived. Monday 00:00 -> on the board.
     // Off-by-one here would silently hide a task you finished this morning.
     expect(
-      isArchived(task({ id: "sun", completedAt: at("2026-07-12", "23:59:59") }), TODAY),
+      isArchived(
+        task({ id: "sun", completedAt: at("2026-07-12", "23:59:59") }),
+        TODAY,
+      ),
     ).toBe(true);
     expect(
-      isArchived(task({ id: "mon", completedAt: at("2026-07-13", "00:00:00") }), TODAY),
+      isArchived(
+        task({ id: "mon", completedAt: at("2026-07-13", "00:00:00") }),
+        TODAY,
+      ),
     ).toBe(false);
   });
 
@@ -157,9 +163,9 @@ describe("boardTasks / archivedTasks", () => {
       completedAt: at("2026-06-01"),
       deletedAt: at("2026-06-02"),
     });
-    expect(archivedTasks([...tasks, deleted], TODAY).map((t) => t.id)).not.toContain(
-      "deleted",
-    );
+    expect(
+      archivedTasks([...tasks, deleted], TODAY).map((t) => t.id),
+    ).not.toContain("deleted");
   });
 });
 
@@ -169,7 +175,9 @@ describe("isArchived — rows missing the column entirely", () => {
   // without the column) as "archived", so every task vanished from the board.
   // The board went completely blank and 11 E2E specs failed.
   it("does not archive an open task whose archivedAt is undefined", () => {
-    const t = { ...task({ id: "t", status: "todo", completedAt: null }) } as Task;
+    const t = {
+      ...task({ id: "t", status: "todo", completedAt: null }),
+    } as Task;
     delete (t as Partial<Task>).archivedAt;
 
     expect(isArchived(t, TODAY)).toBe(false);

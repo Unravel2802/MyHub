@@ -5,13 +5,13 @@ Published contract. Wave 2, Phase 6 (`myhub_plan.md` Part B) — §14's Sunday r
 
 ## What's already landed
 
-| File | State |
-|---|---|
-| `supabase/migrations/0011_weekly_reviews.sql` | Done — `weekly_reviews` table + partial unique index on `(week_start) where deleted_at is null` |
-| `src/modules/review/reviewLogic.ts` | Done + tested — `weekStartOf`, `weekStartKeyOf`, `isQuarterBoundaryWeek`, `QUARTERLY_QUESTIONS`, `buildSnapshot` |
-| `src/modules/review/types.ts` | Done — `WeeklyReview`, `QuarterlyAnswers` |
-| `src/modules/review/ReviewRepository.ts` | Done — `getReviews`, `getReviewForWeek`, `upsertReview` (`onConflict: "week_start"`) |
-| `src/modules/review/useReviewStore.ts` | Done — `{ reviews, currentSnapshot, isLoading, isSaving, error, fetchReviews, saveReview, reviewForWeek, isQuarterBoundary }` |
+| File                                          | State                                                                                                                         |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `supabase/migrations/0011_weekly_reviews.sql` | Done — `weekly_reviews` table + partial unique index on `(week_start) where deleted_at is null`                               |
+| `src/modules/review/reviewLogic.ts`           | Done + tested — `weekStartOf`, `weekStartKeyOf`, `isQuarterBoundaryWeek`, `QUARTERLY_QUESTIONS`, `buildSnapshot`              |
+| `src/modules/review/types.ts`                 | Done — `WeeklyReview`, `QuarterlyAnswers`                                                                                     |
+| `src/modules/review/ReviewRepository.ts`      | Done — `getReviews`, `getReviewForWeek`, `upsertReview` (`onConflict: "week_start"`)                                          |
+| `src/modules/review/useReviewStore.ts`        | Done — `{ reviews, currentSnapshot, isLoading, isSaving, error, fetchReviews, saveReview, reviewForWeek, isQuarterBoundary }` |
 
 ## The one idea that matters here
 
@@ -22,7 +22,7 @@ what your October review said you'd done that week. A review is a record of what
 you wrote it.
 
 The store handles the capture: `saveReview({ today, ... })` calls `buildSnapshot` itself at save
-time. Don't pass a snapshot in, and don't reuse `currentSnapshot` (which is for *displaying*
+time. Don't pass a snapshot in, and don't reuse `currentSnapshot` (which is for _displaying_
 live numbers while you write, and can be hours stale if the tab's been open).
 
 ## Your work
@@ -45,6 +45,7 @@ live numbers while you write, and can be hours stale if the tab's been open).
 ## Tests
 
 Mock + `tests/ui/weekly-review.spec.ts`:
+
 - Save a review → it appears in the past-reviews list.
 - Re-save the same week → **upserts, does not duplicate** (assert one row, not two).
 - Quarterly questions hidden on an ordinary week, shown on a boundary week. Pin the clock for

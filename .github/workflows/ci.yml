@@ -1,0 +1,81 @@
+name: CI
+
+# The gate for everything that is NOT a database concern (db-tests.yml covers
+# schema/RLS against a real Supabase stack).
+#
+# Until this existed, lint, typecheck, the unit suite and the E2E suite ran
+# ONLY in .husky/pre-commit and .husky/pre-push — on one machine. Any
+# `--no-verify`, any commit authored from another checkout, and any agent
+# pushing without the hooks installed landed completely unverified. With no
+# human reading diffs line by line (CLAUDE.md), these checks are the review, so
+# they have to run somewhere that can't be skipped.
+#
+# Notably this is where the module-boundary rules (eslint.config.mjs,
+# architecture rule 1) become enforceable rather than advisory.
+
+on:
+  push:
+  pull_request:
+
+# A new push to the same branch makes the previous run's answer irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Lint, types, unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # Not `eslint --fix`: CI reports, it does not rewrite. The pre-commit
+      # hook is where fixing happens.
+      - name: Lint (includes module boundaries)
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      # Formatting is enforced by lint-staged locally; check it here so a
+      # commit made without the hooks can't drift the whole tree.
+      - name: Format check
+        run: npx prettier --check .
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # The suite mocks Supabase at the network layer (tests/ui/fixtures.ts),
+      # but the client is constructed at import time and throws without these,
+      # so they must be present and syntactically valid — not real.
+      - name: Run E2E
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://ci.supabase.invalid
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+        run: npm run test:ui
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

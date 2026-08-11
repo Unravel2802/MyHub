@@ -2,7 +2,16 @@ import { test as base } from "@playwright/test";
 
 export { expect } from "@playwright/test";
 
-process.loadEnvFile(".env.local");
+// Locally the env comes from .env.local; in CI it comes from the workflow's
+// `env:` block and there is no such file. loadEnvFile THROWS on a missing
+// file, so this must not be unguarded — that alone would fail every E2E run
+// on CI. Real values are never needed: fixtures below intercept every Supabase
+// request, and the URL is used only to derive the auth storage key.
+try {
+  process.loadEnvFile(".env.local");
+} catch {
+  // No .env.local — expected on CI.
+}
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 if (!supabaseUrl)
   throw new Error("NEXT_PUBLIC_SUPABASE_URL is required for UI auth fixtures");

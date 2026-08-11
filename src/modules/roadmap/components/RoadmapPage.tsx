@@ -7,9 +7,9 @@ import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { RoadmapTimeline } from "@/src/modules/roadmap/components/RoadmapTimeline";
 import { ReadinessRadar } from "@/src/modules/roadmap/components/ReadinessRadar";
-import { ActivityHeatmap } from "@/src/modules/momentum/components/ActivityHeatmap";
+import { ActivityHeatmap } from "@/src/components/ui/ActivityHeatmap";
 import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
-import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
+import { useActivityGrid } from "@/src/components/momentumState";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
@@ -75,7 +75,7 @@ export function RoadmapPage() {
   // Activity data lives on the momentum store (it fetches all four sources every
   // refresh, and AppShell mounts it on every page), so the heatmap reads it here
   // rather than the roadmap store fetching tasks a second time.
-  const activityGrid = useMomentumStore((state) => state.activityGrid);
+  const activityGrid = useActivityGrid();
 
   return (
     <PageTemplate

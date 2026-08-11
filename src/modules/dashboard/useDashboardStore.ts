@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { format } from "date-fns";
 import { on } from "@/src/lib/events";
 import * as ApplicationRepository from "@/src/modules/jobApplications/ApplicationRepository";
+import * as CompanyRepository from "@/src/modules/jobApplications/CompanyRepository";
 import * as InterviewRepository from "@/src/modules/jobApplications/InterviewRepository";
 import * as OutreachRepository from "@/src/modules/outreach/OutreachRepository";
 import * as PrepRepository from "@/src/modules/prep/PrepRepository";
@@ -14,6 +15,12 @@ import {
   FEBRUARY_2027_BEHAVIORAL_STORY_TARGET,
   progressTowardCheckpoint,
 } from "@/src/modules/prep/prepTargets";
+import * as RoadmapRepository from "@/src/modules/roadmap/RoadmapRepository";
+import {
+  currentMonthKey,
+  evaluateRoadmap,
+} from "@/src/modules/roadmap/roadmapProgress";
+import type { MonthState } from "@/src/modules/roadmap/types";
 import * as TaskRepository from "@/src/modules/task/TaskRepository";
 import type { Task } from "@/src/modules/task/types";
 import * as FinanceRepository from "@/src/modules/finance/FinanceRepository";
@@ -29,6 +36,7 @@ import type {
 } from "@/src/modules/finance/types";
 import type {
   Application,
+  Company,
   Interview,
 } from "@/src/modules/jobApplications/types";
 import type { Scorecard, TopicStat } from "@/src/modules/prep/prepScorecard";
@@ -73,6 +81,11 @@ export interface DashboardStore {
   // REPOSITORY + pure selectors, same cross-module pattern as the rest here.
   billsDue: BillDue[];
   monthSpend: MonthSpend | null;
+  // This month's roadmap gate. Read through RoadmapRepository + roadmap's pure
+  // evaluation logic, same cross-module pattern as prep/finance above — the
+  // page used to reach into useRoadmapStore directly, which is the one thing
+  // architecture rule 1 forbids.
+  currentGate: MonthState | null;
   isLoading: boolean;
   error: string | null;
 
@@ -105,6 +118,7 @@ export const useDashboardStore = create<DashboardStore>(() => ({
   weeklyCadence: null,
   billsDue: [],
   monthSpend: null,
+  currentGate: null,
   isLoading: false,
   error: null,
 
@@ -161,8 +175,41 @@ export const useDashboardStore = create<DashboardStore>(() => ({
         return [] as RecurringBill[];
       });
 
+      // Best-effort, like finance above: the roadmap gate is one panel, and a
+      // failure reading it must not blank the rest of the dashboard.
+      //
+      // The gate is DERIVED, not stored — evaluateRoadmap scores the roadmap's
+      // criteria against real activity. Four of the five inputs are already
+      // fetched above; only companies and the manual ticks are extra.
+      const [roadmapTicks, companies] = await Promise.all([
+        RoadmapRepository.getProgress()
+          .then((progress) => progress.ticks)
+          .catch((err) => {
+            console.error(err);
+            return null;
+          }),
+        CompanyRepository.getCompanies().catch((err) => {
+          console.error(err);
+          return [] as Company[];
+        }),
+      ]);
+
       const now = new Date();
       const today = format(now, "yyyy-MM-dd");
+      const roadmapMonths = roadmapTicks
+        ? evaluateRoadmap(
+            {
+              prepEntries,
+              behavioralStories: stories,
+              applications,
+              companies,
+              outreachEntries,
+            },
+            new Set(roadmapTicks.map((tick) => tick.itemKey)),
+            now,
+          )
+        : [];
+      const thisMonthKey = currentMonthKey(now);
       const currentMonth = format(now, "yyyy-MM");
       const checkpoint = activeCheckpoint(today);
 
@@ -185,6 +232,9 @@ export const useDashboardStore = create<DashboardStore>(() => ({
         ),
         billsDue: billsDueThisMonth(financeTransactions, financeBills, now),
         monthSpend: monthToDateSpend(financeTransactions, now),
+        currentGate:
+          roadmapMonths.find((month) => month.month.key === thisMonthKey) ??
+          null,
         isLoading: false,
         error: null,
       });

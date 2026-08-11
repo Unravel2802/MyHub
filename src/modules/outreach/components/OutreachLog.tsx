@@ -9,7 +9,7 @@ import type { Company } from "@/src/modules/jobApplications/types";
 import { OutreachEntryForm } from "@/src/modules/outreach/components/OutreachEntryForm";
 import { OutreachEntryList } from "@/src/modules/outreach/components/OutreachEntryList";
 import { useOutreachStore } from "@/src/modules/outreach/useOutreachStore";
-import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
+import { outreachCountThisWeek } from "@/src/modules/outreach/outreachCadence";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 
@@ -26,11 +26,6 @@ export function OutreachLog() {
   } = useOutreachStore();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyError, setCompanyError] = useState<string | null>(null);
-  const {
-    weeklyCadence,
-    fetchAll: fetchDashboard,
-    subscribeToUpdates,
-  } = useDashboardStore();
   const pending = useMemo(() => new Set(pendingIds), [pendingIds]);
 
   useEffect(() => {
@@ -73,11 +68,6 @@ export function OutreachLog() {
       unregister("outreach");
     };
   }, []);
-
-  useEffect(() => {
-    void fetchDashboard();
-    return subscribeToUpdates();
-  }, [fetchDashboard, subscribeToUpdates]);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,7 +130,7 @@ export function OutreachLog() {
               </p>
             </div>
             <p className="text-3xl font-semibold tabular-nums text-accent-strong">
-              {weeklyCadence?.outreach.count ?? 0}
+              {outreachCountThisWeek(entries, new Date())}
               <span className="text-base font-normal text-muted"> / 2–3</span>
             </p>
           </div>

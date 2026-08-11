@@ -22,9 +22,8 @@ import {
   TargetCard,
 } from "@/src/modules/dashboard/components/DashboardCards";
 import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
-import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
-import { ActivityHeatmap } from "@/src/modules/momentum/components/ActivityHeatmap";
-import { useRoadmapStore } from "@/src/modules/roadmap/useRoadmapStore";
+import { useActivityGrid, useStreak } from "@/src/components/momentumState";
+import { ActivityHeatmap } from "@/src/components/ui/ActivityHeatmap";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
@@ -39,10 +38,8 @@ const targetLabels = [
 
 export function DailyDashboard() {
   const dashboard = useDashboardStore();
-  const streak = useMomentumStore((state) => state.streak);
-  const activityGrid = useMomentumStore((state) => state.activityGrid);
-  const roadmap = useRoadmapStore();
-  const fetchRoadmap = useRoadmapStore((state) => state.fetchRoadmap);
+  const streak = useStreak();
+  const activityGrid = useActivityGrid();
   const { fetchAll, subscribeToUpdates } = dashboard;
 
   useEffect(() => {
@@ -86,13 +83,7 @@ export function DailyDashboard() {
     };
   }, []);
 
-  useEffect(() => {
-    void fetchRoadmap();
-  }, [fetchRoadmap]);
-
-  const currentGate = roadmap.months.find(
-    (month) => month.month.key === roadmap.currentMonth,
-  );
+  const currentGate = dashboard.currentGate;
 
   return (
     <PageTemplate

@@ -32,6 +32,18 @@ vi.mock("@/src/modules/finance/FinanceRepository", () => ({
   getBills: vi.fn(),
 }));
 
+// The roadmap gate panel. Both are mocked for the same reason as every
+// repository above: importing the real module builds a Supabase client at
+// module scope, which throws without env vars. Default to empty rather than
+// undefined — the store treats a failed roadmap read as "no gate", and these
+// tests assert the other panels still populate around it.
+vi.mock("@/src/modules/roadmap/RoadmapRepository", () => ({
+  getProgress: vi.fn(async () => ({ ticks: [], readiness: [] })),
+}));
+vi.mock("@/src/modules/jobApplications/CompanyRepository", () => ({
+  getCompanies: vi.fn(async () => []),
+}));
+
 let listeners: ((event: { type: string }) => void)[] = [];
 vi.mock("@/src/lib/events", () => ({
   on: vi.fn((listener: (event: { type: string }) => void) => {

@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ActivityHeatmap } from "@/src/modules/momentum/components/ActivityHeatmap";
+import { ActivityHeatmap } from "@/src/components/ui/ActivityHeatmap";
 import type { ActivityGrid } from "@/src/modules/momentum/activityGrid";
 
 const grid: ActivityGrid = {

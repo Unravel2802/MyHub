@@ -18,6 +18,21 @@ const eslintConfig = defineConfig([
     // not app code — see tsconfig.json's matching exclude.
     "Redesign landing page (1)/**",
   ]),
+  {
+    rules: {
+      // A leading underscore is an explicit "this is intentionally unused"
+      // from the author, so it shouldn't be reported. It matters for the
+      // contract-first split (CLAUDE.md): a published interface's stub keeps
+      // its full parameter list — that list IS the contract Codex builds
+      // against — while the body is still `not implemented`. Without this,
+      // every published contract ships a wall of warnings that trains people
+      // to ignore the lint output.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

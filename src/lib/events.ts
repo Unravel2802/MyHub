@@ -101,6 +101,24 @@ export type AppEvent =
         outcome: LeetCodeOutcome;
       };
       timestamp: number;
+    }
+  // Fired when a PDF is added to the Reader (migration 0042).
+  | {
+      type: "reader.document_added";
+      payload: { documentId: string };
+      timestamp: number;
+    }
+  // Fired when a highlight or comment is saved. Annotating is the signal that
+  // reading actually HAPPENED — opening a document proves nothing, and page
+  // turns are far too noisy to treat as activity. Emitted per annotation so a
+  // future consumer can count reading days the way Momentum counts every
+  // other activity; nothing subscribes yet, and the streak's ActivitySnapshot
+  // is deliberately not widened here (that's a Momentum change, with its own
+  // roadmap justification, not something to smuggle in with a new module).
+  | {
+      type: "reader.annotation_added";
+      payload: { annotationId: string; documentId: string };
+      timestamp: number;
     };
 
 type Listener = (event: AppEvent) => void;

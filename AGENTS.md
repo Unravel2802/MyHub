@@ -54,6 +54,11 @@ a "reasonable" alternative.
   `dangerouslySetInnerHTML` is allowed **only** for the user's own scratchpad text (highlight.js
   HTML-escapes what it highlights); this is not a licence to relax the markdown rule above —
   `Markdown.tsx` still never renders raw HTML from the DB.
+- PDF rendering: `pdfjs-dist` (Mozilla's PDF.js) — approved 2026-08-11 for the Reader module.
+  Import from `pdfjs-dist` and point `GlobalWorkerOptions.workerSrc` at a worker copied into
+  `public/`, never a CDN URL. Selection geometry belongs in
+  `src/modules/reader/annotationGeometry.ts` (already written and unit-tested) — call it, don't
+  reimplement the coordinate math in a component. See `docs/handoff/reader.md`.
 - One-off scripts (`scripts/*.ts`, not application code): `tsx` — added 2026-07-13 for the seed
   and backup scripts. Follow the convention those scripts already establish (see
   `docs/handoff/rls-audit-and-backup-script.md`) rather than picking a different runner.

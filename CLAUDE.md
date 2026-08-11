@@ -60,6 +60,15 @@ rather than picking a "reasonable" alternative.
   `dangerouslySetInnerHTML` is allowed **only** for the user's own scratchpad text (highlight.js
   HTML-escapes what it highlights); this is not a licence to relax the markdown rule above —
   `Markdown.tsx` still never renders raw HTML from the DB.
+- PDF rendering: `pdfjs-dist` (Mozilla's PDF.js) — approved 2026-08-11 for the Reader module
+  (migration 0042). Chosen over `react-pdf` because that's a wrapper around this same engine and
+  its component API constrains the annotation overlay; the browser's native `<embed>` viewer was
+  ruled out because it exposes no text coordinates, which makes highlighting impossible. Import
+  from `pdfjs-dist` and set `GlobalWorkerOptions.workerSrc` to a worker copied into `public/` —
+  never a CDN URL. Its text layer is what makes select-to-highlight work; the geometry that
+  turns a selection into storable coordinates lives in
+  `src/modules/reader/annotationGeometry.ts` and is unit-tested — don't reimplement it in a
+  component.
 - One-off scripts (`scripts/*.ts`, not application code): `tsx` — added 2026-07-13 for the seed
   and backup scripts. Follow the convention those scripts already establish (see
   `docs/handoff/rls-audit-and-backup-script.md`) rather than picking a different runner.

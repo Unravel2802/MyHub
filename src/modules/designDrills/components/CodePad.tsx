@@ -1,5 +1,7 @@
 "use client";
 
+import { computeIndent, INDENT } from "@/src/lib/textIndent";
+
 import {
   type ChangeEvent,
   type KeyboardEvent,
@@ -57,55 +59,11 @@ const languageOptions: {
 const textMetrics =
   "p-3 font-mono text-sm leading-6 tracking-normal whitespace-pre";
 
-const INDENT = "  ";
-
 // A plain <textarea> treats Tab as "move focus to the next element", so
 // without this a code pad is unusable for actually indenting code. Mirrors
 // the common editor convention: an empty selection just inserts an indent at
 // the cursor, a selection (single- or multi-line) indents/dedents every line
 // it touches instead of replacing the selected text.
-function computeIndent(
-  current: string,
-  selectionStart: number,
-  selectionEnd: number,
-  dedent: boolean,
-): { next: string; start: number; end: number } {
-  if (selectionStart === selectionEnd && !dedent) {
-    const next = `${current.slice(0, selectionStart)}${INDENT}${current.slice(selectionEnd)}`;
-    const cursor = selectionStart + INDENT.length;
-    return { next, start: cursor, end: cursor };
-  }
-
-  const lineStart = current.lastIndexOf("\n", selectionStart - 1) + 1;
-  const nextNewline = current.indexOf(
-    "\n",
-    Math.max(selectionEnd - 1, lineStart),
-  );
-  const lineEnd = nextNewline === -1 ? current.length : nextNewline;
-
-  const lines = current.slice(lineStart, lineEnd).split("\n");
-  let firstLineDelta = 0;
-  const nextLines = lines.map((line, index) => {
-    if (dedent) {
-      const match = /^ {1,2}/.exec(line);
-      if (!match) return line;
-      if (index === 0) firstLineDelta = -match[0].length;
-      return line.slice(match[0].length);
-    }
-    if (index === 0) firstLineDelta = INDENT.length;
-    return `${INDENT}${line}`;
-  });
-
-  const nextBlock = nextLines.join("\n");
-  const next = `${current.slice(0, lineStart)}${nextBlock}${current.slice(lineEnd)}`;
-
-  return {
-    next,
-    start: Math.max(lineStart, selectionStart + firstLineDelta),
-    end: lineStart + nextBlock.length,
-  };
-}
-
 // LeetCode-style auto-indent on Enter: the new line inherits the current
 // line's leading whitespace, plus one more level if the line being ended
 // opens a block (a trailing `{`/`(`/`[`, or a Python-style trailing `:`).

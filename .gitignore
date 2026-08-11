@@ -50,3 +50,13 @@ next-env.d.ts
 # claude code / codex — local settings and git worktrees, not shared repo state
 /.claude
 /.codex
+# Pins a skill that lives under the ignored /.claude — committing a lockfile
+# for something absent from the repo would pin nothing.
+/skills-lock.json
+
+# A standalone Figma-export reference project (its own Vite app, its own deps),
+# kept on disk for design comparison while the Home hub was built. Not app code
+# and not part of the build — already excluded from tsconfig.json,
+# eslint.config.mjs and .prettierignore; this keeps it out of git status too.
+# Safe to delete once it has stopped being a useful reference.
+/Redesign landing page (1)/

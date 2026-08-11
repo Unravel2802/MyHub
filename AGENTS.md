@@ -129,27 +129,28 @@ typing them. If a plan hands you a mapping or component spelled out in detail, t
 build. You still may not invent a schema, change a published interface, or alter domain logic —
 flag those back; everything else, expect to own.
 
-## MVP Status — Wave 1 Complete (2026-07-13), Wave 2 Next
+## Project Status — everything planned is shipped (last verified 2026-08-11)
 
-**Wave 1 is done.** All five MVP modules — Task Engine, Prep Tracker, Job Application CRM,
-Outreach Log, and Daily Dashboard — shipped: interfaces published, real implementations wired,
-UI built, merged to `main` (commit `98d3ed8`; 136 unit / 30 E2E tests green). They exist because
-they directly serve the human's external roadmap (`engineering_first_roadmap_v2.md`, at the repo
-root) — see `myhub_plan.md` Part A §A.1 for the full rationale. Knowledge Base and Command
-Palette remain V2 — don't start on those.
+**All four waves and every later addition are done and merged to `main`**, with migrations
+`0001`–`0042` applied and 1140 unit / 127 E2E tests green: the five Wave 1 modules (Task Engine,
+Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard), Wave 2 (AppShell, completion
+timestamps, Prep/CRM depth, Momentum, weekly review, auth + RLS, offer evaluator), Waves 3 and 4
+(the visual system and frontend upgrade), and then Personal Finance, Roadmap, Design Drills,
+LeetCode Tracker, Trading Journal, Knowledge Base UI, Command Palette, and the Home orbital hub.
 
-**What's next is Wave 2** ("Momentum, Rituals, and Roadmap Depth" — `myhub_plan.md` Part B): a
-shared UI shell + primitives, task completion timestamps, Prep/CRM depth features, a
-streaks-and-achievements module, a weekly review ritual, single-user auth + RLS, and an offer
-evaluator, in 8 sequenced phases. **Part B's own "Sequencing & workload" table has your
-deliverables per phase — that's the current task split, not a table in this file.** Wave 1's
-per-module table lived here; it's been removed since everything in it shipped, rather than left
-as something you might mistake for still-open work.
+**Knowledge Base and Command Palette are no longer V2** — both shipped. Any older instruction to
+"don't start on those" is spent.
 
-Task Engine, Prep Tracker, and Job Application CRM shared no files with each other during Wave
-1, and the same "no shared files, work whichever's ready" pattern holds across Wave 2's phases
-— check Part B's dependency graph for which phases are parallel-safe before assuming you need to
-wait on Claude Code to finish an earlier phase.
+**Your live task is the Reader UI** (PDF viewer + select-to-highlight annotation). Claude Code
+has published the contract — migration `0042`, `ReaderRepository`/`useReaderStore` signatures,
+and `annotationGeometry.ts` (already unit-tested, don't reimplement its coordinate math). Those
+repository/store bodies throw `not implemented` **on purpose**: filling them in against the
+published signatures is the job, not a bug to report. **Read `docs/handoff/reader.md` first** —
+it lists what exists, what's left, and the traps (worker path, upload-before-insert ordering,
+never letting pixel coordinates reach the repository).
+
+`myhub_plan.md` Part A and Part B are a RECORD of what was built and why, not a to-do list.
+Read them for rationale; don't work through Part B's phases as if they're pending.
 
 ## Checks Before Finishing Any Task
 

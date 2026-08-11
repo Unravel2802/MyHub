@@ -22,27 +22,40 @@ manufacture learning exercises.
 
 ## Status at a Glance
 
-| Wave                          | Status                                      | Scope                                                                                                                                                                                                                                  |
-| ----------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Wave 1 — MVP**              | ✅ **Done** — `98d3ed8`                     | Task Engine, Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard                                                                                                                                                          |
-| **Wave 2 — Momentum**         | ✅ **Done** — all 8 phases shipped          | Shared AppShell, task completion timestamps, Prep depth (mock subtypes, resume deep-dive, §11.3 allocation), CRM depth (notes, rejection nudge, funnel), **streaks + achievements**, weekly review ritual, auth + RLS, offer evaluator |
-| **Wave 3 — Frontend refresh** | ✅ **Done** — see `docs/visual-refresh.md`  | "Premium developer tool" visual system: zinc/indigo tokens, WCAG AA contrast, focus ring, hero type, motion, IA flip (data-first), presentational/container split, mobile nav, a11y sweep                                              |
-| **Wave 4 — Frontend upgrade** | ✅ **Done** — see `docs/wave4.md`           | Design-system cleanup (single-source hue classes), selective shadcn adoption + `cn()` + lucide icons, motion polish, command-palette rebuild (fuzzy + recents), Knowledge Base link editor, global keyboard shortcuts                  |
-| **Personal Finance**          | 📋 **Planned** — see `docs/finance-plan.md` | Net-new module (outside the job-search roadmap): expense/income ledger, recurring bills (rent/utilities), per-category budgets, and a job-search runway metric. Dashboard surfaces: bills due + month-to-date spend                    |
+| Wave                          | Status                                     | Scope                                                                                                                                                                                                                                  |
+| ----------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Wave 1 — MVP**              | ✅ **Done** — `98d3ed8`                    | Task Engine, Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard                                                                                                                                                          |
+| **Wave 2 — Momentum**         | ✅ **Done** — all 8 phases shipped         | Shared AppShell, task completion timestamps, Prep depth (mock subtypes, resume deep-dive, §11.3 allocation), CRM depth (notes, rejection nudge, funnel), **streaks + achievements**, weekly review ritual, auth + RLS, offer evaluator |
+| **Wave 3 — Frontend refresh** | ✅ **Done** — see `docs/visual-refresh.md` | "Premium developer tool" visual system: zinc/indigo tokens, WCAG AA contrast, focus ring, hero type, motion, IA flip (data-first), presentational/container split, mobile nav, a11y sweep                                              |
+| **Wave 4 — Frontend upgrade** | ✅ **Done** — see `docs/wave4.md`          | Design-system cleanup (single-source hue classes), selective shadcn adoption + `cn()` + lucide icons, motion polish, command-palette rebuild (fuzzy + recents), Knowledge Base link editor, global keyboard shortcuts                  |
+| **Personal Finance**          | ✅ **Done** — see `docs/finance-plan.md`   | Net-new module (outside the job-search roadmap): expense/income ledger, recurring bills (rent/utilities), per-category budgets, and a job-search runway metric. Dashboard surfaces: bills due + month-to-date spend                    |
+| **Later additions**           | ✅ **Done**                                | Modules added after the four waves, each outside the original plan: Roadmap (`docs/roadmap-module.md`), Design Drills, LeetCode Tracker, Trading Journal, Knowledge Base UI, Command Palette. Colour refresh: `docs/color-refresh.md`  |
+| **Reader**                    | 🔨 **Contract published, UI not built**    | PDF viewer with select-to-highlight annotation. Migration `0042`, repository/store signatures, and annotation geometry are in; the viewer UI is not. **The only unbuilt feature in the repo** — see `docs/handoff/reader.md`           |
 
-**Live state:** RLS enforcing (an unauthenticated client reads 0 rows), migrations `0001`–`0018`
-applied, single-user auth working.
+**Live state:** RLS enforcing (an unauthenticated client reads 0 rows), migrations `0001`–`0042`
+applied, single-user auth working. 1140 unit tests / 127 E2E green.
 
 Wave 1's design is in **Part A**. Wave 2's phase-by-phase plan is in **Part B** — kept as the
-record of what was built and why, not as a to-do list. Wave 3 (the frontend refresh), Wave 4 (the
-frontend upgrade), and the planned Personal Finance module each have their own document:
-`docs/visual-refresh.md`, `docs/wave4.md`, and `docs/finance-plan.md`.
+record of what was built and why, not as a to-do list. Everything after Wave 2 has its own
+document: `docs/visual-refresh.md` (Wave 3), `docs/wave4.md` (Wave 4), `docs/finance-plan.md`,
+`docs/roadmap-module.md`, `docs/color-refresh.md`, and `docs/handoff/*.md` per module.
 
 ---
 
 ## What's actually left
 
-Everything planned is shipped. These are the known open items, in the order they'd bite:
+**One feature: the Reader's UI.** Everything else in this document, and every module added after
+it, is shipped and green. The Reader's contract was published 2026-08-11 — migration `0042`,
+`ReaderRepository`/`useReaderStore` signatures, and `annotationGeometry.ts` with 17 unit tests —
+but the viewer, upload, and annotation sidebar are not built. The repository and store bodies
+throw `not implemented` by design: that's the contract-first handoff, not a bug. Start at
+`docs/handoff/reader.md`.
+
+Two deliberate omissions there, so nobody "fixes" them by accident: there is
+**no `/reader` nav entry** (it would 404 until the route exists — it lands in
+the same commit as the page, and `miniApps.test.ts` gates the classification),
+and **no eleventh hue** (all ten are claimed; falling back to `accent` is
+correct).
 
 **Resolved (2026-07-15):**
 

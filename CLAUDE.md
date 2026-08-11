@@ -98,20 +98,30 @@ both files in the same commit so the two agents never diverge on tooling.
    (`task-module-spec.md` §7, since folded in here) and applies to every module's store, not just
    Task's.
 
-## MVP Status — Wave 1 Complete (2026-07-13), Wave 2 Next
+## Project Status — everything planned is shipped (last verified 2026-08-11)
 
-**Wave 1 is done.** All five MVP modules — Task Engine, Prep Tracker, Job Application CRM,
-Outreach Log, and Daily Dashboard — have published contracts, working implementations, and UI
-merged to `main` (commit `98d3ed8`; 136 unit / 30 E2E tests green). They exist because they
-directly serve `engineering_first_roadmap_v2.md` — see `myhub_plan.md` Part A §A.1 for the full
-"why these five modules" rationale and Part A §A.3 for what changed once the actual roadmap file
-(not fragments) landed. Knowledge Base and Command Palette remain V2 — don't start those.
+**All four waves and every later addition are done and merged to `main`**, with migrations
+`0001`–`0042` applied and 1140 unit / 127 E2E tests green:
 
-**What's next is Wave 2** ("Momentum, Rituals, and Roadmap Depth" — `myhub_plan.md` Part B): an
-8-phase plan covering a shared UI shell, task completion timestamps, Prep/CRM depth features,
-a streaks-and-achievements module, a weekly review ritual, single-user auth + RLS, and an offer
-evaluator. Part B has its own per-phase Claude/Codex split and sequencing table — don't
-duplicate that split here; read it there.
+- **Wave 1** — Task Engine, Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard
+- **Wave 2** — shared AppShell, task completion timestamps, Prep/CRM depth, Momentum
+  (streaks + achievements), weekly review, auth + RLS, offer evaluator
+- **Waves 3 & 4** — the visual system and the frontend upgrade (`docs/visual-refresh.md`,
+  `docs/wave4.md`)
+- **Later, each outside the original plan** — Personal Finance, Roadmap, Design Drills, LeetCode
+  Tracker, Trading Journal, Knowledge Base UI, Command Palette, the Home orbital hub
+
+**Knowledge Base and Command Palette are no longer V2** — both shipped. Any instruction elsewhere
+to "not start those" is spent.
+
+**The one unbuilt feature is the Reader** (PDF viewer + select-to-highlight annotation). Its
+contract is published — migration `0042`, `ReaderRepository`/`useReaderStore` signatures, and
+`annotationGeometry.ts` with 17 tests — but the viewer UI is not built, and the repository/store
+bodies throw `not implemented` **by design**. That's the contract-first handoff, not a defect to
+repair. Read `docs/handoff/reader.md` before touching it.
+
+`myhub_plan.md`'s Part A and Part B are now a RECORD of what was built and why, not a to-do list.
+Read them for rationale; don't work through Part B's phases as if they're pending.
 
 ## Working Concurrently with Codex
 
@@ -157,13 +167,13 @@ The split is **contract-first**, and applies to every wave, not just Wave 1:
 4. If a module's interface needs to change mid-build, you own the change — update the interface
    file and flag it, don't let Codex patch around a stale contract.
 
-**Wave 1's per-module split table lived here; it's now stale (everything in it shipped) and has
-been removed rather than left as dead reference.** Wave 2's per-phase split lives in
-`myhub_plan.md` Part B's "Sequencing & workload" table — read it there when starting a Wave 2
-phase, don't recreate it here.
+**The per-wave split tables that lived here have been removed rather than left as dead
+reference** — every wave they described has shipped. Part B's "Sequencing & workload" table in
+`myhub_plan.md` is likewise a record, not an assignment sheet.
 
-Knowledge Base and Command Palette are V2 — same contract-first split once they're scheduled,
-but don't start either until Wave 2 is done.
+For new work the split above still applies verbatim: publish the contract, hand the UI to Codex.
+The Reader (`docs/handoff/reader.md`) is the live example — its contract is published and its
+UI is Codex's.
 
 ## Workflow
 

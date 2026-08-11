@@ -1,11 +1,11 @@
 "use client";
 
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Bold, Heading2, Link2, List, NotebookPen, Plus } from "lucide-react";
+import { Bold, Heading2, Link2, List, NotebookPen } from "lucide-react";
 import { computeIndent } from "@/src/lib/textIndent";
+import { NoteLinksPanel } from "@/src/modules/knowledgeBase/components/NoteLinksPanel";
+import { NotesList } from "@/src/modules/knowledgeBase/components/NotesList";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
-import { EmptyState } from "@/src/components/ui/EmptyState";
-import { Badge } from "@/src/components/ui/Badge";
 import {
   Dialog,
   DialogContent,
@@ -204,46 +204,12 @@ export function KnowledgeBasePage() {
       title="Notes that connect"
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
-        <section aria-labelledby="notes-list-heading" className="panel p-5">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold" id="notes-list-heading">
-              Your notes
-            </h2>
-            <Badge tone="neutral">{store.notes.length}</Badge>
-          </div>
-          {store.notes.length === 0 ? (
-            <EmptyState
-              action={
-                <button onClick={startNewNote} type="button">
-                  Write your first note
-                </button>
-              }
-              description="Capture one useful idea now, then link it to the next thing you learn."
-              icon={NotebookPen}
-              title="Start your knowledge base"
-            />
-          ) : (
-            <ul className="mt-4 grid gap-2">
-              {store.notes.map((note) => (
-                <li key={note.id}>
-                  <button
-                    className={`w-full rounded-md border p-3 text-left transition-all duration-200 ease-in-out ${selectedId === note.id ? "border-hue-fuchsia-border bg-hue-fuchsia-surface" : "border-border bg-surface-subtle hover:border-input-hover"}`}
-                    onClick={() => selectNote(note.id)}
-                    type="button"
-                  >
-                    <p className="font-medium text-foreground">{note.title}</p>
-                    <p className="mt-1 line-clamp-2 text-sm text-muted">
-                      {note.body || "No body yet"}
-                    </p>
-                    <p className="mt-2 text-xs text-muted">
-                      Updated {new Date(note.updatedAt).toLocaleDateString()}
-                    </p>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <NotesList
+          notes={store.notes}
+          onCreate={startNewNote}
+          onSelect={selectNote}
+          selectedId={selectedId}
+        />
 
         <div className="grid content-start gap-6">
           <section aria-labelledby="note-editor-heading" className="panel p-5">
@@ -325,72 +291,13 @@ export function KnowledgeBasePage() {
           </section>
 
           {selected ? (
-            <section aria-labelledby="note-links-heading" className="panel p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold" id="note-links-heading">
-                    Backlinks &amp; connections
-                  </h2>
-                  <p className="mt-1 text-sm text-muted">
-                    Links are visible from both connected notes.
-                  </p>
-                </div>
-                <button
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-input bg-surface px-3 text-sm font-medium hover:bg-surface-subtle"
-                  onClick={() => setLinkPickerOpen(true)}
-                  type="button"
-                >
-                  <Plus aria-hidden="true" className="size-4" />
-                  Link note
-                </button>
-              </div>
-              {selectedLinks.length > 0 ? (
-                <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {selectedLinks.map((link) => {
-                    const other = store.notes.find(
-                      (note) => note.id === link.noteId,
-                    );
-                    return (
-                      <li
-                        className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface-subtle px-3 py-2"
-                        key={link.linkId}
-                      >
-                        <button
-                          className="truncate text-left text-sm font-medium text-hue-fuchsia hover:underline"
-                          onClick={() => selectNote(link.noteId)}
-                          type="button"
-                        >
-                          {other?.title ?? "Deleted note"}
-                        </button>
-                        <button
-                          className="shrink-0 text-xs text-danger hover:underline"
-                          onClick={() =>
-                            void unlinkNote(link.linkId, link.noteId)
-                          }
-                          type="button"
-                        >
-                          Unlink
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <EmptyState
-                  action={
-                    <button
-                      onClick={() => setLinkPickerOpen(true)}
-                      type="button"
-                    >
-                      Link another note
-                    </button>
-                  }
-                  description="Connect this note to another idea to build context in both directions."
-                  icon={Link2}
-                  title="No backlinks yet"
-                />
-              )}
-            </section>
+            <NoteLinksPanel
+              links={selectedLinks}
+              notes={store.notes}
+              onOpenPicker={() => setLinkPickerOpen(true)}
+              onSelectNote={selectNote}
+              onUnlink={(linkId, noteId) => void unlinkNote(linkId, noteId)}
+            />
           ) : null}
         </div>
       </div>

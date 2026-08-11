@@ -1,17 +1,16 @@
 "use client";
 
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import {
-  CalendarClock,
   CalendarDays,
   Clock3,
   LayoutDashboard,
   Map as MapIcon,
   MessageSquareText,
-  WalletCards,
 } from "lucide-react";
 import { useEffect } from "react";
 import { RefreshButton } from "@/src/components/ui/RefreshButton";
+import { DashboardFinanceSections } from "@/src/modules/dashboard/components/DashboardFinanceSections";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
@@ -27,7 +26,6 @@ import { ActivityHeatmap } from "@/src/components/ui/ActivityHeatmap";
 import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
-import { formatCents } from "@/src/lib/money";
 
 const targetLabels = [
   ["algorithm", "Algorithms"],
@@ -120,102 +118,10 @@ export function DailyDashboard() {
       title="Keep the week honest"
     >
       <div className="grid gap-6 xl:grid-cols-2">
-        <section
-          aria-labelledby="bills-due-heading"
-          className="fade-up rounded-lg border border-border bg-surface p-5"
-          style={{ ["--i" as string]: 0 }}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="text-lg font-semibold" id="bills-due-heading">
-              Bills due this month
-            </h3>
-            <Link
-              className="text-sm text-hue-lime hover:underline"
-              href="/finance"
-            >
-              Open ledger
-            </Link>
-          </div>
-          {dashboard.billsDue.length === 0 ? (
-            <EmptyState
-              compact
-              className="mt-3"
-              description="Recurring bills will appear here when their monthly ledger entries are due."
-              icon={CalendarClock}
-              title="No bills due"
-            />
-          ) : (
-            <ul className="mt-3 grid gap-2">
-              {dashboard.billsDue.map((bill) => (
-                <li
-                  className="flex items-center justify-between gap-3 rounded-md bg-surface-subtle px-3 py-2"
-                  key={bill.transactionId}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {bill.name}
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
-                      Due {format(parseISO(bill.occurredOn), "MMM d")}
-                    </p>
-                  </div>
-                  <span className="shrink-0 font-semibold tabular-nums text-danger">
-                    {formatCents(bill.amountCents)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section
-          aria-labelledby="month-spend-heading"
-          className="fade-up rounded-lg border border-border bg-surface p-5"
-          style={{ ["--i" as string]: 1 }}
-        >
-          <div className="flex items-center gap-2">
-            <WalletCards aria-hidden="true" className="size-5 text-muted" />
-            <h3 className="text-lg font-semibold" id="month-spend-heading">
-              Month-to-date
-            </h3>
-          </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <StatCard
-              hint="Settled expenses"
-              label="Spent"
-              tone={
-                dashboard.monthSpend && dashboard.monthSpend.spentCents > 0
-                  ? "danger"
-                  : "default"
-              }
-              value={
-                dashboard.monthSpend && dashboard.monthSpend.spentCents > 0
-                  ? formatCents(dashboard.monthSpend.spentCents)
-                  : "—"
-              }
-            />
-            <StatCard
-              hint="Income minus settled expenses"
-              hue={
-                dashboard.monthSpend && dashboard.monthSpend.netCents > 0
-                  ? "lime"
-                  : undefined
-              }
-              label="Net"
-              tone={
-                dashboard.monthSpend && dashboard.monthSpend.netCents < 0
-                  ? "danger"
-                  : "default"
-              }
-              value={
-                dashboard.monthSpend && dashboard.monthSpend.netCents !== 0
-                  ? formatCents(dashboard.monthSpend.netCents)
-                  : "—"
-              }
-            />
-          </div>
-        </section>
-
+        <DashboardFinanceSections
+          billsDue={dashboard.billsDue}
+          monthSpend={dashboard.monthSpend}
+        />
         <section
           aria-labelledby="schedule-heading"
           className="fade-up rounded-lg border border-border bg-surface p-5"

@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/src/components/ui/select";
 import { formatCents, parseAmount } from "@/src/lib/money";
+import { validateTradingEntry } from "@/src/modules/trading/tradingEntryValidation";
 import type {
   CreateEntryInput,
   CreateTradeInput,
@@ -107,49 +108,27 @@ export function TradingEntryForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const nextErrors: Record<string, string> = {};
-    const trimmedTicker = ticker.trim().toUpperCase();
-
-    function money(raw: string, key: string, required = false): number | null {
-      if (!raw.trim()) {
-        if (required) nextErrors[key] = "Enter an amount";
-        return null;
-      }
-      const cents = parseAmount(raw);
-      if (cents === null || (required && cents <= 0)) {
-        nextErrors[key] = "Enter a valid positive amount";
-        return null;
-      }
-      return cents;
-    }
-
-    if (!trimmedTicker) nextErrors.ticker = "Enter a ticker";
-
-    const priceCents = money(price, "price");
-    const emaFastCents = money(emaFast, "emaFast");
-    const emaSlowCents = money(emaSlow, "emaSlow");
-    const parsedRsi = rsi.trim() ? Number(rsi) : null;
-    if (
-      parsedRsi !== null &&
-      (!Number.isFinite(parsedRsi) || parsedRsi < 0 || parsedRsi > 100)
-    ) {
-      nextErrors.rsi = "RSI must be between 0 and 100";
-    }
-
-    let entryPriceCents: number | null = null;
-    let stopPriceCents: number | null = null;
-    const parsedShares = shares.trim() ? Number(shares) : null;
-    if (signal === "buy") {
-      entryPriceCents = money(entryPrice, "entryPrice", true);
-      stopPriceCents = money(stopPrice, "stopPrice", true);
-      if (
-        parsedShares === null ||
-        !Number.isFinite(parsedShares) ||
-        parsedShares <= 0
-      ) {
-        nextErrors.shares = "Enter a positive share quantity";
-      }
-    }
+    const {
+      errors: nextErrors,
+      ticker: trimmedTicker,
+      priceCents,
+      emaFastCents,
+      emaSlowCents,
+      rsi: parsedRsi,
+      entryPriceCents,
+      stopPriceCents,
+      shares: parsedShares,
+    } = validateTradingEntry({
+      ticker,
+      signal,
+      price,
+      emaFast,
+      emaSlow,
+      rsi,
+      entryPrice,
+      stopPrice,
+      shares,
+    });
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;

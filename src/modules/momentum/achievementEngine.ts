@@ -1,4 +1,4 @@
-import { addDays, differenceInHours, format, startOfWeek } from "date-fns";
+import { differenceInHours, format, startOfWeek } from "date-fns";
 import type { Task } from "@/src/modules/task/types";
 import type {
   Application,
@@ -226,4 +226,3 @@ function hasCompletedGate(tasks: Task[]): boolean {
 // snapshot's `today`.
 export const weekStartOf = (date: Date) =>
   startOfWeek(date, { weekStartsOn: 1 });
-export const weekEndOf = (date: Date) => addDays(weekStartOf(date), 6);

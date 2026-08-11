@@ -382,25 +382,15 @@ export async function archiveTask(id: string): Promise<Task> {
   return fromRow(data);
 }
 
-// Clears the MANUAL archive flag only. A task whose completion week has passed
-// will still be archived by age (taskArchive.isArchived), so restoring an old
-// task to the board means reopening it, not just un-archiving it — which is why
-// the archive view offers "Reopen" rather than a bare "Unarchive".
-export async function unarchiveTask(id: string): Promise<Task> {
-  const { data, error } = await supabase
-    .from("tasks")
-    .update({ archived_at: null })
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return fromRow(data);
-}
-
 // Put an archived task back into play: clears the archive flag AND the
 // completion, moving it back to `todo` so it reappears on the board regardless
 // of how old its completion was.
+//
+// There is deliberately no bare `unarchiveTask`: clearing archived_at alone
+// does NOT restore an old task, because a task whose completion week has
+// passed is archived by AGE too (taskArchive.isArchived). That is why the
+// archive view offers "Reopen" and not "Unarchive". One that only cleared the
+// flag existed, was never called, and has been removed.
 export async function reopenTask(id: string): Promise<Task> {
   const { data, error } = await supabase
     .from("tasks")

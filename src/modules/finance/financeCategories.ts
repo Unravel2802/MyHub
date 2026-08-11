@@ -27,14 +27,6 @@ export const FINANCE_CATEGORIES: FinanceCategory[] = [
   { key: "other", label: "Other", kind: "both" },
 ];
 
-const CATEGORY_KEYS = new Set(
-  FINANCE_CATEGORIES.map((category) => category.key),
-);
-
-export function isFinanceCategory(key: string): boolean {
-  return CATEGORY_KEYS.has(key);
-}
-
 export function categoriesForKind(
   kind: "income" | "expense",
 ): FinanceCategory[] {

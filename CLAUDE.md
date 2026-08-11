@@ -33,10 +33,17 @@ rather than picking a "reasonable" alternative.
 - Drag-and-drop: `@dnd-kit/*` (core, sortable, utilities) — approved and already load-bearing in
   the Kanban board; don't add a second DnD library
 - UI primitives: shadcn/ui components generated into `src/components/ui/`, built on
-  `@radix-ui/*` (Dialog, Popover, Select, Tooltip) + `cmdk` (Command). Selective adoption,
-  re-skinned onto existing semantic tokens; the hand-rolled primitives are retained, not replaced.
-- Class utilities: `clsx` + `tailwind-merge` via the `cn()` helper (`src/lib/cn.ts`);
-  `class-variance-authority` (CVA), used by generated shadcn components.
+  `radix-ui` (Dialog, Select) + `cmdk` (Command). Selective adoption, re-skinned onto existing
+  semantic tokens; the hand-rolled primitives are retained, not replaced. Popover and Tooltip
+  were generated, never imported by anything, and were deleted 2026-08-11 — "selective
+  adoption" means the directory holds what the app uses, not a catalogue. Regenerate with the
+  shadcn CLI if one is genuinely needed.
+- Class utilities: `clsx` + `tailwind-merge` via the `cn()` helper (`src/lib/cn.ts`).
+  `class-variance-authority` (CVA) was listed here as "used by generated shadcn components"
+  and was not used by anything — removed 2026-08-11 after a dead-code sweep found zero `cva(`
+  call sites. The re-skinned primitives express variants with plain props and `cn()`, so if a
+  component ever genuinely needs CVA, re-approve it here rather than assuming it is still
+  installed.
 - Icons: `lucide-react`.
 - Animation: `motion` (import from `motion/react`, never the deprecated `framer-motion` package
   name) — approved 2026-08-09 for the Home hub's orbital view: spring-physics hover on the

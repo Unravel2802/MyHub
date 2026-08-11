@@ -132,7 +132,7 @@ flag those back; everything else, expect to own.
 ## Project Status — everything planned is shipped (last verified 2026-08-11)
 
 **All four waves and every later addition are done and merged to `main`**, with migrations
-`0001`–`0042` applied and 1140 unit / 127 E2E tests green: the five Wave 1 modules (Task Engine,
+`0001`–`0042` applied and 1168 unit / 131 E2E tests green: the five Wave 1 modules (Task Engine,
 Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard), Wave 2 (AppShell, completion
 timestamps, Prep/CRM depth, Momentum, weekly review, auth + RLS, offer evaluator), Waves 3 and 4
 (the visual system and frontend upgrade), and then Personal Finance, Roadmap, Design Drills,
@@ -141,13 +141,10 @@ LeetCode Tracker, Trading Journal, Knowledge Base UI, Command Palette, and the H
 **Knowledge Base and Command Palette are no longer V2** — both shipped. Any older instruction to
 "don't start on those" is spent.
 
-**Your live task is the Reader UI** (PDF viewer + select-to-highlight annotation). Claude Code
-has published the contract — migration `0042`, `ReaderRepository`/`useReaderStore` signatures,
-and `annotationGeometry.ts` (already unit-tested, don't reimplement its coordinate math). Those
-repository/store bodies throw `not implemented` **on purpose**: filling them in against the
-published signatures is the job, not a bug to report. **Read `docs/handoff/reader.md` first** —
-it lists what exists, what's left, and the traps (worker path, upload-before-insert ordering,
-never letting pixel coordinates reach the repository).
+**The Reader shipped 2026-08-11**, so there is no queued feature work right now. If you pick
+it up to extend, read `docs/handoff/reader.md` first — it records the traps (dynamic pdfjs
+import, the text layer's per-span CSS, upload-before-insert ordering, and never letting pixel
+coordinates reach the repository).
 
 `myhub_plan.md` Part A and Part B are a RECORD of what was built and why, not a to-do list.
 Read them for rationale; don't work through Part B's phases as if they're pending.

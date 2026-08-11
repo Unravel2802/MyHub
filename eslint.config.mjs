@@ -70,6 +70,9 @@ const eslintConfig = defineConfig([
     // A standalone Figma-export reference project kept for design comparison,
     // not app code — see tsconfig.json's matching exclude.
     "Redesign landing page (1)/**",
+    // Vendored PDF.js worker, copied verbatim from pdfjs-dist/build/ and
+    // served from public/. Third-party minified output, not our source.
+    "public/pdf.worker.min.mjs",
   ]),
   {
     rules: {

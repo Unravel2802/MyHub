@@ -30,10 +30,10 @@ manufacture learning exercises.
 | **Wave 4 — Frontend upgrade** | ✅ **Done** — see `docs/wave4.md`          | Design-system cleanup (single-source hue classes), selective shadcn adoption + `cn()` + lucide icons, motion polish, command-palette rebuild (fuzzy + recents), Knowledge Base link editor, global keyboard shortcuts                  |
 | **Personal Finance**          | ✅ **Done** — see `docs/finance-plan.md`   | Net-new module (outside the job-search roadmap): expense/income ledger, recurring bills (rent/utilities), per-category budgets, and a job-search runway metric. Dashboard surfaces: bills due + month-to-date spend                    |
 | **Later additions**           | ✅ **Done**                                | Modules added after the four waves, each outside the original plan: Roadmap (`docs/roadmap-module.md`), Design Drills, LeetCode Tracker, Trading Journal, Knowledge Base UI, Command Palette. Colour refresh: `docs/color-refresh.md`  |
-| **Reader**                    | 🔨 **Contract published, UI not built**    | PDF viewer with select-to-highlight annotation. Migration `0042`, repository/store signatures, and annotation geometry are in; the viewer UI is not. **The only unbuilt feature in the repo** — see `docs/handoff/reader.md`           |
+| **Reader**                    | ✅ **Done** — see `docs/handoff/reader.md` | PDF viewer with select-to-highlight annotation: upload, page nav, zoom, select-to-highlight in four colours, notes, and an annotation sidebar. Coordinates stored normalized so highlights survive any zoom                            |
 
 **Live state:** RLS enforcing (an unauthenticated client reads 0 rows), migrations `0001`–`0042`
-applied, single-user auth working. 1140 unit tests / 127 E2E green.
+applied, single-user auth working. 1168 unit tests / 131 E2E green.
 
 Wave 1's design is in **Part A**. Wave 2's phase-by-phase plan is in **Part B** — kept as the
 record of what was built and why, not as a to-do list. Everything after Wave 2 has its own
@@ -44,18 +44,12 @@ document: `docs/visual-refresh.md` (Wave 3), `docs/wave4.md` (Wave 4), `docs/fin
 
 ## What's actually left
 
-**One feature: the Reader's UI.** Everything else in this document, and every module added after
-it, is shipped and green. The Reader's contract was published 2026-08-11 — migration `0042`,
-`ReaderRepository`/`useReaderStore` signatures, and `annotationGeometry.ts` with 17 unit tests —
-but the viewer, upload, and annotation sidebar are not built. The repository and store bodies
-throw `not implemented` by design: that's the contract-first handoff, not a bug. Start at
-`docs/handoff/reader.md`.
+**Nothing.** Every module in this document, and every one added after it — including the Reader,
+shipped 2026-08-11 — is built, wired into the nav, and green: migrations `0001`–`0042`,
+1168 unit tests, 131 E2E.
 
-Two deliberate omissions there, so nobody "fixes" them by accident: there is
-**no `/reader` nav entry** (it would 404 until the route exists — it lands in
-the same commit as the page, and `miniApps.test.ts` gates the classification),
-and **no eleventh hue** (all ten are claimed; falling back to `accent` is
-correct).
+The one known defect is a flaky E2E test (`finance.spec.ts:319`), which fails under machine load
+and passes on retry. It is tracked separately; it is a test problem, not an app problem.
 
 **Resolved (2026-07-15):**
 

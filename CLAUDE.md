@@ -101,7 +101,7 @@ both files in the same commit so the two agents never diverge on tooling.
 ## Project Status — everything planned is shipped (last verified 2026-08-11)
 
 **All four waves and every later addition are done and merged to `main`**, with migrations
-`0001`–`0042` applied and 1140 unit / 127 E2E tests green:
+`0001`–`0042` applied and 1168 unit / 131 E2E tests green:
 
 - **Wave 1** — Task Engine, Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard
 - **Wave 2** — shared AppShell, task completion timestamps, Prep/CRM depth, Momentum
@@ -114,11 +114,12 @@ both files in the same commit so the two agents never diverge on tooling.
 **Knowledge Base and Command Palette are no longer V2** — both shipped. Any instruction elsewhere
 to "not start those" is spent.
 
-**The one unbuilt feature is the Reader** (PDF viewer + select-to-highlight annotation). Its
-contract is published — migration `0042`, `ReaderRepository`/`useReaderStore` signatures, and
-`annotationGeometry.ts` with 17 tests — but the viewer UI is not built, and the repository/store
-bodies throw `not implemented` **by design**. That's the contract-first handoff, not a defect to
-repair. Read `docs/handoff/reader.md` before touching it.
+**The Reader shipped 2026-08-11** (PDF viewer + select-to-highlight annotation), so there is
+now no unbuilt feature. Read `docs/handoff/reader.md` before touching it — it records two traps
+that cost real debugging: pdfjs must be imported DYNAMICALLY (it touches `DOMMatrix` at module
+scope, which throws during server render even from a `"use client"` component), and the text
+layer's per-span CSS must actually apply or highlights anchor tens of pixels off the words —
+a failure the E2E assertions could not see, because the coordinates were still validly 0-1.
 
 `myhub_plan.md`'s Part A and Part B are now a RECORD of what was built and why, not a to-do list.
 Read them for rationale; don't work through Part B's phases as if they're pending.

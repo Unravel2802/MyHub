@@ -12,3 +12,6 @@ backups/
 # A standalone Figma-export reference project kept for design comparison, not
 # app code. Matches the excludes in tsconfig.json and eslint.config.mjs.
 Redesign landing page (1)/
+
+# Vendored PDF.js worker, copied verbatim from pdfjs-dist/build/.
+public/pdf.worker.min.mjs

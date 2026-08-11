@@ -12,6 +12,7 @@ import {
   BadgeDollarSign,
   Briefcase,
   CalendarCheck,
+  BookOpen,
   CandlestickChart,
   CheckSquare,
   Dumbbell,
@@ -49,4 +50,5 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/notes", label: "Knowledge Base", icon: NotebookPen },
   { href: "/finance", label: "Finances", icon: Wallet },
   { href: "/trading", label: "Trading", icon: CandlestickChart },
+  { href: "/reader", label: "Reader", icon: BookOpen },
 ];

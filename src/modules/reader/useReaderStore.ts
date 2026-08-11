@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import type { HueName } from "@/src/components/moduleHues";
+import { emit } from "@/src/lib/events";
+import * as ReaderRepository from "@/src/modules/reader/ReaderRepository";
 import type {
   Annotation,
   AnnotationKind,
@@ -9,13 +11,6 @@ import type {
 
 // Published store contract for the Reader module. One store per module
 // (CLAUDE.md); components never call ReaderRepository directly.
-//
-// Actions below throw `not implemented` — they're the mechanical
-// optimistic-set-then-rollback plumbing for Codex to fill in against this
-// shape, following useTaskStore/useNoteStore. `toUserMessage` is already
-// written because CLAUDE.md rule 6 (console.error the real error, return a
-// generic string, never leak a Postgres message into the UI) is a correctness
-// rule, not boilerplate.
 
 export interface ReaderStore {
   documents: ReaderDocument[];
@@ -88,27 +83,213 @@ export function toUserMessage(error: unknown): string {
   return FAILURE_MESSAGE;
 }
 
-const NOT_IMPLEMENTED = () => {
-  throw new Error("not implemented");
-};
+export const useReaderStore = create<ReaderStore>((set, get) => {
+  const addPending = (id: string) =>
+    set({ pendingIds: [...get().pendingIds, id] });
+  const removePending = (id: string) =>
+    set({ pendingIds: get().pendingIds.filter((x) => x !== id) });
 
-export const useReaderStore = create<ReaderStore>(() => ({
-  documents: [],
-  annotations: [],
-  openDocumentId: null,
-  isLoading: false,
-  isUploading: false,
-  pendingIds: [],
-  error: null,
+  return {
+    documents: [],
+    annotations: [],
+    openDocumentId: null,
+    isLoading: false,
+    isUploading: false,
+    pendingIds: [],
+    error: null,
 
-  fetchDocuments: NOT_IMPLEMENTED,
-  addDocument: NOT_IMPLEMENTED,
-  deleteDocument: NOT_IMPLEMENTED,
-  openDocument: NOT_IMPLEMENTED,
-  closeDocument: NOT_IMPLEMENTED,
-  setLastPageRead: NOT_IMPLEMENTED,
-  recordPageCount: NOT_IMPLEMENTED,
-  addAnnotation: NOT_IMPLEMENTED,
-  updateAnnotation: NOT_IMPLEMENTED,
-  deleteAnnotation: NOT_IMPLEMENTED,
-}));
+    fetchDocuments: async () => {
+      set({ isLoading: true, error: null });
+      try {
+        set({
+          documents: await ReaderRepository.getDocuments(),
+          isLoading: false,
+        });
+      } catch (error) {
+        set({ isLoading: false, error: toUserMessage(error) });
+      }
+    },
+
+    // No optimistic insert: the row's id and storagePath are generated during
+    // the upload, so there is nothing truthful to show until it returns.
+    // `isUploading` carries the feedback instead.
+    addDocument: async (input) => {
+      set({ isUploading: true, error: null });
+      try {
+        const created = await ReaderRepository.createDocument(input);
+        set({
+          documents: [created, ...get().documents],
+          isUploading: false,
+        });
+        emit({
+          type: "reader.document_added",
+          payload: { documentId: created.id },
+          timestamp: Date.now(),
+        });
+      } catch (error) {
+        set({ isUploading: false, error: toUserMessage(error) });
+      }
+    },
+
+    deleteDocument: async (id) => {
+      const previous = get().documents;
+      set({
+        documents: previous.filter((doc) => doc.id !== id),
+        error: null,
+      });
+      // Closing a deleted document that's currently open, so the viewer can't
+      // keep rendering a row that no longer exists.
+      if (get().openDocumentId === id)
+        set({ openDocumentId: null, annotations: [] });
+      try {
+        await ReaderRepository.deleteDocument(id);
+      } catch (error) {
+        set({ documents: previous, error: toUserMessage(error) });
+      }
+    },
+
+    openDocument: async (id) => {
+      // Clear FIRST: a slow annotation fetch would otherwise leave the
+      // previous document's highlights painted over this one's pages.
+      set({
+        openDocumentId: id,
+        annotations: [],
+        isLoading: true,
+        error: null,
+      });
+      try {
+        const annotations = await ReaderRepository.getAnnotations(id);
+        // Bail if the user opened something else while this was in flight —
+        // otherwise the slower response wins and paints the wrong document.
+        if (get().openDocumentId !== id) return;
+        set({ annotations, isLoading: false });
+      } catch (error) {
+        set({ isLoading: false, error: toUserMessage(error) });
+      }
+    },
+
+    closeDocument: () =>
+      set({ openDocumentId: null, annotations: [], error: null }),
+
+    setLastPageRead: async (id, pageNumber) => {
+      const previous = get().documents;
+      set({
+        documents: previous.map((doc) =>
+          doc.id === id ? { ...doc, lastPageRead: pageNumber } : doc,
+        ),
+      });
+      try {
+        await ReaderRepository.updateLastPageRead(id, pageNumber);
+      } catch (error) {
+        // Deliberately silent in the UI: failing to save a scroll position is
+        // not worth an error banner over the document you're reading. Logged
+        // via toUserMessage's console.error, and the next page turn retries.
+        toUserMessage(error);
+        set({ documents: previous });
+      }
+    },
+
+    recordPageCount: async (id, pageCount) => {
+      try {
+        const updated = await ReaderRepository.setPageCount(id, pageCount);
+        set({
+          documents: get().documents.map((doc) =>
+            doc.id === id ? updated : doc,
+          ),
+        });
+      } catch (error) {
+        // Same reasoning as setLastPageRead: metadata, not the reading itself.
+        toUserMessage(error);
+      }
+    },
+
+    addAnnotation: async (input) => {
+      const documentId = get().openDocumentId;
+      if (!documentId) return;
+
+      const now = new Date().toISOString();
+      const optimistic: Annotation = {
+        id: `optimistic-${crypto.randomUUID()}`,
+        documentId,
+        pageNumber: input.pageNumber,
+        kind: input.kind,
+        selectedText: input.selectedText,
+        comment: input.comment ?? null,
+        hue: input.hue ?? "amber",
+        rects: input.rects,
+        deletedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const previous = get().annotations;
+      set({ annotations: [...previous, optimistic], error: null });
+
+      try {
+        const created = await ReaderRepository.createAnnotation({
+          ...input,
+          documentId,
+        });
+        set({
+          annotations: get().annotations.map((annotation) =>
+            annotation.id === optimistic.id ? created : annotation,
+          ),
+        });
+        emit({
+          type: "reader.annotation_added",
+          payload: { annotationId: created.id, documentId },
+          timestamp: Date.now(),
+        });
+      } catch (error) {
+        set({ annotations: previous, error: toUserMessage(error) });
+      }
+    },
+
+    updateAnnotation: async (id, updates) => {
+      const previous = get().annotations;
+      set({
+        annotations: previous.map((annotation) =>
+          annotation.id === id
+            ? {
+                ...annotation,
+                ...(updates.comment !== undefined && {
+                  comment: updates.comment,
+                  kind: updates.comment
+                    ? ("comment" as const)
+                    : ("highlight" as const),
+                }),
+                ...(updates.hue !== undefined && { hue: updates.hue }),
+              }
+            : annotation,
+        ),
+        error: null,
+      });
+      addPending(id);
+
+      try {
+        const updated = await ReaderRepository.updateAnnotation(id, updates);
+        set({
+          annotations: get().annotations.map((annotation) =>
+            annotation.id === id ? updated : annotation,
+          ),
+        });
+      } catch (error) {
+        set({ annotations: previous, error: toUserMessage(error) });
+      } finally {
+        removePending(id);
+      }
+    },
+
+    deleteAnnotation: async (id) => {
+      const previous = get().annotations;
+      set({
+        annotations: previous.filter((annotation) => annotation.id !== id),
+        error: null,
+      });
+      try {
+        await ReaderRepository.deleteAnnotation(id);
+      } catch (error) {
+        set({ annotations: previous, error: toUserMessage(error) });
+      }
+    },
+  };
+});

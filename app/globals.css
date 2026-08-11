@@ -529,3 +529,41 @@ body {
     transform: none;
   }
 }
+
+/* --- PDF.js text layer (src/modules/reader/components/PdfPage.tsx) ---------
+   The invisible, selectable text pdf.js positions over the rendered canvas.
+   It is what makes select-to-highlight possible: without it you are selecting
+   a picture of text and there are no coordinates to anchor an annotation to.
+
+   The per-span rules (position, transparency, font-size, scaleX) live on the
+   element as Tailwind arbitrary variants, NOT here — see the comment in
+   PdfPage.tsx. Only the things a variant cannot express are below. */
+.pdf-text-layer {
+  text-align: initial;
+  overflow: clip;
+  line-height: 1;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  /* The caret must stay visible while dragging a selection even though the
+     glyphs themselves are transparent. */
+  caret-color: CanvasText;
+}
+
+/* The browser's own selection highlight, kept visible over transparent text.
+   Without this the drag gives no feedback at all — you would be selecting
+   blind until the highlight is saved. */
+.pdf-text-layer ::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* pdf.js appends this to track the run under the cursor; it must not paint
+   over the page. */
+.pdf-text-layer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: -1;
+  cursor: default;
+  user-select: none;
+}

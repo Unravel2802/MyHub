@@ -67,7 +67,15 @@ jobs:
       # The suite mocks Supabase at the network layer (tests/ui/fixtures.ts),
       # but the client is constructed at import time and throws without these,
       # so they must be present and syntactically valid — not real.
-      - name: Run E2E
+      #
+      # These now also cover the PRODUCTION BUILD: playwright.config.ts's
+      # webServer runs `npm run build && npm run start`, and prerendering
+      # constructs that same client at build time. Verified locally by moving
+      # .env.local aside and building with exactly these values.
+      #
+      # This step therefore also proves the app BUILDS, which nothing else in
+      # CI checked — typecheck and lint do not catch a server-render crash.
+      - name: Run E2E (builds first — see playwright.config.ts)
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://ci.supabase.invalid
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key

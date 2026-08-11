@@ -14,15 +14,17 @@ const PDF_BYTES = readFileSync(
   path.join(process.cwd(), "tests/ui/fixtures/sample.pdf"),
 );
 
-// Anything that waits on PDF.js gets this instead of the 10s default. The
-// /reader route cold-compiles under Turbopack AND pulls a ~1.2MB worker plus
-// the pdfjs library before a single glyph appears; with four Playwright
-// workers competing for CPU that legitimately exceeds 10s, which made this
-// spec pass alone and fail in the full suite. A generous ceiling on the
-// PDF-dependent waits only — a genuinely broken viewer still fails, just
-// later. The global expect timeout is deliberately left alone so the other
-// 130 tests keep failing fast.
-const PDF_READY = { timeout: 45_000 };
+// Anything that waits on PDF.js gets this instead of the 10s default.
+//
+// Route compilation is no longer part of it — the suite runs against a
+// production build now (playwright.config.ts). What remains is real and
+// unavoidable: fetching a ~1.2MB worker, instantiating it, parsing the PDF,
+// and rendering both a canvas and a text layer, with four workers competing
+// for CPU. That is genuinely slower than any other assertion in the suite.
+//
+// Scoped to the PDF-dependent waits only, so the other 127 tests keep failing
+// fast; a genuinely broken viewer still fails here, just later.
+const PDF_READY = { timeout: 30_000 };
 
 // The library row's open button and its "Remove X" button both contain the
 // title, so the name is anchored to exclude the latter.

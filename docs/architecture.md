@@ -84,6 +84,7 @@ layer assignment is usually wrong — not the rule.
 | No cross-module store/component imports | `eslint.config.mjs` → `moduleBoundaries`            | `npm run lint`, pre-commit, CI   |
 | Types compile                           | `npm run typecheck`                                 | pre-push, CI                     |
 | Behaviour                               | `npm test` (Vitest), `npm run test:ui` (Playwright) | pre-push, CI                     |
+| The app actually builds                 | `npm run build`, run by `test:ui`'s webServer       | pre-push, CI                     |
 | Schema / RLS / `ON CONFLICT`            | `npm run test:db` against real Supabase             | `.github/workflows/db-tests.yml` |
 | Formatting                              | Prettier                                            | pre-commit (`lint-staged`), CI   |
 
@@ -93,6 +94,16 @@ exactly the newest, least-reviewed code.
 
 Local hooks (`.husky/`) are a fast first pass, not the gate: `--no-verify`
 skips them and they don't run on another machine at all. **CI is the gate.**
+
+**E2E runs against a production build, not `next dev`** (see
+`playwright.config.ts`). `next dev` compiles each route on first hit, which
+with 17 routes and four parallel workers made whichever spec hit a route first
+pay the compile — it surfaced as flakiness in `finance.spec.ts` and
+`reader.spec.ts`, failing at a different assertion each run while passing in
+isolation. Building first removes the variable, costs nothing net (~16s build
+against the compile time it replaces), and means the suite tests what ships:
+the Reader's `DOMMatrix` server-render crash existed only in a production
+render path and a dev-mode suite could not have caught it.
 
 ## Adding a new module
 

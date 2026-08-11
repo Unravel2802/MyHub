@@ -34,3 +34,9 @@ export function categoriesForKind(
     (category) => category.kind === kind || category.kind === "both",
   );
 }
+
+// Category key -> display label. Lives here rather than in a component: three
+// panels render a category name, and a second copy is how they drift.
+export const CATEGORY_LABELS = new Map(
+  FINANCE_CATEGORIES.map((category) => [category.key, category.label]),
+);

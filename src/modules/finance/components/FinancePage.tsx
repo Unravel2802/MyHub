@@ -6,10 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
-  CalendarClock,
-  ChartNoAxesColumnIncreasing,
   Pencil,
-  PiggyBank,
   ReceiptText,
   Trash2,
   Wallet,
@@ -25,13 +22,12 @@ import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { Panel } from "@/src/components/ui/Panel";
-import { ProgressBar } from "@/src/components/ui/ProgressBar";
 import { StatCard } from "@/src/components/ui/StatCard";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 import {
   categoriesForKind,
-  FINANCE_CATEGORIES,
+  CATEGORY_LABELS,
 } from "@/src/modules/finance/financeCategories";
 import {
   FINANCE_CATEGORY_HUES,
@@ -39,6 +35,9 @@ import {
 } from "@/src/modules/finance/financeCategoryHues";
 import { isInMonth } from "@/src/modules/finance/financePeriods";
 import { formatCents } from "@/src/lib/money";
+import { BudgetsPanel } from "@/src/modules/finance/components/BudgetsPanel";
+import { RecurringBillsPanel } from "@/src/modules/finance/components/RecurringBillsPanel";
+import { RunwayPanel } from "@/src/modules/finance/components/RunwayPanel";
 import { FinanceTransactionDialog } from "@/src/modules/finance/components/FinanceTransactionDialog";
 import { FinanceTransactionTable } from "@/src/modules/finance/components/FinanceTransactionTable";
 import {
@@ -50,7 +49,6 @@ import {
 import { BudgetDialog } from "@/src/modules/finance/components/BudgetDialog";
 import { RecurringBillDialog } from "@/src/modules/finance/components/RecurringBillDialog";
 import { ReceivablesPanel } from "@/src/modules/finance/components/ReceivablesPanel";
-import { SavingsEditor } from "@/src/modules/finance/components/SavingsEditor";
 import type { CreateTransactionInput } from "@/src/modules/finance/FinanceRepository";
 import type {
   Budget,
@@ -59,10 +57,6 @@ import type {
 } from "@/src/modules/finance/types";
 import type { CreateBillInput } from "@/src/modules/finance/FinanceRepository";
 import { useFinanceStore } from "@/src/modules/finance/useFinanceStore";
-
-const CATEGORY_LABELS = new Map(
-  FINANCE_CATEGORIES.map((category) => [category.key, category.label]),
-);
 
 export function FinancePage() {
   const store = useFinanceStore();
@@ -321,223 +315,30 @@ export function FinancePage() {
           </div>
         </Panel>
 
-        <Panel
-          aside={<Badge tone="neutral">{store.bills.length}</Badge>}
-          description="Templates create one due ledger entry each month. Paused bills remain available to edit."
-          overline="Monthly obligations"
-          title="Recurring bills"
-        >
-          {store.bills.length === 0 ? (
-            <EmptyState
-              action={
-                <button
-                  className="text-hue-lime hover:underline"
-                  onClick={() => setDialogBill("new")}
-                  type="button"
-                >
-                  Add a recurring bill
-                </button>
-              }
-              description="Add rent, utilities, or another repeating expense to generate its monthly due entry."
-              icon={CalendarClock}
-              title="No recurring bills yet"
-            />
-          ) : (
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {[...store.bills]
-                .sort(
-                  (a, b) =>
-                    a.dayOfMonth - b.dayOfMonth || a.name.localeCompare(b.name),
-                )
-                .map((bill, index) => (
-                  <li
-                    className="fade-up rounded-lg border border-border bg-surface-subtle p-4"
-                    key={bill.id}
-                    style={{ ["--i" as string]: index }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate font-medium text-foreground">
-                            {bill.name}
-                          </p>
-                          <Badge tone={bill.active ? "success" : "neutral"}>
-                            {bill.active ? "Active" : "Paused"}
-                          </Badge>
-                        </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
-                          <Badge
-                            hue={
-                              FINANCE_CATEGORY_HUES[
-                                bill.category as FinanceCategoryKey
-                              ]
-                            }
-                          >
-                            {CATEGORY_LABELS.get(bill.category) ??
-                              bill.category}
-                          </Badge>
-                          <span>Due day {bill.dayOfMonth}</span>
-                        </div>
-                      </div>
-                      <p className="shrink-0 font-semibold tabular-nums text-foreground">
-                        {formatCents(bill.amountCents)}
-                      </p>
-                    </div>
-                    <div className="mt-4 flex justify-end gap-2">
-                      <button
-                        className="rounded-md border border-input bg-surface px-3 py-1.5 text-sm text-body hover:bg-surface-subtle"
-                        onClick={() => setDialogBill(bill)}
-                        type="button"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="rounded-md border border-danger-border bg-danger-surface px-3 py-1.5 text-sm text-danger hover:border-danger"
-                        onClick={() => confirmDeactivate(bill)}
-                        type="button"
-                      >
-                        Deactivate
-                      </button>
-                    </div>
-                  </li>
-                ))}
-            </ul>
-          )}
-        </Panel>
+        <RecurringBillsPanel
+          bills={store.bills}
+          onAdd={() => setDialogBill("new")}
+          onDeactivate={confirmDeactivate}
+          onEdit={setDialogBill}
+        />
 
         <ReceivablesPanel />
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(20rem,1fr)]">
-          <Panel
-            aside={
-              <button
-                className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
-                onClick={() => setDialogBudget("new")}
-                type="button"
-              >
-                Set budget
-              </button>
-            }
-            description={`Settled spending against standing limits for ${format(selectedMonth, "MMMM yyyy")}.`}
-            overline="Spending guardrails"
-            title="Monthly budgets"
-          >
-            {budgetProgress.length === 0 ? (
-              <EmptyState
-                action={
-                  <button
-                    className="text-hue-lime hover:underline"
-                    onClick={() => setDialogBudget("new")}
-                    type="button"
-                  >
-                    Set the first budget
-                  </button>
-                }
-                description="Choose an expense category and a monthly limit to start tracking progress."
-                icon={ChartNoAxesColumnIncreasing}
-                title="No budgets set"
-              />
-            ) : (
-              <ul className="grid gap-3">
-                {budgetProgress.map((progress, index) => {
-                  const budget = store.budgets.find(
-                    (item) => item.category === progress.category,
-                  );
-                  if (!budget) return null;
-                  const overageCents = Math.max(
-                    0,
-                    progress.spentCents - progress.limitCents,
-                  );
-                  const ratio =
-                    progress.limitCents > 0
-                      ? progress.spentCents / progress.limitCents
-                      : progress.spentCents > 0
-                        ? Number.POSITIVE_INFINITY
-                        : 0;
-                  const hue =
-                    FINANCE_CATEGORY_HUES[
-                      progress.category as FinanceCategoryKey
-                    ];
-                  return (
-                    <li
-                      className="fade-up rounded-lg border border-border bg-surface-subtle p-4"
-                      key={progress.category}
-                      style={{ ["--i" as string]: index }}
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <Badge hue={hue}>
-                            {CATEGORY_LABELS.get(progress.category) ??
-                              progress.category}
-                          </Badge>
-                          <p className="mt-2 text-sm tabular-nums text-body">
-                            {formatCents(progress.spentCents)} spent of{" "}
-                            {formatCents(progress.limitCents)}
-                          </p>
-                        </div>
-                        <div className="flex gap-1">
-                          <button
-                            className="rounded-md px-2 py-1 text-sm text-muted hover:bg-surface hover:text-foreground"
-                            onClick={() => setDialogBudget(budget)}
-                            type="button"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="rounded-md px-2 py-1 text-sm text-muted hover:bg-danger-surface hover:text-danger"
-                            onClick={() => confirmRemoveBudget(budget)}
-                            type="button"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <ProgressBar hue={hue} progress={ratio} />
-                      </div>
-                      <p
-                        className={`mt-2 text-xs font-medium ${overageCents > 0 ? "text-danger" : "text-muted"}`}
-                      >
-                        {overageCents > 0
-                          ? `Over by ${formatCents(overageCents)}`
-                          : `${Math.round(ratio * 100)}% used`}
-                      </p>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </Panel>
+          <BudgetsPanel
+            budgetProgress={budgetProgress}
+            budgets={store.budgets}
+            onAdd={() => setDialogBudget("new")}
+            onEdit={setDialogBudget}
+            onRemove={confirmRemoveBudget}
+            selectedMonth={selectedMonth}
+          />
 
-          <Panel
-            description="A projection from current savings and completed-month net burn."
-            overline="Cash cushion"
-            title="Runway"
-          >
-            <StatCard
-              hint={
-                runway
-                  ? `${formatCents(runway.avgMonthlyBurnCents)} average monthly burn`
-                  : "No completed-month burn to project."
-              }
-              hue={runway && runway.months > 0 ? "lime" : undefined}
-              label="Estimated runway"
-              value={runway ? `${runway.months.toFixed(1)} months` : "—"}
-            />
-            <div className="mt-4 rounded-lg border border-border bg-surface-subtle p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <PiggyBank aria-hidden="true" className="size-5 text-muted" />
-                <p className="font-medium text-foreground">Savings balance</p>
-              </div>
-              <SavingsEditor
-                currentSavingsCents={
-                  store.settings?.currentSavingsCents ?? null
-                }
-                key={store.settings?.currentSavingsCents ?? "loading"}
-                onSubmit={store.updateSavings}
-              />
-            </div>
-          </Panel>
+          <RunwayPanel
+            currentSavingsCents={store.settings?.currentSavingsCents ?? null}
+            onSaveSavings={store.updateSavings}
+            runway={runway}
+          />
         </div>
 
         <div className="min-w-0 max-w-full" id="finance-ledger">

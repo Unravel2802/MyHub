@@ -62,7 +62,18 @@ const HUES = [
   "emerald",
   "fuchsia",
   "lime",
+  // Kit extension 2026-08-12. See globals.css for why yellow is absent and why
+  // these are siblings of existing hues rather than new territory.
+  "sky",
+  "purple",
+  "pink",
+  "slate",
+  "stone",
 ] as const;
+
+// The three roles every hue must define. A hue that ships its text role but not
+// its surface/border is a half-hue that fails at the first badge.
+const HUE_ROLES = ["", "-surface", "-border"] as const;
 
 // Text-role semantic tokens that carry copy. `-surface`/`-border` roles are
 // backgrounds and don't need AA against text; they're excluded on purpose.
@@ -100,6 +111,31 @@ describe.each([
         contrast(color, surface),
         `--hue-${hue} on ${surface}`,
       ).toBeGreaterThanOrEqual(AA);
+    }
+  });
+
+  it.each(HUES)("hue %s defines all three roles", (hue) => {
+    for (const role of HUE_ROLES) {
+      expect(
+        vars[`--hue-${hue}${role}`],
+        `--hue-${hue}${role} missing`,
+      ).toMatch(/^#[0-9a-fA-F]{6}$/);
+    }
+  });
+});
+
+// A hue can be defined in BOTH theme blocks and still be unusable: Tailwind only
+// generates `bg-hue-x-surface` if the role is mapped in `@theme inline`. Miss
+// that and the class silently does nothing — no build error, no runtime error,
+// just an unstyled badge that nobody notices until it ships. Adding five hues at
+// once is exactly when that slips, so it gets a test.
+describe("every hue role is exposed as a Tailwind utility", () => {
+  it.each(HUES)("hue %s is mapped in @theme inline", (hue) => {
+    for (const role of HUE_ROLES) {
+      const name = `--hue-${hue}${role}`;
+      expect(css, `${name} not mapped in @theme inline`).toContain(
+        `--color-hue-${hue}${role}: var(${name});`,
+      );
     }
   });
 });

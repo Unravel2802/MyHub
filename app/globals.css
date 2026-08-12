@@ -85,6 +85,42 @@
   --hue-lime: #3f6212; /* lime-800 — 7:1 on white, clears AA */
   --hue-lime-surface: #f7fee7; /* lime-50 */
   --hue-lime-border: #d9f99d; /* lime-200 */
+
+  /* Kit extension (2026-08-12). Ten hues were fully assigned to modules, so new
+     modules had nowhere to go. Five more, all measured against AA rather than
+     eyeballed — palette.test.ts covers them.
+
+     A CAUTION that belongs next to the values, not in a doc: by hue angle these
+     are SIBLINGS of hues already in the kit, not new territory — purple sits 9°
+     from violet, pink 10° from rose, sky 8° from cyan. They pass contrast; they
+     are not reliably tellable apart in a 12px pill, least of all with a colour
+     vision deficiency. So hue is no longer a sufficient channel on its own at
+     this count: a module badge must pair its hue with a distinct ICON and stay
+     readable in greyscale. Reach for slate/stone first — they read achromatic,
+     so they add capacity without crowding anyone.
+
+     Yellow was evaluated and deliberately REJECTED: clearing 4.5:1 on white
+     forces it down to ~#854d0e, which browns it to 32° — 1° off stone and 6°
+     off amber. You can have a canonical bright yellow or light-mode AA, not
+     both, so the kit does without it. */
+  --hue-sky: #0369a1; /* sky-700 — 5.93:1 on white */
+  --hue-sky-surface: #f0f9ff;
+  --hue-sky-border: #bae6fd;
+  --hue-purple: #7e22ce; /* purple-700 — 6.98:1 */
+  --hue-purple-surface: #faf5ff;
+  --hue-purple-border: #e9d5ff;
+  --hue-pink: #be185d; /* pink-700 — 6.04:1 */
+  --hue-pink-surface: #fdf2f8;
+  --hue-pink-border: #fbcfe8;
+  /* The two neutrals. Their light surface tints sit very close to
+     --surface-subtle by design: an achromatic hue should read as "no colour
+     assigned", with the border and text roles carrying the identity. */
+  --hue-slate: #475569; /* slate-600 — 7.58:1 */
+  --hue-slate-surface: #f8fafc;
+  --hue-slate-border: #e2e8f0;
+  --hue-stone: #57534e; /* stone-600 — 7.63:1 */
+  --hue-stone-surface: #fafaf9;
+  --hue-stone-border: #e7e5e4;
 }
 
 .dark {
@@ -156,6 +192,25 @@
   --hue-lime: #a3e635; /* lime-400 — bright on the dark surfaces, clears AA */
   --hue-lime-surface: #1a2e05; /* deep lime, so a pill doesn't glow */
   --hue-lime-border: #3f6212; /* lime-800 */
+
+  /* Kit extension (2026-08-12) — see the :root block for the caution about hue
+     separation and why yellow was rejected. Same rule as the rest of the dark
+     kit: 400-level text, deep-tinted surface. */
+  --hue-sky: #38bdf8; /* 8.27:1 on zinc-900, 6.95:1 on zinc-800 */
+  --hue-sky-surface: #04212e;
+  --hue-sky-border: #075985; /* sky-800 */
+  --hue-purple: #c084fc; /* 6.70 / 5.64 */
+  --hue-purple-surface: #1d0b30;
+  --hue-purple-border: #6b21a8; /* purple-800 */
+  --hue-pink: #f472b6; /* 6.69 / 5.62 */
+  --hue-pink-surface: #2b0a18;
+  --hue-pink-border: #9d174d; /* pink-800 */
+  --hue-slate: #94a3b8; /* 6.91 / 5.81 */
+  --hue-slate-surface: #17202b;
+  --hue-slate-border: #334155; /* slate-700 */
+  --hue-stone: #a8a29e; /* 7.02 / 5.91 */
+  --hue-stone-surface: #221f1d;
+  --hue-stone-border: #44403c; /* stone-700 */
 }
 
 /* `inline` makes the generated utilities reference the variables directly, so
@@ -228,6 +283,21 @@
   --color-hue-lime: var(--hue-lime);
   --color-hue-lime-surface: var(--hue-lime-surface);
   --color-hue-lime-border: var(--hue-lime-border);
+  --color-hue-sky: var(--hue-sky);
+  --color-hue-sky-surface: var(--hue-sky-surface);
+  --color-hue-sky-border: var(--hue-sky-border);
+  --color-hue-purple: var(--hue-purple);
+  --color-hue-purple-surface: var(--hue-purple-surface);
+  --color-hue-purple-border: var(--hue-purple-border);
+  --color-hue-pink: var(--hue-pink);
+  --color-hue-pink-surface: var(--hue-pink-surface);
+  --color-hue-pink-border: var(--hue-pink-border);
+  --color-hue-slate: var(--hue-slate);
+  --color-hue-slate-surface: var(--hue-slate-surface);
+  --color-hue-slate-border: var(--hue-slate-border);
+  --color-hue-stone: var(--hue-stone);
+  --color-hue-stone-surface: var(--hue-stone-surface);
+  --color-hue-stone-border: var(--hue-stone-border);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

@@ -1,172 +1,22 @@
 "use client";
 
-import { ArrowRight, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import Link from "next/link";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { Panel } from "@/src/components/ui/Panel";
 import { hueSurfaceVar, hueVar } from "@/src/components/moduleHues";
-import { HUE_TEXT } from "@/src/components/ui/hueClasses";
+import { OrbitCenterHub } from "@/src/components/home/OrbitCenterHub";
+import { WorkspacePanel } from "@/src/components/home/WorkspacePanel";
 import {
-  HOME_WORKSPACES,
-  type HomeWorkspace,
-} from "@/src/components/home/homeWorkspaces";
-
-// Logical canvas. Everything below is expressed in these units and rendered
-// into an SVG viewBox / percentage offsets, so the whole scene scales with its
-// container instead of needing a breakpoint per size.
-//
-// The orbit is a heavily flattened ellipse (RX ~2.7x RY) — that ratio IS the
-// perspective. A circle would read as a flat wheel seen head-on; this reads as
-// a ring receding into the screen.
-const CANVAS_W = 560;
-const CANVAS_H = 370;
-const ORBIT_RX = 215;
-const ORBIT_RY = 76;
-const CENTER_R = 52;
-const NODE_R = 36;
-
-// Sphere sizes as a PERCENTAGE of the container width, not fixed pixels: the
-// canvas is fluid (percentage offsets into an aspect-ratio box), so px spheres
-// would grow relatively larger as the container shrank and the scene would
-// stop being the same picture at different widths.
-const CENTER_PCT = ((CENTER_R * 2) / CANVAS_W) * 100;
-const NODE_PCT = ((NODE_R * 2) / CANVAS_W) * 100;
-
-// Radians per millisecond. One lap takes ~14s — fast enough that the motion
-// reads as alive at a glance, without being so quick it fights the content
-// beside it for attention.
-const SPEED = 0.00045;
-
-// depth runs 0 (far side, top of the ellipse) to 1 (near side, bottom).
-// It drives three things at once, which together are the 3D illusion:
-// opacity, scale, and stacking order against the center hub.
-function depthOf(angle: number) {
-  return (Math.sin(angle) + 1) / 2;
-}
-
-// Static star field. Fixed coordinates rather than random so the scene is
-// identical between server and client render — a Math.random() field here
-// would be a hydration mismatch.
-const STARS = [
-  { x: 48, y: 24, r: 0.8, o: 0.34 },
-  { x: 497, y: 67, r: 1, o: 0.42 },
-  { x: 112, y: 292, r: 0.7, o: 0.28 },
-  { x: 453, y: 308, r: 0.9, o: 0.36 },
-  { x: 26, y: 198, r: 0.6, o: 0.3 },
-  { x: 527, y: 148, r: 0.8, o: 0.34 },
-  { x: 74, y: 347, r: 1, o: 0.28 },
-  { x: 386, y: 36, r: 0.7, o: 0.4 },
-  { x: 202, y: 17, r: 0.6, o: 0.26 },
-  { x: 37, y: 114, r: 0.9, o: 0.3 },
-  { x: 532, y: 252, r: 0.7, o: 0.34 },
-  { x: 158, y: 58, r: 0.8, o: 0.28 },
-  { x: 477, y: 188, r: 0.6, o: 0.26 },
-  { x: 310, y: 355, r: 0.9, o: 0.3 },
-];
-
-// A sphere, not a disc: a specular highlight up-left, the hue bouncing back
-// from down-right, and a body gradient between two shades of the module's own
-// hue. Built from `--hue` + color-mix so it re-shades itself in light mode
-// instead of naming a raw color (see moduleHues.ts).
-//
-// The dark end blends toward `--canvas` rather than toward black: in dark mode
-// that IS near-black, but in light mode it resolves pale, so the same one
-// declaration gives a shaded ball on both themes instead of a black blob on
-// white.
-const SPHERE_BACKGROUND = `
-  radial-gradient(circle at 30% 26%, color-mix(in srgb, white 30%, transparent) 0%, transparent 52%),
-  radial-gradient(circle at 68% 72%, color-mix(in srgb, var(--hue) 22%, transparent) 0%, transparent 48%),
-  linear-gradient(140deg, color-mix(in srgb, var(--hue) 32%, var(--hue-surface)) 0%, color-mix(in srgb, var(--hue-surface) 80%, var(--canvas)) 100%)
-`;
-
-// The hub is the light source of the scene, so its body is a RADIAL gradient
-// (lit from the middle out) where the planets' is linear.
-const HUB_BACKGROUND = `
-  radial-gradient(circle at 32% 28%, color-mix(in srgb, white 46%, transparent) 0%, transparent 48%),
-  radial-gradient(circle at 68% 72%, color-mix(in srgb, var(--accent) 62%, var(--canvas)) 0%, transparent 55%),
-  radial-gradient(circle at 50% 50%, var(--accent) 0%, color-mix(in srgb, var(--accent) 48%, var(--canvas)) 100%)
-`;
-
-function WorkspacePanel({
-  locked,
-  onClose,
-  workspace,
-}: {
-  locked: boolean;
-  onClose: () => void;
-  workspace: HomeWorkspace;
-}) {
-  const Icon = workspace.icon;
-  return (
-    <Panel
-      aside={
-        <div className="flex items-center gap-3">
-          <Link
-            className={`inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-80 ${HUE_TEXT[workspace.hue]}`}
-            href={workspace.href}
-          >
-            Open {workspace.label}
-            <ArrowRight aria-hidden="true" className="size-4" />
-          </Link>
-          {/* Only when locked (a click opened this panel): hovering doesn't
-              need a close button since leaving IS closing it. */}
-          {locked ? (
-            <button
-              aria-label="Close and resume orbiting"
-              className="text-muted transition-colors hover:text-foreground"
-              onClick={onClose}
-              type="button"
-            >
-              <X aria-hidden="true" className="size-4" />
-            </button>
-          ) : null}
-        </div>
-      }
-      title={
-        <span className="flex items-center gap-2">
-          <Icon
-            aria-hidden="true"
-            className="size-4"
-            style={{ color: hueVar(workspace.hue) }}
-          />
-          {workspace.label}
-        </span>
-      }
-    >
-      <ul className="space-y-0.5">
-        {workspace.modules.map((module, index) => {
-          const ModuleIcon = module.icon;
-          return (
-            <li
-              className="fade-up"
-              key={module.href}
-              style={{ ["--i" as string]: index }}
-            >
-              <Link
-                className="group -mx-2 flex items-center gap-3 rounded-md px-2 py-1.5 text-sm text-body transition-colors hover:bg-surface-subtle hover:text-foreground"
-                href={module.href}
-              >
-                {ModuleIcon ? (
-                  <ModuleIcon
-                    aria-hidden="true"
-                    className="size-4 shrink-0"
-                    style={{ color: hueVar(workspace.hue) }}
-                  />
-                ) : null}
-                <span className="flex-1 truncate">{module.label}</span>
-                <ArrowRight
-                  aria-hidden="true"
-                  className="size-3.5 shrink-0 text-muted opacity-0 transition-opacity group-hover:opacity-100"
-                />
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </Panel>
-  );
-}
+  CANVAS_H,
+  CANVAS_W,
+  NODE_PCT,
+  ORBIT_RX,
+  ORBIT_RY,
+  SPEED,
+  SPHERE_BACKGROUND,
+  STARS,
+  depthOf,
+} from "@/src/components/home/orbitGeometry";
+import { HOME_WORKSPACES } from "@/src/components/home/homeWorkspaces";
 
 function OrbitalCanvas({
   activeKey,
@@ -185,7 +35,6 @@ function OrbitalCanvas({
   onToggleLock: (key: string) => void;
   onClearLock: () => void;
 }) {
-  const reducedMotion = useReducedMotion();
   const nodeRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const labelRefs = useRef<Record<string, HTMLSpanElement | null>>({});
   const spokeRefs = useRef<Record<string, SVGLineElement | null>>({});
@@ -420,69 +269,7 @@ function OrbitalCanvas({
         </g>
       </svg>
 
-      {/* Center hub. z-10 so near planets (up to z-20) cross in front of it and
-          far ones pass behind — the moment that sells the orbit as 3D. */}
-      <div
-        aria-hidden="true"
-        className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-        style={{ left: "50%", top: "50%", width: `${CENTER_PCT}%` }}
-      >
-        {/* Two concentric sonar rings, out of phase (1.2s stagger) so they
-            never pulse in lockstep. Static (no animate prop) under reduced
-            motion rather than omitted — the rings are still meaningful as a
-            resting halo around the hub, just not moving. */}
-        {[1.9, 1.5].map((scale, index) => (
-          <motion.span
-            animate={
-              reducedMotion
-                ? undefined
-                : {
-                    opacity: [0.06, 0.14, 0.06],
-                    scale: [scale, scale * 1.04, scale],
-                  }
-            }
-            className="absolute inset-0 rounded-full border border-accent"
-            initial={{ opacity: 0.06, scale }}
-            key={scale}
-            transition={{
-              delay: index * 1.2,
-              duration: 3.5 + index * 1.2,
-              ease: "easeInOut",
-              repeat: Infinity,
-            }}
-          />
-        ))}
-        <div
-          className="relative flex aspect-square w-full items-center justify-center rounded-full"
-          style={{
-            background: HUB_BACKGROUND,
-            border:
-              "1px solid color-mix(in srgb, var(--accent) 40%, transparent)",
-            // Two outer blooms, near and far (32px + 72px). One glow reads as a
-            // sticker with a halo; two reads as a light source.
-            boxShadow:
-              "inset 0 1px 0 color-mix(in srgb, white 25%, transparent), inset 0 -2px 4px color-mix(in srgb, black 40%, transparent), 0 0 0 8px color-mix(in srgb, var(--accent) 8%, transparent), 0 0 32px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 72px color-mix(in srgb, var(--accent) 20%, transparent)",
-          }}
-        >
-          <span
-            className="absolute rounded-full blur-[3px]"
-            style={{
-              background: "color-mix(in srgb, white 42%, transparent)",
-              height: "20%",
-              left: "19%",
-              top: "13%",
-              width: "32%",
-            }}
-          />
-          <motion.span
-            animate={reducedMotion ? undefined : { scale: [1, 1.04, 1] }}
-            className="relative text-lg font-bold text-accent-strong"
-            transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
-          >
-            M
-          </motion.span>
-        </div>
-      </div>
+      <OrbitCenterHub />
 
       {HOME_WORKSPACES.map((workspace) => {
         const Icon = workspace.icon;

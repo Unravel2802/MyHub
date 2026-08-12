@@ -53,7 +53,13 @@ export function HomeBackground({ children }: { children: ReactNode }) {
         }}
       />
 
-      <div className="relative p-4 sm:p-6">{children}</div>
+      {/* Tighter than the p-4/p-6 this used to be. The scene's size is capped
+          by viewport HEIGHT (OrbitalHub's max-w), so every pixel of padding
+          here is a pixel the orbit doesn't get — and the glow still reads at
+          12px. This inset is the only vertical slack on the page that belongs
+          to Home alone; the page header and the gap below come from
+          PageTemplate and are shared with every other route. */}
+      <div className="relative p-2 sm:p-3">{children}</div>
     </div>
   );
 }

@@ -407,12 +407,12 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
         // what actually matters is that the hero row plus one row of Today's
         // Focus fits on screen together. The scene is 3:2, so a height budget
         // converts to a width budget by *1.5; the ~330px subtracted is the
-        // page header, the gaps, and one focus row. 345px was measured, not
+        // page header, the gaps, and one focus row. 321px was measured, not
         // guessed: at 330 the focus row still ran ~30px past the fold on an
         // 800px-tall window. The 1180px ceiling stops it ballooning on a
         // short-but-very-wide window, and the row centres whatever slack is
         // left (lg:justify-center above).
-        className="relative w-full min-w-0 flex-1 overflow-hidden rounded-lg border border-border lg:max-w-[min(1180px,calc((100vh-345px)*1.5))]"
+        className="relative w-full min-w-0 flex-1 overflow-hidden rounded-lg border border-border lg:max-w-[min(1180px,calc((100vh-321px)*1.5))]"
         // Clicks are resolved by the SAME hit test that drives hover, for the
         // same reason: on a scene that never stops, a mousedown and mouseup
         // can land on two different elements as the node drifts between

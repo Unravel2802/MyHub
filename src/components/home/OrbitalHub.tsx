@@ -403,10 +403,16 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
         // A click that reaches this div, rather than being stopped by a
         // node's own handler, is a click on empty space — "click away to
         // collapse."
-        // max-w caps how large the scene grows on a very wide screen; the row
-        // centres what's left over (lg:justify-center above) so the hub sits
-        // in the middle of the page rather than hard against the nav rail.
-        className="relative w-full min-w-0 flex-1 overflow-hidden rounded-lg border border-border lg:max-w-[900px]"
+        // The cap is derived from viewport HEIGHT, not a fixed width, because
+        // what actually matters is that the hero row plus one row of Today's
+        // Focus fits on screen together. The scene is 3:2, so a height budget
+        // converts to a width budget by *1.5; the ~330px subtracted is the
+        // page header, the gaps, and one focus row. 345px was measured, not
+        // guessed: at 330 the focus row still ran ~30px past the fold on an
+        // 800px-tall window. The 1180px ceiling stops it ballooning on a
+        // short-but-very-wide window, and the row centres whatever slack is
+        // left (lg:justify-center above).
+        className="relative w-full min-w-0 flex-1 overflow-hidden rounded-lg border border-border lg:max-w-[min(1180px,calc((100vh-345px)*1.5))]"
         // Clicks are resolved by the SAME hit test that drives hover, for the
         // same reason: on a scene that never stops, a mousedown and mouseup
         // can land on two different elements as the node drifts between

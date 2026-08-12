@@ -81,6 +81,98 @@ test("activating an orbit node locks it open and links to its destinations", asy
   ).toHaveAttribute("href", "/notes");
 });
 
+// The test above drives nodes with `.focus()`, which is the right tool for
+// asserting what activation DOES — but it proves nothing about reachability.
+// `.focus()` succeeds on an element the Tab sequence can never land on: a
+// `tabindex="-1"` button, or a node rebuilt as a decorative SVG wrapper with a
+// focus handler bolted on. So the one regression that would actually strand a
+// keyboard user — the orbit ceasing to be tabbable — passes that test happily.
+//
+// This matters now specifically: the Figma Make port (docs/handoff/dashboard-
+// redesign-port.md §3.4) rebuilds these nodes as reticles, and the reference
+// implementation it ports FROM uses `<g onClick>` with no keyboard path at all.
+// app/page.tsx deleted the duplicate card grid precisely because the orbit
+// became the accessible route to every module; if the rebuild regresses that,
+// there is no second way in.
+test("every orbit node is reachable by Tab, and Tab continues into its panel", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Your apps" })).toBeVisible();
+
+  const nodes = page.locator("button.orbit-node");
+  const expected = await nodes.count();
+  expect(expected).toBeGreaterThan(0);
+
+  // Walk the real Tab sequence from the top of the document. No `.focus()`
+  // anywhere in this test — that's the whole point.
+  const reached = new Set<string>();
+  for (let press = 0; press < 60 && reached.size < expected; press++) {
+    await page.keyboard.press("Tab");
+    const focused = await page.evaluate(() => {
+      const el = document.activeElement;
+      if (!(el instanceof HTMLElement)) return null;
+      return {
+        isNode: el.classList.contains("orbit-node"),
+        label: el.getAttribute("aria-label"),
+      };
+    });
+    if (focused?.isNode && focused.label) reached.add(focused.label);
+  }
+
+  expect(
+    reached.size,
+    `Tab reached ${reached.size} of ${expected} orbit nodes: ${[...reached].join(", ")}`,
+  ).toBe(expected);
+
+  // Focus is on an orbit node. Activating it must open the panel, and Tab must
+  // then continue INTO that panel — the second half of the claim in
+  // app/page.tsx's comment, and the half a grid would otherwise provide.
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Momentum", { exact: true })).toBeHidden();
+
+  await page.keyboard.press("Tab");
+  const landedOnLink = await page.evaluate(
+    () => document.activeElement instanceof HTMLAnchorElement,
+  );
+  expect(
+    landedOnLink,
+    "Tab after activating a node should reach the panel's module links",
+  ).toBe(true);
+});
+
+// The prototype has no reduced-motion handling at all; the shipped loop runs
+// exactly one placement pass and then returns. That single pass is load-bearing
+// — drop it while porting and every node stacks at the canvas origin for anyone
+// who asks their OS to stop animations, which no other assertion would notice.
+test("reduced motion still places the orbit nodes, not stacked at the origin", async ({
+  page,
+}) => {
+  // `page.emulateMedia` rather than `test.use({ reducedMotion })`: our `test`
+  // is the extended fixture from ./fixtures, and its type params don't surface
+  // Playwright's own options to `test.use`.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Your apps" })).toBeVisible();
+
+  const positions = await page
+    .locator("button.orbit-node")
+    .evaluateAll((els) =>
+      els.map(
+        (el) =>
+          `${(el as HTMLElement).style.left}|${(el as HTMLElement).style.top}`,
+      ),
+    );
+
+  expect(positions.length).toBeGreaterThan(0);
+  for (const position of positions) {
+    expect(position, "a node was never placed by the paint pass").not.toBe("|");
+  }
+  // Distinct positions, i.e. spread around the ellipse rather than all landing
+  // on the same default.
+  expect(new Set(positions).size).toBe(positions.length);
+});
+
 test("checking a focus card marks the task done", async ({ page }) => {
   const db = new FakeTaskDb([
     row({

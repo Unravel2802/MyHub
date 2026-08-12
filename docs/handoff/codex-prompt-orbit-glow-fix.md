@@ -11,6 +11,14 @@ Fix two verified regressions in the Home orbit (src/components/home/OrbitalHub.t
 reference design at "Redesign MyHub Dashboard/src/App.tsx". Both are confirmed, not guesses — I
 checked computed styles in a live browser before writing this.
 
+READ "Redesign MyHub Dashboard/src/App.tsx" BEFORE making either change below — it's the Figma
+Make export of the actual design these two fixes are restoring. It's kept on disk as a reference
+and is deliberately untracked/excluded from tsconfig, eslint and prettier (it's a separate Vite
+app with its own deps) — read it, don't import from it or add it back to any build config. The
+two line ranges quoted below are copy-pasted from it so you don't have to search, but skim the
+surrounding "Planet orbit ring" and "Planet labels always visible" sections yourself too — there
+may be other small details worth matching that these two bugs don't cover.
+
 BUG 1 — the orbit ring is a glowing accent-purple band, not a thin neutral guide.
 
 OrbitalHub.tsx lines ~424-444 draw the ring as:

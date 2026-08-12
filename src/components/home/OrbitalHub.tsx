@@ -68,6 +68,28 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
     expandedRef.current = expandedKey;
   }, [expandedKey]);
 
+  // Settles the scene to a stop while the pointer is over the canvas or a
+  // cluster is expanded — restored 2026-08-13. The prior "literal-match"
+  // pass removed this to match the reference's "motion never pauses"
+  // behaviour, but that's not actually comparable: the reference detects
+  // hover with a per-mousemove Math.hypot(mouse, node) distance check
+  // against the node's LIVE (continuously moving) position, so a mouse that
+  // holds still still reads as "hovering" even after the target has visibly
+  // drifted, because nothing re-evaluates the hit test until the next real
+  // mousemove. Real <button> elements — which is what keyboard access here
+  // requires — use native :hover, which the browser recomputes continuously
+  // against live layout. Combined with unconditional motion, a hovered
+  // planet slides out from under a stationary cursor within a frame or two:
+  // hover physically cannot hold. Pausing while the pointer is present (or a
+  // cluster is open) is what makes it hoverable at all; it changes nothing
+  // about the static appearance the reference screenshots were compared
+  // against. canvasHoveredRef covers the whole canvas, not just a planet —
+  // pausing only the hovered node still leaves you chasing every OTHER
+  // planet while aiming, and the moment you're inside the canvas at all you
+  // came here to interact with something in it.
+  const canvasHoveredRef = useRef(false);
+  const speedRef = useRef(1);
+
   const anglesRef = useRef<Record<string, number>>(
     Object.fromEntries(
       HOME_WORKSPACES.map((ws) => [ws.key, planetStartAngle(ws.deg)]),
@@ -220,14 +242,19 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
       const elapsed = Math.min(now - last, 50);
       last = now;
 
-      // The reference's clocks run unconditionally — hovering or expanding
-      // never slows the scene. (Its prototype re-derives every position from
-      // wall time each frame; accumulating the same rates here is
-      // equivalent, and survives the tab throttling rAF.)
-      hubAngleRef.current += HUB_RING_SPEED * elapsed;
-      moonElapsedRef.current += MOON_SPEED * elapsed;
+      // Time-corrected exponential smoothing (not a fixed per-frame lerp,
+      // which would ease at different rates on 60Hz vs 120Hz displays) —
+      // ~180ms to settle, so approaching the canvas glides it to a stop
+      // instead of freezing it dead mid-arc.
+      const targetSpeed =
+        canvasHoveredRef.current || expandedRef.current ? 0 : 1;
+      speedRef.current +=
+        (targetSpeed - speedRef.current) * (1 - Math.exp(-elapsed / 180));
+
+      hubAngleRef.current += HUB_RING_SPEED * elapsed * speedRef.current;
+      moonElapsedRef.current += MOON_SPEED * elapsed * speedRef.current;
       for (const workspace of HOME_WORKSPACES) {
-        anglesRef.current[workspace.key] += SPEED * elapsed;
+        anglesRef.current[workspace.key] += SPEED * elapsed * speedRef.current;
       }
 
       paintScene();
@@ -273,7 +300,13 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
         // collapse."
         className="relative w-full min-w-0 flex-1 overflow-hidden rounded-lg border border-border"
         onClick={() => setExpandedKey(null)}
-        onMouseLeave={() => setHoveredKey(null)}
+        onMouseEnter={() => {
+          canvasHoveredRef.current = true;
+        }}
+        onMouseLeave={() => {
+          canvasHoveredRef.current = false;
+          setHoveredKey(null);
+        }}
         style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
       >
         <svg
@@ -618,10 +651,20 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
                 }
                 aria-pressed={isExpanded}
                 className="orbit-node absolute z-20 block aspect-square -translate-x-1/2 -translate-y-1/2 cursor-pointer appearance-none rounded-full border-0 bg-transparent p-0"
-                onBlur={() => setHoveredKey(null)}
-                // Keyboard focus previews the same way hover does;
-                // Enter/Space then fires onClick natively.
-                onFocus={() => setHoveredKey(workspace.key)}
+                onBlur={() => {
+                  canvasHoveredRef.current = false;
+                  setHoveredKey(null);
+                }}
+                // Keyboard focus previews the same way hover does, and also
+                // settles the scene (canvasHoveredRef) — the label and
+                // reticle grow on focus same as on hover, and both should
+                // hold still under a focused element for the same reason a
+                // hovered one needs to. Enter/Space then fires onClick
+                // natively.
+                onFocus={() => {
+                  canvasHoveredRef.current = true;
+                  setHoveredKey(workspace.key);
+                }}
                 onMouseEnter={() => setHoveredKey(workspace.key)}
                 onMouseLeave={() => setHoveredKey(null)}
                 // Stop the click reaching the canvas, which treats any click

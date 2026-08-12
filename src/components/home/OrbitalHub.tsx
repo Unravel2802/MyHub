@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { hueSurfaceVar, hueVar } from "@/src/components/moduleHues";
+import { hueVar } from "@/src/components/moduleHues";
 import { OrbitCenterHub } from "@/src/components/home/OrbitCenterHub";
 import { WorkspacePanel } from "@/src/components/home/WorkspacePanel";
 import {
@@ -12,11 +12,16 @@ import {
   ORBIT_RX,
   ORBIT_RY,
   SPEED,
-  SPHERE_BACKGROUND,
-  STARS,
+  TRAIL_MAX,
   depthOf,
+  pushTrailPoint,
+  reticleTicks,
+  trailPointStyle,
+  type TrailPoint,
 } from "@/src/components/home/orbitGeometry";
 import { HOME_WORKSPACES } from "@/src/components/home/homeWorkspaces";
+import { HUE_TEXT } from "@/src/components/ui/hueClasses";
+import { cn } from "@/src/lib/cn";
 
 function OrbitalCanvas({
   activeKey,
@@ -38,6 +43,12 @@ function OrbitalCanvas({
   const nodeRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const labelRefs = useRef<Record<string, HTMLSpanElement | null>>({});
   const spokeRefs = useRef<Record<string, SVGLineElement | null>>({});
+  const trailRefs = useRef<Record<string, Array<SVGCircleElement | null>>>({});
+  const trailsRef = useRef<Record<string, TrailPoint[]>>(
+    Object.fromEntries(HOME_WORKSPACES.map((workspace) => [workspace.key, []])),
+  );
+  const hubRingRef = useRef<SVGCircleElement | null>(null);
+  const hubAngleRef = useRef(0);
   const anglesRef = useRef<Record<string, number>>(
     Object.fromEntries(
       HOME_WORKSPACES.map((ws, index) => [
@@ -93,6 +104,13 @@ function OrbitalCanvas({
       speedRef.current +=
         (targetSpeed - speedRef.current) * (1 - Math.exp(-elapsed / 180));
 
+      if (!reduced)
+        hubAngleRef.current += SPEED * elapsed * speedRef.current * 32;
+      hubRingRef.current?.setAttribute(
+        "transform",
+        `rotate(${hubAngleRef.current}, ${CANVAS_W / 2}, ${CANVAS_H / 2})`,
+      );
+
       for (const workspace of HOME_WORKSPACES) {
         if (!reduced)
           anglesRef.current[workspace.key] +=
@@ -103,6 +121,23 @@ function OrbitalCanvas({
         const y = ORBIT_RY * Math.sin(angle);
         const depth = depthOf(angle);
         const isActive = activeRef.current === workspace.key;
+
+        const trail = trailsRef.current[workspace.key];
+        pushTrailPoint(trail, { x, y });
+        const circles = trailRefs.current[workspace.key] ?? [];
+        circles.forEach((circle, index) => {
+          if (!circle) return;
+          const point = trail[index];
+          if (!point) {
+            circle.setAttribute("opacity", "0");
+            return;
+          }
+          const paintStyle = trailPointStyle(index, trail.length);
+          circle.setAttribute("cx", String(CANVAS_W / 2 + point.x));
+          circle.setAttribute("cy", String(CANVAS_H / 2 + point.y));
+          circle.setAttribute("r", String(paintStyle.radius));
+          circle.setAttribute("opacity", String(paintStyle.opacity));
+        });
 
         const node = nodeRefs.current[workspace.key];
         if (node) {
@@ -166,6 +201,18 @@ function OrbitalCanvas({
         viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
       >
         <defs>
+          <pattern
+            height="24"
+            id="orbit-dot-grid"
+            patternUnits="userSpaceOnUse"
+            width="24"
+          >
+            <circle cx="1" cy="1" fill="var(--border)" r="1" />
+          </pattern>
+          <radialGradient id="orbit-vignette" r="70%">
+            <stop offset="45%" stopColor="var(--canvas)" stopOpacity="0" />
+            <stop offset="100%" stopColor="var(--canvas)" stopOpacity="0.88" />
+          </radialGradient>
           {/* Without this the orbit renders as a hard 3px band — the single
               biggest reason a ring reads as "a drawn ellipse" rather than a
               glowing path. Blur a wide soft stroke, then composite the crisp
@@ -201,18 +248,33 @@ function OrbitalCanvas({
           ))}
         </defs>
 
-        <g transform={`translate(${CANVAS_W / 2},${CANVAS_H / 2})`}>
-          {STARS.map((star) => (
-            <circle
-              cx={star.x - CANVAS_W / 2}
-              cy={star.y - CANVAS_H / 2}
-              fill="var(--foreground)"
-              key={`${star.x}-${star.y}`}
-              opacity={star.o}
-              r={star.r}
-            />
-          ))}
+        <rect fill="var(--canvas)" height={CANVAS_H} width={CANVAS_W} />
+        <rect
+          fill="url(#orbit-dot-grid)"
+          height={CANVAS_H}
+          opacity="0.7"
+          width={CANVAS_W}
+        />
+        <rect fill="url(#orbit-vignette)" height={CANVAS_H} width={CANVAS_W} />
 
+        {HOME_WORKSPACES.flatMap((workspace) =>
+          Array.from({ length: TRAIL_MAX }, (_, index) => (
+            <circle
+              cx={CANVAS_W / 2}
+              cy={CANVAS_H / 2}
+              fill={hueVar(workspace.hue)}
+              key={`${workspace.key}-trail-${index}`}
+              opacity="0"
+              r="0"
+              ref={(element) => {
+                const refs = (trailRefs.current[workspace.key] ??= []);
+                refs[index] = element;
+              }}
+            />
+          )),
+        )}
+
+        <g transform={`translate(${CANVAS_W / 2},${CANVAS_H / 2})`}>
           <ellipse fill="url(#hub-ambient)" rx="130" ry="92" />
 
           {/* Inner guide ring — a depth cue only. It has to sit at the very
@@ -267,14 +329,26 @@ function OrbitalCanvas({
             />
           ))}
         </g>
+
+        <circle
+          cx={CANVAS_W / 2}
+          cy={CANVAS_H / 2}
+          fill="none"
+          opacity="0.35"
+          r="44"
+          ref={hubRingRef}
+          stroke="var(--accent)"
+          strokeDasharray="5 8"
+          strokeWidth="0.75"
+        />
       </svg>
 
       <OrbitCenterHub />
 
       {HOME_WORKSPACES.map((workspace) => {
-        const Icon = workspace.icon;
         const isActive = activeKey === workspace.key;
         const isLocked = locked && isActive;
+        const ticks = reticleTicks(36, 36, 13, 5);
         const possessiveLabel = workspace.label.endsWith("s")
           ? `${workspace.label}'`
           : `${workspace.label}'s`;
@@ -322,68 +396,73 @@ function OrbitalCanvas({
             ref={(el) => {
               nodeRefs.current[workspace.key] = el;
             }}
-            style={{
-              ["--hue" as string]: hueVar(workspace.hue),
-              ["--hue-surface" as string]: hueSurfaceVar(workspace.hue),
-              width: `${NODE_PCT}%`,
-            }}
+            style={{ width: `${NODE_PCT}%` }}
             type="button"
           >
-            {/* The sphere, not the outer <button>, owns the hover/focus scale:
-                the outer element's transform is written every frame by the
-                rAF loop (position + depth scale) via direct DOM mutation, and
-                motion manages its own transform on whatever element it's
-                given — the two would fight over the same CSS property if
-                they shared one. Driven by `isActive` (already tracked for the
-                info panel) rather than motion's own whileHover/whileFocus,
-                since the focusable element is the parent button, not this
-                span. */}
+            {/* The button remains the interactive and focusable node. The SVG
+                is paint only: the reference prototype's clickable <g> would
+                remove this page's only keyboard route to each workspace. */}
             <motion.span
               animate={{ scale: isActive ? 1.22 : 1 }}
-              className="relative flex aspect-square w-full items-center justify-center rounded-full"
-              style={{
-                background: SPHERE_BACKGROUND,
-                // 30%, not 45%: a crisp rim turns the sphere back into a
-                // flat disc with an outline.
-                border:
-                  "1px solid color-mix(in srgb, var(--hue) 30%, transparent)",
-                boxShadow: isActive
-                  ? `inset 0 1px 0 color-mix(in srgb, white 18%, transparent), inset 0 -2px 4px color-mix(in srgb, black 35%, transparent), 0 0 0 6px color-mix(in srgb, var(--hue) 18%, transparent), 0 0 28px color-mix(in srgb, var(--hue) 45%, transparent), 0 0 56px color-mix(in srgb, var(--hue) 18%, transparent)`
-                  : `inset 0 1px 0 color-mix(in srgb, white 14%, transparent), inset 0 -2px 4px color-mix(in srgb, black 30%, transparent), 0 0 0 6px color-mix(in srgb, var(--hue) 9%, transparent), 0 0 20px color-mix(in srgb, var(--hue) 28%, transparent), 0 0 44px color-mix(in srgb, var(--hue) 12%, transparent)`,
-              }}
+              className="relative block aspect-square w-full rounded-full"
               transition={{ damping: 24, stiffness: 360, type: "spring" }}
             >
-              <span
+              <svg
                 aria-hidden="true"
-                className="absolute rounded-full blur-[2px]"
-                style={{
-                  background: "color-mix(in srgb, white 32%, transparent)",
-                  height: "18%",
-                  left: "18%",
-                  top: "13%",
-                  width: "30%",
-                }}
-              />
-              <Icon
-                aria-hidden="true"
-                className="relative size-[38%]"
-                style={{ color: "var(--hue)" }}
-              />
+                className="size-full overflow-visible"
+                viewBox="0 0 72 72"
+              >
+                <circle
+                  cx="36"
+                  cy="36"
+                  fill={hueVar(workspace.hue)}
+                  opacity={isActive ? "0.18" : "0.08"}
+                  r={isActive ? "26" : "20"}
+                />
+                <circle
+                  cx="36"
+                  cy="36"
+                  fill="none"
+                  opacity={isActive ? "0.95" : "0.65"}
+                  r="13"
+                  stroke={hueVar(workspace.hue)}
+                  strokeWidth={isActive ? "1.5" : "1"}
+                />
+                {ticks.map((tick, index) => (
+                  <line
+                    key={index}
+                    opacity={isActive ? "0.95" : "0.65"}
+                    stroke={hueVar(workspace.hue)}
+                    strokeWidth={isActive ? "1.5" : "1"}
+                    {...tick}
+                  />
+                ))}
+                <circle
+                  cx="36"
+                  cy="36"
+                  fill={hueVar(workspace.hue)}
+                  r={isActive ? "6" : "5"}
+                />
+                {isLocked ? (
+                  <circle
+                    cx="36"
+                    cy="36"
+                    fill="none"
+                    opacity="0.5"
+                    r="24"
+                    stroke={hueVar(workspace.hue)}
+                    strokeDasharray="3 5"
+                  />
+                ) : null}
+              </svg>
             </motion.span>
-            {/* A translucent tint rather than HUE_BADGE's opaque surface: over
-                a dark starfield the solid pill reads as a sticker sitting on
-                top of the scene instead of a tag belonging to the planet. */}
             <span
-              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase"
+              className={cn(
+                "absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.08em]",
+                HUE_TEXT[workspace.hue],
+              )}
               ref={(el) => {
                 labelRefs.current[workspace.key] = el;
-              }}
-              style={{
-                background: "color-mix(in srgb, var(--hue) 9%, transparent)",
-                border:
-                  "0.5px solid color-mix(in srgb, var(--hue) 34%, transparent)",
-                color: "var(--hue)",
-                letterSpacing: "0.07em",
               }}
             >
               {workspace.label}

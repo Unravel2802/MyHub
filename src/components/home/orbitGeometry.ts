@@ -156,6 +156,53 @@ export function labelAnchorFor(dx: number): "start" | "middle" | "end" {
   return "middle";
 }
 
+/* ── Particles: three pulses travelling the hub → expanded-planet spoke ──────
+   Ported from the Figma Make reference's animation-engine spec
+   (docs/handoff/dashboard-redesign-port.md), adapted to this file's existing
+   "pure function of elapsed time" style rather than the reference's
+   setState-per-frame loop — OrbitalHub.tsx writes these into ref-held SVG
+   nodes inside its own rAF callback, the same as every other animated value
+   here. No stored velocity, no accumulated state: a particle's position is
+   fully determined by (index, t). */
+export const PARTICLE_PERIOD = 1600; // ms per lap
+export const PARTICLE_COUNT = 3;
+
+/**
+ * Particle `index`'s progress along the spoke at time `t`, in [0, 1).
+ * Particles are evenly staggered in phase so they read as a continuous
+ * stream rather than three dots moving in lockstep.
+ */
+export function particleProgress(index: number, t: number): number {
+  const phase = index / PARTICLE_COUNT;
+  const raw = (t / PARTICLE_PERIOD + phase) % 1;
+  // JS `%` can return a small negative value for negative `t`; normalize into
+  // [0, 1) rather than let a particle's fade formula see a negative `u`.
+  return raw < 0 ? raw + 1 : raw;
+}
+
+/**
+ * Opacity multiplier for a particle at progress `u`. Ramps in over the first
+ * 12% of the spoke, holds at full strength through the middle, and ramps out
+ * over the last 18% — a longer fade-out than fade-in, so arriving at the
+ * planet reads as a slower, more deliberate close than leaving the hub.
+ */
+export function particleFade(u: number): number {
+  if (u < 0.12) return u / 0.12;
+  if (u > 0.82) return (1 - u) / 0.18;
+  return 1;
+}
+
+/** A particle's position at progress `u` along the straight line (x1,y1)→(x2,y2). */
+export function particlePosition(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  u: number,
+): { x: number; y: number } {
+  return { x: x1 + (x2 - x1) * u, y: y1 + (y2 - y1) * u };
+}
+
 // STARS, SPHERE_BACKGROUND and HUB_BACKGROUND (the pre-port sphere/starfield
 // visual system) were removed 2026-08-12 once the reticle port replaced every
 // call site: the dot-grid + vignette in OrbitalHub.tsx replaced STARS, the

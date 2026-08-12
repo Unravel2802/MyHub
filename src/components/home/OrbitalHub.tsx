@@ -8,15 +8,21 @@ import { WorkspacePanel } from "@/src/components/home/WorkspacePanel";
 import {
   CANVAS_H,
   CANVAS_W,
+  MOON_RX,
+  MOON_RY,
   MOON_SPEED,
   NODE_PCT,
   ORBIT_RX,
   ORBIT_RY,
+  PARTICLE_COUNT,
   SPEED,
   TRAIL_MAX,
   depthOf,
   moonAngleFor,
   moonOffset,
+  particleFade,
+  particlePosition,
+  particleProgress,
   pushTrailPoint,
   reticleTicks,
   trailPointStyle,
@@ -54,6 +60,18 @@ function OrbitalCanvas({
   const hubAngleRef = useRef(0);
   const moonRefs = useRef<Record<string, HTMLSpanElement | null>>({});
   const moonElapsedRef = useRef(0);
+  // One moon-orbit ellipse and one moon-spoke line per module, all rendered
+  // up front (matching the trail-circle/spoke idiom above) and toggled via
+  // opacity rather than mounted/unmounted — only the currently LOCKED
+  // workspace's set is ever visible, but keeping every element alive avoids
+  // remount churn when the lock moves between workspaces.
+  const moonRingRefs = useRef<Record<string, SVGEllipseElement | null>>({});
+  const moonSpokeRefs = useRef<Record<string, SVGLineElement | null>>({});
+  // The particle stream travels the spoke of whichever workspace is LOCKED
+  // (not merely hovered) — see orbitGeometry.ts's particle* functions. Three
+  // shared circles, not one set per workspace: at most one spoke is ever
+  // "expanded" at a time, so there's nothing to duplicate.
+  const particleRefs = useRef<Array<SVGCircleElement | null>>([]);
   const anglesRef = useRef<Record<string, number>>(
     Object.fromEntries(
       HOME_WORKSPACES.map((ws, index) => [
@@ -118,6 +136,11 @@ function OrbitalCanvas({
         `rotate(${hubAngleRef.current}, ${CANVAS_W / 2}, ${CANVAS_H / 2})`,
       );
 
+      // Set inside the loop when a workspace matches the lock, read after it
+      // to place the shared moon ring and particle stream. Declared outside
+      // so TypeScript sees a single binding rather than one per iteration.
+      let lockedPlanetPos: { x: number; y: number } | null = null;
+
       for (const workspace of HOME_WORKSPACES) {
         if (!reduced)
           anglesRef.current[workspace.key] +=
@@ -128,18 +151,45 @@ function OrbitalCanvas({
         const y = ORBIT_RY * Math.sin(angle);
         const depth = depthOf(angle);
         const isActive = activeRef.current === workspace.key;
+        const isLockedWorkspace = lockedRef.current === workspace.key;
+        if (isLockedWorkspace) lockedPlanetPos = { x, y };
 
         workspace.modules.forEach((module, index) => {
-          const moon = moonRefs.current[`${workspace.key}:${module.href}`];
-          if (!moon) return;
+          const moonKey = `${workspace.key}:${module.href}`;
           const baseAngle = moonAngleFor(index, workspace.modules.length);
           const moonAngle =
-            baseAngle +
-            (lockedRef.current === workspace.key ? moonElapsedRef.current : 0);
+            baseAngle + (isLockedWorkspace ? moonElapsedRef.current : 0);
           const offset = moonOffset(moonAngle);
-          moon.style.left = `${((CANVAS_W / 2 + x + offset.x) / CANVAS_W) * 100}%`;
-          moon.style.top = `${((CANVAS_H / 2 + y + offset.y) / CANVAS_H) * 100}%`;
+          const moonX = x + offset.x;
+          const moonY = y + offset.y;
+
+          const moon = moonRefs.current[moonKey];
+          if (moon) {
+            moon.style.left = `${((CANVAS_W / 2 + moonX) / CANVAS_W) * 100}%`;
+            moon.style.top = `${((CANVAS_H / 2 + moonY) / CANVAS_H) * 100}%`;
+          }
+
+          // Planet → moon spoke, visible only while this workspace is the
+          // one that's locked — same visibility rule as the moon itself.
+          const moonSpoke = moonSpokeRefs.current[moonKey];
+          if (moonSpoke) {
+            moonSpoke.setAttribute("x1", String(x));
+            moonSpoke.setAttribute("y1", String(y));
+            moonSpoke.setAttribute("x2", String(moonX));
+            moonSpoke.setAttribute("y2", String(moonY));
+            moonSpoke.style.opacity = isLockedWorkspace ? "0.4" : "0";
+          }
         });
+
+        // The moon-orbit ring: a dashed ellipse centred on the planet's live
+        // position, same axis ratio as the main ring (orbitGeometry.ts). One
+        // per workspace, all rendered, only the locked one's opacity is > 0.
+        const moonRing = moonRingRefs.current[workspace.key];
+        if (moonRing) {
+          moonRing.setAttribute("cx", String(x));
+          moonRing.setAttribute("cy", String(y));
+          moonRing.style.opacity = isLockedWorkspace ? "0.3" : "0";
+        }
 
         const trail = trailsRef.current[workspace.key];
         pushTrailPoint(trail, { x, y });
@@ -185,7 +235,33 @@ function OrbitalCanvas({
           spoke.setAttribute("x2", String(x));
           spoke.setAttribute("y2", String(y));
           spoke.style.opacity = String(isActive ? 0.55 : 0.08 + 0.32 * depth);
+          // The soft blur reads as "this spoke is lit" at a glance; reserved
+          // for the active one so it doesn't compete with the other two.
+          spoke.setAttribute("filter", isActive ? "url(#soft)" : "none");
         }
+      }
+
+      // Particle stream: three pulses travelling the LOCKED workspace's
+      // spoke (orbitGeometry.ts's particle* functions — pure functions of
+      // `elapsed`, no per-particle state). Hidden when nothing is locked.
+      for (let index = 0; index < PARTICLE_COUNT; index++) {
+        const particle = particleRefs.current[index];
+        if (!particle) continue;
+        if (!lockedPlanetPos) {
+          particle.setAttribute("opacity", "0");
+          continue;
+        }
+        const u = particleProgress(index, elapsed);
+        const pos = particlePosition(
+          0,
+          0,
+          lockedPlanetPos.x,
+          lockedPlanetPos.y,
+          u,
+        );
+        particle.setAttribute("cx", String(pos.x));
+        particle.setAttribute("cy", String(pos.y));
+        particle.setAttribute("opacity", String(particleFade(u) * 0.9));
       }
 
       // Reduced motion still needs ONE pass to place everything; it just never
@@ -197,6 +273,12 @@ function OrbitalCanvas({
     frame = requestAnimationFrame(paint);
     return () => cancelAnimationFrame(frame);
   }, []);
+
+  // Only needed to colour the particle stream (a discrete choice, re-derived
+  // on render like the rest of React state) — the per-frame loop above reads
+  // lockedRef, not this.
+  const lockedWorkspace =
+    HOME_WORKSPACES.find((workspace) => workspace.key === lockedKey) ?? null;
 
   return (
     <div
@@ -238,6 +320,29 @@ function OrbitalCanvas({
               source back on top. */}
           <filter height="300%" id="ring-glow" width="140%" x="-20%" y="-100%">
             <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
+          </filter>
+          {/* Bloom: planet/moon reticles and particles. A wide blur merged
+              back over the crisp source, so the shape stays readable at its
+              core while glowing at its edges — a halo, not a smear. */}
+          <filter height="260%" id="bloom" width="260%" x="-80%" y="-80%">
+            <feGaussianBlur
+              in="SourceGraphic"
+              result="blur"
+              stdDeviation="4.5"
+            />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          {/* Soft: a tighter version for the active spoke line only — enough
+              to read as "lit" without blurring the line into the trail. */}
+          <filter height="180%" id="soft" width="180%" x="-40%" y="-40%">
+            <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="2" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
           </filter>
           <radialGradient cx="50%" cy="50%" id="hub-ambient" r="50%">
             <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
@@ -347,6 +452,61 @@ function OrbitalCanvas({
               y2="0"
             />
           ))}
+
+          {/* Moon-orbit ring: one dashed ellipse per workspace, ref-toggled
+              to opacity 0 except for whichever one is locked. Radii are
+              static — MOON_RX/RY never change — only cx/cy move each frame
+              to track the planet. */}
+          {HOME_WORKSPACES.map((workspace) => (
+            <ellipse
+              fill="none"
+              key={workspace.key}
+              opacity="0"
+              ref={(el) => {
+                moonRingRefs.current[workspace.key] = el;
+              }}
+              rx={MOON_RX}
+              ry={MOON_RY}
+              stroke={hueVar(workspace.hue)}
+              strokeDasharray="2 5"
+              strokeWidth="0.6"
+            />
+          ))}
+
+          {/* Planet → moon spokes, same ref-toggle idiom as the ring above:
+              one dedicated line per module, static hue via JSX prop,
+              position and visibility written every frame. */}
+          {HOME_WORKSPACES.flatMap((workspace) =>
+            workspace.modules.map((module) => (
+              <line
+                key={`${workspace.key}:${module.href}`}
+                opacity="0"
+                ref={(el) => {
+                  moonSpokeRefs.current[`${workspace.key}:${module.href}`] = el;
+                }}
+                stroke={hueVar(workspace.hue)}
+                strokeWidth="0.5"
+              />
+            )),
+          )}
+
+          {/* Particle stream: three shared circles, not one set per
+              workspace — at most one spoke is ever "locked" at a time, so
+              there is only ever one stream to draw. */}
+          {Array.from({ length: PARTICLE_COUNT }, (_, index) => (
+            <circle
+              filter="url(#bloom)"
+              key={index}
+              opacity="0"
+              r="1.8"
+              ref={(el) => {
+                particleRefs.current[index] = el;
+              }}
+              fill={
+                lockedWorkspace ? hueVar(lockedWorkspace.hue) : "var(--accent)"
+              }
+            />
+          ))}
         </g>
 
         <circle
@@ -380,7 +540,11 @@ function OrbitalCanvas({
                 moonRefs.current[`${workspace.key}:${module.href}`] = element;
               }}
             >
-              <svg className="size-full overflow-visible" viewBox="0 0 24 24">
+              <svg
+                className="size-full overflow-visible"
+                filter="url(#bloom)"
+                viewBox="0 0 24 24"
+              >
                 <circle
                   cx="12"
                   cy="12"
@@ -471,6 +635,7 @@ function OrbitalCanvas({
               <svg
                 aria-hidden="true"
                 className="size-full overflow-visible"
+                filter="url(#bloom)"
                 viewBox="0 0 72 72"
               >
                 <circle
@@ -531,6 +696,20 @@ function OrbitalCanvas({
           </button>
         );
       })}
+
+      {/* A discrete React-driven fade (activeKey changes on hover/lock, not
+          per frame), not a ref write — no different from the label opacity
+          logic above, just gated on the whole-scene state instead of one
+          workspace's depth. */}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute inset-x-0 bottom-1 text-center text-[9px] uppercase tracking-[0.16em] text-subtle transition-opacity duration-300",
+          activeKey ? "opacity-0" : "opacity-70",
+        )}
+      >
+        Click a cluster to expand
+      </span>
     </div>
   );
 }

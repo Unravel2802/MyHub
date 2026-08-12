@@ -4,6 +4,8 @@ import {
   MOON_RY,
   ORBIT_RX,
   ORBIT_RY,
+  PARTICLE_COUNT,
+  PARTICLE_PERIOD,
   TRAIL_MAX,
   TRAIL_MIN_STEP,
   type TrailPoint,
@@ -11,6 +13,9 @@ import {
   labelAnchorFor,
   moonAngleFor,
   moonOffset,
+  particleFade,
+  particlePosition,
+  particleProgress,
   pushTrailPoint,
   reticleTicks,
   trailPointStyle,
@@ -164,5 +169,69 @@ describe("labelAnchorFor", () => {
     expect(labelAnchorFor(0)).toBe("middle");
     expect(labelAnchorFor(9)).toBe("middle");
     expect(labelAnchorFor(-9)).toBe("middle");
+  });
+});
+
+describe("particleProgress", () => {
+  it("starts each particle at an even phase offset", () => {
+    const atZero = Array.from({ length: PARTICLE_COUNT }, (_, i) =>
+      particleProgress(i, 0),
+    );
+    expect(atZero).toEqual([0, 1 / 3, 2 / 3]);
+  });
+
+  it("wraps around after one full period", () => {
+    expect(particleProgress(0, PARTICLE_PERIOD)).toBeCloseTo(0);
+    expect(particleProgress(0, PARTICLE_PERIOD * 2.5)).toBeCloseTo(0.5);
+  });
+
+  it("stays within [0, 1) for a negative-leaning phase", () => {
+    // index/PARTICLE_COUNT is always >= 0, but this guards the normalization
+    // branch directly rather than relying on the inputs never producing it.
+    for (let t = -PARTICLE_PERIOD * 3; t < 0; t += 137) {
+      const u = particleProgress(1, t);
+      expect(u).toBeGreaterThanOrEqual(0);
+      expect(u).toBeLessThan(1);
+    }
+  });
+});
+
+describe("particleFade", () => {
+  it("is 0 at the very start and very end of the spoke", () => {
+    expect(particleFade(0)).toBeCloseTo(0);
+    expect(particleFade(1)).toBeCloseTo(0);
+  });
+
+  it("is fully opaque through the middle", () => {
+    expect(particleFade(0.5)).toBe(1);
+    expect(particleFade(0.12)).toBe(1);
+    expect(particleFade(0.82)).toBe(1);
+  });
+
+  it("fades out over a longer window than it fades in", () => {
+    // 12% in, 18% out — arriving at the planet is the slower half.
+    const fadeInWindow = 0.12;
+    const fadeOutWindow = 1 - 0.82;
+    expect(fadeOutWindow).toBeGreaterThan(fadeInWindow);
+  });
+
+  it("never goes negative just past either edge", () => {
+    expect(particleFade(0.001)).toBeGreaterThan(0);
+    expect(particleFade(0.999)).toBeGreaterThan(0);
+  });
+});
+
+describe("particlePosition", () => {
+  it("sits at the start when u=0 and the end when u=1", () => {
+    expect(particlePosition(0, 0, 100, 40, 0)).toEqual({ x: 0, y: 0 });
+    expect(particlePosition(0, 0, 100, 40, 1)).toEqual({ x: 100, y: 40 });
+  });
+
+  it("interpolates linearly at the midpoint", () => {
+    expect(particlePosition(0, 0, 100, 40, 0.5)).toEqual({ x: 50, y: 20 });
+  });
+
+  it("works from a non-origin start, matching a planet-to-planet spoke", () => {
+    expect(particlePosition(10, -10, 30, 30, 0.5)).toEqual({ x: 20, y: 10 });
   });
 });

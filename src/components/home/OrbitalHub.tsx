@@ -8,12 +8,15 @@ import { WorkspacePanel } from "@/src/components/home/WorkspacePanel";
 import {
   CANVAS_H,
   CANVAS_W,
+  MOON_SPEED,
   NODE_PCT,
   ORBIT_RX,
   ORBIT_RY,
   SPEED,
   TRAIL_MAX,
   depthOf,
+  moonAngleFor,
+  moonOffset,
   pushTrailPoint,
   reticleTicks,
   trailPointStyle,
@@ -25,7 +28,7 @@ import { cn } from "@/src/lib/cn";
 
 function OrbitalCanvas({
   activeKey,
-  locked,
+  lockedKey,
   onHover,
   onHoverEnd,
   onToggleLock,
@@ -34,7 +37,7 @@ function OrbitalCanvas({
   // What's actually shown in the info panel right now — `locked` if
   // something is locked, otherwise whatever's hovered/focused.
   activeKey: string | null;
-  locked: boolean;
+  lockedKey: string | null;
   onHover: (key: string) => void;
   onHoverEnd: () => void;
   onToggleLock: (key: string) => void;
@@ -49,6 +52,8 @@ function OrbitalCanvas({
   );
   const hubRingRef = useRef<SVGCircleElement | null>(null);
   const hubAngleRef = useRef(0);
+  const moonRefs = useRef<Record<string, HTMLSpanElement | null>>({});
+  const moonElapsedRef = useRef(0);
   const anglesRef = useRef<Record<string, number>>(
     Object.fromEntries(
       HOME_WORKSPACES.map((ws, index) => [
@@ -75,10 +80,10 @@ function OrbitalCanvas({
   // entirely — you clicked a planet specifically to stop and read about it,
   // and having it drift off again the moment you move the mouse to the panel
   // would defeat the point.
-  const lockedRef = useRef(locked);
+  const lockedRef = useRef<string | null>(lockedKey);
   useEffect(() => {
-    lockedRef.current = locked;
-  }, [locked]);
+    lockedRef.current = lockedKey;
+  }, [lockedKey]);
 
   // 1 = full speed, 0 = stopped. Eased toward its target every frame rather
   // than snapped, so approaching the scene glides it to a halt instead of
@@ -106,6 +111,8 @@ function OrbitalCanvas({
 
       if (!reduced)
         hubAngleRef.current += SPEED * elapsed * speedRef.current * 32;
+      if (!reduced)
+        moonElapsedRef.current += elapsed * speedRef.current * MOON_SPEED;
       hubRingRef.current?.setAttribute(
         "transform",
         `rotate(${hubAngleRef.current}, ${CANVAS_W / 2}, ${CANVAS_H / 2})`,
@@ -121,6 +128,18 @@ function OrbitalCanvas({
         const y = ORBIT_RY * Math.sin(angle);
         const depth = depthOf(angle);
         const isActive = activeRef.current === workspace.key;
+
+        workspace.modules.forEach((module, index) => {
+          const moon = moonRefs.current[`${workspace.key}:${module.href}`];
+          if (!moon) return;
+          const baseAngle = moonAngleFor(index, workspace.modules.length);
+          const moonAngle =
+            baseAngle +
+            (lockedRef.current === workspace.key ? moonElapsedRef.current : 0);
+          const offset = moonOffset(moonAngle);
+          moon.style.left = `${((CANVAS_W / 2 + x + offset.x) / CANVAS_W) * 100}%`;
+          moon.style.top = `${((CANVAS_H / 2 + y + offset.y) / CANVAS_H) * 100}%`;
+        });
 
         const trail = trailsRef.current[workspace.key];
         pushTrailPoint(trail, { x, y });
@@ -345,9 +364,51 @@ function OrbitalCanvas({
 
       <OrbitCenterHub />
 
+      {HOME_WORKSPACES.flatMap((workspace) =>
+        workspace.modules.map((module) => {
+          const isVisible = lockedKey === workspace.key;
+          return (
+            <span
+              aria-hidden="true"
+              className={cn(
+                "pointer-events-none absolute z-40 flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center transition-opacity",
+                isVisible ? "opacity-100" : "opacity-0",
+              )}
+              data-orbit-moon={workspace.key}
+              key={`${workspace.key}:${module.href}`}
+              ref={(element) => {
+                moonRefs.current[`${workspace.key}:${module.href}`] = element;
+              }}
+            >
+              <svg className="size-full overflow-visible" viewBox="0 0 24 24">
+                <circle
+                  cx="12"
+                  cy="12"
+                  fill="none"
+                  opacity="0.5"
+                  r="6"
+                  stroke={hueVar(workspace.hue)}
+                  strokeWidth="0.75"
+                />
+                {reticleTicks(12, 12, 6, 2.5).map((tick, index) => (
+                  <line
+                    key={index}
+                    opacity="0.45"
+                    stroke={hueVar(workspace.hue)}
+                    strokeWidth="0.75"
+                    {...tick}
+                  />
+                ))}
+                <circle cx="12" cy="12" fill={hueVar(workspace.hue)} r="2.5" />
+              </svg>
+            </span>
+          );
+        }),
+      )}
+
       {HOME_WORKSPACES.map((workspace) => {
         const isActive = activeKey === workspace.key;
-        const isLocked = locked && isActive;
+        const isLocked = lockedKey === workspace.key;
         const ticks = reticleTicks(36, 36, 13, 5);
         const possessiveLabel = workspace.label.endsWith("s")
           ? `${workspace.label}'`
@@ -513,7 +574,7 @@ export function OrbitalHub({ idlePanel }: OrbitalHubProps) {
     <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start">
       <OrbitalCanvas
         activeKey={activeKey}
-        locked={lockedKey !== null}
+        lockedKey={lockedKey}
         onClearLock={() => setLockedKey(null)}
         onHover={setHoveredKey}
         onHoverEnd={() => setHoveredKey(null)}

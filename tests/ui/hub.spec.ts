@@ -171,6 +171,23 @@ test("reduced motion still places the orbit nodes, not stacked at the origin", a
   // Distinct positions, i.e. spread around the ellipse rather than all landing
   // on the same default.
   expect(new Set(positions).size).toBe(positions.length);
+
+  // Moons are decoration, but the same one-pass guarantee applies: locking a
+  // workspace after the reduced-motion loop stops must reveal already-placed
+  // moons rather than a stack at the canvas origin.
+  await activateNode(page, "Show Career's modules");
+  const moonPositions = await page
+    .locator('[data-orbit-moon="career"]')
+    .evaluateAll((els) =>
+      els.map(
+        (el) =>
+          `${(el as HTMLElement).style.left}|${(el as HTMLElement).style.top}`,
+      ),
+    );
+  expect(moonPositions.length).toBeGreaterThan(0);
+  expect(new Set(moonPositions).size).toBe(moonPositions.length);
+  for (const position of moonPositions) expect(position).not.toBe("|");
+  await expect(page.locator('button[data-orbit-moon="career"]')).toHaveCount(0);
 });
 
 test("checking a focus card marks the task done", async ({ page }) => {

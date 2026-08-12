@@ -1,20 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  HUB_RING_SPEED,
   MOON_RX,
   MOON_RY,
   ORBIT_RX,
   ORBIT_RY,
-  PARTICLE_COUNT,
-  PARTICLE_PERIOD,
   TRAIL_MAX,
   TRAIL_MIN_STEP,
   type TrailPoint,
   labelAnchorFor,
   moonAngleFor,
   moonOffset,
-  particleFade,
-  particlePosition,
-  particleProgress,
+  planetStartAngle,
   pushTrailPoint,
   reticleTicks,
   trailPointStyle,
@@ -68,9 +65,9 @@ describe("trails", () => {
     expect(trail).toHaveLength(1);
   });
 
-  it("samples by distance, so a halted scene stops growing the trail", () => {
-    // The scene eases to a stop on hover. Sampling per frame would pile 24
-    // points on one spot at exactly the moment the user is looking at it.
+  it("samples by distance, so a stationary planet stops growing the trail", () => {
+    // Under reduced motion (or a throttled background tab) positions barely
+    // move; sampling per frame would pile 24 points on one spot.
     const trail: TrailPoint[] = [{ x: 10, y: 10 }];
     for (let frame = 0; frame < 200; frame++) {
       pushTrailPoint(trail, { x: 10, y: 10 });
@@ -136,66 +133,23 @@ describe("labelAnchorFor", () => {
   });
 });
 
-describe("particleProgress", () => {
-  it("starts each particle at an even phase offset", () => {
-    const atZero = Array.from({ length: PARTICLE_COUNT }, (_, i) =>
-      particleProgress(i, 0),
-    );
-    expect(atZero).toEqual([0, 1 / 3, 2 / 3]);
+// The particle-stream tests left with the particles themselves (2026-08-12):
+// the reference has no particle stream — see orbitGeometry.ts.
+
+describe("planetStartAngle", () => {
+  it("treats deg 0 as straight up, per the reference's -90° offset", () => {
+    expect(planetStartAngle(0)).toBeCloseTo(-Math.PI / 2);
   });
 
-  it("wraps around after one full period", () => {
-    expect(particleProgress(0, PARTICLE_PERIOD)).toBeCloseTo(0);
-    expect(particleProgress(0, PARTICLE_PERIOD * 2.5)).toBeCloseTo(0.5);
-  });
-
-  it("stays within [0, 1) for a negative-leaning phase", () => {
-    // index/PARTICLE_COUNT is always >= 0, but this guards the normalization
-    // branch directly rather than relying on the inputs never producing it.
-    for (let t = -PARTICLE_PERIOD * 3; t < 0; t += 137) {
-      const u = particleProgress(1, t);
-      expect(u).toBeGreaterThanOrEqual(0);
-      expect(u).toBeLessThan(1);
-    }
+  it("maps the reference CLUSTERS degrees onto distinct thirds of the orbit", () => {
+    const angles = [30, 150, 270].map(planetStartAngle);
+    expect(angles[1] - angles[0]).toBeCloseTo((2 * Math.PI) / 3);
+    expect(angles[2] - angles[1]).toBeCloseTo((2 * Math.PI) / 3);
   });
 });
 
-describe("particleFade", () => {
-  it("is 0 at the very start and very end of the spoke", () => {
-    expect(particleFade(0)).toBeCloseTo(0);
-    expect(particleFade(1)).toBeCloseTo(0);
-  });
-
-  it("is fully opaque through the middle", () => {
-    expect(particleFade(0.5)).toBe(1);
-    expect(particleFade(0.12)).toBe(1);
-    expect(particleFade(0.82)).toBe(1);
-  });
-
-  it("fades out over a longer window than it fades in", () => {
-    // 12% in, 18% out — arriving at the planet is the slower half.
-    const fadeInWindow = 0.12;
-    const fadeOutWindow = 1 - 0.82;
-    expect(fadeOutWindow).toBeGreaterThan(fadeInWindow);
-  });
-
-  it("never goes negative just past either edge", () => {
-    expect(particleFade(0.001)).toBeGreaterThan(0);
-    expect(particleFade(0.999)).toBeGreaterThan(0);
-  });
-});
-
-describe("particlePosition", () => {
-  it("sits at the start when u=0 and the end when u=1", () => {
-    expect(particlePosition(0, 0, 100, 40, 0)).toEqual({ x: 0, y: 0 });
-    expect(particlePosition(0, 0, 100, 40, 1)).toEqual({ x: 100, y: 40 });
-  });
-
-  it("interpolates linearly at the midpoint", () => {
-    expect(particlePosition(0, 0, 100, 40, 0.5)).toEqual({ x: 50, y: 20 });
-  });
-
-  it("works from a non-origin start, matching a planet-to-planet spoke", () => {
-    expect(particlePosition(10, -10, 30, 30, 0.5)).toEqual({ x: 20, y: 10 });
+describe("HUB_RING_SPEED", () => {
+  it("completes one revolution every 9 seconds, the reference's own rate", () => {
+    expect(HUB_RING_SPEED * 9000).toBeCloseTo(360);
   });
 });

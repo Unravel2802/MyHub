@@ -1,7 +1,11 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { CENTER_PCT } from "@/src/components/home/orbitGeometry";
+import {
+  CENTER_PCT,
+  CX_PCT,
+  CY_PCT,
+} from "@/src/components/home/orbitGeometry";
 
 // The "MH" at the centre of the orbit. Purely decorative and self-contained:
 // it holds no orbit state, so it is separated from the canvas that does.
@@ -17,13 +21,18 @@ import { CENTER_PCT } from "@/src/components/home/orbitGeometry";
 export function OrbitCenterHub() {
   const reducedMotion = useReducedMotion();
 
-  // z-10 so near planets (up to z-20) cross in front of it and far ones pass
-  // behind — the moment that sells the orbit as 3D.
+  // z-10, under the planet buttons (z-20) — the reference's fixed stacking
+  // order, not a depth cue. Positioned at the reference's off-centre CX/CY,
+  // the same origin every scene element is painted relative to.
   return (
     <div
       aria-hidden="true"
       className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-      style={{ left: "50%", top: "50%", width: `${CENTER_PCT}%` }}
+      style={{
+        left: `${CX_PCT}%`,
+        top: `${CY_PCT}%`,
+        width: `${CENTER_PCT}%`,
+      }}
     >
       {/* Two concentric sonar rings, out of phase (1.2s stagger) so they
           never pulse in lockstep. Static (no animate prop) under reduced

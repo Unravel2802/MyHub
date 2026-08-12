@@ -13,6 +13,10 @@ export interface HomeWorkspace {
   hue: HueName;
   icon: LucideIcon;
   href: string;
+  // The planet's starting position on the orbit, in the reference CLUSTERS
+  // table's own degree convention (0 = up, via orbitGeometry.planetStartAngle).
+  // Career 30 / Money 150 / Core 270 are its literal values.
+  deg: number;
   modules: NavItem[];
 }
 
@@ -23,6 +27,8 @@ export interface HomeWorkspace {
 // these hrefs belong to no mini-app app-wide. This grouping exists only to
 // give the hub's third orbit node something to show. `accent` (the brand hue)
 // marks it as neutral rather than claiming one of the ten named hues.
+const MINI_APP_DEGREES: Record<string, number> = { career: 30, money: 150 };
+
 export const HOME_WORKSPACES: readonly HomeWorkspace[] = [
   ...MINI_APPS.map((app) => ({
     key: app.key,
@@ -30,6 +36,7 @@ export const HOME_WORKSPACES: readonly HomeWorkspace[] = [
     hue: app.hue,
     icon: app.icon,
     href: app.href,
+    deg: MINI_APP_DEGREES[app.key] ?? 0,
     modules: NAV_ITEMS.filter((item) =>
       MINI_APP_HREFS[app.key].includes(item.href),
     ),
@@ -40,6 +47,7 @@ export const HOME_WORKSPACES: readonly HomeWorkspace[] = [
     hue: "accent" as HueName,
     icon: LayoutGrid,
     href: CORE_TOOL_HREFS[0],
+    deg: 270,
     modules: NAV_ITEMS.filter((item) => CORE_TOOL_HREFS.includes(item.href)),
   },
 ];

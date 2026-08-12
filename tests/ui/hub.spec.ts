@@ -16,61 +16,43 @@ async function activateNode(
   await page.keyboard.press("Enter");
 }
 
-test("activating an orbit node locks it open and links to its destinations", async ({
+test("activating an orbit node expands its moons as real module links", async ({
   page,
 }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Your apps" })).toBeVisible();
 
-  // Idle state: the momentum panel, not any workspace.
+  // The Momentum rail is fixed — the reference never swaps it out, so it's
+  // visible before, during, and after an expansion.
   await expect(page.getByText("Momentum", { exact: true })).toBeVisible();
 
   await activateNode(page, "Show Career's modules");
-
-  await expect(page.getByText("Momentum", { exact: true })).toBeHidden();
-  await expect(page.getByRole("link", { name: "Open Career" })).toHaveAttribute(
-    "href",
-    "/dashboard",
-  );
+  await expect(page.getByText("Momentum", { exact: true })).toBeVisible();
+  await expect(page.locator('a[data-orbit-moon="career"]')).toHaveCount(9);
   await expect(
     page.getByRole("link", { name: "Dashboard" }).last(),
   ).toHaveAttribute("href", "/dashboard");
 
-  // Locked, so it stays open on its own — closing it is an explicit action.
-  await page
-    .getByRole("button", { name: "Close and resume orbiting" })
-    .click({ force: true });
-  await expect(page.getByText("Momentum", { exact: true })).toBeVisible();
+  // Escape collapses — the explicit close action.
+  await page.keyboard.press("Escape");
+  await expect(page.locator("a[data-orbit-moon]")).toHaveCount(0);
 
   await activateNode(page, "Show Money's modules");
-  await expect(page.getByRole("link", { name: "Open Money" })).toHaveAttribute(
-    "href",
-    "/finance",
-  );
+  await expect(
+    page.getByRole("link", { name: "Finances" }).last(),
+  ).toHaveAttribute("href", "/finance");
 
-  // Activating the already-locked node again toggles the lock off — the
-  // panel keeps showing it regardless, since keyboard focus is still
-  // literally on that node (the same way a mouse still resting on it would),
-  // but it's no longer STICKY: the accessible name and pressed state flip
-  // back, which is what actually distinguishes locked from just-hovered.
-  // Not located by accessible name: that name itself is what's about to
-  // change (Show -> Hide), so a name-bound locator would stop resolving the
-  // moment the label it was built from flips. `activateNode` above already
-  // pressed Enter once (the lock) — this checks that state, then presses it
-  // a second time (the unlock).
-  const moneyNode = page
-    .locator("button.orbit-node")
-    .filter({ hasText: "Money" });
+  // Activating the already-expanded node again toggles it closed: the
+  // accessible name and pressed state flip back. Not located by accessible
+  // name — that name itself is what's about to change (Show -> Hide).
+  // The node's visible label lives in the paint-only SVG now, so locate by
+  // the aria-label ("Show/Hide Money's modules" — both contain "Money").
+  const moneyNode = page.locator('button.orbit-node[aria-label*="Money"]');
   await expect(moneyNode).toHaveAttribute("aria-pressed", "true");
   await moneyNode.focus();
   await page.keyboard.press("Enter");
   await expect(moneyNode).toHaveAttribute("aria-pressed", "false");
-
-  // Tabbing would just land on the NEXT node and preview that one, so drop
-  // focus entirely — with nothing locked and nothing hovered, the panel
-  // falls back to idle.
-  await moneyNode.blur();
-  await expect(page.getByText("Momentum", { exact: true })).toBeVisible();
+  await expect(page.locator("a[data-orbit-moon]")).toHaveCount(0);
 
   await activateNode(page, "Show Core Tools' modules");
   await expect(
@@ -125,19 +107,25 @@ test("every orbit node is reachable by Tab, and Tab continues into its panel", a
     `Tab reached ${reached.size} of ${expected} orbit nodes: ${[...reached].join(", ")}`,
   ).toBe(expected);
 
-  // Focus is on an orbit node. Activating it must open the panel, and Tab must
-  // then continue INTO that panel — the second half of the claim in
-  // app/page.tsx's comment, and the half a grid would otherwise provide.
+  // Focus is on an orbit node. Activating it must expand its moons, and Tab
+  // must then continue INTO those moon links — they're interleaved in DOM
+  // order right after their planet's button, so the module links are the
+  // very next stops in the sequence. This is the second half of the claim in
+  // app/page.tsx's comment, and the half the deleted WorkspacePanel used to
+  // provide.
   await page.keyboard.press("Enter");
-  await expect(page.getByText("Momentum", { exact: true })).toBeHidden();
+  await expect(page.locator("a[data-orbit-moon]").first()).toBeAttached();
 
   await page.keyboard.press("Tab");
-  const landedOnLink = await page.evaluate(
-    () => document.activeElement instanceof HTMLAnchorElement,
-  );
+  const landedOnMoon = await page.evaluate(() => {
+    const el = document.activeElement;
+    return (
+      el instanceof HTMLAnchorElement && el.hasAttribute("data-orbit-moon")
+    );
+  });
   expect(
-    landedOnLink,
-    "Tab after activating a node should reach the panel's module links",
+    landedOnMoon,
+    "Tab after activating a node should reach its moon module links",
   ).toBe(true);
 });
 
@@ -172,12 +160,12 @@ test("reduced motion still places the orbit nodes, not stacked at the origin", a
   // on the same default.
   expect(new Set(positions).size).toBe(positions.length);
 
-  // Moons are decoration, but the same one-pass guarantee applies: locking a
-  // workspace after the reduced-motion loop stops must reveal already-placed
-  // moons rather than a stack at the canvas origin.
+  // Moons mount only on expansion, which under reduced motion happens AFTER
+  // the single placement pass — a dedicated repaint on expand must place
+  // them rather than leaving a stack at the canvas origin.
   await activateNode(page, "Show Career's modules");
   const moonPositions = await page
-    .locator('[data-orbit-moon="career"]')
+    .locator('a[data-orbit-moon="career"]')
     .evaluateAll((els) =>
       els.map(
         (el) =>
@@ -187,7 +175,6 @@ test("reduced motion still places the orbit nodes, not stacked at the origin", a
   expect(moonPositions.length).toBeGreaterThan(0);
   expect(new Set(moonPositions).size).toBe(moonPositions.length);
   for (const position of moonPositions) expect(position).not.toBe("|");
-  await expect(page.locator('button[data-orbit-moon="career"]')).toHaveCount(0);
 });
 
 // The "inner guide ring" this test used to also check doesn't exist any
@@ -205,7 +192,9 @@ test("the orbit ring stays a neutral guide, and cluster labels never fade", asyn
   const mainRing = page.locator('[data-orbit-ring="main"]');
   await expect(mainRing).toHaveAttribute("stroke", "var(--border)");
   await expect(mainRing).toHaveAttribute("stroke-width", "0.75");
-  await expect(mainRing).toHaveAttribute("stroke-dasharray", "1.5 13");
+  // "4 7" is the reference's own dash pattern; the port's "1.5 13" was a
+  // quieter re-tune that also read as a different ring.
+  await expect(mainRing).toHaveAttribute("stroke-dasharray", "4 7");
   await expect(page.locator("#ring-glow")).toHaveCount(0);
   await expect(page.locator('[data-orbit-ring="inner"]')).toHaveCount(0);
 

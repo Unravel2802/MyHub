@@ -48,7 +48,7 @@ export function HomeMomentumPanel() {
   }, [fetchDashboard]);
 
   return (
-    <Panel>
+    <Panel className="h-full">
       <div className="mb-5 flex items-center gap-2">
         <Flame aria-hidden="true" className="size-3.5 text-accent-strong" />
         <SectionHeader>Momentum</SectionHeader>
@@ -83,7 +83,9 @@ export function HomeMomentumPanel() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-5 border-t border-border pt-5">
+      {/* Stacked, not a 3-col grid: the panel is the reference's fixed 272px
+          rail beside the canvas, and its metrics run down it full-width. */}
+      <div className="flex flex-col gap-4 border-t border-border pt-5">
         <CadenceStat
           label="Applications"
           target={weeklyCadence?.applications.target.max}

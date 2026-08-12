@@ -21,6 +21,16 @@ export const ORBIT_RY = 112;
 export const CENTER_R = 22;
 export const NODE_R = 22;
 
+// The hub sits at the reference's CX/CY = (222, 160) — deliberately LEFT of
+// the canvas midpoint (240), because planet labels hang radially outward and
+// the right side needs the extra room for "start"-anchored labels. Centring
+// the hub was one of the port's silent deviations; every scene position is
+// relative to this point, so it shifted the whole picture.
+export const CX = 222;
+export const CY = 160;
+export const CX_PCT = (CX / CANVAS_W) * 100;
+export const CY_PCT = (CY / CANVAS_H) * 100;
+
 // Sphere sizes as a PERCENTAGE of the container width, not fixed pixels: the
 // canvas is fluid (percentage offsets into an aspect-ratio box), so px spheres
 // would grow relatively larger as the container shrank and the scene would
@@ -31,6 +41,21 @@ export const NODE_PCT = ((NODE_R * 2) / CANVAS_W) * 100;
 // Radians per millisecond. The reference's own OMEGA_P: one full revolution
 // every 38 seconds.
 export const SPEED = (2 * Math.PI) / 38000;
+
+// Degrees per millisecond. The reference's hub-ring rotation is
+// `(t / 9000) * 360` — one revolution every 9 seconds, the same period as the
+// moons. The port previously derived this from SPEED with a magic ×32, which
+// landed at one revolution per ~68s: visibly near-static.
+export const HUB_RING_SPEED = 360 / 9000;
+
+/**
+ * Where a workspace's planet starts, in radians, from its reference `deg`
+ * (the CLUSTERS table's own values: 270 / 30 / 150). The reference offsets by
+ * -90° so deg 0 reads as "up".
+ */
+export function planetStartAngle(deg: number): number {
+  return ((deg - 90) * Math.PI) / 180;
+}
 
 // depthOf existed to dim, shrink and occlude a planet on the far side of the
 // (former) ellipse, simulating 3D. Removed 2026-08-12: the reference has NO
@@ -47,11 +72,11 @@ export const SPEED = (2 * Math.PI) / 38000;
 /* ── Moons: a workspace's modules orbiting their own planet ──────────────────
    Now genuinely the reference's own circular sub-orbit (its own MOON_R),
    not an ellipse-matched approximation of it — that adaptation existed only
-   because the main ring used to be an ellipse. Moons are DECORATION, not
-   navigation: WorkspacePanel keeps the keyboard path to every module (see
-   app/page.tsx's comment on why the duplicate card grid was deleted). A moon
-   that becomes clickable must be a real <button> with a 48px hit area,
-   whatever its painted radius. */
+   because the main ring used to be an ellipse. Moons are NAVIGATION, not
+   decoration (2026-08-12): each one is a real <Link> to its module, since
+   the WorkspacePanel that used to hold the module list is gone — the
+   reference never swaps the Momentum rail for one. Painted radius is small;
+   the hit target is the 32-unit circle OrbitalHub overlays on each moon. */
 export const MOON_RX = 54;
 export const MOON_RY = 54;
 export const MOON_SPEED = (2 * Math.PI) / 9000; // reference's OMEGA_M
@@ -71,8 +96,8 @@ export function moonOffset(angle: number): { x: number; y: number } {
 
    1. Sample by DISTANCE, not by frame. Sampling every frame ties trail length
       to refresh rate — the same trail is twice as long on a 120Hz display —
-      and the scene eases to a halt on hover, so a per-frame trail collapses
-      into a dot pile at exactly the moment the user is looking at it.
+      and in a background tab, where rAF is throttled, per-frame sampling
+      would stretch the trail into a string of far-apart beads.
    2. Cap the buffer. Unbounded growth on a page that animates indefinitely is
       a slow leak. */
 export const TRAIL_MAX = 24;
@@ -158,52 +183,11 @@ export function labelAnchorFor(dx: number): "start" | "middle" | "end" {
   return "middle";
 }
 
-/* ── Particles: three pulses travelling the hub → expanded-planet spoke ──────
-   Ported from the Figma Make reference's animation-engine spec
-   (docs/handoff/dashboard-redesign-port.md), adapted to this file's existing
-   "pure function of elapsed time" style rather than the reference's
-   setState-per-frame loop — OrbitalHub.tsx writes these into ref-held SVG
-   nodes inside its own rAF callback, the same as every other animated value
-   here. No stored velocity, no accumulated state: a particle's position is
-   fully determined by (index, t). */
-export const PARTICLE_PERIOD = 1600; // ms per lap
-export const PARTICLE_COUNT = 3;
-
-/**
- * Particle `index`'s progress along the spoke at time `t`, in [0, 1).
- * Particles are evenly staggered in phase so they read as a continuous
- * stream rather than three dots moving in lockstep.
- */
-export function particleProgress(index: number, t: number): number {
-  const phase = index / PARTICLE_COUNT;
-  const raw = (t / PARTICLE_PERIOD + phase) % 1;
-  // JS `%` can return a small negative value for negative `t`; normalize into
-  // [0, 1) rather than let a particle's fade formula see a negative `u`.
-  return raw < 0 ? raw + 1 : raw;
-}
-
-/**
- * Opacity multiplier for a particle at progress `u`. Ramps in over the first
- * 12% of the spoke, holds at full strength through the middle, and ramps out
- * over the last 18% — a longer fade-out than fade-in, so arriving at the
- * planet reads as a slower, more deliberate close than leaving the hub.
- */
-export function particleFade(u: number): number {
-  if (u < 0.12) return u / 0.12;
-  if (u > 0.82) return (1 - u) / 0.18;
-  return 1;
-}
-
-/** A particle's position at progress `u` along the straight line (x1,y1)→(x2,y2). */
-export function particlePosition(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  u: number,
-): { x: number; y: number } {
-  return { x: x1 + (x2 - x1) * u, y: y1 + (y2 - y1) * u };
-}
+// The particle stream (three pulses travelling the expanded spoke) was
+// removed 2026-08-12 in the literal-match pass: the reference implementation
+// has no particles anywhere — it was another embellishment layered onto the
+// port (like depthOf above), and every such addition has been a standing
+// source of "this doesn't look like the design" reports.
 
 // STARS, SPHERE_BACKGROUND and HUB_BACKGROUND (the pre-port sphere/starfield
 // visual system) were removed 2026-08-12 once the reticle port replaced every

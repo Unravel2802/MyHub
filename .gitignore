@@ -60,3 +60,6 @@ next-env.d.ts
 # eslint.config.mjs and .prettierignore; this keeps it out of git status too.
 # Safe to delete once it has stopped being a useful reference.
 /Redesign landing page (1)/
+# Same deal: the Figma Make export of the dashboard redesign, kept on disk as
+# the visual reference for the port (docs/handoff/dashboard-redesign-port.md).
+/Redesign MyHub Dashboard/

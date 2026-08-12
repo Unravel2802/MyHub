@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { hueFor } from "@/src/components/moduleHues";
 import { PageHeader } from "@/src/components/ui/PageHeader";
 
 // The ordering half of the page contract (docs/ui-upgrade-wave3.md §2.1).
@@ -129,7 +128,6 @@ export function PageTemplateBody({
         className="mb-6"
         description={description}
         eyebrow={eyebrow}
-        hue={hueFor(href)}
         icon={icon}
         title={title}
       />

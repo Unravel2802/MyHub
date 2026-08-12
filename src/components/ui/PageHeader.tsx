@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { hueVar, type HueName } from "@/src/components/moduleHues";
-import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 
 type PageHeaderProps = {
   actions?: ReactNode;
@@ -10,7 +8,6 @@ type PageHeaderProps = {
   className?: string;
   description?: ReactNode;
   eyebrow: ReactNode;
-  hue: HueName;
   icon?: LucideIcon;
   title: ReactNode;
 };
@@ -22,27 +19,23 @@ export function PageHeader({
   className = "",
   description,
   eyebrow,
-  hue,
   icon,
   title,
 }: PageHeaderProps) {
   const Icon = icon;
   return (
     <header
-      className={`hue-wash border-b border-border bg-surface px-4 py-5 sm:px-6 lg:px-8 ${
+      className={`border-b border-border bg-surface px-4 pb-sm pt-md sm:px-6 lg:px-8 ${
         bleed ? "-mx-4 -mt-6 sm:-mx-6 lg:-mx-8" : ""
       } ${className}`}
-      style={{ ["--hue" as string]: hueVar(hue) }}
     >
       <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
         <div>
-          <p
-            className={`flex items-center gap-2 text-sm font-medium ${HUE_TEXT[hue]}`}
-          >
+          <p className="flex items-center gap-2 text-xs text-muted">
             {Icon ? <Icon aria-hidden="true" className="size-4" /> : null}
             {eyebrow}
           </p>
-          <h2 className="mt-1 text-3xl font-semibold tracking-normal text-foreground">
+          <h2 className="mt-1 text-[30px] font-semibold leading-[1.1] tracking-[-0.02em] text-foreground">
             {title}
           </h2>
           {description ? (

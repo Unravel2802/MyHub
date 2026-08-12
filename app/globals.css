@@ -583,8 +583,30 @@ body {
    planet a fixed size regardless of orbital position, so there's nothing
    left for this rule to express beyond the translate every absolutely
    positioned node needs to centre itself on its own point. */
-.orbit-node {
-  transform: translate(-50%, -50%);
+/* Two things this rule must NOT do, both found 2026-08-13 while chasing
+   "hovering a planet does nothing" and "clicking one no longer opens it".
+
+   1. No `transform` here. The node also carries Tailwind's
+      `-translate-x-1/2 -translate-y-1/2`, which in Tailwind v4 emits the
+      standalone `translate` property — that does not override a `transform`
+      declaration, it composes with it. Setting both centred every node
+      twice, parking each button a full node-width up-and-left of the dot it
+      was meant to cover.
+
+   2. No transitions. The blanket `:where(a, button, ...) { transition: all
+      200ms }` above applies to these buttons and to the moon <a>s, whose
+      left/top are rewritten every frame by the rAF loop. A transitioned
+      property that is retargeted each frame never arrives: the hit targets
+      permanently trailed the dots they belong to by most of a 200ms ease,
+      so the pointer was landing on empty canvas. (This is also why pausing
+      the scene appeared to "fix" hover — a stopped target let the
+      transition finally catch up.) Positioning here is imperative and must
+      be immediate; the visual easing lives on the SVG, which isn't a
+      button. */
+.orbit-node,
+.orbit-moon {
+  position: absolute;
+  transition: none;
 }
 
 /* Anyone who asked their OS for less motion gets none of it. */

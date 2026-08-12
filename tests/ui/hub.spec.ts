@@ -177,81 +177,94 @@ test("reduced motion still places the orbit nodes, not stacked at the origin", a
   for (const position of moonPositions) expect(position).not.toBe("|");
 });
 
-// A "literal match to the reference" pass (2026-08-12) removed the pause-on-
-// hover settling this test pins, on the reasoning that the reference's own
-// motion never stops. That reasoning doesn't transfer: the reference detects
-// hover via a per-mousemove distance check against each node's live
-// position, so a mouse that holds still keeps reading as "hovering" even
-// after the target has drifted, because nothing re-evaluates the hit test
-// until the next real mousemove. Our nodes are real <button>s (required for
-// keyboard access — see the Tab-reachability test above), which use native
-// :hover, continuously recomputed against live layout by the browser itself.
-// Combine that with a target that never stops moving and hover physically
-// cannot hold — it registers for a frame, then the box slides out from under
-// a stationary cursor. This regressed silently because no test asserted
-// stillness; it does now.
-test("the scene settles to a stop while a node is focused, and resumes after", async ({
+// Both halves of this matter and they pull against each other, which is why
+// they're asserted together: pointing at a node must highlight it, AND the
+// scene must keep orbiting the whole time. An earlier fix got the highlight
+// working by settling the scene to a stop under the pointer — which made
+// hover hold, but froze the orbit, which is not what this is supposed to do.
+// Mouse hover is therefore a per-frame distance check against each node's
+// LIVE position (OrbitalHub's `pointerRef`), not native :hover, because
+// browsers only reliably fire enter/leave when the POINTER moves — an
+// element sliding out from under a stationary pointer often never fires
+// leave at all.
+test("pointing at a node highlights it while the scene keeps orbiting", async ({
   page,
 }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Your apps" })).toBeVisible();
 
-  const careerNode = page.getByRole("button", {
-    name: "Show Career's modules",
-  });
+  const career = page.locator('button[data-orbit-node="career"]');
+  const box = await career.boundingBox();
+  expect(box, "orbit node has no layout box").not.toBeNull();
 
-  // Polls position every 150ms rather than assuming a fixed wall-clock wait
-  // converges the ease: the paint loop clamps each frame's own elapsed-time
-  // at 50ms (a deliberate guard against one huge jump after the tab was
-  // backgrounded), so under CPU contention from parallel test workers, real
-  // frames can arrive sparser than expected and the ease covers LESS
-  // wall-clock ground per second than it would running alone. A fixed wait
-  // flaked under `npx playwright test` (4 workers) while passing every time
-  // in isolation — this polls for the actual behaviour instead of guessing
-  // how long it takes to appear.
-  async function samplePositions(count: number, intervalMs: number) {
-    const points: { x: number; y: number }[] = [];
-    for (let i = 0; i < count; i++) {
-      const box = await careerNode.boundingBox();
-      expect(box, "orbit node has no layout box").not.toBeNull();
-      points.push({ x: box!.x, y: box!.y });
-      if (i < count - 1) await page.waitForTimeout(intervalMs);
-    }
-    return points;
+  await page.mouse.move(
+    box!.x + box!.width / 2,
+    box!.y + box!.height / 2,
+    // Several small steps rather than one jump: a single teleporting move
+    // can land inside the node between frames without the scene ever seeing
+    // an intermediate position, which is closer to a synthetic click than to
+    // a real pointer approaching.
+    { steps: 8 },
+  );
+
+  await expect(
+    career,
+    "pointing at a node did not highlight it",
+  ).toHaveAttribute("data-hovered", "true");
+
+  // ...and with the pointer still resting on the canvas, the scene must NOT
+  // have stopped. Sampled from the node's own box, so this fails both if the
+  // scene freezes globally and if it freezes just the pointed-at node.
+  const samples: { x: number; y: number }[] = [];
+  for (let i = 0; i < 6; i++) {
+    const sample = await career.boundingBox();
+    if (sample) samples.push({ x: sample.x, y: sample.y });
+    await page.waitForTimeout(200);
   }
-
-  await careerNode.focus();
-  const whileFocused = await samplePositions(8, 250); // ~1.75s
-  // Only the TAIL needs to be still — the first couple of samples are the
-  // ease-in transient itself, not a failure to settle.
-  const tail = whileFocused.slice(-4);
-  let maxTailDrift = 0;
-  for (let i = 1; i < tail.length; i++) {
-    maxTailDrift = Math.max(
-      maxTailDrift,
-      Math.hypot(tail[i].x - tail[i - 1].x, tail[i].y - tail[i - 1].y),
-    );
-  }
-  expect(
-    maxTailDrift,
-    "a focused node kept moving instead of settling — hover/focus can't hold on a moving target",
-  ).toBeLessThan(3);
-
-  // Release focus and confirm motion actually resumes rather than staying
-  // stuck paused. blur() directly rather than focusing some other element,
-  // so this can't accidentally re-settle on a different node instead.
-  await careerNode.evaluate((el) => (el as HTMLElement).blur());
-  const afterRelease = await samplePositions(8, 250);
-  const first = afterRelease[0];
-  const maxDriftFromFirst = Math.max(
-    ...afterRelease
-      .slice(1)
-      .map((p) => Math.hypot(p.x - first.x, p.y - first.y)),
+  const start = samples[0];
+  const maxDrift = Math.max(
+    ...samples.slice(1).map((p) => Math.hypot(p.x - start.x, p.y - start.y)),
   );
   expect(
-    maxDriftFromFirst,
-    "the scene never resumed after focus/hover was released",
+    maxDrift,
+    "the scene stopped orbiting while the pointer was over it",
   ).toBeGreaterThan(3);
+});
+
+// The mouse counterpart of the keyboard expansion test at the top of this
+// file, and the one that would have caught "clicking a cluster stopped
+// opening it": on a scene that never stops, mousedown and mouseup can land
+// on different elements as the node drifts between them, and the browser
+// then dispatches `click` at their common ancestor — the canvas — which
+// treats it as a click on empty space and collapses. The deliberate pause
+// between down and up reproduces that; without the canvas-level hit test
+// resolving the click, none of these three expand.
+test("clicking a node with the mouse expands it, even as it drifts", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Your apps" })).toBeVisible();
+
+  for (const key of ["career", "money", "core"]) {
+    const node = page.locator(`button[data-orbit-node="${key}"]`);
+    const box = await node.boundingBox();
+    expect(box, `${key} node has no layout box`).not.toBeNull();
+
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2, {
+      steps: 6,
+    });
+    await page.mouse.down();
+    await page.waitForTimeout(120);
+    await page.mouse.up();
+
+    await expect(
+      page.locator(`a[data-orbit-moon="${key}"]`).first(),
+      `clicking ${key} did not expand it`,
+    ).toBeAttached();
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator("a[data-orbit-moon]")).toHaveCount(0);
+  }
 });
 
 // The "inner guide ring" this test used to also check doesn't exist any

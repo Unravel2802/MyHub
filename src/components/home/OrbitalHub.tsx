@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
 import { hueVar } from "@/src/components/moduleHues";
 import { OrbitCenterHub } from "@/src/components/home/OrbitCenterHub";
@@ -33,6 +34,12 @@ import { HOME_WORKSPACES } from "@/src/components/home/homeWorkspaces";
 // the fluid canvas the same way NODE_PCT does.
 const MOON_HIT_PCT = (32 / CANVAS_W) * 100;
 
+// Hover hit radii in scene units — the reference's own numbers (< 22 for a
+// cluster, < 16 for a moon). Used by the per-frame pointer hit test below,
+// which is what drives mouse hover; see the note on `pointerRef`.
+const NODE_HIT_R = 22;
+const MOON_HIT_R = 16;
+
 // 2026-08-12, second literal-match pass. The first pass fixed the geometry
 // (circle, reference radii); this one fixes everything AROUND the geometry
 // that had still drifted from "Redesign MyHub Dashboard/src/App.tsx":
@@ -52,10 +59,30 @@ const MOON_HIT_PCT = (32 / CANVAS_W) * 100;
 // Architecture is unchanged where CLAUDE.md pins it: one rAF loop mutating
 // ref-held nodes, zero React re-renders per frame. React re-renders only on
 // discrete state changes (hover, expand), exactly as before.
+//
+// 2026-08-13: mouse hover moved off native :hover / onMouseEnter and onto a
+// per-frame pointer hit test in the paint loop (see `pointerRef`). A brief
+// intervening attempt at settling the scene on hover — so that a native
+// :hover could hold on a stationary target — was the wrong trade: the scene
+// is supposed to keep orbiting. Hit-testing live positions each frame is
+// both the reference's actual mechanism and the one that lets hover work
+// while everything keeps moving.
 export function OrbitalHub({ panel }: { panel: ReactNode }) {
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Hover has TWO independent sources, deliberately kept apart so neither
+  // clobbers the other: the pointer (recomputed every frame by the hit test
+  // in the paint loop) and keyboard focus. `pointerKey` wins when both are
+  // live, since a mouse actively pointing at something is the more specific
+  // intent.
+  const [pointerKey, setPointerKey] = useState<string | null>(null);
+  const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
-  const [hoveredMoonKey, setHoveredMoonKey] = useState<string | null>(null);
+  const [pointerMoonKey, setPointerMoonKey] = useState<string | null>(null);
+  const [focusedMoonKey, setFocusedMoonKey] = useState<string | null>(null);
+
+  const hoveredKey = pointerKey ?? focusedKey;
+  const hoveredMoonKey = pointerMoonKey ?? focusedMoonKey;
 
   // Mirrors read inside the rAF loop, so state changes don't tear down and
   // restart the animation (which would jump every planet).
@@ -68,27 +95,24 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
     expandedRef.current = expandedKey;
   }, [expandedKey]);
 
-  // Settles the scene to a stop while the pointer is over the canvas or a
-  // cluster is expanded — restored 2026-08-13. The prior "literal-match"
-  // pass removed this to match the reference's "motion never pauses"
-  // behaviour, but that's not actually comparable: the reference detects
-  // hover with a per-mousemove Math.hypot(mouse, node) distance check
-  // against the node's LIVE (continuously moving) position, so a mouse that
-  // holds still still reads as "hovering" even after the target has visibly
-  // drifted, because nothing re-evaluates the hit test until the next real
-  // mousemove. Real <button> elements — which is what keyboard access here
-  // requires — use native :hover, which the browser recomputes continuously
-  // against live layout. Combined with unconditional motion, a hovered
-  // planet slides out from under a stationary cursor within a frame or two:
-  // hover physically cannot hold. Pausing while the pointer is present (or a
-  // cluster is open) is what makes it hoverable at all; it changes nothing
-  // about the static appearance the reference screenshots were compared
-  // against. canvasHoveredRef covers the whole canvas, not just a planet —
-  // pausing only the hovered node still leaves you chasing every OTHER
-  // planet while aiming, and the moment you're inside the canvas at all you
-  // came here to interact with something in it.
-  const canvasHoveredRef = useRef(false);
-  const speedRef = useRef(1);
+  // Pointer position in SCENE units (the SVG viewBox's own space), or null
+  // when the pointer is outside the canvas.
+  //
+  // Mouse hover is derived from THIS, re-tested against every node's live
+  // position once per frame — it is deliberately NOT native :hover /
+  // onMouseEnter. Those depend on the browser firing enter/leave events, and
+  // browsers only reliably fire those when the POINTER moves, not when the
+  // element moves out from under a stationary pointer. On a scene that never
+  // stops orbiting that makes native hover unusable: it latches on, the node
+  // drifts away, and nothing ever re-evaluates. Hit-testing each frame is
+  // also exactly what the reference does (its own Math.hypot(mouse, node) <
+  // 22 check), so this is the literal behaviour, not a workaround for it.
+  const pointerRef = useRef<{ x: number; y: number } | null>(null);
+  // What the hit test last concluded. The loop compares against these and
+  // only calls setState on a TRANSITION, so hovering still costs zero React
+  // re-renders per frame (CLAUDE.md).
+  const pointerKeyRef = useRef<string | null>(null);
+  const pointerMoonKeyRef = useRef<string | null>(null);
 
   const anglesRef = useRef<Record<string, number>>(
     Object.fromEntries(
@@ -121,6 +145,51 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
   const paintRef = useRef<() => void>(() => {});
   const reducedRef = useRef(false);
 
+  // The canvas box, cached rather than measured per frame (a
+  // getBoundingClientRect inside the rAF loop forces layout every frame).
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const sizeRef = useRef({ width: 0, height: 0 });
+
+  // Scene units -> pixels within the canvas box.
+  //
+  // The SVG scales its 480x320 viewBox to FIT (preserveAspectRatio defaults
+  // to xMidYMid meet), so whenever the box's aspect ratio isn't exactly
+  // 480:320 the painted scene is letterboxed — uniformly scaled and centred,
+  // with bars on one axis. The card is a flex child with `items-stretch`, so
+  // its height is set by the row, not by its own aspect-ratio: the mismatch
+  // is the normal case, not an edge case.
+  //
+  // Positioning the HTML overlays as raw percentages of the BOX (what they
+  // used to do) therefore drifted them off the dots they're meant to cover,
+  // vertically, by however much the letterbox bars were. Projecting through
+  // the same fit-scale the SVG uses keeps button and dot exactly together at
+  // any container shape.
+  const project = (sceneX: number, sceneY: number) => {
+    const { width, height } = sizeRef.current;
+    const scale = Math.min(width / CANVAS_W, height / CANVAS_H);
+    return {
+      left: (width - CANVAS_W * scale) / 2 + sceneX * scale,
+      top: (height - CANVAS_H * scale) / 2 + sceneY * scale,
+    };
+  };
+
+  // Keep the cached box in step with the container, and repaint on resize so
+  // overlays re-project immediately rather than at the next frame (which,
+  // under reduced motion, would be never).
+  useEffect(() => {
+    const element = canvasRef.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      sizeRef.current = {
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      };
+      paintRef.current();
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     reducedRef.current = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -132,12 +201,30 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
         `rotate(${hubAngleRef.current})`,
       );
 
+      // Pointer hit test, resolved against LIVE positions as they're
+      // computed below. Nearest-within-radius rather than first-match, so
+      // two nodes drifting close together resolve to the one actually being
+      // pointed at.
+      const pointer = pointerRef.current;
+      let nearestKey: string | null = null;
+      let nearestDist = Infinity;
+      let nearestMoonKey: string | null = null;
+      let nearestMoonDist = Infinity;
+
       for (const workspace of HOME_WORKSPACES) {
         const angle = anglesRef.current[workspace.key];
         const x = ORBIT_RX * Math.cos(angle);
         const y = ORBIT_RY * Math.sin(angle);
         const isActive = hoveredRef.current === workspace.key;
         const isExpanded = expandedRef.current === workspace.key;
+
+        if (pointer) {
+          const dist = Math.hypot(pointer.x - (CX + x), pointer.y - (CY + y));
+          if (dist < NODE_HIT_R && dist < nearestDist) {
+            nearestDist = dist;
+            nearestKey = workspace.key;
+          }
+        }
 
         planetGroupRefs.current[workspace.key]?.setAttribute(
           "transform",
@@ -182,8 +269,9 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
 
         const node = nodeRefs.current[workspace.key];
         if (node) {
-          node.style.left = `${((CX + x) / CANVAS_W) * 100}%`;
-          node.style.top = `${((CY + y) / CANVAS_H) * 100}%`;
+          const at = project(CX + x, CY + y);
+          node.style.left = `${at.left}px`;
+          node.style.top = `${at.top}px`;
         }
 
         if (isExpanded) {
@@ -227,11 +315,33 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
 
             const link = moonLinkRefs.current[moonKey];
             if (link) {
-              link.style.left = `${((CX + moonX) / CANVAS_W) * 100}%`;
-              link.style.top = `${((CY + moonY) / CANVAS_H) * 100}%`;
+              const at = project(CX + moonX, CY + moonY);
+              link.style.left = `${at.left}px`;
+              link.style.top = `${at.top}px`;
+            }
+
+            if (pointer) {
+              const moonDist = Math.hypot(
+                pointer.x - (CX + moonX),
+                pointer.y - (CY + moonY),
+              );
+              if (moonDist < MOON_HIT_R && moonDist < nearestMoonDist) {
+                nearestMoonDist = moonDist;
+                nearestMoonKey = moonKey;
+              }
             }
           });
         }
+      }
+
+      // Only on a transition — hovering must not re-render per frame.
+      if (pointerKeyRef.current !== nearestKey) {
+        pointerKeyRef.current = nearestKey;
+        setPointerKey(nearestKey);
+      }
+      if (pointerMoonKeyRef.current !== nearestMoonKey) {
+        pointerMoonKeyRef.current = nearestMoonKey;
+        setPointerMoonKey(nearestMoonKey);
       }
     };
     paintRef.current = paintScene;
@@ -242,19 +352,14 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
       const elapsed = Math.min(now - last, 50);
       last = now;
 
-      // Time-corrected exponential smoothing (not a fixed per-frame lerp,
-      // which would ease at different rates on 60Hz vs 120Hz displays) —
-      // ~180ms to settle, so approaching the canvas glides it to a stop
-      // instead of freezing it dead mid-arc.
-      const targetSpeed =
-        canvasHoveredRef.current || expandedRef.current ? 0 : 1;
-      speedRef.current +=
-        (targetSpeed - speedRef.current) * (1 - Math.exp(-elapsed / 180));
-
-      hubAngleRef.current += HUB_RING_SPEED * elapsed * speedRef.current;
-      moonElapsedRef.current += MOON_SPEED * elapsed * speedRef.current;
+      // Unconditional, like the reference: hovering, focusing and expanding
+      // all leave the scene orbiting at full speed. Hover survives a moving
+      // target because the hit test above re-runs every frame against live
+      // positions, not because the target stops.
+      hubAngleRef.current += HUB_RING_SPEED * elapsed;
+      moonElapsedRef.current += MOON_SPEED * elapsed;
       for (const workspace of HOME_WORKSPACES) {
-        anglesRef.current[workspace.key] += SPEED * elapsed * speedRef.current;
+        anglesRef.current[workspace.key] += SPEED * elapsed;
       }
 
       paintScene();
@@ -299,14 +404,60 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
         // node's own handler, is a click on empty space — "click away to
         // collapse."
         className="relative w-full min-w-0 flex-1 overflow-hidden rounded-lg border border-border"
-        onClick={() => setExpandedKey(null)}
-        onMouseEnter={() => {
-          canvasHoveredRef.current = true;
+        // Clicks are resolved by the SAME hit test that drives hover, for the
+        // same reason: on a scene that never stops, a mousedown and mouseup
+        // can land on two different elements as the node drifts between
+        // them, and the browser then fires `click` on their common ancestor
+        // — this div — rather than on the node. Handling it here means "you
+        // click whatever is currently highlighted", which is both what the
+        // user aimed at and what they can see. The node's own onClick still
+        // runs for clicks that do land cleanly (and for keyboard
+        // Enter/Space); it stops propagation, so this never double-fires.
+        onClick={() => {
+          const moonKey = pointerMoonKeyRef.current;
+          if (moonKey) {
+            router.push(moonKey.slice(moonKey.indexOf(":") + 1));
+            return;
+          }
+          const nodeKey = pointerKeyRef.current;
+          if (nodeKey) {
+            setExpandedKey((prev) => (prev === nodeKey ? null : nodeKey));
+            return;
+          }
+          // Genuinely empty space — collapse.
+          setExpandedKey(null);
+        }}
+        // The canvas owns pointer tracking for the whole scene — individual
+        // nodes deliberately don't use onMouseEnter (see `pointerRef`). One
+        // listener on a container that never moves is also far steadier than
+        // per-node listeners on elements repositioned every frame.
+        onMouseMove={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+          // Exact inverse of `project`, so the pointer lands in the same
+          // scene space the dots are painted in.
+          const scale = Math.min(rect.width / CANVAS_W, rect.height / CANVAS_H);
+          pointerRef.current = {
+            x:
+              (event.clientX -
+                rect.left -
+                (rect.width - CANVAS_W * scale) / 2) /
+              scale,
+            y:
+              (event.clientY -
+                rect.top -
+                (rect.height - CANVAS_H * scale) / 2) /
+              scale,
+          };
+          // Reduced motion stops the loop, so the hit test needs a nudge to
+          // run at all — hover should still work for those users.
+          if (reducedRef.current) paintRef.current();
         }}
         onMouseLeave={() => {
-          canvasHoveredRef.current = false;
-          setHoveredKey(null);
+          pointerRef.current = null;
+          if (reducedRef.current) paintRef.current();
         }}
+        ref={canvasRef}
         style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
       >
         <svg
@@ -638,6 +789,7 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
             its modules → next node. */}
         {HOME_WORKSPACES.map((workspace) => {
           const isExpanded = expandedKey === workspace.key;
+          const isHovered = hoveredKey === workspace.key;
           const possessive = workspace.label.endsWith("s")
             ? `${workspace.label}'`
             : `${workspace.label}'s`;
@@ -651,22 +803,13 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
                 }
                 aria-pressed={isExpanded}
                 className="orbit-node absolute z-20 block aspect-square -translate-x-1/2 -translate-y-1/2 cursor-pointer appearance-none rounded-full border-0 bg-transparent p-0"
-                onBlur={() => {
-                  canvasHoveredRef.current = false;
-                  setHoveredKey(null);
-                }}
-                // Keyboard focus previews the same way hover does, and also
-                // settles the scene (canvasHoveredRef) — the label and
-                // reticle grow on focus same as on hover, and both should
-                // hold still under a focused element for the same reason a
-                // hovered one needs to. Enter/Space then fires onClick
-                // natively.
-                onFocus={() => {
-                  canvasHoveredRef.current = true;
-                  setHoveredKey(workspace.key);
-                }}
-                onMouseEnter={() => setHoveredKey(workspace.key)}
-                onMouseLeave={() => setHoveredKey(null)}
+                data-hovered={isHovered ? "true" : undefined}
+                data-orbit-node={workspace.key}
+                // Keyboard focus only — mouse hover comes from the canvas's
+                // per-frame hit test, which is the one that survives a
+                // moving target. Enter/Space fires onClick natively.
+                onBlur={() => setFocusedKey(null)}
+                onFocus={() => setFocusedKey(workspace.key)}
                 // Stop the click reaching the canvas, which treats any click
                 // it sees as "empty space — collapse."
                 onClick={(event) => {
@@ -687,14 +830,17 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
                     return (
                       <Link
                         aria-label={module.label}
-                        className="absolute z-30 block aspect-square -translate-x-1/2 -translate-y-1/2 rounded-full"
+                        className="orbit-moon z-30 block aspect-square -translate-x-1/2 -translate-y-1/2 rounded-full"
+                        data-hovered={
+                          hoveredMoonKey === moonKey ? "true" : undefined
+                        }
                         data-orbit-moon={workspace.key}
                         href={module.href}
                         key={moonKey}
-                        onBlur={() => setHoveredMoonKey(null)}
-                        onFocus={() => setHoveredMoonKey(moonKey)}
-                        onMouseEnter={() => setHoveredMoonKey(moonKey)}
-                        onMouseLeave={() => setHoveredMoonKey(null)}
+                        // Keyboard focus only, same as the planet buttons —
+                        // mouse hover is the canvas's per-frame hit test.
+                        onBlur={() => setFocusedMoonKey(null)}
+                        onFocus={() => setFocusedMoonKey(moonKey)}
                         // A moon click is navigation, not "empty space."
                         onClick={(event) => event.stopPropagation()}
                         ref={(el) => {

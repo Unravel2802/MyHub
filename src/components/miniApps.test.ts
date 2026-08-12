@@ -53,9 +53,10 @@ describe("hueFor fallback chain", () => {
   });
 
   it("falls back to the mini-app hue for a member with no hue of its own", () => {
-    // /design-drills is a Career member that never claimed a hue — before the
-    // chain it resolved to generic `accent`.
-    expect(hueFor("/design-drills")).toBe("violet");
+    // /design-drills never claimed a hue — before the chain it resolved to
+    // generic `accent`. It now inherits Practice's cyan (it inherited the old
+    // Career group's violet until that group was split, 2026-08-13).
+    expect(hueFor("/design-drills")).toBe("cyan");
   });
 
   it("falls back to accent for an href in no mini-app", () => {

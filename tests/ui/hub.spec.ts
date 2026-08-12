@@ -26,9 +26,9 @@ test("activating an orbit node expands its moons as real module links", async ({
   // visible before, during, and after an expansion.
   await expect(page.getByText("Momentum", { exact: true })).toBeVisible();
 
-  await activateNode(page, "Show Career's modules");
+  await activateNode(page, "Show Progress' modules");
   await expect(page.getByText("Momentum", { exact: true })).toBeVisible();
-  await expect(page.locator('a[data-orbit-moon="career"]')).toHaveCount(9);
+  await expect(page.locator('a[data-orbit-moon="progress"]')).toHaveCount(4);
   await expect(
     page.getByRole("link", { name: "Dashboard" }).last(),
   ).toHaveAttribute("href", "/dashboard");
@@ -163,9 +163,9 @@ test("reduced motion still places the orbit nodes, not stacked at the origin", a
   // Moons mount only on expansion, which under reduced motion happens AFTER
   // the single placement pass — a dedicated repaint on expand must place
   // them rather than leaving a stack at the canvas origin.
-  await activateNode(page, "Show Career's modules");
+  await activateNode(page, "Show Progress' modules");
   const moonPositions = await page
-    .locator('a[data-orbit-moon="career"]')
+    .locator('a[data-orbit-moon="progress"]')
     .evaluateAll((els) =>
       els.map(
         (el) =>
@@ -193,8 +193,8 @@ test("pointing at a node highlights it while the scene keeps orbiting", async ({
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Your apps" })).toBeVisible();
 
-  const career = page.locator('button[data-orbit-node="career"]');
-  const box = await career.boundingBox();
+  const progress = page.locator('button[data-orbit-node="progress"]');
+  const box = await progress.boundingBox();
   expect(box, "orbit node has no layout box").not.toBeNull();
 
   await page.mouse.move(
@@ -208,7 +208,7 @@ test("pointing at a node highlights it while the scene keeps orbiting", async ({
   );
 
   await expect(
-    career,
+    progress,
     "pointing at a node did not highlight it",
   ).toHaveAttribute("data-hovered", "true");
 
@@ -217,7 +217,7 @@ test("pointing at a node highlights it while the scene keeps orbiting", async ({
   // scene freezes globally and if it freezes just the pointed-at node.
   const samples: { x: number; y: number }[] = [];
   for (let i = 0; i < 6; i++) {
-    const sample = await career.boundingBox();
+    const sample = await progress.boundingBox();
     if (sample) samples.push({ x: sample.x, y: sample.y });
     await page.waitForTimeout(200);
   }
@@ -245,7 +245,7 @@ test("clicking a node with the mouse expands it, even as it drifts", async ({
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Your apps" })).toBeVisible();
 
-  for (const key of ["career", "money", "core"]) {
+  for (const key of ["progress", "jobs", "practice", "money", "core"]) {
     const node = page.locator(`button[data-orbit-node="${key}"]`);
     const box = await node.boundingBox();
     expect(box, `${key} node has no layout box`).not.toBeNull();

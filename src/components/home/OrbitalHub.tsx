@@ -398,12 +398,15 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
     // The reference's hero row: the canvas is the dominant flex-1 surface and
     // the Momentum panel is a fixed 272px rail beside it — not the other way
     // around. items-stretch so the panel runs the full height of the canvas.
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
+    <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch lg:justify-center">
       <div
         // A click that reaches this div, rather than being stopped by a
         // node's own handler, is a click on empty space — "click away to
         // collapse."
-        className="relative w-full min-w-0 flex-1 overflow-hidden rounded-lg border border-border"
+        // max-w caps how large the scene grows on a very wide screen; the row
+        // centres what's left over (lg:justify-center above) so the hub sits
+        // in the middle of the page rather than hard against the nav rail.
+        className="relative w-full min-w-0 flex-1 overflow-hidden rounded-lg border border-border lg:max-w-[900px]"
         // Clicks are resolved by the SAME hit test that drives hover, for the
         // same reason: on a scene that never stops, a mousedown and mouseup
         // can land on two different elements as the node drifts between

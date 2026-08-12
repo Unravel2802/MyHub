@@ -23,16 +23,16 @@ test("groups mini-app navigation below ungrouped core tools", async ({
   await loadBoard(page);
 
   const modules = nav(page);
-  const career = modules.getByRole("group", { name: "Career" });
+  const practice = modules.getByRole("group", { name: "Practice" });
   const money = modules.getByRole("group", { name: "Money" });
   const taskEngine = modules.getByRole("link", { name: "Task Engine" });
-  const careerHeading = modules.getByText("Career", { exact: true });
+  const practiceHeading = modules.getByText("Practice", { exact: true });
   const moneyHeading = modules.getByText("Money", { exact: true });
 
-  await expect(careerHeading).toBeVisible();
+  await expect(practiceHeading).toBeVisible();
   await expect(moneyHeading).toBeVisible();
   await expect(
-    career.getByRole("link", { name: "Prep Tracker" }),
+    practice.getByRole("link", { name: "Prep Tracker" }),
   ).toBeVisible();
   await expect(money.getByRole("link", { name: "Finances" })).toBeVisible();
   await expect(taskEngine).toBeVisible();
@@ -47,13 +47,23 @@ test("groups mini-app navigation below ungrouped core tools", async ({
     .evaluateAll((elements) =>
       elements.map((element) => element.textContent?.trim()),
     );
+  // Ungrouped core tools first, then every group in MINI_APPS order.
   expect(navOrder.indexOf("Task Engine")).toBeLessThan(
-    navOrder.indexOf("Career"),
+    navOrder.indexOf("Practice"),
   );
-  expect(navOrder.indexOf("Career")).toBeLessThan(navOrder.indexOf("Money"));
+  for (const [before, after] of [
+    ["Practice", "Job Search"],
+    ["Job Search", "Progress"],
+    ["Progress", "Money"],
+  ]) {
+    expect(
+      navOrder.indexOf(before),
+      `${before} should come before ${after}`,
+    ).toBeLessThan(navOrder.indexOf(after));
+  }
 
   await collapseButton(page).click();
-  await expect(careerHeading).toBeHidden();
+  await expect(practiceHeading).toBeHidden();
   await expect(moneyHeading).toBeHidden();
 });
 

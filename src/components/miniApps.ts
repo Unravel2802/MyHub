@@ -1,4 +1,10 @@
-import { Landmark, Rocket, type LucideIcon } from "lucide-react";
+import {
+  Briefcase,
+  Dumbbell,
+  Landmark,
+  Rocket,
+  type LucideIcon,
+} from "lucide-react";
 import type { HueName } from "@/src/components/moduleHues";
 
 // MyHub is a platform of MINI-APPS, not a single job-search tool: the
@@ -13,7 +19,13 @@ import type { HueName } from "@/src/components/moduleHues";
 // Only mini-apps that actually EXIST belong here. Blog is planned but unbuilt;
 // it gets an entry when it ships, not before.
 
-export type MiniAppKey = "career" | "money";
+// 2026-08-13: "Career" was split. It had grown to NINE members — two thirds of
+// the whole app under one heading, and one orbit node whose expansion was an
+// unreadable ring of nine moons. Four-ish is the ceiling that keeps a group
+// scannable and its moon ring legible, so Career became Practice / Job Search
+// / Progress along the seams that were already there: what you DO to get
+// better, what you SEND to employers, and what you use to TRACK either.
+export type MiniAppKey = "practice" | "jobs" | "progress" | "money";
 
 export interface MiniApp {
   key: MiniAppKey;
@@ -27,12 +39,36 @@ export interface MiniApp {
   href: string;
 }
 
+// Each group's hue is its spine module's own hue — the established rule (see
+// Money's note below). They're also checked against each other for SEPARATION,
+// because these five are the orbit's planet colours and sit side by side: by
+// hue angle cyan 193, blue 224, violet 263, lime 86, plus Core Tools' amber 26
+// leaves at least ~30 degrees between any two. Indigo/accent was deliberately
+// given up for Core Tools here — at 243 it sat between blue and violet, making
+// three of the five nodes read as the same colour.
 export const MINI_APPS: readonly MiniApp[] = [
   {
-    key: "career",
-    label: "Career",
-    // Violet is already the "meta" family (Roadmap owns it), and the roadmap
-    // IS this mini-app's spine.
+    key: "practice",
+    label: "Practice",
+    // Prep Tracker's own cyan — "cool / technical", and Prep is the spine of
+    // deliberate practice. Design Drills inherits it (it claims no hue).
+    hue: "cyan",
+    icon: Dumbbell,
+    href: "/prep",
+  },
+  {
+    key: "jobs",
+    label: "Job Search",
+    // Job CRM's blue — "the pipeline", which is what this group is.
+    hue: "blue",
+    icon: Briefcase,
+    href: "/applications",
+  },
+  {
+    key: "progress",
+    label: "Progress",
+    // Roadmap's violet, the "meta" family: these are the pages you read ABOUT
+    // your work rather than do work in. Inherits what Career used to carry.
     hue: "violet",
     icon: Rocket,
     href: "/dashboard",
@@ -53,17 +89,12 @@ export const MINI_APPS: readonly MiniApp[] = [
 // can resolve a hue without importing the nav list (which would pull every
 // lucide icon into anything that asks for a color).
 export const MINI_APP_HREFS: Record<MiniAppKey, readonly string[]> = {
-  career: [
-    "/dashboard",
-    "/roadmap",
-    "/prep",
-    "/design-drills",
-    "/applications",
-    "/outreach",
-    "/achievements",
-    "/review",
-    "/offers",
-  ],
+  // What you do to get better at the work.
+  practice: ["/prep", "/design-drills"],
+  // What you send outward, and what comes back — the pipeline end to end.
+  jobs: ["/applications", "/outreach", "/offers"],
+  // Where you look to see how any of it is going.
+  progress: ["/dashboard", "/roadmap", "/achievements", "/review"],
   money: ["/finance", "/trading"],
 };
 

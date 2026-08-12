@@ -21,13 +21,20 @@ export interface HomeWorkspace {
 }
 
 // The hub's orbital view groups nav entries the same way AppShell's sidebar
-// does (miniApps.ts): Career and Money each keep their MINI_APPS hue. The
-// third node, "Core Tools", is synthetic — built here, not added to
-// miniApps.ts, because that file's CORE_TOOL_HREFS comment is explicit that
-// these hrefs belong to no mini-app app-wide. This grouping exists only to
-// give the hub's third orbit node something to show. `accent` (the brand hue)
-// marks it as neutral rather than claiming one of the ten named hues.
-const MINI_APP_DEGREES: Record<string, number> = { career: 30, money: 150 };
+// does (miniApps.ts), and adds one synthetic node: "Core Tools" is built here,
+// not in miniApps.ts, because that file's CORE_TOOL_HREFS comment is explicit
+// that those hrefs belong to no mini-app app-wide. This grouping exists only
+// to give the hub a node for them.
+//
+// Evenly spaced at 360/5 = 72 degrees, so no two planets start bunched. The
+// reference's own 270/30/150 was the same idea for three.
+const MINI_APP_DEGREES: Record<string, number> = {
+  progress: 0,
+  jobs: 72,
+  money: 144,
+  practice: 216,
+};
+const CORE_DEG = 288;
 
 export const HOME_WORKSPACES: readonly HomeWorkspace[] = [
   ...MINI_APPS.map((app) => ({
@@ -44,10 +51,15 @@ export const HOME_WORKSPACES: readonly HomeWorkspace[] = [
   {
     key: "core",
     label: "Core Tools",
-    hue: "accent" as HueName,
+    // Task Engine's amber, following the same "spine module's hue" rule the
+    // mini-apps use. This was `accent` while there were only three planets;
+    // with five, indigo at hue angle 243 sat directly between Job Search's
+    // blue (224) and Progress's violet (263) and made three of the five nodes
+    // read as one colour. Amber (26) is the widest gap available.
+    hue: "amber" as HueName,
     icon: LayoutGrid,
     href: CORE_TOOL_HREFS[0],
-    deg: 270,
+    deg: CORE_DEG,
     modules: NAV_ITEMS.filter((item) => CORE_TOOL_HREFS.includes(item.href)),
   },
 ];

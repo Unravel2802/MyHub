@@ -67,9 +67,12 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     ".claude/**",
     ".codex/**",
-    // A standalone Figma-export reference project kept for design comparison,
-    // not app code — see tsconfig.json's matching exclude.
+    // Standalone Figma-export reference projects kept for design comparison,
+    // not app code — see tsconfig.json's matching excludes. They're separate
+    // Vite apps with their own deps, so tsc can't resolve their imports and
+    // eslint judges them by rules they were never written against.
     "Redesign landing page (1)/**",
+    "Redesign MyHub Dashboard/**",
     // Vendored PDF.js worker, copied verbatim from pdfjs-dist/build/ and
     // served from public/. Third-party minified output, not our source.
     "public/pdf.worker.min.mjs",

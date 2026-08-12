@@ -30,5 +30,9 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "Redesign landing page (1)"]
+  "exclude": [
+    "node_modules",
+    "Redesign landing page (1)",
+    "Redesign MyHub Dashboard"
+  ]
 }

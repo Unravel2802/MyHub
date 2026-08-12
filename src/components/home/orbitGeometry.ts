@@ -38,6 +38,124 @@ export function depthOf(angle: number): number {
   return (Math.sin(angle) + 1) / 2;
 }
 
+/* ── Moons: a workspace's modules orbiting their own planet ──────────────────
+   Published for the Figma Make redesign port (docs/handoff/dashboard-redesign-
+   port.md). The prototype orbits moons on a TRUE CIRCLE; this doesn't, and the
+   difference is deliberate. The main ring is a 2.8:1 flattened ellipse, and
+   that flattening IS the scene's perspective — a circular sub-orbit inside it
+   would read as a wheel lying in a different plane from the ring carrying it,
+   which reads as a bug rather than as depth. Moons use the same axis ratio.
+
+   Moons are DECORATION, not navigation. WorkspacePanel keeps the keyboard path
+   to every module (see app/page.tsx's comment on why the duplicate card grid
+   was deleted). A moon that becomes clickable must be a real <button> with a
+   48px hit area, whatever its painted radius. */
+export const MOON_RX = 54;
+export const MOON_RY = MOON_RX * (ORBIT_RY / ORBIT_RX); // same perspective
+export const MOON_SPEED = 0.0007; // rad/ms — ~9s a lap, faster than the ring
+
+/** Where moon `index` of `total` starts, evenly spaced around its planet. */
+export function moonAngleFor(index: number, total: number): number {
+  return total === 0 ? 0 : (index / total) * 2 * Math.PI;
+}
+
+/** Moon offset from its planet's centre. Add to the planet's own x/y. */
+export function moonOffset(angle: number): { x: number; y: number } {
+  return { x: MOON_RX * Math.cos(angle), y: MOON_RY * Math.sin(angle) };
+}
+
+/* ── Motion trails ───────────────────────────────────────────────────────────
+   A trail is a fixed-length ring of recent positions. Two rules matter:
+
+   1. Sample by DISTANCE, not by frame. Sampling every frame ties trail length
+      to refresh rate — the same trail is twice as long on a 120Hz display —
+      and the scene eases to a halt on hover, so a per-frame trail collapses
+      into a dot pile at exactly the moment the user is looking at it.
+   2. Cap the buffer. Unbounded growth on a page that animates indefinitely is
+      a slow leak. */
+export const TRAIL_MAX = 24;
+export const TRAIL_MIN_STEP = 0.35; // logical units between samples
+
+export interface TrailPoint {
+  x: number;
+  y: number;
+}
+
+/**
+ * Push `point` onto `trail` if it has travelled far enough since the last
+ * sample. Mutates in place — this runs inside the rAF loop, where allocating a
+ * new array per planet per frame is exactly the garbage the ref-mutation
+ * architecture exists to avoid. Returns whether a sample was taken.
+ */
+export function pushTrailPoint(
+  trail: TrailPoint[],
+  point: TrailPoint,
+): boolean {
+  const last = trail[trail.length - 1];
+  if (last && Math.hypot(point.x - last.x, point.y - last.y) < TRAIL_MIN_STEP) {
+    return false;
+  }
+  trail.push(point);
+  if (trail.length > TRAIL_MAX) trail.shift();
+  return true;
+}
+
+/**
+ * How a trail sample paints: oldest is smallest and faintest, newest is
+ * largest and strongest, so the trail reads as a direction rather than as a
+ * string of beads. `index` 0 is the oldest sample.
+ */
+export function trailPointStyle(
+  index: number,
+  length: number,
+): { radius: number; opacity: number } {
+  const progress = length <= 1 ? 1 : index / (length - 1);
+  return { radius: progress * 4, opacity: progress * 0.3 };
+}
+
+/* ── Reticle nodes ───────────────────────────────────────────────────────── */
+
+export interface TickSegment {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+/**
+ * The four cardinal tick marks of a reticle, pointing outward from a ring of
+ * radius `radius` and extending `length` beyond it.
+ */
+export function reticleTicks(
+  cx: number,
+  cy: number,
+  radius: number,
+  length: number,
+): TickSegment[] {
+  return [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ].map(([dx, dy]) => ({
+    x1: cx + radius * dx,
+    y1: cy + radius * dy,
+    x2: cx + (radius + length) * dx,
+    y2: cy + (radius + length) * dy,
+  }));
+}
+
+/**
+ * Which side of a node its label hangs off, given the label's horizontal
+ * offset from the node. The dead zone around 0 keeps a label centred while a
+ * node crosses the vertical, instead of flipping sides on a sub-pixel wobble.
+ */
+export function labelAnchorFor(dx: number): "start" | "middle" | "end" {
+  if (dx > 10) return "start";
+  if (dx < -10) return "end";
+  return "middle";
+}
+
 // Static star field. Fixed coordinates rather than random so the scene is
 // identical between server and client render — a Math.random() field here
 // would be a hydration mismatch.

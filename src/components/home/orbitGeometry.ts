@@ -156,45 +156,9 @@ export function labelAnchorFor(dx: number): "start" | "middle" | "end" {
   return "middle";
 }
 
-// Static star field. Fixed coordinates rather than random so the scene is
-// identical between server and client render — a Math.random() field here
-// would be a hydration mismatch.
-export const STARS = [
-  { x: 48, y: 24, r: 0.8, o: 0.34 },
-  { x: 497, y: 67, r: 1, o: 0.42 },
-  { x: 112, y: 292, r: 0.7, o: 0.28 },
-  { x: 453, y: 308, r: 0.9, o: 0.36 },
-  { x: 26, y: 198, r: 0.6, o: 0.3 },
-  { x: 527, y: 148, r: 0.8, o: 0.34 },
-  { x: 74, y: 347, r: 1, o: 0.28 },
-  { x: 386, y: 36, r: 0.7, o: 0.4 },
-  { x: 202, y: 17, r: 0.6, o: 0.26 },
-  { x: 37, y: 114, r: 0.9, o: 0.3 },
-  { x: 532, y: 252, r: 0.7, o: 0.34 },
-  { x: 158, y: 58, r: 0.8, o: 0.28 },
-  { x: 477, y: 188, r: 0.6, o: 0.26 },
-  { x: 310, y: 355, r: 0.9, o: 0.3 },
-];
-
-// A sphere, not a disc: a specular highlight up-left, the hue bouncing back
-// from down-right, and a body gradient between two shades of the module's own
-// hue. Built from `--hue` + color-mix so it re-shades itself in light mode
-// instead of naming a raw color (see moduleHues.ts).
-//
-// The dark end blends toward `--canvas` rather than toward black: in dark mode
-// that IS near-black, but in light mode it resolves pale, so the same one
-// declaration gives a shaded ball on both themes instead of a black blob on
-// white.
-export const SPHERE_BACKGROUND = `
-  radial-gradient(circle at 30% 26%, color-mix(in srgb, white 30%, transparent) 0%, transparent 52%),
-  radial-gradient(circle at 68% 72%, color-mix(in srgb, var(--hue) 22%, transparent) 0%, transparent 48%),
-  linear-gradient(140deg, color-mix(in srgb, var(--hue) 32%, var(--hue-surface)) 0%, color-mix(in srgb, var(--hue-surface) 80%, var(--canvas)) 100%)
-`;
-
-// The hub is the light source of the scene, so its body is a RADIAL gradient
-// (lit from the middle out) where the planets' is linear.
-export const HUB_BACKGROUND = `
-  radial-gradient(circle at 32% 28%, color-mix(in srgb, white 46%, transparent) 0%, transparent 48%),
-  radial-gradient(circle at 68% 72%, color-mix(in srgb, var(--accent) 62%, var(--canvas)) 0%, transparent 55%),
-  radial-gradient(circle at 50% 50%, var(--accent) 0%, color-mix(in srgb, var(--accent) 48%, var(--canvas)) 100%)
-`;
+// STARS, SPHERE_BACKGROUND and HUB_BACKGROUND (the pre-port sphere/starfield
+// visual system) were removed 2026-08-12 once the reticle port replaced every
+// call site: the dot-grid + vignette in OrbitalHub.tsx replaced STARS, the
+// reticle SVG per node replaced SPHERE_BACKGROUND, and OrbitCenterHub's flat
+// bordered circle replaced HUB_BACKGROUND. See
+// docs/handoff/dashboard-redesign-port.md.

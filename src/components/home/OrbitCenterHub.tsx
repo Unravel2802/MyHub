@@ -1,13 +1,19 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import {
-  CENTER_PCT,
-  HUB_BACKGROUND,
-} from "@/src/components/home/orbitGeometry";
+import { CENTER_PCT } from "@/src/components/home/orbitGeometry";
 
-// The "M" at the centre of the orbit. Purely decorative and self-contained:
+// The "MH" at the centre of the orbit. Purely decorative and self-contained:
 // it holds no orbit state, so it is separated from the canvas that does.
+//
+// Flat surface circle with a border, not a glowing gradient sphere: the
+// reference design (docs/handoff/dashboard-redesign-port.md) draws the hub as
+// surfCol fill + borderCol stroke + an inner accent ring at low opacity — the
+// ambient light comes from the large low-opacity `hub-ambient` radial
+// gradient painted behind the whole scene in OrbitalHub.tsx, not from a glow
+// on the hub itself. A bright sphere here competed with the workspace nodes
+// for "the brightest thing on screen"; the hub should read as a fixed point,
+// not another planet.
 export function OrbitCenterHub() {
   const reducedMotion = useReducedMotion();
 
@@ -45,34 +51,20 @@ export function OrbitCenterHub() {
         />
       ))}
       <div
-        className="relative flex aspect-square w-full items-center justify-center rounded-full"
-        style={{
-          background: HUB_BACKGROUND,
-          border:
-            "1px solid color-mix(in srgb, var(--accent) 40%, transparent)",
-          // Two outer blooms, near and far (32px + 72px). One glow reads as a
-          // sticker with a halo; two reads as a light source.
-          boxShadow:
-            "inset 0 1px 0 color-mix(in srgb, white 25%, transparent), inset 0 -2px 4px color-mix(in srgb, black 40%, transparent), 0 0 0 8px color-mix(in srgb, var(--accent) 8%, transparent), 0 0 32px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 72px color-mix(in srgb, var(--accent) 20%, transparent)",
-        }}
+        className="relative flex aspect-square w-full items-center justify-center rounded-full bg-surface"
+        style={{ border: "1.5px solid var(--border)" }}
       >
         <span
-          className="absolute rounded-full blur-[3px]"
+          aria-hidden="true"
+          className="absolute inset-[14%] rounded-full border"
           style={{
-            background: "color-mix(in srgb, white 42%, transparent)",
-            height: "20%",
-            left: "19%",
-            top: "13%",
-            width: "32%",
+            borderColor: "color-mix(in srgb, var(--accent) 45%, transparent)",
+            borderWidth: "0.5px",
           }}
         />
-        <motion.span
-          animate={reducedMotion ? undefined : { scale: [1, 1.04, 1] }}
-          className="relative text-lg font-bold text-accent-strong"
-          transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
-        >
-          M
-        </motion.span>
+        <span className="relative text-sm font-semibold tracking-tight text-foreground">
+          MH
+        </span>
       </div>
     </div>
   );

@@ -1,6 +1,12 @@
 "use client";
 
-import { Home, PanelLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  Home,
+  LogOut,
+  PanelLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AuthGate } from "@/src/components/AuthGate";
@@ -181,7 +187,7 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
     return (
       <Link
         aria-current={isActive ? "page" : undefined}
-        className={`flex items-center gap-2 rounded-md px-3 py-2 transition-all duration-200 ease-in-out ${isActive ? HUE_NAV_ACTIVE[hueFor(item.href)] : "text-body hover:bg-surface-subtle hover:text-foreground"}`}
+        className={`flex h-8 items-center gap-2 rounded-md px-xs text-sm transition-all duration-200 ease-in-out ${isActive ? HUE_NAV_ACTIVE[hueFor(item.href)] : "text-body hover:bg-surface-subtle hover:text-foreground"}`}
         href={item.href}
         key={item.href}
         onClick={() => setIsNavOpen(false)}
@@ -202,10 +208,10 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
     <AuthGate>
       <main className="min-h-screen bg-canvas text-foreground">
         <div
-          className={`grid min-h-screen ${collapsed ? "lg:grid-cols-[3.5rem_minmax(0,1fr)]" : "lg:grid-cols-[260px_minmax(0,1fr)]"}`}
+          className={`grid min-h-screen ${collapsed ? "lg:grid-cols-[3.5rem_minmax(0,1fr)]" : "lg:grid-cols-[208px_minmax(0,1fr)]"}`}
         >
           <aside
-            className={`flex flex-col gap-6 border-b border-border bg-surface px-6 py-5 lg:sticky lg:top-0 lg:h-screen lg:gap-8 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-6 ${collapsed ? "lg:hidden" : ""}`}
+            className={`flex flex-col gap-sm border-b border-border bg-surface px-sm py-sm lg:sticky lg:top-0 lg:h-screen lg:self-start lg:overflow-hidden lg:border-b-0 lg:border-r lg:px-xs ${collapsed ? "lg:hidden" : ""}`}
           >
             <button
               aria-controls="app-nav"
@@ -224,15 +230,15 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
               </span>
             </button>
 
-            <div className="min-w-0">
+            <div className="min-w-0 px-xs">
               <Link
                 aria-label="MyHub home"
-                className="text-xs font-semibold uppercase tracking-widest text-accent-strong transition-colors hover:text-foreground"
+                className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted transition-colors hover:text-foreground"
                 href="/"
               >
                 MyHub
               </Link>
-              <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-foreground lg:mt-2 lg:text-2xl">
+              <h1 className="truncate text-xl font-semibold leading-tight tracking-[-0.02em] text-foreground">
                 {title}
               </h1>
             </div>
@@ -252,12 +258,12 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
             {/* `hidden` only below lg, and only while closed — at lg the rail is
                 always expanded, so nothing about the desktop DOM changes. */}
             <div
-              className={`${isNavOpen ? "grid" : "hidden"} gap-6 lg:grid lg:min-h-0 lg:flex-1 lg:grid-rows-[minmax(0,1fr)_auto]`}
+              className={`${isNavOpen ? "grid" : "hidden"} gap-sm lg:grid lg:min-h-0 lg:flex-1 lg:grid-rows-[minmax(0,1fr)_auto]`}
               id="app-nav"
             >
               <nav
                 aria-label="MyHub modules"
-                className="grid gap-4 text-sm lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-1"
+                className="grid gap-xs text-sm lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain"
               >
                 <div className="grid gap-1">{renderNavItem(HOME_NAV_ITEM)}</div>
 
@@ -276,7 +282,7 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
                       role="group"
                     >
                       <div
-                        className="hue-gradient-text flex items-center gap-2 px-3 pb-1 pt-2 text-[0.6875rem] font-semibold uppercase tracking-widest"
+                        className="hue-gradient-text flex items-center gap-2 px-xs pb-1 pt-xs text-[11px] font-medium uppercase tracking-[0.08em]"
                         data-mini-app-heading
                         id={headingId}
                         style={{ ["--hue" as string]: hueVar(app.hue) }}
@@ -294,14 +300,17 @@ export function AppShell({ title, activeHref, children }: AppShellProps) {
               </nav>
 
               <div className="lg:mt-auto">
-                <StreakIndicator streak={streak} />
-                <div className="mt-4">
+                <div className="rounded-md border border-border bg-surface-subtle p-xs">
+                  <StreakIndicator streak={streak} />
+                </div>
+                <div className="mt-xs">
                   <ThemeToggle />
                   <button
-                    className="mt-3 block rounded-md text-xs text-muted transition-colors duration-200 ease-in-out hover:text-foreground"
+                    className="mt-xs flex h-8 w-full items-center gap-2 rounded-md px-xs text-left text-xs text-muted transition-colors duration-200 ease-in-out hover:bg-surface-subtle hover:text-foreground"
                     onClick={() => void signOut()}
                     type="button"
                   >
+                    <LogOut aria-hidden="true" className="size-3.5" />
                     Sign out
                   </button>
                 </div>

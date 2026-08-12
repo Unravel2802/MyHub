@@ -6,22 +6,20 @@
 // SVG viewBox / percentage offsets, so the whole scene scales with its
 // container instead of needing a breakpoint per size.
 //
-// The orbit is a heavily flattened ellipse (RX ~2.8x RY) — that ratio IS the
-// perspective. A circle would read as a flat wheel seen head-on; this reads as
-// a ring receding into the screen.
-//
-// CANVAS_H was 370 until 2026-08-12: half that height (185) against a 76px
-// ellipse radius left 109px of dead black margin above AND below the ring —
-// 59% of the box unused, which is what made the card read as mostly empty
-// space rather than a scene. 320 keeps a clean margin (still room for a
-// hovered/scaled node, its label, and the "click a cluster" hint at the very
-// bottom) without the excess.
-export const CANVAS_W = 560;
+// 2026-08-12: switched from an invented flattened-ellipse "perspective" back
+// to the reference design's literal geometry — a true circle, at the
+// reference's own numbers (docs/handoff/dashboard-redesign-port.md /
+// "Redesign MyHub Dashboard/src/App.tsx"). The ellipse was ours, not
+// Figma's, and it was one of several un-requested embellishments (see
+// depthOf below) that made the shipped scene diverge from the design being
+// ported. CANVAS_W/H, CLUSTER_R and CENTER_R below are the reference's exact
+// VW/VH/CLUSTER_R/hub-radius values.
+export const CANVAS_W = 480;
 export const CANVAS_H = 320;
-export const ORBIT_RX = 215;
-export const ORBIT_RY = 76;
-export const CENTER_R = 52;
-export const NODE_R = 36;
+export const ORBIT_RX = 112;
+export const ORBIT_RY = 112;
+export const CENTER_R = 22;
+export const NODE_R = 22;
 
 // Sphere sizes as a PERCENTAGE of the container width, not fixed pixels: the
 // canvas is fluid (percentage offsets into an aspect-ratio box), so px spheres
@@ -30,36 +28,33 @@ export const NODE_R = 36;
 export const CENTER_PCT = ((CENTER_R * 2) / CANVAS_W) * 100;
 export const NODE_PCT = ((NODE_R * 2) / CANVAS_W) * 100;
 
-// Radians per millisecond. One lap takes ~14s — fast enough that the motion
-// reads as alive at a glance, without fighting the content beside it.
-export const SPEED = 0.00045;
+// Radians per millisecond. The reference's own OMEGA_P: one full revolution
+// every 38 seconds.
+export const SPEED = (2 * Math.PI) / 38000;
 
-/**
- * 0 at the far side of the ellipse (top), 1 at the near side (bottom).
- *
- * This single number drives opacity, scale AND stacking order together, which
- * is what makes the ring read as 3D rather than as a flat oval: a planet that
- * dims must also shrink and pass BEHIND the hub, or the illusion breaks.
- */
-export function depthOf(angle: number): number {
-  return (Math.sin(angle) + 1) / 2;
-}
+// depthOf existed to dim, shrink and occlude a planet on the far side of the
+// (former) ellipse, simulating 3D. Removed 2026-08-12: the reference has NO
+// such effect. Its own render-order spec lists planet nodes last —
+// "on top so they're always clickable" — meaning every planet is always
+// full brightness, full size, and always drawn in FRONT of the hub, never
+// behind it, regardless of orbital position. That z-order/opacity/scale
+// simulation was an addition on top of the design being ported, not part of
+// it, and it was a standing source of "this doesn't look like the reference"
+// reports. OrbitalHub.tsx no longer calls this function; nothing here
+// replaces it, because the reference doesn't have anything to replace it
+// with.
 
 /* ── Moons: a workspace's modules orbiting their own planet ──────────────────
-   Published for the Figma Make redesign port (docs/handoff/dashboard-redesign-
-   port.md). The prototype orbits moons on a TRUE CIRCLE; this doesn't, and the
-   difference is deliberate. The main ring is a 2.8:1 flattened ellipse, and
-   that flattening IS the scene's perspective — a circular sub-orbit inside it
-   would read as a wheel lying in a different plane from the ring carrying it,
-   which reads as a bug rather than as depth. Moons use the same axis ratio.
-
-   Moons are DECORATION, not navigation. WorkspacePanel keeps the keyboard path
-   to every module (see app/page.tsx's comment on why the duplicate card grid
-   was deleted). A moon that becomes clickable must be a real <button> with a
-   48px hit area, whatever its painted radius. */
+   Now genuinely the reference's own circular sub-orbit (its own MOON_R),
+   not an ellipse-matched approximation of it — that adaptation existed only
+   because the main ring used to be an ellipse. Moons are DECORATION, not
+   navigation: WorkspacePanel keeps the keyboard path to every module (see
+   app/page.tsx's comment on why the duplicate card grid was deleted). A moon
+   that becomes clickable must be a real <button> with a 48px hit area,
+   whatever its painted radius. */
 export const MOON_RX = 54;
-export const MOON_RY = MOON_RX * (ORBIT_RY / ORBIT_RX); // same perspective
-export const MOON_SPEED = 0.0007; // rad/ms — ~9s a lap, faster than the ring
+export const MOON_RY = 54;
+export const MOON_SPEED = (2 * Math.PI) / 9000; // reference's OMEGA_M
 
 /** Where moon `index` of `total` starts, evenly spaced around its planet. */
 export function moonAngleFor(index: number, total: number): number {

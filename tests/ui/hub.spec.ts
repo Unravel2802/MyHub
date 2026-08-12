@@ -190,6 +190,45 @@ test("reduced motion still places the orbit nodes, not stacked at the origin", a
   await expect(page.locator('button[data-orbit-moon="career"]')).toHaveCount(0);
 });
 
+// The "inner guide ring" this test used to also check doesn't exist any
+// more: it was one of several embellishments layered on top of the Figma
+// reference (docs/handoff/dashboard-redesign-port.md), never part of the
+// design being ported, and was removed along with the ellipse-perspective
+// and depth-simulation system in the same pass. Only the reference's own
+// single dashed orbit ring remains, marked data-orbit-ring="main".
+test("the orbit ring stays a neutral guide, and cluster labels never fade", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Your apps" })).toBeVisible();
+
+  const mainRing = page.locator('[data-orbit-ring="main"]');
+  await expect(mainRing).toHaveAttribute("stroke", "var(--border)");
+  await expect(mainRing).toHaveAttribute("stroke-width", "0.75");
+  await expect(mainRing).toHaveAttribute("stroke-dasharray", "1.5 13");
+  await expect(page.locator("#ring-glow")).toHaveCount(0);
+  await expect(page.locator('[data-orbit-ring="inner"]')).toHaveCount(0);
+
+  // Cluster labels are always visible per the reference's own spec —
+  // "Planet labels always visible, moon labels visible on hover only" —
+  // there is no per-frame fade left to sample, so this checks the resting
+  // state stays put across a few laps rather than polling for a dip.
+  const labels = page.locator("[data-orbit-label]");
+  const expected = await labels.count();
+  expect(expected).toBeGreaterThan(0);
+
+  for (const wait of [0, 1500, 3500]) {
+    if (wait > 0) await page.waitForTimeout(wait);
+    for (const label of await labels.all()) {
+      const key = await label.getAttribute("data-orbit-label");
+      const opacity = await label.evaluate(
+        (el) => getComputedStyle(el).opacity,
+      );
+      expect(opacity, `${key} label was not fully opaque`).toBe("1");
+    }
+  }
+});
+
 test("checking a focus card marks the task done", async ({ page }) => {
   const db = new FakeTaskDb([
     row({

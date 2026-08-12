@@ -9,7 +9,6 @@ import {
   TRAIL_MAX,
   TRAIL_MIN_STEP,
   type TrailPoint,
-  depthOf,
   labelAnchorFor,
   moonAngleFor,
   moonOffset,
@@ -21,46 +20,14 @@ import {
   trailPointStyle,
 } from "@/src/components/home/orbitGeometry";
 
-// depthOf is the one piece of orbit math worth pinning: OrbitalHub's rAF loop
-// derives opacity, scale AND stacking order from this single number, so a
-// sign error here would not throw — it would just make the near/far illusion
-// silently invert.
+// depthOf (opacity/scale/z-index simulated from orbital angle) was removed
+// 2026-08-12 along with its tests: it was an invented embellishment on top
+// of the reference design being ported, which has no such effect — see
+// orbitGeometry.ts's comment at the former call site.
 
-describe("depthOf", () => {
-  it("is 0 at the far side of the ellipse (top, angle = -π/2)", () => {
-    expect(depthOf(-Math.PI / 2)).toBeCloseTo(0);
-  });
-
-  it("is 1 at the near side of the ellipse (bottom, angle = π/2)", () => {
-    expect(depthOf(Math.PI / 2)).toBeCloseTo(1);
-  });
-
-  it("is 0.5 at the sides, where the planet crosses the hub's own plane", () => {
-    expect(depthOf(0)).toBeCloseTo(0.5);
-    expect(depthOf(Math.PI)).toBeCloseTo(0.5);
-  });
-
-  it("stays within [0, 1] across a full lap", () => {
-    for (let deg = 0; deg < 360; deg += 15) {
-      const depth = depthOf((deg * Math.PI) / 180);
-      expect(depth).toBeGreaterThanOrEqual(0);
-      expect(depth).toBeLessThanOrEqual(1);
-    }
-  });
-
-  it("increases monotonically from the far side to the near side", () => {
-    const angles = [-Math.PI / 2, -Math.PI / 4, 0, Math.PI / 4, Math.PI / 2];
-    const depths = angles.map(depthOf);
-    for (let i = 1; i < depths.length; i++) {
-      expect(depths[i]).toBeGreaterThan(depths[i - 1]);
-    }
-  });
-});
-
-// The moon sub-orbit must sit in the SAME plane as the ring carrying it. A
-// circular sub-orbit inside a 2.8:1 ellipse reads as a wheel lying at a
-// different angle — a bug, not depth. This is the assertion that keeps the two
-// in step if either radius is ever retuned.
+// Both a true circle now (2026-08-12, matching the reference design), so
+// this is a weaker assertion than it used to be — kept anyway as a tripwire
+// if either radius is ever retuned independently of the other.
 describe("moon orbit", () => {
   it("uses the same axis ratio as the main ring", () => {
     expect(MOON_RY / MOON_RX).toBeCloseTo(ORBIT_RY / ORBIT_RX);
@@ -79,14 +46,11 @@ describe("moon orbit", () => {
     expect(Number.isNaN(moonAngleFor(0, 0))).toBe(false);
   });
 
-  it("offsets along the flattened ellipse, not a circle", () => {
+  it("offsets along a circle of radius MOON_RX/MOON_RY", () => {
     expect(moonOffset(0)).toEqual({ x: MOON_RX, y: 0 });
     const quarter = moonOffset(Math.PI / 2);
     expect(quarter.x).toBeCloseTo(0);
     expect(quarter.y).toBeCloseTo(MOON_RY);
-    // The vertical reach is materially shorter than the horizontal — that IS
-    // the perspective.
-    expect(Math.abs(quarter.y)).toBeLessThan(MOON_RX / 2);
   });
 });
 

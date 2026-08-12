@@ -572,16 +572,19 @@ body {
 }
 
 /* --- The hub's orbital scene (src/components/home/OrbitalHub.tsx) -----------
-   Position, depth-scale, and occlusion are driven by requestAnimationFrame in
-   the component (per-frame math CSS can't express). The hub's pulse rings,
-   its "M" letter, and the planets' hover/focus scale are spring/keyframe
-   animations instead, owned by `motion` (motion/react) directly in the
-   component — not here. This is only the per-frame depth-scale transform,
-   which stays outside motion so the two never fight over the same element's
-   transform. */
+   Position is driven by requestAnimationFrame in the component (per-frame
+   math CSS can't express). The hub's pulse rings, its "MH" body, and the
+   planets' hover/focus scale are spring/keyframe animations instead, owned
+   by `motion` (motion/react) directly in the component — not here.
+
+   A depth-driven scale used to live here too (--depth-scale, written per
+   frame from the orbit's now-removed simulated-3D occlusion). Removed
+   2026-08-12 along with that system: the reference design gives every
+   planet a fixed size regardless of orbital position, so there's nothing
+   left for this rule to express beyond the translate every absolutely
+   positioned node needs to centre itself on its own point. */
 .orbit-node {
-  --depth-scale: 1;
-  transform: translate(-50%, -50%) scale(var(--depth-scale));
+  transform: translate(-50%, -50%);
 }
 
 /* Anyone who asked their OS for less motion gets none of it. */

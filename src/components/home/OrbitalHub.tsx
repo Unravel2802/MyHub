@@ -17,7 +17,6 @@ import {
   PARTICLE_COUNT,
   SPEED,
   TRAIL_MAX,
-  depthOf,
   moonAngleFor,
   moonOffset,
   particleFade,
@@ -50,7 +49,6 @@ function OrbitalCanvas({
   onClearLock: () => void;
 }) {
   const nodeRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const labelRefs = useRef<Record<string, HTMLSpanElement | null>>({});
   const spokeRefs = useRef<Record<string, SVGLineElement | null>>({});
   const trailRefs = useRef<Record<string, Array<SVGCircleElement | null>>>({});
   const trailsRef = useRef<Record<string, TrailPoint[]>>(
@@ -149,7 +147,6 @@ function OrbitalCanvas({
         const angle = anglesRef.current[workspace.key];
         const x = ORBIT_RX * Math.cos(angle);
         const y = ORBIT_RY * Math.sin(angle);
-        const depth = depthOf(angle);
         const isActive = activeRef.current === workspace.key;
         const isLockedWorkspace = lockedRef.current === workspace.key;
         if (isLockedWorkspace) lockedPlanetPos = { x, y };
@@ -212,29 +209,18 @@ function OrbitalCanvas({
         if (node) {
           node.style.left = `${((CANVAS_W / 2 + x) / CANVAS_W) * 100}%`;
           node.style.top = `${((CANVAS_H / 2 + y) / CANVAS_H) * 100}%`;
-          // The active planet is always fully lit, even on the far arc —
-          // otherwise the one you're reading about is the dimmest thing here.
-          node.style.opacity = String(isActive ? 1 : 0.45 + 0.55 * depth);
-          // Near planets scale up AND stack above the hub; far ones shrink and
-          // pass behind it. The hub sits at z-index 10 (below).
-          node.style.setProperty("--depth-scale", String(0.82 + 0.26 * depth));
-          node.style.zIndex = String(isActive ? 30 : Math.round(depth * 20));
         }
 
-        // A sphere half-occluded by the hub reads as depth; a name tag sliced
-        // down the middle just reads as broken. Labels fade out over the far
-        // third of the arc so they're gone before they can be clipped.
-        const label = labelRefs.current[workspace.key];
-        if (label) {
-          const legibility = Math.max(0, Math.min(1, (depth - 0.28) / 0.34));
-          label.style.opacity = String(isActive ? 1 : legibility);
-        }
+        // Labels are always visible — the reference design's own spec:
+        // "Planet labels always visible, moon labels visible on hover only."
+        // Nothing to write here per frame; opacity is a static 1 in the JSX
+        // className (see the label <span> below) rather than ref-driven.
 
         const spoke = spokeRefs.current[workspace.key];
         if (spoke) {
           spoke.setAttribute("x2", String(x));
           spoke.setAttribute("y2", String(y));
-          spoke.style.opacity = String(isActive ? 0.55 : 0.08 + 0.32 * depth);
+          spoke.style.opacity = isActive ? "0.65" : "0.13";
           // The soft blur reads as "this spoke is lit" at a glance; reserved
           // for the active one so it doesn't compete with the other two.
           spoke.setAttribute("filter", isActive ? "url(#soft)" : "none");
@@ -320,13 +306,6 @@ function OrbitalCanvas({
             <stop offset="45%" stopColor="var(--canvas)" stopOpacity="0" />
             <stop offset="100%" stopColor="var(--canvas)" stopOpacity="0.88" />
           </radialGradient>
-          {/* Without this the orbit renders as a hard 3px band — the single
-              biggest reason a ring reads as "a drawn ellipse" rather than a
-              glowing path. Blur a wide soft stroke, then composite the crisp
-              source back on top. */}
-          <filter height="300%" id="ring-glow" width="140%" x="-20%" y="-100%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
-          </filter>
           {/* Bloom: planet/moon reticles and particles. A wide blur merged
               back over the crisp source, so the shape stays readable at its
               core while glowing at its edges — a halo, not a smear. */}
@@ -405,40 +384,21 @@ function OrbitalCanvas({
         )}
 
         <g transform={`translate(${CANVAS_W / 2},${CANVAS_H / 2})`}>
-          <ellipse fill="url(#hub-ambient)" rx="130" ry="92" />
+          {/* r=85: the reference's own hub-glow radius, not an invented one —
+              CANVAS_W/H now match the reference's VW/VH (480×320), so its
+              literal numbers apply directly instead of being rescaled. */}
+          <circle fill="url(#hub-ambient)" r="85" />
 
-          {/* Inner guide ring — a depth cue only. It has to sit at the very
-              edge of visible (0.1 alpha): drawn any stronger it stops reading
-              as a floor plane behind the orbit and starts reading as a second
-              orbit, which is what makes the scene look like two rings rather
-              than one ring in perspective. */}
+          {/* The orbit is a neutral architectural guide, not a light source.
+              Its dashed hairline stays deliberately quieter than the colored
+              workspace spokes and reticle nodes. */}
           <ellipse
-            fill="none"
-            opacity="0.1"
-            rx={ORBIT_RX * 0.68}
-            ry={ORBIT_RY * 0.68}
-            stroke="var(--accent)"
-            strokeWidth="1"
-          />
-
-          {/* The orbit: a blurred wide stroke for the glow, then a hairline
-              dotted one at full opacity so the path itself stays crisp. The
-              dashes are what make it read as a track rather than a hoop. */}
-          <ellipse
-            filter="url(#ring-glow)"
-            fill="none"
-            opacity="0.3"
-            rx={ORBIT_RX}
-            ry={ORBIT_RY}
-            stroke="var(--accent)"
-            strokeWidth="4"
-          />
-          <ellipse
+            data-orbit-ring="main"
             fill="none"
             opacity="0.55"
             rx={ORBIT_RX}
             ry={ORBIT_RY}
-            stroke="var(--accent)"
+            stroke="var(--border)"
             strokeDasharray="1.5 13"
             strokeWidth="0.75"
           />
@@ -519,8 +479,8 @@ function OrbitalCanvas({
           cx={CANVAS_W / 2}
           cy={CANVAS_H / 2}
           fill="none"
-          opacity="0.35"
-          r="44"
+          opacity="0.28"
+          r="31"
           ref={hubRingRef}
           stroke="var(--accent)"
           strokeDasharray="5 8"
@@ -602,7 +562,15 @@ function OrbitalCanvas({
             // navigate. Getting to the actual page happens inside the panel
             // this opens (its module list, or the "Open X" link) — see
             // WorkspacePanel.
-            className="orbit-node absolute block cursor-pointer appearance-none border-0 bg-transparent p-0"
+            // z-20, always: the reference's own render order puts planet
+            // nodes last — "on top so they're always clickable" — a fixed
+            // stacking position, not depth-dependent. OrbitCenterHub is
+            // z-10; without an explicit z-index here a plain `position:
+            // absolute` node paints BEHIND it under normal CSS stacking
+            // rules (an explicit positive z-index always wins over
+            // z-index:auto, regardless of DOM order), which is the opposite
+            // of the reference's intent.
+            className="orbit-node absolute z-20 block cursor-pointer appearance-none border-0 bg-transparent p-0"
             key={workspace.key}
             onBlur={() => {
               canvasHoveredRef.current = false;
@@ -693,9 +661,7 @@ function OrbitalCanvas({
                 "absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.08em]",
                 HUE_TEXT[workspace.hue],
               )}
-              ref={(el) => {
-                labelRefs.current[workspace.key] = el;
-              }}
+              data-orbit-label={workspace.key}
             >
               {workspace.label}
             </span>

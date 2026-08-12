@@ -484,6 +484,14 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
             >
               <circle cx="1" cy="1" fill="var(--border)" r="0.7" />
             </pattern>
+            {/* The dot grid is the ORBIT'S floor, not the card's wallpaper:
+                clipped to the ring so everything outside is just the ambient
+                background. Radius matches ORBIT_RX exactly, so the dashed
+                orbit ring lands on the boundary and reads as the edge of the
+                surface the planets travel over. */}
+            <clipPath id="orbit-dot-clip">
+              <circle cx={CX} cy={CY} r={ORBIT_RX} />
+            </clipPath>
             <radialGradient id="orbit-vignette" r="55%">
               <stop offset="30%" stopColor="var(--canvas)" stopOpacity="0" />
               <stop
@@ -546,6 +554,7 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
 
           <rect fill="var(--canvas)" height={CANVAS_H} width={CANVAS_W} />
           <rect
+            clipPath="url(#orbit-dot-clip)"
             fill="url(#orbit-dot-grid)"
             height={CANVAS_H}
             width={CANVAS_W}
@@ -863,16 +872,6 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
             </Fragment>
           );
         })}
-
-        <span
-          aria-hidden="true"
-          className={
-            "pointer-events-none absolute inset-x-0 bottom-2 text-center text-[9px] uppercase tracking-[0.07em] text-subtle transition-opacity duration-300" +
-            (expandedKey ? " opacity-0" : " opacity-70")
-          }
-        >
-          Click a cluster to expand
-        </span>
       </div>
 
       {/* The reference's fixed 272px rail. Never swapped out — expanding a

@@ -16,8 +16,16 @@
 // VW/VH/CLUSTER_R/hub-radius values.
 export const CANVAS_W = 480;
 export const CANVAS_H = 320;
-export const ORBIT_RX = 112;
-export const ORBIT_RY = 112;
+// 96, not the reference's CLUSTER_R of 112 — a deliberate, requested
+// deviation (2026-08-13), and the one number here that is knowingly NOT the
+// reference's. Two reasons it holds up beyond taste: the labels hang radially
+// outward from each planet, so a tighter ring keeps them further from the
+// card's edges; and an expanded cluster reaches ORBIT_R + MOON_RX from the
+// hub, which at 112 was 166 against a half-height of 160 — its lowest moons
+// were being clipped by the card. At 96 that reach is 150 and the whole
+// expansion fits.
+export const ORBIT_RX = 96;
+export const ORBIT_RY = 96;
 export const CENTER_R = 22;
 export const NODE_R = 22;
 

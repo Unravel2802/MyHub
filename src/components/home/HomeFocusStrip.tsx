@@ -1,10 +1,11 @@
 "use client";
 
 import { format } from "date-fns";
-import { CheckSquare } from "lucide-react";
-import { clsx } from "clsx";
 import { useEffect, useRef, useState } from "react";
-import { hueVar, type HueName } from "@/src/components/moduleHues";
+import type { HueName } from "@/src/components/moduleHues";
+import { HUE_DOT } from "@/src/components/ui/hueClasses";
+import { SectionHeader } from "@/src/components/ui/SectionHeader";
+import { TaskCard } from "@/src/components/ui/TaskCard";
 import { focusTasks, formatDueDate } from "@/src/modules/task/taskBoardUtils";
 import { useTaskStore } from "@/src/modules/task/useTaskStore";
 import type { Task } from "@/src/modules/task/types";
@@ -52,107 +53,25 @@ function FocusCard({
   };
 
   return (
-    <div
-      className="relative overflow-hidden rounded-xl px-4 py-3.5 transition-opacity duration-300"
-      style={{
-        ["--hue" as string]: hueVar(hue),
-        background: "var(--surface)",
-        boxShadow: checked
-          ? "0 0 0 0.5px color-mix(in srgb, var(--border) 100%, transparent), inset 0 1px 0 color-mix(in srgb, white 6%, transparent)"
-          : "0 0 0 0.5px color-mix(in srgb, var(--hue) 32%, transparent), inset 0 1px 0 color-mix(in srgb, white 6%, transparent), 0 0 0 3px color-mix(in srgb, var(--hue) 6%, transparent), 0 4px 16px color-mix(in srgb, black 22%, transparent)",
-        opacity: isPending || checked ? 0.55 : 1,
-      }}
-    >
-      {/* Hairline accent across the top edge, fading at both ends. Gone once
-          checked — the accent is "this needs attention," which is no longer
-          true. */}
-      {checked ? null : (
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-[12%] top-0 h-px"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, color-mix(in srgb, var(--hue) 60%, transparent), transparent)",
-          }}
-        />
-      )}
-
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 items-start gap-3">
-          <span
-            aria-hidden="true"
-            className="mt-0.5 flex size-[26px] shrink-0 items-center justify-center rounded-md"
-            style={{
-              background: "color-mix(in srgb, var(--hue) 12%, transparent)",
-              border:
-                "1px solid color-mix(in srgb, var(--hue) 26%, transparent)",
-            }}
-          >
-            <CheckSquare className="size-3" style={{ color: "var(--hue)" }} />
+    <TaskCard
+      accentClassName={HUE_DOT[hue]}
+      checked={checked}
+      completeLabel={`Mark "${task.title}" done`}
+      disabled={isPending}
+      label={task.title}
+      meta={
+        <>
+          {isOverdue && !checked ? (
+            <span className="font-medium text-danger">Overdue</span>
+          ) : null}
+          {isOverdue && !checked ? " · " : null}
+          <span className="font-mono tabular-nums">
+            {formatDueDate(task.dueDate)}
           </span>
-
-          <div className="min-w-0">
-            <p
-              className={clsx(
-                "truncate text-sm font-medium leading-snug text-foreground",
-                checked && "line-through",
-              )}
-            >
-              {task.title}
-            </p>
-            <p className="mt-0.5 truncate text-[11px] text-muted">
-              {isOverdue && !checked ? "Overdue · " : ""}
-              {formatDueDate(task.dueDate)}
-            </p>
-          </div>
-        </div>
-
-        {/* A real control, not the prototype's decorative circle: completing
-            from here goes through the store, so the cascade, completedAt and
-            the Momentum streak all behave exactly as they do on the board.
-            `-m-2 p-2` extends the actual click/tap target well past the
-            visible 16px ring — that ring alone is too small a target to
-            reliably hit with a mouse, let alone a finger. */}
-        <button
-          aria-label={`Mark "${task.title}" done`}
-          className="-m-2 flex shrink-0 cursor-pointer items-center justify-center p-2 disabled:cursor-default"
-          disabled={isPending || checked}
-          onClick={handleCheck}
-          type="button"
-        >
-          <span
-            className="flex size-4 items-center justify-center rounded-full transition-colors"
-            style={{
-              background: checked ? "var(--hue)" : "transparent",
-              border: checked
-                ? "1px solid var(--hue)"
-                : "1px solid color-mix(in srgb, var(--hue) 40%, transparent)",
-              boxShadow: checked
-                ? "0 0 8px color-mix(in srgb, var(--hue) 60%, transparent)"
-                : "none",
-            }}
-          >
-            {checked ? (
-              <svg
-                aria-hidden="true"
-                fill="none"
-                height="6"
-                viewBox="0 0 8 6"
-                width="8"
-              >
-                <path
-                  d="M1 3l2 2 4-4"
-                  stroke="white"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.4"
-                />
-              </svg>
-            ) : null}
-          </span>
-        </button>
-      </div>
-    </div>
+        </>
+      }
+      onComplete={handleCheck}
+    />
   );
 }
 
@@ -209,12 +128,9 @@ export function HomeFocusStrip() {
 
   return (
     <section aria-labelledby="todays-focus-heading">
-      <h2
-        className="mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted"
-        id="todays-focus-heading"
-      >
+      <SectionHeader className="mb-3" id="todays-focus-heading">
         Today&apos;s focus
-      </h2>
+      </SectionHeader>
       <div className="grid gap-3 sm:grid-cols-3">
         {items.map((task, index) => (
           <FocusCard

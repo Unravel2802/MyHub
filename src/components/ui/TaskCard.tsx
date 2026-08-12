@@ -6,6 +6,7 @@ interface TaskCardProps {
   accentClassName?: string;
   checked?: boolean;
   className?: string;
+  completeLabel?: string;
   disabled?: boolean;
   label: ReactNode;
   meta?: ReactNode;
@@ -16,6 +17,7 @@ export function TaskCard({
   accentClassName = "bg-accent",
   checked = false,
   className,
+  completeLabel = "Mark complete",
   disabled = false,
   label,
   meta,
@@ -30,7 +32,7 @@ export function TaskCard({
       )}
     >
       <button
-        aria-label="Mark complete"
+        aria-label={completeLabel}
         aria-pressed={checked}
         className={cn(
           "flex size-5 shrink-0 items-center justify-center rounded-full border border-input bg-transparent text-primary-foreground hover:border-input-hover disabled:cursor-default",

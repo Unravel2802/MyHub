@@ -111,6 +111,14 @@ describe("PageTemplate slots", () => {
 });
 
 describe("PageTemplate contentWidth", () => {
+  it("applies the shared redesigned header anatomy to every page", () => {
+    const html = markup();
+
+    expect(html).toContain("border-b");
+    expect(html).toContain("text-[30px]");
+    expect(html).toContain("tracking-[-0.02em]");
+  });
+
   it("defaults to a bled, full-width header", () => {
     const html = markup();
 

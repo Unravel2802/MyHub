@@ -3,7 +3,8 @@
 import { Flame } from "lucide-react";
 import { useEffect } from "react";
 import { Panel } from "@/src/components/ui/Panel";
-import { ProgressBar } from "@/src/components/ui/ProgressBar";
+import { SectionHeader } from "@/src/components/ui/SectionHeader";
+import { StatTile } from "@/src/components/ui/StatTile";
 import { useCountUp } from "@/src/components/home/useCountUp";
 import { useDashboardStore } from "@/src/modules/dashboard/useDashboardStore";
 import { useMomentumStore } from "@/src/modules/momentum/useMomentumStore";
@@ -20,20 +21,13 @@ function CadenceStat({
   const count = useCountUp(value ?? 0);
 
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted">
-        {label}
-      </p>
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-2xl font-semibold tabular-nums tracking-tight text-foreground">
-          {value === null ? "—" : count}
-        </span>
-        {target ? (
-          <span className="text-xs tabular-nums text-subtle">/ {target}</span>
-        ) : null}
-      </div>
-      {target ? <ProgressBar progress={(value ?? 0) / target} /> : null}
-    </div>
+    <StatTile
+      className="border-0 bg-transparent p-0"
+      label={label}
+      progress={target ? (value ?? 0) / target : undefined}
+      suffix={target ? `/ ${target}` : undefined}
+      value={value === null ? "—" : count}
+    />
   );
 }
 
@@ -57,9 +51,7 @@ export function HomeMomentumPanel() {
     <Panel>
       <div className="mb-5 flex items-center gap-2">
         <Flame aria-hidden="true" className="size-3.5 text-accent-strong" />
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">
-          Momentum
-        </span>
+        <SectionHeader>Momentum</SectionHeader>
       </div>
 
       <div className="mb-5 flex items-end gap-4">

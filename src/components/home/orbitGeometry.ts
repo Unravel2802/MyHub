@@ -9,8 +9,15 @@
 // The orbit is a heavily flattened ellipse (RX ~2.8x RY) — that ratio IS the
 // perspective. A circle would read as a flat wheel seen head-on; this reads as
 // a ring receding into the screen.
+//
+// CANVAS_H was 370 until 2026-08-12: half that height (185) against a 76px
+// ellipse radius left 109px of dead black margin above AND below the ring —
+// 59% of the box unused, which is what made the card read as mostly empty
+// space rather than a scene. 320 keeps a clean margin (still room for a
+// hovered/scaled node, its label, and the "click a cluster" hint at the very
+// bottom) without the excess.
 export const CANVAS_W = 560;
-export const CANVAS_H = 370;
+export const CANVAS_H = 320;
 export const ORBIT_RX = 215;
 export const ORBIT_RY = 76;
 export const CENTER_R = 52;

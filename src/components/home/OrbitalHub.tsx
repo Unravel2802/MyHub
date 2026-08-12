@@ -282,7 +282,13 @@ function OrbitalCanvas({
 
   return (
     <div
-      className="relative w-full max-w-[560px] shrink-0"
+      // Bordered and rounded like the Momentum panel beside it (Panel.tsx's
+      // own rounded-lg/border-border), so the hero row reads as two matching
+      // cards — this and the reference design's SystemMap wrapper agree on
+      // that. overflow-hidden clips the SVG's own painted canvas rect to the
+      // rounded corners; no separate bg-surface needed, the SVG already
+      // paints `var(--canvas)` across the full viewBox.
+      className="relative w-full max-w-[560px] shrink-0 overflow-hidden rounded-lg border border-border"
       // A click that reaches this div, rather than being stopped by a node's
       // own click handler, is a click on empty space (the starfield, the
       // hub, the orbit ring) — that's "click away to deselect."

@@ -14,6 +14,7 @@ import {
   MOON_RX,
   MOON_SPEED,
   NODE_PCT,
+  NODE_R,
   ORBIT_RX,
   ORBIT_RY,
   SPEED,
@@ -485,12 +486,19 @@ export function OrbitalHub({ panel }: { panel: ReactNode }) {
               <circle cx="1" cy="1" fill="var(--border)" r="0.7" />
             </pattern>
             {/* The dot grid is the ORBIT'S floor, not the card's wallpaper:
-                clipped to the ring so everything outside is just the ambient
-                background. Radius matches ORBIT_RX exactly, so the dashed
-                orbit ring lands on the boundary and reads as the edge of the
-                surface the planets travel over. */}
+                clipped to a disc so everything beyond it is just the ambient
+                background.
+
+                The clip is ORBIT_RX + NODE_R, not ORBIT_RX. Clipping at the
+                ring exactly LOOKS too small, because the grid has a 22-unit
+                pitch — the outermost surviving row of dots can sit most of a
+                pitch inside the boundary, so the field visibly stopped short
+                of the orbit the planets ride on. Extending by one node radius
+                guarantees dots out past the ring and under the planets
+                themselves, so the whole orbit sits on the floor rather than
+                straddling its edge. */}
             <clipPath id="orbit-dot-clip">
-              <circle cx={CX} cy={CY} r={ORBIT_RX} />
+              <circle cx={CX} cy={CY} r={ORBIT_RX + NODE_R} />
             </clipPath>
             <radialGradient id="orbit-vignette" r="55%">
               <stop offset="30%" stopColor="var(--canvas)" stopOpacity="0" />

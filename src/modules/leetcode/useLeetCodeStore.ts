@@ -31,6 +31,16 @@ import { emit } from "@/src/lib/events";
 // below is not Codex's to change — if the UI needs something this doesn't
 // expose, flag it rather than widening a payload or bypassing the store.
 
+// The sitting that happened when a problem was first added. Adding a problem
+// you just did IS a rep, so the add form logs it as a real attempt row rather
+// than leaning on leetcode_problems.createdAt — which is what
+// problemCountInMonth's comment describes and what left first sittings
+// contributing 0 minutes to Prep Tracker's time allocation
+// (totalAttemptTimeMin only ever saw attempt rows). `problemId` is supplied by
+// createProblem from the row it just inserted, so it isn't the caller's to
+// pass.
+export type FirstAttemptInput = Omit<CreateAttemptInput, "problemId">;
+
 export interface LeetCodeStore {
   problems: LeetCodeProblem[];
   attempts: LeetCodeAttempt[];
@@ -42,7 +52,17 @@ export interface LeetCodeStore {
   pendingIds: string[];
 
   fetchProblems: () => Promise<void>;
-  createProblem: (input: CreateProblemInput) => Promise<void>;
+  // Emits `leetcode.problem_logged`, and — when `firstAttempt` is given —
+  // `leetcode.attempt_logged` for the sitting that came with it. The two
+  // inserts are not one transaction: the attempt is written only after the
+  // problem comes back with an id. If that second insert fails the problem
+  // still exists in the DB, so local state KEEPS it and rolls back only the
+  // attempt — state stays true to the DB, and the user re-logs the sitting
+  // from the detail view. Accepted over an RPC for a single-user app.
+  createProblem: (
+    input: CreateProblemInput,
+    firstAttempt?: FirstAttemptInput,
+  ) => Promise<void>;
   // Used for both field edits and status-board drag moves (updates.status).
   updateProblem: (
     id: string,
@@ -141,7 +161,7 @@ export const useLeetCodeStore = create<LeetCodeStore>((set, get) => {
       }
     },
 
-    createProblem: async (input) => {
+    createProblem: async (input, firstAttempt) => {
       const previousProblems = get().problems;
       const now = new Date().toISOString();
       const optimistic: LeetCodeProblem = {
@@ -174,8 +194,36 @@ export const useLeetCodeStore = create<LeetCodeStore>((set, get) => {
           payload: { problemId: created.id },
           timestamp: Date.now(),
         });
+
+        if (firstAttempt) {
+          // Deliberately not optimistic: there is no problem id to hang an
+          // attempt off until the insert above resolves, and the add form is
+          // already blocked on `isCreating`. A failure here leaves `created`
+          // in place — see the contract note on createProblem.
+          const attempt = await LeetCodeRepository.createAttempt({
+            ...firstAttempt,
+            problemId: created.id,
+          });
+          set({ attempts: [attempt, ...get().attempts] });
+          emit({
+            type: "leetcode.attempt_logged",
+            payload: {
+              attemptId: attempt.id,
+              problemId: attempt.problemId,
+              outcome: attempt.outcome,
+            },
+            timestamp: Date.now(),
+          });
+        }
       } catch (error) {
-        set({ problems: previousProblems, error: toUserMessage(error) });
+        // Roll the problem back only if it never landed; once `created`
+        // replaced the optimistic row it is real and stays.
+        const rolledBack = get().problems.some(
+          (problem) => problem.id === optimistic.id,
+        )
+          ? { problems: previousProblems }
+          : {};
+        set({ ...rolledBack, error: toUserMessage(error) });
       } finally {
         set({ isCreating: false });
       }

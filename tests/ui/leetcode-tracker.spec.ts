@@ -111,6 +111,35 @@ test("adding a problem counts toward Prep Tracker's algorithm checkpoint and mon
   await expect(algorithmsTile).toContainText("1");
 });
 
+test("adding a problem with a time creates its first attempt history", async ({
+  page,
+}) => {
+  const db = new FakeLeetCodeDb();
+  await load(page, db);
+
+  const addForm = page.getByRole("form", { name: "Add problem" });
+  await addForm.getByLabel("Problem title").fill("Container With Most Water");
+  await addForm.getByLabel("LeetCode #").fill("11");
+  await addForm.getByLabel("Time (min)").fill("24");
+  await addForm.getByLabel("Outcome").selectOption("partial");
+  await addForm.getByRole("button", { name: "Add problem" }).click();
+
+  await expect.poll(() => db.problems).toHaveLength(1);
+  await expect.poll(() => db.attempts).toHaveLength(1);
+  expect(db.attempts[0]?.problem_id).toBe(db.problems[0]?.id);
+
+  await page
+    .getByRole("button", { name: "Container With Most Water", exact: true })
+    .click();
+  const historyItem = page.getByRole("listitem").filter({ hasText: "24 min" });
+  await expect(historyItem).toBeVisible();
+  await expect(historyItem.getByText("Partial", { exact: true })).toBeVisible();
+
+  const editForm = page.getByRole("form", { name: "Edit problem" });
+  await expect(editForm.getByLabel("Time (min)")).toHaveCount(0);
+  await expect(editForm.getByLabel("Outcome")).toHaveCount(0);
+});
+
 test("rolls back a failed attempt create", async ({ page }) => {
   const db = new FakeLeetCodeDb([
     leetCodeProblemRow({ id: "two-sum", title: "Two Sum" }),
@@ -166,6 +195,16 @@ test("filters, sorts, and inline edits the problem table", async ({ page }) => {
     ],
   );
   await load(page, db);
+
+  // Default sort is last-attempted descending. Asserting the row ORDER, not
+  // just that the dates render: a sort keyed off attempt rows can go stale
+  // while every date cell beside it still reads correctly, which is precisely
+  // the kind of failure a per-cell assertion waves through.
+  const rows = page.getByRole("row");
+  await expect(rows.nth(1)).toContainText("Two Sum");
+  await expect(rows.nth(1)).toContainText("2026-07-24");
+  await expect(rows.nth(2)).toContainText("Median of Two Sorted Arrays");
+  await expect(rows.nth(2)).toContainText("—");
 
   const filters = page.getByRole("group", {
     name: "Filter LeetCode problems",

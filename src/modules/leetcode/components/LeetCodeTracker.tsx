@@ -18,6 +18,7 @@ export function LeetCodeTracker() {
   const moduleHue = hueFor("/prep");
   const {
     problems,
+    attempts,
     isLoading,
     error,
     isCreating,
@@ -148,10 +149,14 @@ export function LeetCodeTracker() {
         </p>
       ) : null}
 
-      <LeetCodeProblemForm disabled={isCreating} onSubmit={createProblem} />
+      <LeetCodeProblemForm
+        disabled={isCreating}
+        onSubmit={(input, firstAttempt) => createProblem(input, firstAttempt)}
+      />
 
       {view === "table" ? (
         <LeetCodeTable
+          attempts={attempts}
           onSelect={setSelectedId}
           onUpdate={updateProblem}
           pendingIds={pending}

@@ -6,12 +6,15 @@ import { HUE_TEXT } from "@/src/components/ui/hueClasses";
 import type { CreateProblemInput } from "@/src/modules/leetcode/LeetCodeRepository";
 import type {
   LeetCodeDifficulty,
+  LeetCodeOutcome,
   LeetCodeProblem,
   LeetCodeStatus,
 } from "@/src/modules/leetcode/types";
+import type { FirstAttemptInput } from "@/src/modules/leetcode/useLeetCodeStore";
 import {
   difficultyLabels,
   inputClass,
+  outcomeLabels,
   parseTags,
   statusLabels,
 } from "@/src/modules/leetcode/components/leetcodeUi";
@@ -20,7 +23,10 @@ import { LEETCODE_STATUSES } from "@/src/modules/leetcode/leetcodeBoard";
 interface LeetCodeProblemFormProps {
   disabled: boolean;
   initialProblem?: LeetCodeProblem;
-  onSubmit: (input: CreateProblemInput) => Promise<void>;
+  onSubmit: (
+    input: CreateProblemInput,
+    firstAttempt?: FirstAttemptInput,
+  ) => Promise<void>;
 }
 
 export function LeetCodeProblemForm({
@@ -41,6 +47,8 @@ export function LeetCodeProblemForm({
   const [status, setStatus] = useState<LeetCodeStatus>(
     initialProblem?.status ?? "to_review",
   );
+  const [timeToSolveMin, setTimeToSolveMin] = useState("");
+  const [outcome, setOutcome] = useState<LeetCodeOutcome>("solved");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,17 +58,26 @@ export function LeetCodeProblemForm({
     const trimmedNumber = questionNumber.trim();
     const parsedNumber = trimmedNumber ? Number(trimmedNumber) : null;
 
-    await onSubmit({
-      title: trimmedTitle,
-      questionNumber:
-        parsedNumber !== null && Number.isFinite(parsedNumber)
-          ? parsedNumber
-          : null,
-      difficulty,
-      tags: parseTags(tags),
-      notes: notes.trim() || null,
-      status,
-    });
+    await onSubmit(
+      {
+        title: trimmedTitle,
+        questionNumber:
+          parsedNumber !== null && Number.isFinite(parsedNumber)
+            ? parsedNumber
+            : null,
+        difficulty,
+        tags: parseTags(tags),
+        notes: notes.trim() || null,
+        status,
+      },
+      initialProblem
+        ? undefined
+        : {
+            timeToSolveMin:
+              timeToSolveMin === "" ? null : Number(timeToSolveMin),
+            outcome,
+          },
+    );
 
     if (!initialProblem) {
       setTitle("");
@@ -69,6 +86,8 @@ export function LeetCodeProblemForm({
       setNotes("");
       setDifficulty("medium");
       setStatus("to_review");
+      setTimeToSolveMin("");
+      setOutcome("solved");
     }
   }
 
@@ -169,6 +188,40 @@ export function LeetCodeProblemForm({
             ))}
           </select>
         </label>
+        {!initialProblem ? (
+          <>
+            <label className="grid gap-1.5 text-sm font-medium text-body">
+              Time (min)
+              <input
+                className={inputClass}
+                disabled={disabled}
+                min="0"
+                onChange={(event) => setTimeToSolveMin(event.target.value)}
+                type="number"
+                value={timeToSolveMin}
+              />
+            </label>
+            <label className="grid gap-1.5 text-sm font-medium text-body">
+              Outcome
+              <select
+                className={inputClass}
+                disabled={disabled}
+                onChange={(event) =>
+                  setOutcome(event.target.value as LeetCodeOutcome)
+                }
+                value={outcome}
+              >
+                {(
+                  Object.entries(outcomeLabels) as [LeetCodeOutcome, string][]
+                ).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        ) : null}
         <div className="flex items-end">
           <button
             className="h-10 w-full rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:bg-disabled"

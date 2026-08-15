@@ -25,23 +25,24 @@ test("entry form only offers fields and outcomes valid for its type", async ({
   page,
 }) => {
   await loadPrep(page);
+  const prepForm = page.getByRole("form", { name: "Log a prep session" });
 
   await expect(
     page.getByLabel("Time to solve this problem (minutes)"),
   ).toHaveCount(0);
   await expect(page.getByLabel("Practice type")).not.toContainText("Algorithm");
-  await expect(page.getByLabel("Outcome")).toContainText("Pass");
-  await expect(page.getByLabel("Outcome")).toContainText("Needs work");
-  await expect(page.getByLabel("Outcome")).not.toContainText("Solved");
+  await expect(prepForm.getByLabel("Outcome")).toContainText("Pass");
+  await expect(prepForm.getByLabel("Outcome")).toContainText("Needs work");
+  await expect(prepForm.getByLabel("Outcome")).not.toContainText("Solved");
 
   await page.getByLabel("Practice type").selectOption("behavioral");
 
   await expect(
     page.getByLabel("Time to solve this problem (minutes)"),
   ).toHaveCount(0);
-  await expect(page.getByLabel("Outcome")).toContainText("Pass");
-  await expect(page.getByLabel("Outcome")).toContainText("Needs work");
-  await expect(page.getByLabel("Outcome")).not.toContainText("Solved");
+  await expect(prepForm.getByLabel("Outcome")).toContainText("Pass");
+  await expect(prepForm.getByLabel("Outcome")).toContainText("Needs work");
+  await expect(prepForm.getByLabel("Outcome")).not.toContainText("Solved");
 });
 
 test("logs mock subtypes, resume deep-dives, and renders time allocation", async ({
@@ -112,10 +113,11 @@ test("logs a system design rep and updates the monthly scorecard", async ({
   page,
 }) => {
   const db = await loadPrep(page);
+  const prepForm = page.getByRole("form", { name: "Log a prep session" });
 
   await page.getByLabel("Topic").fill("rate limiter");
   await page.getByLabel("Session length (minutes)").fill("45");
-  await page.getByLabel("Outcome").selectOption("pass");
+  await prepForm.getByLabel("Outcome").selectOption("pass");
   await page
     .getByLabel("Notes / post-mortem")
     .fill("Separated global and per-user limits");

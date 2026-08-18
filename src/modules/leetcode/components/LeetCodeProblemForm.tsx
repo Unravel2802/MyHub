@@ -195,7 +195,7 @@ export function LeetCodeProblemForm({
               <input
                 className={inputClass}
                 disabled={disabled}
-                min="0"
+                min="1"
                 onChange={(event) => setTimeToSolveMin(event.target.value)}
                 type="number"
                 value={timeToSolveMin}

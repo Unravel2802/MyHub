@@ -15,6 +15,8 @@ const PAGES = [
   "/trading",
   "/design-drills",
   "/design-drills/url-shortener",
+  "/curriculum",
+  "/curriculum/foundations.data-structures/01-arrays-and-memory",
 ];
 
 test.use({ viewport: { width: 390, height: 844 } });

@@ -149,11 +149,11 @@ places to put that knowledge.
   │ N ││ N ││ N │
   └───┘└───┘└───┘
 
-  + simple clients               + no extra hop               + simple clients
-  + one place to update          + lowest latency             + no extra tier
-  - an extra hop                 - every client needs         - an extra internal
-  - a tier to run                  the map, in every            hop
-                                   language
+  + simple clients             + no extra hop            + simple clients
+  + one place to update        + lowest latency          + no extra tier
+  - an extra hop               - every client needs      - an extra internal
+  - a tier to run                the map, in every         hop
+                                 language
 ```
 
 Design 2 is what Kafka and Cassandra do — clients fetch cluster metadata and

@@ -190,8 +190,9 @@ class ConsistentHashRing:
         idx = bisect.bisect_left(self.positions, pos) % len(self.positions)
         found, seen = [], set()
         for offset in range(len(self.positions)):
-            node = self.ring[self.positions[(idx + offset) % len(self.positions)]]
-            if node not in seen:            # distinct PHYSICAL nodes, not vnodes
+            at = (idx + offset) % len(self.positions)
+            node = self.ring[self.positions[at]]
+            if node not in seen:      # distinct PHYSICAL nodes, not vnodes
                 seen.add(node)
                 found.append(node)
                 if len(found) == count:

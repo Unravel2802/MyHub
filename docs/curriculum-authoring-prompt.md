@@ -116,7 +116,8 @@ fence and box-drawing or plain ASCII. The forms that work:
   ```
 - State machines, as a labelled transition list or an ASCII graph.
 - Before/after pairs, for anything you are arguing improves a design.
-Keep every diagram under ~76 characters wide so it does not need scrolling.
+Keep every diagram and code line under 76 characters wide so it does not need
+horizontal scrolling on a phone. 80 is a hard limit, enforced by a test.
 
 WRITING RULES:
 - Textbook prose, not lecture notes and not bullet soup. Explain the mechanism,

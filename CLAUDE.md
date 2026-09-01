@@ -108,7 +108,7 @@ both files in the same commit so the two agents never diverge on tooling.
 ## Project Status — everything planned is shipped (last verified 2026-08-11)
 
 **All four waves and every later addition are done and merged to `main`**, with migrations
-`0001`–`0042` applied and 1168 unit / 131 E2E tests green:
+`0001`–`0043` applied and 1400 unit / 147 E2E tests green:
 
 - **Wave 1** — Task Engine, Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard
 - **Wave 2** — shared AppShell, task completion timestamps, Prep/CRM depth, Momentum
@@ -120,6 +120,16 @@ both files in the same commit so the two agents never diverge on tooling.
 
 **Knowledge Base and Command Palette are no longer V2** — both shipped. Any instruction elsewhere
 to "not start those" is spent.
+
+**The Curriculum shipped 2026-09-01** (migration 0043) — a software-engineering + ML textbook
+laid out as a per-track prerequisite graph, NeetCode-style, at `/curriculum`. Read
+`docs/handoff/curriculum.md` before touching it: it records five traps, including that
+`content.ts` is server-only, that the chapter files need naming in `outputFileTracingIncludes`
+or every chapter 404s in production while working in dev, and that its upsert needs a PLAIN
+unique constraint rather than this schema's usual partial index (the 0014 → 0015 bug again).
+The topic GRAPH is code (`curriculumCatalog.ts`) and the chapter PROSE is markdown files under
+`content/curriculum/`; only progress is a table. New chapters are generated with
+`docs/curriculum-authoring-prompt.md` and need no code change.
 
 **The Reader shipped 2026-08-11** (PDF viewer + select-to-highlight annotation), so there is
 now no unbuilt feature. Read `docs/handoff/reader.md` before touching it — it records two traps

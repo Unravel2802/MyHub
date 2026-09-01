@@ -13,11 +13,32 @@ import {
 // claiming progress the database never stored.
 
 const DS = "foundations.data-structures";
+// Every chapter of foundations.data-structures. The "completed topic" test
+// below marks all of them, so this list has to stay in step with the directory
+// — a chapter added there and not here silently turns that test into a
+// partial-progress test that still passes.
 const CHAPTERS = [
   "01-arrays-and-memory",
   "02-hash-tables",
   "03-trees-and-heaps",
+  "04-linked-structures",
+  "05-graphs",
+  "06-choosing-a-data-structure",
 ];
+
+// Match a graph node by its title attribute, anchored on the label.
+//
+// NOT getByRole with a loose /Algorithms/ — the catalog has three topics whose
+// names contain that word, and a node's accessible name also carries its
+// sr-only progress text. Both make a substring match ambiguous the moment a
+// topic is added, which is a test that breaks for a reason unrelated to what it
+// is checking.
+function node(
+  page: Parameters<typeof mockSupabaseCurriculum>[0],
+  label: string,
+) {
+  return page.getByTitle(new RegExp(`^${label} \\u2014 `));
+}
 
 async function load(
   page: Parameters<typeof mockSupabaseCurriculum>[0],
@@ -33,16 +54,12 @@ async function load(
 test("renders a node per topic in the selected track", async ({ page }) => {
   await load(page, new FakeCurriculumDb());
 
-  await expect(
-    page.getByRole("button", { name: /Data Structures/ }),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: /Algorithms/ })).toBeVisible();
+  await expect(node(page, "Data Structures")).toBeVisible();
+  await expect(node(page, "Algorithms")).toBeVisible();
   // Switching tracks swaps the graph rather than appending to it.
   await page.getByRole("button", { name: /^Backend Engineering/ }).click();
-  await expect(page.getByRole("button", { name: /Caching/ })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: /Data Structures/ }),
-  ).toHaveCount(0);
+  await expect(node(page, "Caching")).toBeVisible();
+  await expect(node(page, "Data Structures")).toHaveCount(0);
 });
 
 test("a topic with no material says so instead of showing an empty list", async ({
@@ -50,7 +67,7 @@ test("a topic with no material says so instead of showing an empty list", async 
 }) => {
   await load(page, new FakeCurriculumDb());
 
-  await page.getByRole("button", { name: /Algorithms/ }).click();
+  await node(page, "Algorithms").click();
   await expect(page.getByText("Nothing to read here yet")).toBeVisible();
 });
 
@@ -60,7 +77,7 @@ test("marking a chapter read persists and survives a reload", async ({
   const db = new FakeCurriculumDb();
   await load(page, db);
 
-  await page.getByRole("button", { name: /Data Structures/ }).click();
+  await node(page, "Data Structures").click();
   await page
     .getByRole("button", { name: "Mark Arrays and the memory model read" })
     .click();
@@ -84,7 +101,7 @@ test("a failed write rolls the tick back and shows a generic message", async ({
   // banner must not leak the Postgres error — architecture rule 6.
   await mockSupabaseCurriculumWriteFailure(page, new FakeCurriculumDb());
   await page.goto("/curriculum");
-  await page.getByRole("button", { name: /Data Structures/ }).click();
+  await node(page, "Data Structures").click();
 
   const tick = page.getByRole("button", {
     name: "Mark Arrays and the memory model read",
@@ -106,13 +123,21 @@ test("a completed topic fills its progress bar and lights the track count", asyn
   );
   await load(page, db);
 
-  const node = page.getByRole("button", { name: /Data Structures/ });
-  await expect(node).toContainText("Data Structures");
-  await expect(node.getByText("3 of 3 chapters read")).toBeAttached();
-  // The track chip counts CHAPTERS, and only this topic has material.
+  const dataStructures = node(page, "Data Structures");
+  await expect(dataStructures).toContainText("Data Structures");
+  await expect(
+    dataStructures.getByText(
+      `${CHAPTERS.length} of ${CHAPTERS.length} chapters read`,
+    ),
+  ).toBeAttached();
+  // The track chip counts every chapter in the TRACK, not just this topic, so
+  // assert the done half rather than pinning a total that moves whenever a
+  // sibling topic gains material.
   await expect(
     page.getByRole("button", { name: /^CS Foundations/ }),
-  ).toContainText("3/3");
+    // Lookbehind, not \b: the chip renders as "CS Foundations6/12" with no
+    // separator, and there is no word boundary between "s" and "6".
+  ).toContainText(new RegExp(`(?<!\\d)${CHAPTERS.length}/\\d+`));
 });
 
 test("a chapter opens as a readable page and can be marked read there", async ({

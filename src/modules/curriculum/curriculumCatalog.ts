@@ -58,6 +58,16 @@ export const TRACKS: readonly Track[] = [
     hue: "amber",
   },
   {
+    id: "engineering",
+    label: "Engineering Practice",
+    blurb:
+      "The half of the job that is not typing: deciding what to build, getting it agreed, and shipping it with other people.",
+    // Shares rose with Security. Fifteen tracks, eleven hues (moduleHues.ts) —
+    // the four reuses are paired as far apart in the picker list as possible,
+    // and a track's hue only ever distinguishes it from its list neighbours.
+    hue: "rose",
+  },
+  {
     id: "backend",
     label: "Backend Engineering",
     blurb: "Servers, data, and the contracts between them.",
@@ -215,6 +225,48 @@ const foundations: Topic[] = [
     ["foundations.programming"],
     "Integer widths, floating point, Unicode, endianness and the classic bugs each produces.",
   ),
+  t(
+    "foundations.memory-management",
+    "Memory Management & GC",
+    "core",
+    ["foundations.programming", "foundations.architecture"],
+    "Stack vs heap, allocation, reference counting, tracing collectors, and the pauses each one causes.",
+  ),
+  t(
+    "foundations.systems-programming",
+    "Systems Programming",
+    "advanced",
+    ["foundations.memory-management"],
+    "C and Rust up close: pointers, ownership, undefined behaviour, and code with no runtime beneath it.",
+  ),
+  t(
+    "foundations.strings",
+    "Strings & Text Algorithms",
+    "core",
+    ["foundations.data-structures"],
+    "Tries, suffix structures, pattern matching, regex engines, and why Unicode makes all of it harder.",
+  ),
+  t(
+    "foundations.randomized",
+    "Randomized & Probabilistic Algorithms",
+    "advanced",
+    ["foundations.algorithms"],
+    "Hashing, Bloom filters, HyperLogLog, reservoir sampling — answers that are fast because they are approximate.",
+  ),
+  t(
+    "foundations.computability",
+    "Computability & NP-Completeness",
+    "advanced",
+    ["foundations.complexity"],
+    "Decidability, reductions, P vs NP, and recognising a problem nobody can solve efficiently.",
+  ),
+  t(
+    "foundations.information-theory",
+    "Information Theory",
+    "core",
+    ["foundations.discrete-math"],
+    "Entropy, cross-entropy, KL divergence, coding and compression — the maths behind gzip and a loss function alike.",
+  ),
 ];
 
 const craft: Topic[] = [
@@ -315,6 +367,135 @@ const craft: Topic[] = [
     "foundational",
     [],
     "Design docs, RFCs, READMEs and commit messages that survive their author leaving.",
+  ),
+  t(
+    "craft.error-handling",
+    "Errors & Failure Design",
+    "core",
+    ["craft.type-design"],
+    "Exceptions vs results, invariants, retries, partial failure, and error messages someone can act on.",
+  ),
+  t(
+    "craft.property-testing",
+    "Property-Based Testing & Fuzzing",
+    "advanced",
+    ["craft.tdd"],
+    "Generating inputs instead of enumerating them, shrinking counterexamples, and fuzzing for crashes.",
+  ),
+  t(
+    "craft.performance",
+    "Performance Engineering",
+    "advanced",
+    ["craft.debugging", "foundations.architecture"],
+    "Benchmarking that is not lying to you, profiling, and optimising the thing that actually costs.",
+  ),
+  t(
+    "craft.licensing",
+    "Licensing & Open Source",
+    "foundational",
+    [],
+    "Copyleft vs permissive, dependency obligations, contributing, and the licence questions that reach legal.",
+  ),
+  t(
+    "craft.ai-assisted",
+    "AI-Assisted Development",
+    "core",
+    ["craft.code-review"],
+    "Models and agents in the loop: where they help, how to review their output, and where they do not belong.",
+  ),
+  t(
+    "craft.formal-methods",
+    "Formal Methods & Modelling",
+    "advanced",
+    ["craft.type-design"],
+    "State machines, invariants, TLA+ and model checking — proving a design before building it.",
+  ),
+];
+
+const engineering: Topic[] = [
+  t(
+    "engineering.process",
+    "How Software Gets Built",
+    "foundational",
+    [],
+    "Agile in practice, planning, estimation, scope, and the difference between process and ceremony.",
+  ),
+  t(
+    "engineering.career",
+    "Scope, Levels & Growth",
+    "foundational",
+    [],
+    "What each level actually means, how scope grows, promotion, and choosing what to get good at.",
+  ),
+  t(
+    "engineering.collaboration",
+    "Working in a Team",
+    "foundational",
+    ["engineering.process"],
+    "Async communication, disagreement, code ownership, timezones, and pulling in one direction.",
+  ),
+  t(
+    "engineering.product",
+    "Product Sense for Engineers",
+    "core",
+    ["engineering.process"],
+    "Users, problems, tradeoffs, and knowing which engineering work is worth doing at all.",
+  ),
+  t(
+    "engineering.design-review",
+    "Design Docs & Technical Review",
+    "core",
+    ["engineering.collaboration"],
+    "Writing a document that gets a decision made, running a review, and disagreeing well inside one.",
+  ),
+  t(
+    "engineering.oncall",
+    "Operational Ownership",
+    "core",
+    ["engineering.collaboration"],
+    "Owning what you ship: on-call, escalation, runbooks, and operations that stay sustainable.",
+  ),
+  t(
+    "engineering.hiring",
+    "Interviewing & Hiring",
+    "core",
+    ["engineering.collaboration"],
+    "Running an interview, calibrating a signal, and the biases a loop has to be designed around.",
+  ),
+  t(
+    "engineering.ethics",
+    "Ethics & Responsibility",
+    "core",
+    ["engineering.product"],
+    "Harm, dark patterns, dual use, and saying no to something you were asked to build.",
+  ),
+  t(
+    "engineering.scoping",
+    "Scoping & Delivering Projects",
+    "core",
+    ["engineering.design-review"],
+    "Breaking work down, sequencing, risk, milestones, and shipping something incrementally.",
+  ),
+  t(
+    "engineering.metrics",
+    "Measuring Engineering",
+    "core",
+    ["engineering.scoping"],
+    "DORA metrics, product metrics, goals, and measurements that do not get gamed.",
+  ),
+  t(
+    "engineering.mentoring",
+    "Mentoring & Growing Engineers",
+    "advanced",
+    ["engineering.collaboration"],
+    "Feedback, delegation, pairing, and multiplying other people's output rather than only your own.",
+  ),
+  t(
+    "engineering.leadership",
+    "Technical Leadership & Influence",
+    "advanced",
+    ["engineering.mentoring", "engineering.design-review"],
+    "Driving decisions without authority, technical strategy, and alignment across teams.",
   ),
 ];
 
@@ -431,6 +612,41 @@ const backend: Topic[] = [
     ["backend.queues"],
     "Recurring work, distributed locks, drift, missed runs and exactly-once-ish execution.",
   ),
+  t(
+    "backend.time-money",
+    "Time, Dates & Money",
+    "foundational",
+    [],
+    "Timezones, DST, leap seconds, monotonic clocks, decimal money, and the bugs each one guarantees.",
+  ),
+  t(
+    "backend.migrations",
+    "Zero-Downtime Migrations",
+    "advanced",
+    ["backend.transactions"],
+    "Expand/contract, dual writes, backfills, and changing a schema under live traffic.",
+  ),
+  t(
+    "backend.event-sourcing",
+    "Event Sourcing & CQRS",
+    "advanced",
+    ["backend.queues", "backend.transactions"],
+    "State as a log of events, read models, replay, and the cost of giving up a mutable row.",
+  ),
+  t(
+    "backend.multitenancy",
+    "Multi-Tenancy",
+    "advanced",
+    ["backend.auth", "backend.sql"],
+    "Shared vs isolated data, tenant routing, noisy neighbours, and per-tenant limits.",
+  ),
+  t(
+    "backend.integrations",
+    "Webhooks & Third-Party Integrations",
+    "core",
+    ["backend.api-hardening"],
+    "Consuming and emitting webhooks, signatures, replay, and depending on an API you do not control.",
+  ),
 ];
 
 const frontend: Topic[] = [
@@ -546,6 +762,34 @@ const frontend: Topic[] = [
     ["frontend.react"],
     "Responsive design, PWAs, React Native, touch input and the constraints phones actually impose.",
   ),
+  t(
+    "frontend.i18n",
+    "Internationalization & Localization",
+    "core",
+    ["frontend.styling"],
+    "Locales, pluralisation, dates and numbers, RTL layout, and text that changes length under you.",
+  ),
+  t(
+    "frontend.animation",
+    "Motion & Animation",
+    "core",
+    ["frontend.browser"],
+    "Transitions, springs, orchestration, the compositor, and respecting reduced-motion.",
+  ),
+  t(
+    "frontend.graphics",
+    "Canvas, WebGL & Visualization",
+    "advanced",
+    ["frontend.browser"],
+    "Immediate-mode drawing, the GPU pipeline, scales and axes, and rendering more points than the DOM can hold.",
+  ),
+  t(
+    "frontend.offline",
+    "Offline & Local-First",
+    "advanced",
+    ["frontend.data-fetching"],
+    "Service workers, local storage engines, sync, conflict resolution, and apps that work on a train.",
+  ),
 ];
 
 const distributed: Topic[] = [
@@ -639,6 +883,27 @@ const distributed: Topic[] = [
     "advanced",
     ["distributed.messaging"],
     "MapReduce, dataflow, windowing, watermarks, and the batch/stream duality.",
+  ),
+  t(
+    "distributed.membership",
+    "Membership & Failure Detection",
+    "advanced",
+    ["distributed.fundamentals"],
+    "Heartbeats, phi-accrual detectors, gossip protocols, and agreeing on who is alive.",
+  ),
+  t(
+    "distributed.crdt",
+    "Collaborative Editing: OT & CRDTs",
+    "advanced",
+    ["distributed.consistency"],
+    "Operational transforms, CRDTs, and letting many people edit one document without a lock.",
+  ),
+  t(
+    "distributed.scheduling",
+    "Cluster Scheduling",
+    "advanced",
+    ["distributed.coordination"],
+    "Bin packing, fairness, preemption, gang scheduling, and getting work onto machines.",
   ),
 ];
 
@@ -734,6 +999,41 @@ const systemsDesign: Topic[] = [
     ["systems-design.tradeoffs"],
     "Designing the system around a model: features, serving path, fallbacks and feedback loops.",
   ),
+  t(
+    "systems-design.case-notifications",
+    "Case: Notifications & Fan-out",
+    "advanced",
+    ["systems-design.scaling"],
+    "Multi-channel delivery, deduplication, batching, quiet hours, and pushing to millions of devices.",
+  ),
+  t(
+    "systems-design.case-geo",
+    "Case: Geospatial & Proximity",
+    "advanced",
+    ["systems-design.scaling"],
+    "Geohashes, quadtrees, nearest-neighbour queries, and objects that move.",
+  ),
+  t(
+    "systems-design.case-video",
+    "Case: Video Streaming",
+    "advanced",
+    ["systems-design.case-storage"],
+    "Transcoding pipelines, adaptive bitrate, CDN economics, and live versus on-demand.",
+  ),
+  t(
+    "systems-design.case-metrics",
+    "Case: Metrics & Time-Series",
+    "advanced",
+    ["systems-design.scaling"],
+    "High-cardinality ingestion, downsampling, retention tiers, and querying a billion series.",
+  ),
+  t(
+    "systems-design.case-collab",
+    "Case: Collaborative Editing",
+    "advanced",
+    ["systems-design.case-chat", "distributed.crdt"],
+    "Presence, cursors, conflict resolution, offline edits, and persistence for a shared document.",
+  ),
 ];
 
 const infra: Topic[] = [
@@ -821,6 +1121,27 @@ const infra: Topic[] = [
     ["infra.cloud"],
     "Functions, cold starts, execution models, edge runtimes and where each stops making sense.",
   ),
+  t(
+    "infra.service-mesh",
+    "API Gateways & Service Mesh",
+    "advanced",
+    ["infra.orchestration"],
+    "Ingress, sidecars, mTLS, traffic shifting, and what a mesh costs to run.",
+  ),
+  t(
+    "infra.database-ops",
+    "Running Databases in Production",
+    "advanced",
+    ["infra.reliability"],
+    "Backups, point-in-time recovery, failover, connection pooling, upgrades, and vacuum.",
+  ),
+  t(
+    "infra.platform",
+    "Platform & Developer Experience",
+    "core",
+    ["infra.cicd"],
+    "Golden paths, internal tooling, build times, and treating other engineers as your users.",
+  ),
 ];
 
 const security: Topic[] = [
@@ -887,6 +1208,20 @@ const security: Topic[] = [
     ["security.appsec"],
     "Prompt injection, data exfiltration, model theft, poisoning and agent tool-use risk.",
   ),
+  t(
+    "security.abuse",
+    "Abuse, Fraud & Bot Defence",
+    "advanced",
+    ["security.appsec"],
+    "Account takeover, scraping, rate abuse, fraud signals, and defending without punishing real users.",
+  ),
+  t(
+    "security.detection",
+    "Logging, Detection & Response",
+    "advanced",
+    ["security.network-security"],
+    "Audit trails, tamper evidence, detection rules, and what an investigation actually needs.",
+  ),
 ];
 
 const data: Topic[] = [
@@ -952,6 +1287,20 @@ const data: Topic[] = [
     "advanced",
     ["data.quality", "security.privacy"],
     "Catalogs, lineage, access control, retention and knowing where a column came from.",
+  ),
+  t(
+    "data.formats",
+    "File & Table Formats",
+    "core",
+    ["data.warehouse"],
+    "Parquet, Arrow, Iceberg and Delta — columnar encoding, predicate pushdown, and ACID on object storage.",
+  ),
+  t(
+    "data.serving",
+    "Serving Analytics",
+    "advanced",
+    ["data.analytics-eng"],
+    "OLAP engines, pre-aggregation, semantic layers, and dashboards that return in under a second.",
   ),
 ];
 
@@ -1033,6 +1382,48 @@ const mlFoundations: Topic[] = [
     ["ml-foundations.evaluation"],
     "Stationarity, autocorrelation, classical forecasting, backtesting and leakage across time.",
   ),
+  t(
+    "ml-foundations.bayesian",
+    "Bayesian Methods",
+    "advanced",
+    ["ml-foundations.probability"],
+    "Priors, posteriors, conjugacy, MCMC and variational inference — reasoning with uncertainty explicitly.",
+  ),
+  t(
+    "ml-foundations.bandits",
+    "Multi-Armed Bandits",
+    "advanced",
+    ["ml-foundations.probability"],
+    "Explore/exploit, epsilon-greedy, UCB, Thompson sampling, and contextual bandits in production.",
+  ),
+  t(
+    "ml-foundations.nlp-classical",
+    "Classical NLP",
+    "core",
+    ["ml-foundations.features"],
+    "Tokenization, n-grams, TF-IDF, topic models, and the pipeline transformers replaced.",
+  ),
+  t(
+    "ml-foundations.interpretability",
+    "Interpretability & Explainability",
+    "advanced",
+    ["ml-foundations.evaluation"],
+    "Feature importance, SHAP, partial dependence, probing, and what an explanation is actually worth.",
+  ),
+  t(
+    "ml-foundations.fairness",
+    "Fairness & Responsible ML",
+    "core",
+    ["ml-foundations.evaluation"],
+    "Bias sources, fairness definitions that contradict each other, auditing, and mitigation.",
+  ),
+  t(
+    "ml-foundations.tuning",
+    "Hyperparameter Optimization & AutoML",
+    "core",
+    ["ml-foundations.evaluation"],
+    "Search strategies, Bayesian optimization, early stopping, and not tuning on your test set.",
+  ),
 ];
 
 const deepLearning: Topic[] = [
@@ -1112,6 +1503,27 @@ const deepLearning: Topic[] = [
     "advanced",
     ["deep-learning.representation"],
     "Message passing, GCNs, GATs, sampling, and problems that are natively graphs.",
+  ),
+  t(
+    "deep-learning.audio",
+    "Speech & Audio Models",
+    "advanced",
+    ["deep-learning.attention"],
+    "Spectrograms, ASR, TTS, and audio treated as a sequence problem.",
+  ),
+  t(
+    "deep-learning.ssm",
+    "State Space Models & Attention Alternatives",
+    "advanced",
+    ["deep-learning.attention"],
+    "Mamba, linear attention, recurrence returning, and the quadratic cost they attack.",
+  ),
+  t(
+    "deep-learning.compression",
+    "Pruning, Distillation & NAS",
+    "advanced",
+    ["deep-learning.regularization"],
+    "Making a trained network smaller without making it worse.",
   ),
 ];
 
@@ -1214,6 +1626,34 @@ const llm: Topic[] = [
     ["llm.reasoning", "llm.multimodal"],
     "Where the state of the art currently is, how to read a model release, and reading papers usefully.",
   ),
+  t(
+    "llm.structured-output",
+    "Structured Output & Constrained Decoding",
+    "core",
+    ["llm.prompting"],
+    "JSON schemas, grammars, logit masking, and making a model's output safe to parse.",
+  ),
+  t(
+    "llm.memory",
+    "Memory & Long-Horizon Context",
+    "advanced",
+    ["llm.rag"],
+    "Context windows, summarisation, retrieval as memory, and staying coherent over a long session.",
+  ),
+  t(
+    "llm.protocols",
+    "Tool Protocols & Interop",
+    "core",
+    ["llm.agents"],
+    "Function-calling schemas, MCP, sandboxing, and wiring a model to real systems.",
+  ),
+  t(
+    "llm.coding-agents",
+    "Code Generation & Coding Agents",
+    "advanced",
+    ["llm.agents"],
+    "Repo-scale context, patch generation, test-driven agent loops, and evaluating generated code.",
+  ),
 ];
 
 const mlSystems: Topic[] = [
@@ -1308,11 +1748,33 @@ const mlSystems: Topic[] = [
     ["ml-systems.inference-optimization"],
     "Cost per token and per prediction, capacity planning for accelerators, and build-vs-buy.",
   ),
+  t(
+    "ml-systems.labeling",
+    "Labeling & Human-in-the-Loop",
+    "core",
+    ["ml-systems.data-pipelines"],
+    "Annotation guidelines, agreement, active learning, and humans as part of the running system.",
+  ),
+  t(
+    "ml-systems.privacy",
+    "Privacy-Preserving ML",
+    "advanced",
+    ["ml-systems.data-pipelines", "security.privacy"],
+    "Federated learning, differential privacy, PII handling, and training on data you cannot see.",
+  ),
+  t(
+    "ml-systems.edge",
+    "On-Device & Edge Inference",
+    "advanced",
+    ["ml-systems.inference-optimization"],
+    "Mobile and embedded runtimes, memory ceilings, battery, and shipping a model inside an app.",
+  ),
 ];
 
 export const TOPICS: readonly Topic[] = [
   ...foundations,
   ...craft,
+  ...engineering,
   ...backend,
   ...frontend,
   ...distributed,

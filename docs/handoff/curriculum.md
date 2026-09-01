@@ -78,5 +78,5 @@ See `docs/curriculum-authoring-prompt.md` for the generation prompt and
 `content/curriculum/README.md` for the file format. Nothing else needs
 touching: a new directory that matches a topic id appears on the map by itself.
 
-Adding a **topic** is a catalog edit; the unit suite will tell you if its
+The catalog holds 227 topics across 14 tracks. Adding a **topic** is a catalog edit; the unit suite will tell you if its
 prereqs don't resolve.

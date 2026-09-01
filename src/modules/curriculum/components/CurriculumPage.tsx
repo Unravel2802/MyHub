@@ -12,6 +12,7 @@ import { hueFor } from "@/src/components/moduleHues";
 import { register, unregister } from "@/src/lib/commandPalette";
 import { registerShortcuts, unregisterShortcuts } from "@/src/lib/shortcuts";
 import {
+  TOPICS,
   TRACKS,
   topicsInTrack,
 } from "@/src/modules/curriculum/curriculumCatalog";
@@ -165,7 +166,7 @@ export function CurriculumPage({ index }: CurriculumPageProps) {
         <StatCard
           key="topics"
           label="Topics on the map"
-          value={`${overall.topicsWithMaterial} / 163`}
+          value={`${overall.topicsWithMaterial} / ${TOPICS.length}`}
           hint="with material written"
         />,
         <StatCard

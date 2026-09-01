@@ -662,3 +662,20 @@ body {
   cursor: default;
   user-select: none;
 }
+
+/* The curriculum graph's dot floor. A plain flat panel behind a node-and-edge
+   diagram gives the eye nothing to judge distance against, so the layout's
+   careful row spacing reads as arbitrary; a grid at the same 26px rhythm as the
+   layout's own gaps makes the structure legible.
+
+   Painted from `--border` via color-mix rather than a fixed grey, so it tracks
+   both themes — a hardcoded dot that reads as "faint texture" on near-black is
+   a smudge on white. */
+.curriculum-graph {
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--border) 85%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 26px 26px;
+  background-position: -13px -13px;
+}

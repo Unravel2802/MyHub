@@ -108,7 +108,7 @@ both files in the same commit so the two agents never diverge on tooling.
 ## Project Status — everything planned is shipped (last verified 2026-08-11)
 
 **All four waves and every later addition are done and merged to `main`**, with migrations
-`0001`–`0043` applied and 1400 unit / 147 E2E tests green:
+`0001`–`0043` applied and 1404 unit / 147 E2E tests green:
 
 - **Wave 1** — Task Engine, Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard
 - **Wave 2** — shared AppShell, task completion timestamps, Prep/CRM depth, Momentum
@@ -129,7 +129,9 @@ or every chapter 404s in production while working in dev, and that its upsert ne
 unique constraint rather than this schema's usual partial index (the 0014 → 0015 bug again).
 The topic GRAPH is code (`curriculumCatalog.ts`) and the chapter PROSE is markdown files under
 `content/curriculum/`; only progress is a table. New chapters are generated with
-`docs/curriculum-authoring-prompt.md` and need no code change.
+`docs/curriculum-authoring-prompt.md` and need no code change. The **Distributed Systems
+track is written in full** (16 topics, 83 chapters) and is the quality bar for the rest;
+227 topics exist on the map, most still awaiting prose.
 
 **The Reader shipped 2026-08-11** (PDF viewer + select-to-highlight annotation), so there is
 now no unbuilt feature. Read `docs/handoff/reader.md` before touching it — it records two traps

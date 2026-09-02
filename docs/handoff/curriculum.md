@@ -78,5 +78,22 @@ See `docs/curriculum-authoring-prompt.md` for the generation prompt and
 `content/curriculum/README.md` for the file format. Nothing else needs
 touching: a new directory that matches a topic id appears on the map by itself.
 
+## Content status
+
+The **Distributed Systems track is complete** — all 16 topics, 83 chapters. It is
+the worked example of what a finished track looks like, and the standard the rest
+should match: diagrams in every chapter, worked examples with real intermediate
+values, named failure modes, and numbered takeaways that hand off to the next
+chapter.
+
+Also written: Programming Fundamentals and Data Structures (CS Foundations), and
+two chapters of Caching (Backend). Everything else is graph-only — the topic
+appears on the map with a "no material yet" state, which is deliberate: the map is
+complete from day one and the prose fills in behind it.
+
+`src/modules/curriculum/contentWidth.test.ts` fails the build on any fenced line
+over 80 columns. It exists for generated content — chapters arrive from a model in
+bulk and nobody will eyeball every fence.
+
 The catalog holds 227 topics across 14 tracks. Adding a **topic** is a catalog edit; the unit suite will tell you if its
 prereqs don't resolve.

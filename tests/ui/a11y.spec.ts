@@ -111,10 +111,22 @@ test("every page has exactly one h1 and a main landmark", async ({ page }) => {
     "/applications",
     "/finance",
     "/trading",
+    "/curriculum",
+    // The chapter reader renders the title as its own h1, so a chapter file
+    // that opens with the same `# Heading` would give the page two — which is
+    // why content.ts strips it (stripLeadingTitle).
+    "/curriculum/foundations.data-structures/01-arrays-and-memory",
   ]) {
     await page.goto(path);
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator("main")).toHaveCount(1);
-    await expect(page.getByRole("navigation")).toBeVisible();
+    // Named, not just "a navigation landmark": a page may legitimately carry
+    // more than one (the chapter reader has a breadcrumb and a prev/next
+    // pager, both labelled), and a bare role lookup turns that correct
+    // structure into a strict-mode violation. Naming it also makes the
+    // assertion stronger — it checks the APP nav is there, not merely a nav.
+    await expect(
+      page.getByRole("navigation", { name: "MyHub modules" }),
+    ).toBeVisible();
   }
 });

@@ -90,7 +90,7 @@ export const MINI_APPS: readonly MiniApp[] = [
 // lucide icon into anything that asks for a color).
 export const MINI_APP_HREFS: Record<MiniAppKey, readonly string[]> = {
   // What you do to get better at the work.
-  practice: ["/prep", "/design-drills"],
+  practice: ["/prep", "/design-drills", "/curriculum"],
   // What you send outward, and what comes back — the pipeline end to end.
   jobs: ["/applications", "/outreach", "/offers"],
   // Where you look to see how any of it is going.

@@ -139,7 +139,7 @@ flag those back; everything else, expect to own.
 ## Project Status — everything planned is shipped (last verified 2026-08-11)
 
 **All four waves and every later addition are done and merged to `main`**, with migrations
-`0001`–`0042` applied and 1168 unit / 131 E2E tests green: the five Wave 1 modules (Task Engine,
+`0001`–`0043` applied and 1404 unit / 147 E2E tests green: the five Wave 1 modules (Task Engine,
 Prep Tracker, Job Application CRM, Outreach Log, Daily Dashboard), Wave 2 (AppShell, completion
 timestamps, Prep/CRM depth, Momentum, weekly review, auth + RLS, offer evaluator), Waves 3 and 4
 (the visual system and frontend upgrade), and then Personal Finance, Roadmap, Design Drills,

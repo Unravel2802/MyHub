@@ -163,7 +163,8 @@ def advance(saga_id):
     step = SAGA[saga.step]
 
     try:
-        result = call(step.name, saga.payload, idempotency_key=f"{saga_id}:{saga.step}")
+        key = f"{saga_id}:{saga.step}"
+        result = call(step.name, saga.payload, idempotency_key=key)
         with db.transaction():
             saga.payload.update(result)
             saga.step += 1                    # progress and the next trigger

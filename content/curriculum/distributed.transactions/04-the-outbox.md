@@ -57,7 +57,9 @@ UPDATE outbox
    SET locked_by = 'relay-1', locked_at = now()
  WHERE id IN (
    SELECT id FROM outbox
-    WHERE sent_at IS NULL AND (locked_at IS NULL OR locked_at < now() - interval '30 seconds')
+    WHERE sent_at IS NULL
+      AND (locked_at IS NULL
+           OR locked_at < now() - interval '30 seconds')
     ORDER BY created_at
     LIMIT 100
     FOR UPDATE SKIP LOCKED          -- ← the important part

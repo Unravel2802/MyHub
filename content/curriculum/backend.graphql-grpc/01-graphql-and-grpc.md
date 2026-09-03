@@ -89,9 +89,9 @@ own new failure mode, which is why neither has replaced REST outright.
 ## gRPC: solving service-to-service overhead
 
 ```text
-  gRPC is Protobuf ([backend.serialization](/curriculum/backend.serialization)) as the wire
-  format, over HTTP/2, with generated typed clients and
-  servers in every language from ONE .proto definition.
+  gRPC is Protobuf ([backend.serialization](/curriculum/backend.serialization))
+  as the wire format, over HTTP/2, with generated typed
+  clients and servers in every language from ONE .proto file.
 
     service OrderService {
       rpc GetOrder(GetOrderRequest) returns (Order);

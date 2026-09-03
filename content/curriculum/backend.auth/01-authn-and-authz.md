@@ -149,7 +149,7 @@ enforces roles correctly but on a session that was never really verified.
     never from a field the caller controls.
 ```
 
-[backend.multitenancy](/curriculum/backend.multitenancy) is this same rule
+The Multi-Tenancy chapter is this same rule
 applied to a tenant id specifically — a request's tenant must come from the
 authenticated context, not a client-supplied field, or one tenant can read
 another's data by editing a request.

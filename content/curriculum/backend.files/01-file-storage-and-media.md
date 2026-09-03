@@ -110,7 +110,7 @@ server out of the byte stream while still controlling who can access it.
 
   the CDN caches the (already generated, already resized)
   bytes at edge locations close to the reader — this is
-  literally [backend.caching](/curriculum/backend.caching)'s
+  literally the Caching chapter's
   "CDN" layer, applied specifically to media.
 ```
 

@@ -45,7 +45,7 @@ request that triggered it — at the cost of a whole new set of failure modes.
   → exactly-once delivery is not achievable at the messaging
     layer in general (this is the same underlying problem as
     distributed consensus under network partitions — see
-    [distributed.consensus](/curriculum/distributed.consensus)). the
+    the Consensus chapter). the
     practical answer is at-least-once delivery PLUS an
     idempotent handler, which composes into an effectively-
     once OUTCOME even though delivery itself is not
@@ -145,10 +145,9 @@ request that triggered it — at the cost of a whole new set of failure modes.
 
 ## Where this connects
 
-[backend.jobs-scheduling](/curriculum/backend.jobs-scheduling) is queues plus a
-clock — recurring work instead of one-off. [backend.event-sourcing](/curriculum/backend.event-sourcing) uses a
-queue's ordering and at-least-once guarantees as its event log's delivery
-mechanism.
+The Scheduling & Cron chapter is queues plus a clock — recurring work instead
+of one-off. The Event Sourcing & CQRS chapter uses a queue's ordering and
+at-least-once guarantees as its event log's delivery mechanism.
 
 ## What to take away
 

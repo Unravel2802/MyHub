@@ -92,7 +92,7 @@ giving up.
 ```
 
 This optimistic pattern is exactly what HTTP's `If-Match` conditional request
-does at the API layer ([backend.http](/curriculum/backend.http)) — a version
+does at the API layer (the HTTP & the Web Platform chapter) — a version
 or ETag read on GET, sent back on the write, rejected with 412 if it moved.
 Same idea, two layers.
 
@@ -133,7 +133,7 @@ Same idea, two layers.
     preferring an eventually-consistent SAGA (a sequence of
     local transactions with compensating actions) instead —
     covered in full in
-    [distributed.transactions](/curriculum/distributed.transactions),
+    the Distributed Transactions chapter,
     which this chapter's single-database version sets up.
 ```
 

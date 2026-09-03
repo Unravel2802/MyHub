@@ -122,7 +122,7 @@ decisions that are easy to get wrong, and expensive to fix once clients exist.
   act on it.
 ```
 
-This is the client-facing edge of the rule in [CLAUDE.md](/curriculum): a store
+This is the client-facing edge of this project's own store-error rule: a store
 never surfaces a raw database error to the UI. A REST error body is the same
 discipline applied at the API boundary — the code is stable and documented,
 the message is for a developer's console, not for parsing.
@@ -142,7 +142,7 @@ the message is for a developer's console, not for parsing.
   creating a second order.
 ```
 
-[backend.api-hardening](/curriculum/backend.api-hardening) covers the storage and expiry mechanics; this is
+The Rate Limiting & Resilience chapter covers the storage and expiry mechanics; this is
 the API-design half — the header is part of the contract, documented like any
 other field.
 

@@ -126,14 +126,13 @@ callers already exist.
 
 ## Where this connects
 
-[backend.graphql-grpc](/curriculum/backend.graphql-grpc) is largely this
-chapter applied: gRPC's wire format IS Protobuf, and GraphQL's schema plays the
-same "reader/writer contract" role JSON Schema plays for a REST body.
-[backend.queues](/curriculum/backend.queues) depends on this directly — a
-queued job's payload schema evolves under the same rolling-deploy constraint,
-except the "old reader" can be a message sitting in the queue for hours before
-a worker picks it up, which makes the compatibility window longer than a typical
-API rollout.
+The GraphQL & gRPC chapter is largely this chapter applied: gRPC's wire format
+IS Protobuf, and GraphQL's schema plays the same "reader/writer contract" role
+JSON Schema plays for a REST body. The Queues & Async Jobs chapter depends on
+this directly — a queued job's payload schema evolves under the same
+rolling-deploy constraint, except the "old reader" can be a message sitting in
+the queue for hours before a worker picks it up, which makes the
+compatibility window longer than a typical API rollout.
 
 ## What to take away
 

@@ -89,7 +89,7 @@ own new failure mode, which is why neither has replaced REST outright.
 ## gRPC: solving service-to-service overhead
 
 ```text
-  gRPC is Protobuf ([backend.serialization](/curriculum/backend.serialization))
+  gRPC is Protobuf (the Serialization & Schemas chapter)
   as the wire format, over HTTP/2, with generated typed
   clients and servers in every language from ONE .proto file.
 
@@ -120,7 +120,7 @@ own new failure mode, which is why neither has replaced REST outright.
 
   → server streaming fits "watch this resource for updates"
     naturally, without polling or a separate WebSocket
-    ([backend.realtime](/curriculum/backend.realtime) covers
+    (the Realtime & Streaming APIs chapter covers
     the browser-facing equivalent, since gRPC-Web support in
     browsers is limited).
 ```

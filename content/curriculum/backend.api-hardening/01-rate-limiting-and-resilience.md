@@ -59,10 +59,10 @@ specific, named failure mode.
 ## Retries and backoff
 
 ```text
-  same shape as [backend.queues](/curriculum/backend.queues)'s
+  same shape as the Queues & Async Jobs chapter's
   backoff, applied synchronously: exponential backoff + jitter,
   and — critically — only retry on IDEMPOTENT operations
-  (see [backend.http](/curriculum/backend.http)).
+  (see the HTTP & the Web Platform chapter).
 
   retrying a non-idempotent POST blindly can duplicate the
   side effect the first attempt already caused.
@@ -116,7 +116,7 @@ specific, named failure mode.
 ## Idempotency keys, tied together
 
 ```text
-  [backend.rest](/curriculum/backend.rest) introduced the
+  the REST API Design chapter introduced the
   header; this is the storage mechanic:
 
     Idempotency-Key: 3f29a1e4-...

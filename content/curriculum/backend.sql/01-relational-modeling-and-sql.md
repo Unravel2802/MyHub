@@ -188,8 +188,8 @@ read a query plan instead of guessing.
 ```
 
 The full machinery of isolation levels, the anomalies each one still permits,
-and optimistic-vs-pessimistic concurrency is [backend.transactions](/curriculum/backend.transactions) — this chapter is
-the schema and query layer underneath it.
+and optimistic-vs-pessimistic concurrency belongs to the Transactions &
+Isolation chapter — this chapter is the schema and query layer underneath it.
 
 ## What to take away
 

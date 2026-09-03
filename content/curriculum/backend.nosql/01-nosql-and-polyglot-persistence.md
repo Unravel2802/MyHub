@@ -91,7 +91,7 @@ have, not choosing a side in a SQL-vs-NoSQL debate.
 ```text
   many NoSQL stores trade strict consistency for availability
   and partition tolerance (see
-  [distributed.consistency](/curriculum/distributed.consistency)) —
+  the Consistency Models & CAP chapter) —
   DynamoDB and Cassandra default to EVENTUAL consistency on
   reads, with a stronger read available at extra cost
   (DynamoDB's "strongly consistent read", Cassandra's

@@ -67,7 +67,7 @@ about time or money that felt obviously true and wasn't.
     long did that take".
 ```
 
-This is also why [distributed.time](/curriculum/distributed.time) needs a
+This is also why the Time & Ordering chapter needs a
 different tool (Lamport clocks, vector clocks) for ordering events across
 machines — wall clocks on two different machines are not even guaranteed to
 agree with each other, let alone stay monotonic.

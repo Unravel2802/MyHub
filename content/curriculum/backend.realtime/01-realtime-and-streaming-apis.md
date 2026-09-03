@@ -69,7 +69,7 @@ introduces backpressure and fan-out as real engineering problems.
   → without a pub/sub layer between app servers, an event
     only reaches clients connected to the SAME server that
     received it — this is the same problem
-    [systems-design.case-chat](/curriculum/systems-design.case-chat)
+    the Case: Chat & Presence chapter
     solves with a session registry: know WHICH server holds
     a given client's connection, or broadcast to all servers
     and let each filter to its own connections.

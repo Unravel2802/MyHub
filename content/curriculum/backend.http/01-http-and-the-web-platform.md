@@ -43,7 +43,7 @@ header nobody set on purpose.
   browser's own retry-on-connection-reset all rely on this.
 ```
 
-That distinction is what [backend.api-hardening](/curriculum/backend.api-hardening)
+That distinction is what the Rate Limiting & Resilience chapter
 builds idempotency keys on top of, for the POST case where the method itself
 gives no guarantee.
 

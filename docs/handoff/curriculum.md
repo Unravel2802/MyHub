@@ -80,17 +80,19 @@ touching: a new directory that matches a topic id appears on the map by itself.
 
 ## Content status
 
-Six tracks are complete:
+Seven tracks are complete:
 
 - **Distributed Systems** — 16 topics, 83 chapters
 - **ML Systems & MLOps** — 16 topics, 48 chapters
 - **LLMs & Frontier AI** — 18 topics, 19 chapters
 - **Systems Design** — 18 topics, 18 chapters
+- **Backend Engineering** — 21 topics, 22 chapters
 - **ML Foundations** — 17 topics, 17 chapters
 - **Deep Learning** — 14 topics, 14 chapters
 
-The first two run several chapters per topic; the ML spine and Systems Design run
-one long, dense chapter per topic. Both shapes are acceptable — the per-topic depth
+The first two run several chapters per topic; the ML spine, Systems Design and
+Backend run one long, dense chapter per topic (Backend's Caching topic, written
+earliest, still has two). Both shapes are acceptable — the per-topic depth
 differs, the per-chapter standard does not.
 
 They are the worked examples of what a finished track looks like, and the standard
@@ -104,9 +106,11 @@ rather than restating them. Twelve of its eighteen topics are cases (feeds, chat
 storage, rate limiting, search, payments, ML, notifications, geo, video, metrics,
 collaborative editing) sitting on six method topics.
 
-Also written: Programming Fundamentals and Data Structures (CS Foundations), and
-two chapters of Caching (Backend). 214 chapters, ~259,000 words, ~68 hours of
-reading, across 102 of 227 topics. Everything else is graph-only — the topic
+Also written: Programming Fundamentals and Data Structures (CS Foundations).
+234 chapters, ~276,000 words, ~73 hours of reading, across 122 of 228 topics
+(the catalog is 228, not 227 — an earlier count here was off by one; the
+`catalogCycles`/coverage script in `curriculumLayout.ts` is the source of
+truth, not this document). Everything else is graph-only — the topic
 appears on the map with a "no material yet" state, which is deliberate: the map is
 complete from day one and the prose fills in behind it.
 

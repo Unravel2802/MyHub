@@ -80,10 +80,17 @@ touching: a new directory that matches a topic id appears on the map by itself.
 
 ## Content status
 
-Two tracks are complete:
+Six tracks are complete:
 
 - **Distributed Systems** — 16 topics, 83 chapters
 - **ML Systems & MLOps** — 16 topics, 48 chapters
+- **LLMs & Frontier AI** — 18 topics, 19 chapters
+- **ML Foundations** — 17 topics, 17 chapters
+- **Deep Learning** — 14 topics, 14 chapters
+
+The first two run several chapters per topic; the ML spine runs one long, dense
+chapter per topic. Both shapes are acceptable — the per-topic depth differs, the
+per-chapter standard does not.
 
 They are the worked examples of what a finished track looks like, and the standard
 the rest should match: diagrams in every chapter, worked examples with real
@@ -91,8 +98,8 @@ intermediate values, named failure modes, and numbered takeaways that hand off t
 the next chapter.
 
 Also written: Programming Fundamentals and Data Structures (CS Foundations), and
-two chapters of Caching (Backend). 145 chapters, ~193,000 words, ~47 hours of
-reading. Everything else is graph-only — the topic
+two chapters of Caching (Backend). 195 chapters, ~260,000 words, ~63 hours of
+reading, across 83 of 227 topics. Everything else is graph-only — the topic
 appears on the map with a "no material yet" state, which is deliberate: the map is
 complete from day one and the prose fills in behind it.
 

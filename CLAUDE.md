@@ -129,9 +129,9 @@ or every chapter 404s in production while working in dev, and that its upsert ne
 unique constraint rather than this schema's usual partial index (the 0014 → 0015 bug again).
 The topic GRAPH is code (`curriculumCatalog.ts`) and the chapter PROSE is markdown files under
 `content/curriculum/`; only progress is a table. New chapters are generated with
-`docs/curriculum-authoring-prompt.md` and need no code change. The **Distributed Systems
-track is written in full** (16 topics, 83 chapters) and is the quality bar for the rest;
-227 topics exist on the map, most still awaiting prose.
+`docs/curriculum-authoring-prompt.md` and need no code change. The **Distributed Systems and
+ML Systems tracks are written in full** (32 topics, 131 chapters) and are the quality bar
+for the rest; 227 topics exist on the map, most still awaiting prose.
 
 **The Reader shipped 2026-08-11** (PDF viewer + select-to-highlight annotation), so there is
 now no unbuilt feature. Read `docs/handoff/reader.md` before touching it — it records two traps

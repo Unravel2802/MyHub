@@ -80,7 +80,7 @@ touching: a new directory that matches a topic id appears on the map by itself.
 
 ## Content status
 
-Eight tracks are complete:
+Nine tracks are complete:
 
 - **Distributed Systems** — 16 topics, 83 chapters
 - **ML Systems & MLOps** — 16 topics, 48 chapters
@@ -88,13 +88,14 @@ Eight tracks are complete:
 - **Systems Design** — 18 topics, 18 chapters
 - **Backend Engineering** — 21 topics, 22 chapters
 - **Software Craft** — 20 topics, 20 chapters
+- **Frontend Engineering** — 20 topics, 20 chapters
 - **ML Foundations** — 17 topics, 17 chapters
 - **Deep Learning** — 14 topics, 14 chapters
 
 The first two run several chapters per topic; the ML spine, Systems Design,
-Backend and Software Craft run one long, dense chapter per topic (Backend's
-Caching topic, written earliest, still has two). Both shapes are acceptable —
-the per-topic depth differs, the per-chapter standard does not.
+Backend, Software Craft and Frontend run one long, dense chapter per topic
+(Backend's Caching topic, written earliest, still has two). Both shapes are
+acceptable — the per-topic depth differs, the per-chapter standard does not.
 
 They are the worked examples of what a finished track looks like, and the standard
 the rest should match: diagrams in every chapter, worked examples with real
@@ -112,8 +113,14 @@ every other SWE-side track's code examples assume (clean naming, testing
 strategy, error design), so it was written to stand alone rather than lean on
 Backend or Frontend the way Systems Design leans on Distributed Systems.
 
+Frontend leans on Software Craft directly and constantly (type design's
+discriminated unions for a load-state, testing strategy's behavior-over-
+implementation rule for `getByRole` queries, build tooling's tree-shaking for
+bundlers) — it's the first track written after Craft that actually gets to
+cash that decision in, rather than forward-referencing an unwritten chapter.
+
 Also written: Programming Fundamentals and Data Structures (CS Foundations).
-254 chapters, ~293,000 words, ~79 hours of reading, across 142 of 228 topics
+274 chapters, ~311,000 words, ~85 hours of reading, across 162 of 228 topics
 (the catalog is 228, not 227 — an earlier count here was off by one; the
 `catalogCycles`/coverage script in `curriculumLayout.ts` is the source of
 truth, not this document). Everything else is graph-only — the topic

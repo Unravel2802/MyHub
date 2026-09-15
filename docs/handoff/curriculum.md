@@ -80,7 +80,7 @@ touching: a new directory that matches a topic id appears on the map by itself.
 
 ## Content status
 
-Nine tracks are complete:
+Ten tracks are complete:
 
 - **Distributed Systems** — 16 topics, 83 chapters
 - **ML Systems & MLOps** — 16 topics, 48 chapters
@@ -89,13 +89,17 @@ Nine tracks are complete:
 - **Backend Engineering** — 21 topics, 22 chapters
 - **Software Craft** — 20 topics, 20 chapters
 - **Frontend Engineering** — 20 topics, 20 chapters
+- **CS Foundations** — 18 topics, 28 chapters
 - **ML Foundations** — 17 topics, 17 chapters
 - **Deep Learning** — 14 topics, 14 chapters
 
 The first two run several chapters per topic; the ML spine, Systems Design,
-Backend, Software Craft and Frontend run one long, dense chapter per topic
-(Backend's Caching topic, written earliest, still has two). Both shapes are
-acceptable — the per-topic depth differs, the per-chapter standard does not.
+Backend, Software Craft and Frontend run one long, dense chapter per topic.
+CS Foundations is split: its first two topics (Programming Fundamentals,
+Data Structures — written earliest, before the single-chapter convention
+settled) run 6 chapters each; its other 16 run one chapter each, matching
+everything written since. Both shapes are acceptable — the per-topic depth
+differs, the per-chapter standard does not.
 
 They are the worked examples of what a finished track looks like, and the standard
 the rest should match: diagrams in every chapter, worked examples with real
@@ -119,8 +123,14 @@ implementation rule for `getByRole` queries, build tooling's tree-shaking for
 bundlers) — it's the first track written after Craft that actually gets to
 cash that decision in, rather than forward-referencing an unwritten chapter.
 
-Also written: Programming Fundamentals and Data Structures (CS Foundations).
-274 chapters, ~311,000 words, ~85 hours of reading, across 162 of 228 topics
+CS Foundations is the layer under every other track: several later chapters
+across Backend, Frontend and Software Craft point DOWN into it (a struct's
+cache-line behavior, a race condition's read-modify-write shape, why a
+GC pause is user-visible) the same way Systems Design and Frontend point at
+Distributed Systems and Software Craft. Completing it retroactively made
+several of those earlier forward-references resolvable.
+
+290 chapters, ~327,000 words, ~90 hours of reading, across 178 of 228 topics
 (the catalog is 228, not 227 — an earlier count here was off by one; the
 `catalogCycles`/coverage script in `curriculumLayout.ts` is the source of
 truth, not this document). Everything else is graph-only — the topic

@@ -67,7 +67,11 @@ test("a topic with no material says so instead of showing an empty list", async 
 }) => {
   await load(page, new FakeCurriculumDb());
 
-  await node(page, "Algorithms").click();
+  // Security is still unwritten — pick a topic there rather than one on an
+  // already-complete track, so this test doesn't break every time a chapter
+  // gets added to CS Foundations.
+  await page.getByRole("button", { name: /^Security/ }).click();
+  await node(page, "Security Foundations").click();
   await expect(page.getByText("Nothing to read here yet")).toBeVisible();
 });
 

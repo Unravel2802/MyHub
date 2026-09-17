@@ -80,7 +80,7 @@ touching: a new directory that matches a topic id appears on the map by itself.
 
 ## Content status
 
-Thirteen tracks are complete:
+**All fourteen tracks are complete — 227 of 227 topics, the entire map:**
 
 - **Distributed Systems** — 16 topics, 83 chapters
 - **ML Systems & MLOps** — 16 topics, 48 chapters
@@ -93,6 +93,7 @@ Thirteen tracks are complete:
 - **Infrastructure & Ops** — 15 topics, 15 chapters
 - **Security** — 11 topics, 11 chapters
 - **Data Engineering** — 11 topics, 11 chapters
+- **Engineering Practice** — 12 topics, 12 chapters
 - **ML Foundations** — 17 topics, 17 chapters
 - **Deep Learning** — 14 topics, 14 chapters
 
@@ -161,12 +162,23 @@ reads the same write-ahead log the database-internals chapter introduced,
 for a second purpose. Grain — what one fact row represents — is this
 track's own load-bearing idea, the way trust boundaries are Security's.
 
-327 chapters, ~363,000 words, ~101 hours of reading, across 215 of 228 topics
-(the catalog is 228, not 227 — an earlier count here was off by one; the
-`catalogCycles`/coverage script in `curriculumLayout.ts` is the source of
-truth, not this document). Everything else is graph-only — the topic
-appears on the map with a "no material yet" state, which is deliberate: the map is
-complete from day one and the prose fills in behind it.
+Engineering Practice is the last track, and the register genuinely shifts:
+less code, more judgment. It's also almost entirely retrospective in the
+same way Security was — "the smallest reasonable extension," "ask, don't
+decide, when a spec is ambiguous," this project's own architecture rules —
+all get named explicitly here as instances of a general engineering
+discipline (Product Sense's problem-first framing, Scoping's risk-first
+sequencing) that earlier tracks had already been quietly practicing without
+stopping to name.
+
+339 chapters, ~375,000 words, ~104 hours of reading, across **227 of 227
+topics — the full map, complete.** (`curriculumCatalog.ts`'s `t()` helper is
+called exactly 227 times, one per topic; the `catalogCycles`/coverage script
+in `curriculumLayout.ts` is the authoritative way to check this, not a
+count typed into a doc — a stray earlier count of "228" in this file's own
+history came from a regex matching a `.` argument inside the catalog's own
+`id.split(".")[0]` helper code, not a topic, and was wrong for every commit
+it appeared in. It's corrected here, at the finish line.)
 
 `src/modules/curriculum/contentWidth.test.ts` fails the build on any fenced line
 over 80 columns. It exists for generated content — chapters arrive from a model in

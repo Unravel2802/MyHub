@@ -129,13 +129,15 @@ or every chapter 404s in production while working in dev, and that its upsert ne
 unique constraint rather than this schema's usual partial index (the 0014 → 0015 bug again).
 The topic GRAPH is code (`curriculumCatalog.ts`) and the chapter PROSE is markdown files under
 `content/curriculum/`; only progress is a table. New chapters are generated with
-`docs/curriculum-authoring-prompt.md` and need no code change. **Thirteen tracks are written in
-full** — Distributed Systems, ML Systems & MLOps, LLMs & Frontier AI, Systems Design, Backend
-Engineering, Software Craft, Frontend Engineering, CS Foundations, Infrastructure & Ops,
-Security, Data Engineering, ML Foundations and Deep Learning (215 topics, 327 chapters) — and
-are the quality bar for the rest. 228 topics exist on the map (not 227 — an earlier count was
-off by one); **Engineering Practice is the only track left** — its 12 topics are the entirety of
-what remains unwritten on the map.
+`docs/curriculum-authoring-prompt.md` and need no code change. **The curriculum is complete —
+all fourteen tracks, 227 of 227 topics, 339 chapters** — Distributed Systems, ML Systems &
+MLOps, LLMs & Frontier AI, Systems Design, Backend Engineering, Software Craft, Frontend
+Engineering, CS Foundations, Infrastructure & Ops, Security, Data Engineering, Engineering
+Practice, ML Foundations and Deep Learning. (The catalog's `t()` topic constructor is called
+exactly 227 times — a stray "228" figure circulated in this file and the handoff doc for a
+stretch of the SWE-track work, from a regex miscounting a `.` string argument inside the
+catalog's own code as a topic; it's corrected now, in both places.) `docs/handoff/curriculum.md`
+is the source of truth for what's written and why each track leans on the ones before it.
 
 **The Reader shipped 2026-08-11** (PDF viewer + select-to-highlight annotation), so there is
 now no unbuilt feature. Read `docs/handoff/reader.md` before touching it — it records two traps

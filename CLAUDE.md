@@ -129,12 +129,13 @@ or every chapter 404s in production while working in dev, and that its upsert ne
 unique constraint rather than this schema's usual partial index (the 0014 → 0015 bug again).
 The topic GRAPH is code (`curriculumCatalog.ts`) and the chapter PROSE is markdown files under
 `content/curriculum/`; only progress is a table. New chapters are generated with
-`docs/curriculum-authoring-prompt.md` and need no code change. **Twelve tracks are written in
+`docs/curriculum-authoring-prompt.md` and need no code change. **Thirteen tracks are written in
 full** — Distributed Systems, ML Systems & MLOps, LLMs & Frontier AI, Systems Design, Backend
 Engineering, Software Craft, Frontend Engineering, CS Foundations, Infrastructure & Ops,
-Security, ML Foundations and Deep Learning (204 topics, 316 chapters) — and are the quality bar
-for the rest. 228 topics exist on the map (not 227 — an earlier count was off by one); the two
-remaining tracks (Engineering Practice, Data Engineering) are still largely awaiting prose.
+Security, Data Engineering, ML Foundations and Deep Learning (215 topics, 327 chapters) — and
+are the quality bar for the rest. 228 topics exist on the map (not 227 — an earlier count was
+off by one); **Engineering Practice is the only track left** — its 12 topics are the entirety of
+what remains unwritten on the map.
 
 **The Reader shipped 2026-08-11** (PDF viewer + select-to-highlight annotation), so there is
 now no unbuilt feature. Read `docs/handoff/reader.md` before touching it — it records two traps

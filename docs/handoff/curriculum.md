@@ -80,7 +80,7 @@ touching: a new directory that matches a topic id appears on the map by itself.
 
 ## Content status
 
-Eleven tracks are complete:
+Twelve tracks are complete:
 
 - **Distributed Systems** — 16 topics, 83 chapters
 - **ML Systems & MLOps** — 16 topics, 48 chapters
@@ -91,6 +91,7 @@ Eleven tracks are complete:
 - **Frontend Engineering** — 20 topics, 20 chapters
 - **CS Foundations** — 18 topics, 28 chapters
 - **Infrastructure & Ops** — 15 topics, 15 chapters
+- **Security** — 11 topics, 11 chapters
 - **ML Foundations** — 17 topics, 17 chapters
 - **Deep Learning** — 14 topics, 14 chapters
 
@@ -140,7 +141,17 @@ leader-election problem with a concrete blast radius). It also completes the
 run/build/ship arc Backend and Software Craft started — CI/CD, SLOs, and
 incident response are what happens to a service after it ships.
 
-305 chapters, ~341,000 words, ~94 hours of reading, across 193 of 228 topics
+Security is the track everything else had already been citing by name
+before it existed — least privilege, defense in depth, and the Security
+Foundations chapter itself were referenced from Backend, Infra, and CS
+Foundations chapters written months earlier. Its own chapters lean back
+across nearly every prior track in turn: prompt injection restates Web
+Application Security's SQL-injection shape with a harder sink; supply-chain
+signing restates Applied Cryptography's signature mechanism applied to
+distribution; automatic failover's split-brain risk (Infra) is the same
+leader-election problem detection rules have to reason about here too.
+
+316 chapters, ~352,000 words, ~97 hours of reading, across 204 of 228 topics
 (the catalog is 228, not 227 — an earlier count here was off by one; the
 `catalogCycles`/coverage script in `curriculumLayout.ts` is the source of
 truth, not this document). Everything else is graph-only — the topic

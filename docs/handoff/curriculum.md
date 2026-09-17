@@ -80,7 +80,7 @@ touching: a new directory that matches a topic id appears on the map by itself.
 
 ## Content status
 
-Ten tracks are complete:
+Eleven tracks are complete:
 
 - **Distributed Systems** — 16 topics, 83 chapters
 - **ML Systems & MLOps** — 16 topics, 48 chapters
@@ -90,6 +90,7 @@ Ten tracks are complete:
 - **Software Craft** — 20 topics, 20 chapters
 - **Frontend Engineering** — 20 topics, 20 chapters
 - **CS Foundations** — 18 topics, 28 chapters
+- **Infrastructure & Ops** — 15 topics, 15 chapters
 - **ML Foundations** — 17 topics, 17 chapters
 - **Deep Learning** — 14 topics, 14 chapters
 
@@ -130,7 +131,16 @@ GC pause is user-visible) the same way Systems Design and Frontend point at
 Distributed Systems and Software Craft. Completing it retroactively made
 several of those earlier forward-references resolvable.
 
-290 chapters, ~327,000 words, ~90 hours of reading, across 178 of 228 topics
+Infrastructure & Ops leans on both CS Foundations (a container is namespaces
+and cgroups on the OS chapter's process model; the OOM killer is the memory-
+management chapter's allocator meeting a cgroup limit) and Backend (a
+connection pooler is the rate-limiting chapter's bulkhead pattern applied to
+a database's connection cap; automatic failover is the Consensus chapter's
+leader-election problem with a concrete blast radius). It also completes the
+run/build/ship arc Backend and Software Craft started — CI/CD, SLOs, and
+incident response are what happens to a service after it ships.
+
+305 chapters, ~341,000 words, ~94 hours of reading, across 193 of 228 topics
 (the catalog is 228, not 227 — an earlier count here was off by one; the
 `catalogCycles`/coverage script in `curriculumLayout.ts` is the source of
 truth, not this document). Everything else is graph-only — the topic

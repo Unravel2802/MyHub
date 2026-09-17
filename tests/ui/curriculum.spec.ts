@@ -67,13 +67,15 @@ test("a topic with no material says so instead of showing an empty list", async 
 }) => {
   await load(page, new FakeCurriculumDb());
 
-  // Data Engineering is still unwritten — pick a topic there rather than one
-  // on an already-complete track. This has already had to move once
-  // (Algorithms, then Security Foundations, now this) as tracks finished;
-  // whoever completes Data Engineering next should repoint it again, to
-  // whichever of Engineering Practice's topics is still unwritten.
-  await page.getByRole("button", { name: /^Data Engineering/ }).click();
-  await node(page, "Analytical Data Modeling").click();
+  // Engineering Practice is the one remaining unwritten track — pick a topic
+  // there rather than one on an already-complete track. This has already had
+  // to move three times (Algorithms, Security Foundations, Analytical Data
+  // Modeling) as tracks finished; once Engineering Practice is written too,
+  // every topic on the map has material, and this test needs a different
+  // strategy entirely (e.g. a topic the mock DB doesn't seed, or asserting
+  // the empty state some other way) rather than another repoint.
+  await page.getByRole("button", { name: /^Engineering Practice/ }).click();
+  await node(page, "How Software Gets Built").click();
   await expect(page.getByText("Nothing to read here yet")).toBeVisible();
 });
 

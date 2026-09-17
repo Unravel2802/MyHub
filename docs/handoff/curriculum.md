@@ -80,7 +80,7 @@ touching: a new directory that matches a topic id appears on the map by itself.
 
 ## Content status
 
-Twelve tracks are complete:
+Thirteen tracks are complete:
 
 - **Distributed Systems** — 16 topics, 83 chapters
 - **ML Systems & MLOps** — 16 topics, 48 chapters
@@ -92,6 +92,7 @@ Twelve tracks are complete:
 - **CS Foundations** — 18 topics, 28 chapters
 - **Infrastructure & Ops** — 15 topics, 15 chapters
 - **Security** — 11 topics, 11 chapters
+- **Data Engineering** — 11 topics, 11 chapters
 - **ML Foundations** — 17 topics, 17 chapters
 - **Deep Learning** — 14 topics, 14 chapters
 
@@ -151,7 +152,16 @@ signing restates Applied Cryptography's signature mechanism applied to
 distribution; automatic failover's split-brain risk (Infra) is the same
 leader-election problem detection rules have to reason about here too.
 
-316 chapters, ~352,000 words, ~97 hours of reading, across 204 of 228 topics
+Data Engineering is Backend's SQL and database-internals chapters turned
+sideways, toward analytics instead of application state: a star schema's
+deliberate denormalization is the opposite instinct from the SQL chapter's
+normalization, on purpose, for a different read pattern; a table format's
+atomic manifest swap is MVCC reimplemented at the filesystem level; CDC
+reads the same write-ahead log the database-internals chapter introduced,
+for a second purpose. Grain — what one fact row represents — is this
+track's own load-bearing idea, the way trust boundaries are Security's.
+
+327 chapters, ~363,000 words, ~101 hours of reading, across 215 of 228 topics
 (the catalog is 228, not 227 — an earlier count here was off by one; the
 `catalogCycles`/coverage script in `curriculumLayout.ts` is the source of
 truth, not this document). Everything else is graph-only — the topic

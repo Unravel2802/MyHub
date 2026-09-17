@@ -67,11 +67,13 @@ test("a topic with no material says so instead of showing an empty list", async 
 }) => {
   await load(page, new FakeCurriculumDb());
 
-  // Security is still unwritten — pick a topic there rather than one on an
-  // already-complete track, so this test doesn't break every time a chapter
-  // gets added to CS Foundations.
-  await page.getByRole("button", { name: /^Security/ }).click();
-  await node(page, "Security Foundations").click();
+  // Data Engineering is still unwritten — pick a topic there rather than one
+  // on an already-complete track. This has already had to move once
+  // (Algorithms, then Security Foundations, now this) as tracks finished;
+  // whoever completes Data Engineering next should repoint it again, to
+  // whichever of Engineering Practice's topics is still unwritten.
+  await page.getByRole("button", { name: /^Data Engineering/ }).click();
+  await node(page, "Analytical Data Modeling").click();
   await expect(page.getByText("Nothing to read here yet")).toBeVisible();
 });
 

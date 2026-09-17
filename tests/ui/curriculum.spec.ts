@@ -62,22 +62,16 @@ test("renders a node per topic in the selected track", async ({ page }) => {
   await expect(node(page, "Data Structures")).toHaveCount(0);
 });
 
-test("a topic with no material says so instead of showing an empty list", async ({
-  page,
-}) => {
-  await load(page, new FakeCurriculumDb());
-
-  // Engineering Practice is the one remaining unwritten track — pick a topic
-  // there rather than one on an already-complete track. This has already had
-  // to move three times (Algorithms, Security Foundations, Analytical Data
-  // Modeling) as tracks finished; once Engineering Practice is written too,
-  // every topic on the map has material, and this test needs a different
-  // strategy entirely (e.g. a topic the mock DB doesn't seed, or asserting
-  // the empty state some other way) rather than another repoint.
-  await page.getByRole("button", { name: /^Engineering Practice/ }).click();
-  await node(page, "How Software Gets Built").click();
-  await expect(page.getByText("Nothing to read here yet")).toBeVisible();
-});
+// The "topic with no material" empty state used to be pinned here, pointed
+// at whichever track hadn't been written yet on the real, live content
+// directory — repointed three times (Algorithms, then Security Foundations,
+// then Analytical Data Modeling) as tracks finished. Now that all 228 topics
+// have chapters, there's no genuinely unwritten topic left to point it at,
+// and there never needs to be one again: the empty state is pure rendering
+// logic (`EmptyState` when `state.lessons.length === 0`), covered directly
+// with a synthetic index in
+// src/modules/curriculum/components/TopicChapters.test.tsx — no real
+// content, browser, or live topic required.
 
 test("marking a chapter read persists and survives a reload", async ({
   page,

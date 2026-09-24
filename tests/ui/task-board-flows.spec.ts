@@ -382,6 +382,46 @@ test("the drag preview stays under the pointer on a scrolled page", async ({
   expect(x + 30).toBeLessThanOrEqual(overlay.right);
 });
 
+test("Archive all moves every done task off the board", async ({ page }) => {
+  const completedAt = new Date().toISOString();
+  const db = await loadBoard(page, [
+    row({
+      id: "done-1",
+      title: "Shipped one",
+      status: "done",
+      completed_at: completedAt,
+    }),
+    row({
+      id: "done-2",
+      title: "Shipped two",
+      status: "done",
+      completed_at: completedAt,
+      position: 1000,
+    }),
+    row({ id: "todo-1", title: "Still to do", status: "todo" }),
+  ]);
+
+  const done = page.getByRole("region", { name: "Done" });
+  await expect(done.getByRole("article")).toHaveCount(2);
+
+  page.once("dialog", (dialog) => void dialog.accept());
+  await done.getByRole("button", { name: "Archive all" }).click();
+
+  await expect(done.getByRole("article")).toHaveCount(0);
+  await expect(done.getByRole("button", { name: "Archive all" })).toHaveCount(
+    0,
+  );
+  await expect(card(page, "Still to do")).toBeVisible();
+  await expect
+    .poll(() =>
+      db.rows
+        .filter((task) => task.archived_at !== null)
+        .map((t) => t.id)
+        .sort(),
+    )
+    .toEqual(["done-1", "done-2"]);
+});
+
 test("a failed create rolls back the card and surfaces an error", async ({
   page,
 }) => {

@@ -23,6 +23,8 @@ type BoardColumnProps = {
   style?: CSSProperties;
   onCreateSubtask: (id: string, title: string) => void;
   onDeleteTask: (id: string) => void;
+  // Only the Done column passes this; it renders the header's "Archive all".
+  onArchiveAll?: () => void;
   onArchiveTask: (id: string) => void;
   onUpdateDueDate: (id: string, dueDate: string | null) => void;
   onUpdateStatus: (id: string, status: TaskStatus) => void;
@@ -41,6 +43,7 @@ export function BoardColumn({
   style,
   onCreateSubtask,
   onDeleteTask,
+  onArchiveAll,
   onArchiveTask,
   onUpdateDueDate,
   onUpdateStatus,
@@ -65,9 +68,23 @@ export function BoardColumn({
               {column.title}
             </h3>
           </div>
-          <span className="rounded-full bg-surface-subtle px-2 py-0.5 text-xs font-medium text-muted">
-            {tasks.length}
-          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            {onArchiveAll && tasks.length > 0 ? (
+              <button
+                className="h-7 rounded-md border border-border bg-surface px-2 text-xs font-medium text-body transition-colors hover:bg-surface-subtle disabled:cursor-not-allowed disabled:text-muted"
+                disabled={
+                  isCreating || tasks.some((t) => disabledTaskIds.has(t.id))
+                }
+                onClick={onArchiveAll}
+                type="button"
+              >
+                Archive all
+              </button>
+            ) : null}
+            <span className="rounded-full bg-surface-subtle px-2 py-0.5 text-xs font-medium text-muted">
+              {tasks.length}
+            </span>
+          </div>
         </div>
         <p className="mt-2 text-xs leading-5 text-muted">
           {column.description}

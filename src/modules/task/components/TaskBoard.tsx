@@ -216,6 +216,17 @@ export function TaskBoard() {
     void archiveTask(id);
   }
 
+  // Archives what the Done column is showing — with a search active, only the
+  // matching cards, so the button never touches tasks the user can't see.
+  function handleArchiveAllDone() {
+    const done = tasksByStatus.done;
+    if (done.length === 0) return;
+    const noun = done.length === 1 ? "task" : "tasks";
+    if (window.confirm(`Archive ${done.length} done ${noun}?`)) {
+      for (const task of done) void archiveTask(task.id);
+    }
+  }
+
   function handleReopenTask(id: string) {
     void reopenTask(id);
   }
@@ -329,6 +340,7 @@ export function TaskBoard() {
         onDragCancel={() => setActiveTask(null)}
         onDragEnd={(event) => void handleDragEnd(event)}
         onDragStart={handleDragStart}
+        onArchiveAllDone={handleArchiveAllDone}
         onArchiveTask={handleArchiveTask}
         onReopenTask={handleReopenTask}
         onUpdateDueDate={handleUpdateDueDate}

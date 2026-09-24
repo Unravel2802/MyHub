@@ -10,6 +10,8 @@ import {
   pointerWithin,
   useSensors,
 } from "@dnd-kit/core";
+import { useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { BoardColumn } from "@/src/modules/task/components/BoardColumn";
 import { TaskArchive } from "@/src/modules/task/components/TaskArchive";
 import { formatDueDate } from "@/src/modules/task/taskBoardUtils";
@@ -20,6 +22,8 @@ const boardCollisionDetection: CollisionDetection = (args) => {
   const withinPointer = pointerWithin(args);
   return withinPointer.length > 0 ? withinPointer : closestCorners(args);
 };
+
+const subscribeNever = () => () => {};
 
 type TaskBoardCanvasProps = {
   activeTask: Task | null;
@@ -68,6 +72,32 @@ export function TaskBoardCanvas({
   onUpdateStatus,
   onUpdateTitle,
 }: TaskBoardCanvasProps) {
+  // DragOverlay is position: fixed, so it must not sit under an ancestor with a
+  // transform — PageTemplateBody's page-fade animation fills with one, which
+  // makes that section the containing block and offsets the overlay from the
+  // pointer by the scroll distance. Portal it to <body> — null on the server,
+  // where document doesn't exist.
+  const portalTarget = useSyncExternalStore(
+    subscribeNever,
+    () => document.body,
+    () => null,
+  );
+
+  const dragOverlay = (
+    <DragOverlay>
+      {activeTask ? (
+        <div className="rounded-md border border-accent bg-surface p-4 shadow-lg">
+          <p className="text-sm font-semibold text-foreground">
+            {activeTask.title}
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            {formatDueDate(activeTask.dueDate)}
+          </p>
+        </div>
+      ) : null}
+    </DragOverlay>
+  );
+
   return (
     <section className="flex min-w-0 flex-col">
       <div className="flex-1 overflow-x-auto">
@@ -109,18 +139,7 @@ export function TaskBoardCanvas({
             ))}
           </div>
 
-          <DragOverlay>
-            {activeTask ? (
-              <div className="rounded-md border border-accent bg-surface p-4 shadow-lg">
-                <p className="text-sm font-semibold text-foreground">
-                  {activeTask.title}
-                </p>
-                <p className="mt-1 text-xs text-muted">
-                  {formatDueDate(activeTask.dueDate)}
-                </p>
-              </div>
-            ) : null}
-          </DragOverlay>
+          {portalTarget && createPortal(dragOverlay, portalTarget)}
         </DndContext>
 
         <TaskArchive

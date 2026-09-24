@@ -42,6 +42,7 @@ type TaskBoardCanvasProps = {
   onDragCancel: () => void;
   onDragEnd: (event: DragEndEvent) => void;
   onDragStart: (event: DragStartEvent) => void;
+  onArchiveAllDone: () => void;
   onArchiveTask: (id: string) => void;
   onReopenTask: (id: string) => void;
   onUpdateDueDate: (id: string, dueDate: string | null) => void;
@@ -66,6 +67,7 @@ export function TaskBoardCanvas({
   onDragCancel,
   onDragEnd,
   onDragStart,
+  onArchiveAllDone,
   onArchiveTask,
   onReopenTask,
   onUpdateDueDate,
@@ -128,6 +130,9 @@ export function TaskBoardCanvas({
                 isCreating={isCreating}
                 isLoading={isLoading}
                 onCreateSubtask={onCreateSubtask}
+                onArchiveAll={
+                  column.status === "done" ? onArchiveAllDone : undefined
+                }
                 onArchiveTask={onArchiveTask}
                 onDeleteTask={onDeleteTask}
                 onUpdateDueDate={onUpdateDueDate}

@@ -333,6 +333,55 @@ test("dragging a card from Inbox to Todo persists the new status", async ({
     .toBe("todo");
 });
 
+test("the drag preview stays under the pointer on a scrolled page", async ({
+  page,
+}) => {
+  // Regression: DragOverlay is position: fixed, and it used to render inside
+  // PageTemplateBody's page-fade section, whose filling transform animation
+  // made that section its containing block. On a scrolled page the preview
+  // then rendered offset from the pointer by the scroll distance.
+  await page.setViewportSize({ width: 1280, height: 480 });
+  await loadBoard(page, [
+    row({ id: "task-1", title: "Follow the pointer", position: 1000 }),
+  ]);
+
+  const handle = card(page, "Follow the pointer").getByText(
+    "Follow the pointer",
+  );
+  await handle.scrollIntoViewIfNeeded();
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+
+  const from = await handle.boundingBox();
+  if (!from) throw new Error("Expected the card to be visible");
+  const x = from.x + from.width / 2;
+  const y = from.y + from.height / 2;
+
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 30, y + 30, { steps: 5 });
+
+  // The overlay is the only fixed-position element holding the title.
+  const overlay = await page.evaluate(() => {
+    for (const el of document.querySelectorAll<HTMLElement>("*")) {
+      if (
+        getComputedStyle(el).position === "fixed" &&
+        el.textContent?.includes("Follow the pointer")
+      ) {
+        const r = el.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+      }
+    }
+    return null;
+  });
+  await page.mouse.up();
+
+  if (!overlay) throw new Error("Expected a drag overlay while dragging");
+  expect(y + 30).toBeGreaterThanOrEqual(overlay.top);
+  expect(y + 30).toBeLessThanOrEqual(overlay.bottom);
+  expect(x + 30).toBeGreaterThanOrEqual(overlay.left);
+  expect(x + 30).toBeLessThanOrEqual(overlay.right);
+});
+
 test("a failed create rolls back the card and surfaces an error", async ({
   page,
 }) => {

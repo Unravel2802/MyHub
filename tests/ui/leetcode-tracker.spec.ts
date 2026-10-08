@@ -163,6 +163,63 @@ test("rolls back a failed attempt create", async ({ page }) => {
   expect(db.attempts).toHaveLength(0);
 });
 
+test("groups attempts by day and collapses only the grouped view", async ({
+  page,
+}) => {
+  const db = new FakeLeetCodeDb(
+    [
+      leetCodeProblemRow({ id: "two-sum", title: "Two Sum" }),
+      leetCodeProblemRow({
+        id: "median",
+        title: "Median of Two Sorted Arrays",
+      }),
+    ],
+    [
+      leetCodeAttemptRow({
+        id: "two-sum-attempt",
+        problem_id: "two-sum",
+        date: "2026-07-24",
+      }),
+      leetCodeAttemptRow({
+        id: "median-attempt",
+        problem_id: "median",
+        date: "2026-07-20",
+      }),
+    ],
+  );
+  await load(page, db);
+
+  const headers = page
+    .locator("tbody tr")
+    .filter({ has: page.locator('td[colspan="6"]') });
+  await expect(headers).toHaveCount(2);
+  await expect(headers.nth(0)).toContainText("Fri, Jul 24");
+  await expect(headers.nth(1)).toContainText("Mon, Jul 20");
+
+  const latestHeaderButton = headers.nth(0).getByRole("button");
+  await expect(latestHeaderButton).toHaveAttribute("aria-expanded", "true");
+  await latestHeaderButton.click();
+  await expect(latestHeaderButton).toHaveAttribute("aria-expanded", "false");
+  await expect(
+    page.getByRole("button", { name: "Two Sum", exact: true }),
+  ).toHaveCount(0);
+  await latestHeaderButton.click();
+  await expect(latestHeaderButton).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    page.getByRole("button", { name: "Two Sum", exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: /Last attempted/ }).click();
+  const flippedHeaders = page
+    .locator("tbody tr")
+    .filter({ has: page.locator('td[colspan="6"]') });
+  await expect(flippedHeaders.nth(0)).toContainText("Mon, Jul 20");
+  await expect(flippedHeaders.nth(1)).toContainText("Fri, Jul 24");
+
+  await page.getByRole("button", { name: "Problem", exact: true }).click();
+  await expect(page.locator('tbody td[colspan="6"]')).toHaveCount(0);
+});
+
 test("filters, sorts, and inline edits the problem table", async ({ page }) => {
   const db = new FakeLeetCodeDb(
     [
@@ -196,15 +253,16 @@ test("filters, sorts, and inline edits the problem table", async ({ page }) => {
   );
   await load(page, db);
 
-  // Default sort is last-attempted descending. Asserting the row ORDER, not
-  // just that the dates render: a sort keyed off attempt rows can go stale
-  // while every date cell beside it still reads correctly, which is precisely
-  // the kind of failure a per-cell assertion waves through.
-  const rows = page.getByRole("row");
-  await expect(rows.nth(1)).toContainText("Two Sum");
-  await expect(rows.nth(1)).toContainText("2026-07-24");
-  await expect(rows.nth(2)).toContainText("Median of Two Sorted Arrays");
-  await expect(rows.nth(2)).toContainText("—");
+  await expect(page.getByRole("row").nth(1)).toContainText("Fri, Jul 24");
+
+  // Default sort is last-attempted descending. Day summaries are also table
+  // rows, so target the actual problem rows by their inline status control
+  // rather than relying on absolute row positions.
+  const rows = page.locator("tbody tr").filter({ has: page.locator("select") });
+  await expect(rows.nth(0)).toContainText("Two Sum");
+  await expect(rows.nth(0)).toContainText("2026-07-24");
+  await expect(rows.nth(1)).toContainText("Median of Two Sorted Arrays");
+  await expect(rows.nth(1)).toContainText("—");
 
   const filters = page.getByRole("group", {
     name: "Filter LeetCode problems",

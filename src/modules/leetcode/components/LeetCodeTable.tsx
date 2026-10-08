@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowDown, ArrowUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { differenceInCalendarDays, format, parseISO } from "date-fns";
+import { Fragment, useMemo, useState } from "react";
 import { hueFor } from "@/src/components/moduleHues";
 import { Badge } from "@/src/components/ui/Badge";
 import { EmptyState } from "@/src/components/ui/EmptyState";
@@ -16,6 +17,7 @@ import type {
 import {
   LEETCODE_STATUSES,
   attemptStats,
+  groupByLastAttemptDay,
 } from "@/src/modules/leetcode/leetcodeBoard";
 import {
   difficultyLabels,
@@ -24,6 +26,7 @@ import {
   statusLabels,
 } from "@/src/modules/leetcode/components/leetcodeUi";
 import { LEETCODE_DIFFICULTY_HUES } from "@/src/modules/leetcode/leetcodeHues";
+import { LeetCodeDayHeader } from "@/src/modules/leetcode/components/LeetCodeDayHeader";
 
 type SortKey =
   | "questionNumber"
@@ -141,6 +144,72 @@ function TagsCell({ disabled, problem, onUpdate }: TagsCellProps) {
   );
 }
 
+interface ProblemRowProps {
+  onSelect: (id: string) => void;
+  onUpdate: (id: string, updates: Partial<CreateProblemInput>) => Promise<void>;
+  pending: boolean;
+  problem: LeetCodeProblem;
+  statsFor: (problemId: string) => AttemptStats;
+}
+
+function ProblemRow({
+  onSelect,
+  onUpdate,
+  pending,
+  problem,
+  statsFor,
+}: ProblemRowProps) {
+  return (
+    <tr className="bg-surface hover:bg-surface-subtle">
+      <td className="px-3 py-3 text-muted">{problem.questionNumber ?? "—"}</td>
+      <td className="px-3 py-3">
+        <button
+          className="font-medium text-foreground hover:text-accent-strong"
+          onClick={() => onSelect(problem.id)}
+          type="button"
+        >
+          {problem.title}
+        </button>
+      </td>
+      <td className="px-3 py-3">
+        <Badge hue={LEETCODE_DIFFICULTY_HUES[problem.difficulty]}>
+          {difficultyLabels[problem.difficulty]}
+        </Badge>
+      </td>
+      <td className="px-3 py-3">
+        <select
+          aria-label={`Status for ${problem.title}`}
+          className="h-8 rounded-md border border-input bg-surface px-2 text-xs text-body"
+          disabled={pending}
+          onChange={(event) =>
+            void onUpdate(problem.id, {
+              status: event.target.value as LeetCodeStatus,
+            })
+          }
+          value={problem.status}
+        >
+          {LEETCODE_STATUSES.map((value) => (
+            <option key={value} value={value}>
+              {statusLabels[value]}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td className="px-1 py-2">
+        <TagsCell
+          disabled={pending}
+          key={`${problem.id}:${problem.tags.join(",")}`}
+          onUpdate={onUpdate}
+          problem={problem}
+        />
+      </td>
+      <td className="px-3 py-3 text-muted">
+        {statsFor(problem.id).lastAttempt?.date ?? "—"}
+      </td>
+    </tr>
+  );
+}
+
 interface LeetCodeTableProps {
   // The attempt rows themselves, not the store's attemptStats accessor. That
   // accessor closes over get(), so its identity never changes — memoizing the
@@ -171,6 +240,9 @@ export function LeetCodeTable({
   const [tag, setTag] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("lastAttempted");
   const [ascending, setAscending] = useState(false);
+  const [collapsedDays, setCollapsedDays] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const statsFor = useMemo(
     () => (problemId: string) => attemptStats(attempts, problemId),
@@ -195,6 +267,25 @@ export function LeetCodeTable({
 
     return sortLeetCodeProblems(filtered, sortKey, ascending, statsFor);
   }, [ascending, difficulty, problems, sortKey, statsFor, status, tag]);
+
+  const today = format(new Date(), "yyyy-MM-dd");
+  const dayGroups = useMemo(
+    () =>
+      sortKey === "lastAttempted"
+        ? groupByLastAttemptDay(visible, attempts, today)
+        : [],
+    [attempts, sortKey, today, visible],
+  );
+
+  function toggleDay(date: string | null) {
+    const key = date ?? "not-attempted";
+    setCollapsedDays((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   function toggleSort(nextKey: SortKey) {
     if (nextKey === sortKey) {
@@ -310,63 +401,54 @@ export function LeetCodeTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {visible.map((problem) => {
-                const pending = pendingIds.has(problem.id);
-                return (
-                  <tr
-                    className="bg-surface hover:bg-surface-subtle"
-                    key={problem.id}
-                  >
-                    <td className="px-3 py-3 text-muted">
-                      {problem.questionNumber ?? "—"}
-                    </td>
-                    <td className="px-3 py-3">
-                      <button
-                        className="font-medium text-foreground hover:text-accent-strong"
-                        onClick={() => onSelect(problem.id)}
-                        type="button"
-                      >
-                        {problem.title}
-                      </button>
-                    </td>
-                    <td className="px-3 py-3">
-                      <Badge hue={LEETCODE_DIFFICULTY_HUES[problem.difficulty]}>
-                        {difficultyLabels[problem.difficulty]}
-                      </Badge>
-                    </td>
-                    <td className="px-3 py-3">
-                      <select
-                        aria-label={`Status for ${problem.title}`}
-                        className="h-8 rounded-md border border-input bg-surface px-2 text-xs text-body"
-                        disabled={pending}
-                        onChange={(event) =>
-                          void onUpdate(problem.id, {
-                            status: event.target.value as LeetCodeStatus,
-                          })
-                        }
-                        value={problem.status}
-                      >
-                        {LEETCODE_STATUSES.map((value) => (
-                          <option key={value} value={value}>
-                            {statusLabels[value]}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-1 py-2">
-                      <TagsCell
-                        disabled={pending}
-                        key={`${problem.id}:${problem.tags.join(",")}`}
-                        onUpdate={onUpdate}
-                        problem={problem}
-                      />
-                    </td>
-                    <td className="px-3 py-3 text-muted">
-                      {statsFor(problem.id).lastAttempt?.date ?? "—"}
-                    </td>
-                  </tr>
-                );
-              })}
+              {sortKey === "lastAttempted"
+                ? dayGroups.map((group) => {
+                    const key = group.date ?? "not-attempted";
+                    return (
+                      <Fragment key={`header-${key}`}>
+                        <LeetCodeDayHeader
+                          collapsed={collapsedDays.has(key)}
+                          group={group}
+                          isToday={group.date === today}
+                          moduleHue={moduleHue}
+                          onToggle={() => toggleDay(group.date)}
+                          showFullDate={
+                            group.date !== null &&
+                            differenceInCalendarDays(
+                              parseISO(today),
+                              parseISO(group.date),
+                            ) >= 0 &&
+                            differenceInCalendarDays(
+                              parseISO(today),
+                              parseISO(group.date),
+                            ) <= 1
+                          }
+                        />
+                        {!collapsedDays.has(key)
+                          ? group.problems.map((problem) => (
+                              <ProblemRow
+                                key={problem.id}
+                                onSelect={onSelect}
+                                onUpdate={onUpdate}
+                                pending={pendingIds.has(problem.id)}
+                                problem={problem}
+                                statsFor={statsFor}
+                              />
+                            ))
+                          : null}
+                      </Fragment>
+                    );
+                  })
+                : visible.map((problem) => (
+                    <ProblemRow
+                      key={problem.id}
+                      onSelect={onSelect}
+                      onUpdate={onUpdate}
+                      pending={pendingIds.has(problem.id)}
+                      problem={problem}
+                      statsFor={statsFor}
+                    />
+                  ))}
             </tbody>
           </table>
         </div>

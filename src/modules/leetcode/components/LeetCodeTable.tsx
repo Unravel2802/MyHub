@@ -404,25 +404,22 @@ export function LeetCodeTable({
               {sortKey === "lastAttempted"
                 ? dayGroups.map((group) => {
                     const key = group.date ?? "not-attempted";
+                    const daysAgo =
+                      group.date === null
+                        ? null
+                        : differenceInCalendarDays(
+                            parseISO(today),
+                            parseISO(group.date),
+                          );
                     return (
                       <Fragment key={`header-${key}`}>
                         <LeetCodeDayHeader
                           collapsed={collapsedDays.has(key)}
                           group={group}
-                          isToday={group.date === today}
+                          isToday={daysAgo === 0}
                           moduleHue={moduleHue}
                           onToggle={() => toggleDay(group.date)}
-                          showFullDate={
-                            group.date !== null &&
-                            differenceInCalendarDays(
-                              parseISO(today),
-                              parseISO(group.date),
-                            ) >= 0 &&
-                            differenceInCalendarDays(
-                              parseISO(today),
-                              parseISO(group.date),
-                            ) <= 1
-                          }
+                          showFullDate={daysAgo === 0 || daysAgo === 1}
                         />
                         {!collapsedDays.has(key)
                           ? group.problems.map((problem) => (

@@ -54,8 +54,12 @@ export function LeetCodeDayHeader({
     <tr>
       <td
         className={cn(
-          "border-l-2 bg-surface-subtle px-3 py-3",
-          isToday ? HUE_BORDER_LEFT[moduleHue] : "border-l-border",
+          // Dark mode's --border is the same zinc-800 as --surface-subtle, so
+          // any border drawn in it vanishes against this row. --input is one
+          // step lighter; in the collapsed table these cell borders also win
+          // over the tbody's divide-y lines above and below the header.
+          "border-y border-l-2 border-input bg-surface-subtle px-3 py-3",
+          isToday && HUE_BORDER_LEFT[moduleHue],
         )}
         colSpan={6}
       >

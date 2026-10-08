@@ -77,7 +77,7 @@ describe("LeetCodeDayHeader", () => {
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain("Not attempted");
     expect(html).not.toContain(">Time<");
-    expect(html).toContain("border-l-border");
+    expect(html).not.toContain("border-l-hue-");
   });
 
   it("shows an older day date only in its label", () => {

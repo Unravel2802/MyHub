@@ -3,6 +3,8 @@ import {
   LEETCODE_STATUSES,
   attemptStats,
   attemptsForProblem,
+  dayLabel,
+  groupByLastAttemptDay,
   groupByStatus,
   problemCountInMonth,
   problemCountThrough,
@@ -156,5 +158,186 @@ describe("totalAttemptTimeMin", () => {
     ];
 
     expect(totalAttemptTimeMin(attempts, "2026-08-01")).toBe(50);
+  });
+});
+
+describe("dayLabel", () => {
+  it("names today and yesterday", () => {
+    expect(dayLabel("2026-10-07", "2026-10-07")).toBe("Today");
+    expect(dayLabel("2026-10-06", "2026-10-07")).toBe("Yesterday");
+  });
+
+  it("counts calendar days across a month boundary", () => {
+    expect(dayLabel("2026-09-30", "2026-10-01")).toBe("Yesterday");
+  });
+
+  it("formats older days, adding the year only when it differs", () => {
+    expect(dayLabel("2026-10-05", "2026-10-07")).toBe("Mon, Oct 5");
+    expect(dayLabel("2025-12-31", "2026-01-01")).toBe("Yesterday");
+    expect(dayLabel("2025-12-30", "2026-01-01")).toBe("Tue, Dec 30, 2025");
+  });
+});
+
+describe("groupByLastAttemptDay", () => {
+  const today = "2026-10-07";
+
+  it("returns no groups for no problems", () => {
+    expect(groupByLastAttemptDay([], [], today)).toEqual([]);
+  });
+
+  it("groups by last attempt date in the order the rows arrive", () => {
+    const p1 = problem({ id: "p1", difficulty: "easy", status: "solved" });
+    const p2 = problem({ id: "p2", difficulty: "medium", status: "to_review" });
+    const p3 = problem({ id: "p3", difficulty: "medium", status: "solved" });
+    const attempts = [
+      attempt({
+        id: "a1",
+        problemId: "p1",
+        date: "2026-10-07",
+        timeToSolveMin: 10,
+      }),
+      attempt({
+        id: "a2",
+        problemId: "p2",
+        date: "2026-10-07",
+        timeToSolveMin: 35,
+      }),
+      attempt({
+        id: "a3",
+        problemId: "p3",
+        date: "2026-10-06",
+        timeToSolveMin: 25,
+      }),
+    ];
+
+    const groups = groupByLastAttemptDay([p1, p2, p3], attempts, today);
+    expect(groups.map((group) => group.label)).toEqual(["Today", "Yesterday"]);
+    expect(groups[0]).toMatchObject({
+      date: "2026-10-07",
+      problems: [p1, p2],
+      byDifficulty: { easy: 1, medium: 1, hard: 0 },
+      byStatus: { solved: 1, to_review: 1, in_progress: 0, needs_revisit: 0 },
+      timeMin: 45,
+    });
+    expect(groups[1]).toMatchObject({ problems: [p3], timeMin: 25 });
+
+    // Ascending sort reverses the rows; the groups follow.
+    const reversed = groupByLastAttemptDay([p3, p2, p1], attempts, today);
+    expect(reversed.map((group) => group.date)).toEqual([
+      "2026-10-06",
+      "2026-10-07",
+    ]);
+  });
+
+  it("files a re-attempted problem under its latest day only", () => {
+    const p1 = problem({ id: "p1" });
+    const p2 = problem({ id: "p2" });
+    const attempts = [
+      attempt({
+        id: "a1",
+        problemId: "p1",
+        date: "2026-10-07",
+        timeToSolveMin: 20,
+      }),
+      attempt({
+        id: "a2",
+        problemId: "p1",
+        date: "2026-10-06",
+        timeToSolveMin: 40,
+      }),
+      attempt({
+        id: "a3",
+        problemId: "p2",
+        date: "2026-10-06",
+        timeToSolveMin: 15,
+      }),
+    ];
+
+    const groups = groupByLastAttemptDay([p1, p2], attempts, today);
+    expect(groups[0]).toMatchObject({
+      date: "2026-10-07",
+      problems: [p1],
+      timeMin: 20,
+    });
+    // Oct 6's 40-minute sitting at p1 belongs to a row shown under Oct 7, so
+    // Oct 6's header doesn't count it.
+    expect(groups[1]).toMatchObject({
+      date: "2026-10-06",
+      problems: [p2],
+      timeMin: 15,
+    });
+  });
+
+  it("does not rely on attempts arriving most-recent-first", () => {
+    const p1 = problem({ id: "p1" });
+    const attempts = [
+      attempt({ id: "a1", problemId: "p1", date: "2026-10-01" }),
+      attempt({ id: "a2", problemId: "p1", date: "2026-10-07" }),
+    ];
+    expect(groupByLastAttemptDay([p1], attempts, today)[0].date).toBe(
+      "2026-10-07",
+    );
+  });
+
+  it("sums every sitting on the day and treats null time as zero", () => {
+    const p1 = problem({ id: "p1" });
+    const attempts = [
+      attempt({
+        id: "a1",
+        problemId: "p1",
+        date: "2026-10-07",
+        timeToSolveMin: 30,
+      }),
+      attempt({
+        id: "a2",
+        problemId: "p1",
+        date: "2026-10-07",
+        timeToSolveMin: 12,
+      }),
+      attempt({
+        id: "a3",
+        problemId: "p1",
+        date: "2026-10-07",
+        timeToSolveMin: null,
+      }),
+    ];
+    expect(groupByLastAttemptDay([p1], attempts, today)[0].timeMin).toBe(42);
+  });
+
+  it("ignores time from problems the table filtered out", () => {
+    const shown = problem({ id: "p1" });
+    const attempts = [
+      attempt({
+        id: "a1",
+        problemId: "p1",
+        date: "2026-10-07",
+        timeToSolveMin: 10,
+      }),
+      attempt({
+        id: "a2",
+        problemId: "hidden",
+        date: "2026-10-07",
+        timeToSolveMin: 50,
+      }),
+    ];
+    expect(groupByLastAttemptDay([shown], attempts, today)[0].timeMin).toBe(10);
+  });
+
+  it("puts never-attempted problems in a trailing group", () => {
+    const fresh = problem({ id: "fresh", difficulty: "hard" });
+    const done = problem({ id: "done" });
+    const attempts = [attempt({ problemId: "done", date: "2026-10-07" })];
+
+    const groups = groupByLastAttemptDay([fresh, done], attempts, today);
+    expect(groups.map((group) => group.label)).toEqual([
+      "Today",
+      "Not attempted",
+    ]);
+    expect(groups[1]).toMatchObject({
+      date: null,
+      problems: [fresh],
+      byDifficulty: { easy: 0, medium: 0, hard: 1 },
+      timeMin: 0,
+    });
   });
 });

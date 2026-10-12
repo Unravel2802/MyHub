@@ -164,6 +164,23 @@ describe("drillCoverage", () => {
     expect(coverage.byDifficulty.advanced).toEqual({ total: 1, attempted: 0 });
   });
 
+  it("buckets coding_design drills under their own category", () => {
+    const withCoding = [
+      ...drills,
+      drill("cd-core", { category: "coding_design", difficulty: "core" }),
+    ];
+
+    const coverage = drillCoverage(withCoding, [
+      attempt("cd-core", 1, "solid"),
+    ]);
+
+    expect(coverage.byCategory.coding_design).toEqual({
+      total: 1,
+      attempted: 1,
+    });
+    expect(coverage.overall).toEqual({ total: 5, attempted: 1 });
+  });
+
   it("tallies latest-rating counts from the most recent completed attempt", () => {
     const attempts = [
       attempt("sd-warmup", 5, "weak"),

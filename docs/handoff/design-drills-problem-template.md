@@ -11,17 +11,17 @@ authoritative types/validation; this doc exists so you don't have to.
 One `insert into design_drills (...)` per new drill (see `supabase/migrations/0026_...sql` for a
 full worked example). Required columns:
 
-| Column              | Type                                    | Notes                                                                                                                                                                                                                                         |
-| ------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `slug`              | text, unique                            | URL-safe, kebab-case, used in `/design-drills/<slug>` and as the stable key every later migration targets with `where slug = '...'`. Never rename once shipped.                                                                               |
-| `category`          | `'system_design' \| 'ml_system_design'` | See `DesignDrillCategory` in `types.ts`.                                                                                                                                                                                                      |
-| `difficulty`        | `'warmup' \| 'core' \| 'advanced'`      | See `DesignDrillDifficulty`.                                                                                                                                                                                                                  |
-| `title`             | text                                    | Display title, e.g. `'Distributed Unique ID Generator'`.                                                                                                                                                                                      |
-| `prompt`            | markdown (`$$...$$` dollar-quoted)      | The full prompt: scale, constraints, functional asks — OA/onsite length. Rendered through the shared `<Markdown>` component, so GFM (tables, fenced code, etc.) all works.                                                                    |
-| `rubric`            | `array[$r$...$r$, ...]` of text         | One bullet per array element — "what a strong answer hits." Revealed only after an attempt is submitted, so write it as a grading checklist, not more prompt.                                                                                 |
-| `solution`          | text (`$sol$...$sol$`)                  | Legacy plain-text fallback, rendered `whitespace-pre-wrap`. Write a real worked answer here even if you're also authoring `solution_detail` (§2) in the same migration — `solution` is what renders if `solution_detail` ever fails to parse. |
-| `estimated_minutes` | integer                                 | Target time for a timed attempt.                                                                                                                                                                                                              |
-| `tags`              | `array['...', ...]` of text             | Free-text, shown as pills and searchable via `filterDesignDrills.ts`.                                                                                                                                                                         |
+| Column              | Type                                                       | Notes                                                                                                                                                                                                                                         |
+| ------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `slug`              | text, unique                                               | URL-safe, kebab-case, used in `/design-drills/<slug>` and as the stable key every later migration targets with `where slug = '...'`. Never rename once shipped.                                                                               |
+| `category`          | `'system_design' \| 'ml_system_design' \| 'coding_design'` | See `DesignDrillCategory` in `types.ts`. `coding_design` (0044) is class-design coding problems; see the note under §2.                                                                                                                       |
+| `difficulty`        | `'warmup' \| 'core' \| 'advanced'`                         | See `DesignDrillDifficulty`.                                                                                                                                                                                                                  |
+| `title`             | text                                                       | Display title, e.g. `'Distributed Unique ID Generator'`.                                                                                                                                                                                      |
+| `prompt`            | markdown (`$$...$$` dollar-quoted)                         | The full prompt: scale, constraints, functional asks — OA/onsite length. Rendered through the shared `<Markdown>` component, so GFM (tables, fenced code, etc.) all works.                                                                    |
+| `rubric`            | `array[$r$...$r$, ...]` of text                            | One bullet per array element — "what a strong answer hits." Revealed only after an attempt is submitted, so write it as a grading checklist, not more prompt.                                                                                 |
+| `solution`          | text (`$sol$...$sol$`)                                     | Legacy plain-text fallback, rendered `whitespace-pre-wrap`. Write a real worked answer here even if you're also authoring `solution_detail` (§2) in the same migration — `solution` is what renders if `solution_detail` ever fails to parse. |
+| `estimated_minutes` | integer                                                    | Target time for a timed attempt.                                                                                                                                                                                                              |
+| `tags`              | `array['...', ...]` of text                                | Free-text, shown as pills and searchable via `filterDesignDrills.ts`.                                                                                                                                                                         |
 
 ## 2. The structured editorial (`solution_detail` jsonb)
 
@@ -101,6 +101,11 @@ vanishes, no error, just falls back:
 - `estimates[].label`/`.value` are required strings; `.note` is optional. These stand in for
   algorithmic Big-O in a system-design drill — throughput, latency, storage, cost — not code
   complexity.
+- For a `coding_design` drill, `estimates` holds per-operation **time/space complexity**
+  (`{label: "add / delete", value: "O(1)", note: "..."}`) — the same slot, different content.
+  The `codeExamples` are then the whole class, not one mechanism, and should be tested before
+  they land: `0046` was generated from source files that were differentially tested
+  (Python vs. C++ vs. Java over random operation traces).
 - `references` is optional; a malformed URL (must parse as `http:`/`https:`) is silently dropped,
   not the whole editorial.
 

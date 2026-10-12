@@ -19,6 +19,7 @@ import type {
 const categoryLabels = {
   system_design: "System design",
   ml_system_design: "ML system design",
+  coding_design: "Coding design",
 } as const;
 
 function formatDuration(totalSec: number): string {

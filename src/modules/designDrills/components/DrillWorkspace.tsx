@@ -21,6 +21,7 @@ import type {
 const categoryLabels = {
   system_design: "System design",
   ml_system_design: "ML system design",
+  coding_design: "Coding design",
 } as const;
 
 const selfRatings: { value: DesignDrillSelfRating; label: string }[] = [

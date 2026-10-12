@@ -1,4 +1,8 @@
-export type DesignDrillCategory = "system_design" | "ml_system_design";
+// 'coding_design' (migration 0044) is the LeetCode "Design"-tag shape — build a
+// class whose operations hit stated complexities — not a distributed system.
+// Same bank/attempt/rubric/editorial machinery; only the content differs.
+export type DesignDrillCategory =
+  "system_design" | "ml_system_design" | "coding_design";
 
 export type DesignDrillDifficulty = "warmup" | "core" | "advanced";
 

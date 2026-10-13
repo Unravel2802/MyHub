@@ -168,7 +168,11 @@ export interface DrillCoverage {
   latestRatingCounts: Record<DesignDrillSelfRating, number>;
 }
 
-const CATEGORIES: DesignDrillCategory[] = ["system_design", "ml_system_design"];
+const CATEGORIES: DesignDrillCategory[] = [
+  "system_design",
+  "ml_system_design",
+  "coding_design",
+];
 const DIFFICULTIES: DesignDrillDifficulty[] = ["warmup", "core", "advanced"];
 const RATINGS: DesignDrillSelfRating[] = ["strong", "solid", "weak"];
 

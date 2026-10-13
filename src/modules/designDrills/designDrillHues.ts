@@ -12,6 +12,8 @@ export const DESIGN_DRILL_CATEGORY_HUES: Record<DesignDrillCategory, HueName> =
   {
     system_design: "blue",
     ml_system_design: "violet",
+    // Prep Tracker's 'algorithm' hue: a coding-design drill is a coding rep.
+    coding_design: "cyan",
   };
 
 export const DESIGN_DRILL_DIFFICULTY_HUES: Record<

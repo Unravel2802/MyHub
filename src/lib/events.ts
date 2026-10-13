@@ -9,7 +9,8 @@ type PrepType =
   | "mock_interview"
   | "resume_deep_dive";
 
-type DesignDrillCategory = "system_design" | "ml_system_design";
+type DesignDrillCategory =
+  "system_design" | "ml_system_design" | "coding_design";
 
 type LeetCodeOutcome = "solved" | "partial" | "failed";
 

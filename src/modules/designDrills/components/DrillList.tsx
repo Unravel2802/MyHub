@@ -23,6 +23,7 @@ import type {
 const categoryLabels: Record<DesignDrillCategory, string> = {
   system_design: "System design",
   ml_system_design: "ML system design",
+  coding_design: "Coding design",
 };
 
 const difficultyLabels: Record<DesignDrillDifficulty, string> = {

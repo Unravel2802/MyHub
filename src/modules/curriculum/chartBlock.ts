@@ -93,18 +93,16 @@ function compact(value: number): string {
 export function formatChartValue(v: number, unit: string | null): string {
   const magnitude = Math.abs(v);
   if (unit === "ns") {
-    // Use milliseconds from 0.1 ms: 500,000 ns is the chapter's 0.5 ms RTT.
-    const [size, suffix] =
+    // Express half a millisecond and above in ms, including the chapter's RTT.
+    const [size, suffix]: [number, string] =
       magnitude >= 1e9
         ? [1e9, "s"]
-        : magnitude >= 1e5
+        : magnitude >= 5e5
           ? [1e6, "ms"]
           : magnitude >= 1e3
             ? [1e3, "µs"]
             : [1, "ns"];
-    // 100,000 ns is conventionally 100 µs, rather than 0.1 ms.
-    if (magnitude === 1e5) return `${rounded(v / 1e3)} µs`;
-    return `${rounded(v / Number(size))} ${suffix}`;
+    return `${rounded(v / size)} ${suffix}`;
   }
   if (unit === "B") {
     const sizes: [number, string][] = [

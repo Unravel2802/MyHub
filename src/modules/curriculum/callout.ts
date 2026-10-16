@@ -16,13 +16,13 @@ export function calloutMarker(
 ): { kind: CalloutKind; prefix: string } | null {
   const first = node?.children.find((child) => child.type === "element");
   if (first?.type !== "element" || first.tagName !== "p") return null;
-  const match = /^\[!(KEY|PITFALL|INTERVIEW|CHECK)\](?:\s+|$)/.exec(
-    hastText(first),
-  );
+  const match = /^\[!(KEY|PITFALL|INTERVIEW|CHECK)\]\s*/.exec(hastText(first));
   return match ? { kind: match[1] as CalloutKind, prefix: match[0] } : null;
 }
 
 export function isKeyRule(node: Element | undefined): boolean {
+  const first = node?.children.find((child) => child.type === "element");
+  if (first && /^\[![^\]]+\]/.test(hastText(first))) return false;
   const paragraphs = node?.children.filter(
     (child) =>
       child.type === "element" || (child.type === "text" && child.value.trim()),

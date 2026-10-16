@@ -30,5 +30,8 @@ it.each(["KEY", "PITFALL", "INTERVIEW", "CHECK"])(
 it("leaves unknown kinds and markers later in the paragraph as plain quotes", () => {
   expect(calloutMarker(quote("[!UNKNOWN] content"))).toBeNull();
   expect(calloutMarker(quote("Content [!KEY]"))).toBeNull();
-  expect(calloutMarker(quote("[!KEY]word"))).toBeNull();
+  expect(calloutMarker(quote("[!KEY]word"))).toEqual({
+    kind: "KEY",
+    prefix: "[!KEY]",
+  });
 });

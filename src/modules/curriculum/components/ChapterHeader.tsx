@@ -75,7 +75,7 @@ export function ChapterHeader({
                           href={
                             index[entry.id]?.[0]
                               ? `/curriculum/${entry.id}/${index[entry.id][0].id}`
-                              : `/curriculum?topic=${entry.id}`
+                              : "/curriculum"
                           }
                         >
                           {entry.label}

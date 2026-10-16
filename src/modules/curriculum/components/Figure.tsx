@@ -9,7 +9,7 @@ export function Figure({ raw, caption }: { raw: string; caption: string }) {
   const contentRef = useRef<HTMLDivElement>(null);
   return (
     <figure
-      className="my-6 min-w-0 overflow-hidden rounded-xl border border-border"
+      className="my-6 [counter-increment:fig] min-w-0 overflow-hidden rounded-xl border border-border"
       style={
         {
           "--grid": "color-mix(in oklab, var(--border) 55%, transparent)",
@@ -17,7 +17,9 @@ export function Figure({ raw, caption }: { raw: string; caption: string }) {
       }
     >
       <figcaption className="flex items-center gap-3 border-b border-border px-4 py-2 font-mono text-[11px] uppercase tracking-wider">
-        <span className="font-semibold text-[var(--track)]">FIG</span>
+        <span className="font-semibold text-[var(--track)] after:content-[counter(fig)]">
+          FIG{" "}
+        </span>
         <span className="min-w-0 flex-1 truncate text-muted">
           {parsed.title ?? caption}
         </span>

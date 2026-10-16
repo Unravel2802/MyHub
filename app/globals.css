@@ -679,3 +679,31 @@ body {
   background-size: 26px 26px;
   background-position: -13px -13px;
 }
+
+/* Curriculum recap numerals are isolated from every other Markdown consumer. */
+.curriculum-recap .md-content > ol {
+  list-style: none;
+  padding-left: 0;
+  counter-reset: takeaway;
+}
+.curriculum-recap .md-content > ol > li {
+  position: relative;
+  padding-left: 2.75rem;
+  margin-top: 1rem;
+  counter-increment: takeaway;
+}
+.curriculum-recap .md-content > ol > li::before {
+  content: counter(takeaway);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--track-surface);
+  color: var(--track);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+}

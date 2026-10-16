@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo } from "react";
 import Link from "next/link";
+import { ChapterHeader } from "./ChapterHeader";
+import { FinishCard } from "./FinishCard";
+import { CodeBlock } from "./CodeBlock";
 import { ReadingProgress } from "./ReadingProgress";
-import { ArrowLeft, ArrowRight, Check, Star } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
   hueBorderVar,
   hueSurfaceVar,
@@ -17,12 +20,7 @@ import {
   splitTakeaways,
 } from "@/src/modules/curriculum/chapterStructure";
 import { Figure } from "./Figure";
-import {
-  topicNeighbours,
-  trackById,
-} from "@/src/modules/curriculum/curriculumCatalog";
-import { lessonKey } from "@/src/modules/curriculum/types";
-import { trackState } from "@/src/modules/curriculum/curriculumProgress";
+import { trackById } from "@/src/modules/curriculum/curriculumCatalog";
 import { useCurriculumStore } from "@/src/modules/curriculum/useCurriculumStore";
 import type { Components } from "react-markdown";
 import type {
@@ -40,24 +38,35 @@ interface LessonReaderProps {
   index: CurriculumIndex;
 }
 
+// Highlighted code contains nested spans; collect all text, preserving the source.
+function nodeText(node: {
+  value?: string;
+  children?: readonly Parameters<typeof nodeText>[0][];
+}): string {
+  return node.value ?? node.children?.map(nodeText).join("") ?? "";
+}
+
 function curriculumComponents(
   outline: ReturnType<typeof chapterOutline>,
 ): Components {
-  const taken = new Set<string>();
   return {
     h2: ({ children, node, ...props }) => {
       const line = node?.position?.start?.line;
       const entry = outline.find((item) => item.line === line);
-      const id = entry?.id ?? slugifyHeading(String(children), taken);
+      const id = entry?.id ?? "section";
       return (
-        <div className="group relative mt-12 scroll-mt-24 first:mt-0">
+        <div className="group relative mt-12 first:mt-0 [&>h2]:inline">
           <span
             aria-hidden
-            className="absolute -left-8 top-1 hidden font-mono text-xs font-semibold text-[var(--track)] sm:block"
+            className="mr-2 inline-block font-mono text-xs font-semibold text-[var(--track)]"
           >
             {String(entry?.number ?? 1).padStart(2, "0")}
           </span>
-          <h2 id={id} {...props}>
+          <h2
+            id={id}
+            className="scroll-mt-[140px] font-sans text-[27px] font-[650] leading-tight text-foreground"
+            {...props}
+          >
             {children}
           </h2>
           <a
@@ -75,7 +84,7 @@ function curriculumComponents(
         className?: string;
         children?: string;
       }>;
-      const raw = String(code?.props?.children ?? "").replace(/\n$/, "");
+      const raw = nodeText(node ?? {}).replace(/\n$/, "");
       const language = code?.props?.className?.match(/language-(\w+)/)?.[1];
       return language === "text" ? (
         <Figure
@@ -86,22 +95,48 @@ function curriculumComponents(
           }
         />
       ) : (
-        <pre className="mt-5 overflow-x-auto rounded-lg border border-border border-l-4 border-l-[var(--track)] bg-surface-subtle p-4 font-mono text-sm leading-relaxed">
+        <CodeBlock raw={raw} language={language ?? "code"}>
           {children}
-        </pre>
+        </CodeBlock>
       );
     },
-    blockquote: ({ children, ...props }) => (
-      <blockquote
-        className="my-5 border-l-2 border-[var(--track-border)] pl-5 font-serif italic text-body"
-        {...props}
-      >
-        {children}
-      </blockquote>
-    ),
+    blockquote: ({ children, node }) => {
+      const paragraphs = node?.children.filter(
+        (child) =>
+          child.type === "element" ||
+          (child.type === "text" && child.value.trim()),
+      );
+      const bold =
+        !!paragraphs?.length &&
+        paragraphs.every(
+          (child) =>
+            child.type === "element" &&
+            child.tagName === "p" &&
+            child.children.every(
+              (part) =>
+                (part.type === "text" && !part.value.trim()) ||
+                (part.type === "element" && part.tagName === "strong"),
+            ),
+        );
+      return bold ? (
+        <blockquote className="my-5 rounded-xl border border-[var(--track-border)] bg-[var(--track-surface)] p-5 text-body">
+          <p className="mb-2 font-mono text-xs uppercase text-[var(--track)]">
+            Key rule
+          </p>
+          {children}
+        </blockquote>
+      ) : (
+        <blockquote className="my-5 border-l-2 border-[var(--track-border)] pl-5 italic text-body">
+          {children}
+        </blockquote>
+      );
+    },
     table: ({ children, ...props }) => (
       <div className="my-5 overflow-x-auto">
-        <table className="min-w-full border-collapse tabular-nums" {...props}>
+        <table
+          className="min-w-full border-collapse bg-surface tabular-nums"
+          {...props}
+        >
           {children}
         </table>
       </div>
@@ -129,163 +164,78 @@ export function LessonReader({
   next,
   index,
 }: LessonReaderProps) {
-  const key = lessonKey(topic.id, lesson.meta.id);
   const completed = useCurriculumStore((store) => store.completed);
-  const starred = useCurriculumStore((store) => store.starred);
-  const pendingKeys = useCurriculumStore((store) => store.pendingKeys);
   const fetchProgress = useCurriculumStore((store) => store.fetchProgress);
-  const setCompleted = useCurriculumStore((store) => store.setCompleted);
-  const setStarred = useCurriculumStore((store) => store.setStarred);
   useEffect(() => {
     void fetchProgress();
   }, [fetchProgress]);
-  const done = completed[key] !== undefined;
   const track = trackById(topic.trackId);
-  const neighbours = topicNeighbours(topic.id);
   const { main, takeaways } = splitTakeaways(lesson.body);
   const outline = useMemo(() => chapterOutline(main), [main]);
+  const recapOutline = useMemo(
+    () =>
+      takeaways === null
+        ? []
+        : [
+            {
+              id: slugifyHeading(
+                "What to take away",
+                new Set(outline.map((entry) => entry.id)),
+              ),
+              text: "What to take away",
+              number: outline.length + 1,
+              line: 1,
+            },
+          ],
+    [outline, takeaways],
+  );
+  const tocOutline = useMemo(
+    () => [...outline, ...recapOutline],
+    [outline, recapOutline],
+  );
   const components = useMemo(() => curriculumComponents(outline), [outline]);
-  const state = trackState(
-    topic.trackId,
-    index,
-    new Set(Object.keys(completed)),
+  const recapComponents = useMemo(
+    () => curriculumComponents(recapOutline),
+    [recapOutline],
   );
   const cssVars = {
     "--track": hueVar(track?.hue ?? "accent"),
     "--track-surface": hueSurfaceVar(track?.hue ?? "accent"),
     "--track-border": hueBorderVar(track?.hue ?? "accent"),
   } as React.CSSProperties;
-  const finishedTopics = state.topics.filter(
-    (entry) => entry.status === "done",
-  ).length;
-  const materialTopics = state.topics.filter(
-    (entry) => entry.totalCount > 0,
-  ).length;
   return (
     <article
-      className="mx-auto grid w-full min-w-0 max-w-[1060px] gap-10 lg:grid-cols-[minmax(0,740px)_220px]"
+      className="mx-auto grid w-full min-w-0 max-w-[1060px] gap-10 min-[1060px]:grid-cols-[minmax(0,740px)_220px] [counter-reset:fig]"
       data-curriculum-reader
       style={cssVars}
     >
-      <div className="min-w-0">
-        <nav
-          aria-label="Breadcrumb"
-          className="mb-5 flex flex-wrap items-center gap-2 text-sm text-muted"
-        >
-          <Link href="/curriculum">Curriculum</Link>
-          <span aria-hidden>/</span>
-          <span>{track?.label}</span>
-          <span aria-hidden>/</span>
-          <Link href="/curriculum">{topic.label}</Link>
-        </nav>
-        <header className="mb-10">
-          <div className="flex flex-wrap items-center gap-3 font-mono text-xs uppercase tracking-wider text-muted">
-            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--track-surface)] px-2 py-1 text-[var(--track)]">
-              <span
-                aria-hidden
-                className="size-1.5 rounded-full bg-[var(--track)]"
-              />
-              {track?.label}
-            </span>
-            <span>
-              Topic {neighbours.position.index} of {neighbours.position.total}
-            </span>
-            <span>{topic.tier}</span>
-            {lesson.meta.minutes ? (
-              <span>{lesson.meta.minutes} min</span>
-            ) : null}
-          </div>
-          <h2 className="mt-5 text-[clamp(34px,5.4vw,52px)] font-semibold leading-[1.05] tracking-tight text-balance text-foreground">
-            {lesson.meta.title}
-          </h2>
-          {lesson.meta.summary ? (
-            <p className="mt-5 max-w-[68ch] [font-family:var(--font-reading),Georgia,serif] text-[21px] leading-relaxed text-body">
-              {lesson.meta.summary}
-            </p>
-          ) : null}
-          {neighbours.buildsOn.length || neighbours.unlocks.length ? (
-            <div className="mt-7 grid gap-3 sm:grid-cols-2">
-              {(
-                [
-                  ["Builds on", neighbours.buildsOn],
-                  ["Unlocks", neighbours.unlocks],
-                ] as const
-              ).map(([label, entries]) =>
-                entries.length ? (
-                  <div
-                    className="rounded-xl border border-border bg-surface p-4"
-                    key={label}
-                  >
-                    <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
-                      {label}
-                    </p>
-                    <ul className="mt-2 space-y-1 text-sm">
-                      {entries.map((entry) => (
-                        <li key={entry.id}>
-                          <span className="text-foreground">{entry.label}</span>
-                          {entry.trackId !== topic.trackId ? (
-                            <span className="ml-1 text-xs text-muted">
-                              ({trackById(entry.trackId)?.label})
-                            </span>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null,
-              )}
-            </div>
-          ) : null}
-        </header>
-        <div className="[font-family:var(--font-reading),Georgia,serif] text-[18px] leading-[1.65] text-body [&_h2]:font-sans [&_h2]:text-[27px] [&_h2]:font-semibold [&_h2]:leading-tight [&_h2]:text-foreground [&>.md-content>p:first-child]:text-[19px] [&>.md-content>p:first-child]:first-letter:float-left [&>.md-content>p:first-child]:first-letter:mr-2 [&>.md-content>p:first-child]:first-letter:text-[3.4em] [&>.md-content>p:first-child]:first-letter:font-sans [&>.md-content>p:first-child]:first-letter:font-semibold [&>.md-content>p:first-child]:first-letter:text-[var(--track)]">
-          <Markdown components={components}>{main}</Markdown>
+      <ChapterHeader
+        topic={topic}
+        lesson={lesson}
+        index={index}
+        completedKeys={new Set(Object.keys(completed))}
+      />
+      <div className="row-start-3 min-w-0 min-[1060px]:col-start-1 min-[1060px]:row-start-2">
+        <div className="max-w-[68ch] [font-family:var(--font-reading),Georgia,serif] text-[18px] leading-[1.65] text-body [&_h2]:font-sans [&_h2]:text-[27px] [&_h2]:font-semibold [&_h2]:leading-tight [&_h2]:text-foreground [&>.curriculum-main>p:first-child]:text-[19px] [&>.curriculum-main>p:first-child]:first-letter:float-left [&>.curriculum-main>p:first-child]:first-letter:mr-2 [&>.curriculum-main>p:first-child]:first-letter:text-[3.4em] [&>.curriculum-main>p:first-child]:first-letter:font-sans [&>.curriculum-main>p:first-child]:first-letter:font-semibold [&>.curriculum-main>p:first-child]:first-letter:text-[var(--track)]">
+          <Markdown
+            className="curriculum-main !text-[18px] [&_p]:leading-[1.65] [&_li]:leading-[1.65]"
+            components={components}
+          >
+            {main}
+          </Markdown>
           {takeaways ? (
-            <section className="mt-10 rounded-xl border border-border bg-surface p-6">
-              <h2 className="!mt-0 text-[27px] font-semibold text-foreground">
-                What to take away
-              </h2>
-              <Markdown>{takeaways}</Markdown>
+            <section
+              data-chapter-recap
+              className="curriculum-recap mt-10 rounded-[14px] border border-border bg-surface p-6"
+            >
+              <Markdown
+                components={recapComponents}
+                className="!text-[18px] [&_p]:leading-[1.65] [&_li]:leading-[1.65]"
+              >{`## What to take away\n\n${takeaways}`}</Markdown>
             </section>
           ) : null}
         </div>
-        <section
-          className={`mt-10 rounded-xl border p-6 ${done ? "border-success-border bg-success-surface" : "border-[var(--track-border)] bg-[var(--track-surface)]"}`}
-        >
-          <h2 className="text-xl font-semibold text-foreground">
-            {done ? "Chapter complete" : "Finished this chapter?"}
-          </h2>
-          <p className="mt-2 text-sm text-body">
-            {done
-              ? `${track?.label}: ${finishedTopics} of ${materialTopics} topics read`
-              : `Mark it read to fill in its node on the ${track?.label} map.`}
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              aria-pressed={done}
-              className="inline-flex items-center gap-2 rounded-md bg-[var(--track)] px-4 py-2 text-sm font-medium text-canvas"
-              disabled={pendingKeys.includes(key)}
-              onClick={() => void setCompleted(key, !done)}
-              type="button"
-            >
-              <Check aria-hidden className="size-4" />
-              {done ? "Read" : "Mark as read"}
-            </button>
-            <button
-              aria-pressed={starred[key] === true}
-              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-muted hover:text-foreground"
-              disabled={pendingKeys.includes(key)}
-              onClick={() => void setStarred(key, starred[key] !== true)}
-              type="button"
-            >
-              <Star
-                aria-hidden
-                className="size-4"
-                fill={starred[key] ? "currentColor" : "none"}
-              />
-              {starred[key] ? "Flagged to revisit" : "Revisit later"}
-            </button>
-          </div>
-        </section>
+        <FinishCard topic={topic} lesson={lesson} index={index} />
         <nav
           aria-label="Chapter"
           className="mt-8 flex items-stretch justify-between gap-4 border-t border-border pt-5"
@@ -324,7 +274,7 @@ export function LessonReader({
           )}
         </nav>
       </div>
-      <ReadingProgress outline={outline} minutes={lesson.meta.minutes} />
+      <ReadingProgress outline={tocOutline} minutes={lesson.meta.minutes} />
     </article>
   );
 }

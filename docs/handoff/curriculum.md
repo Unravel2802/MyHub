@@ -72,6 +72,12 @@ Only **same-track** prereqs are drawn as edges. Cross-track ones are real and
 are listed as text on the topic panel ("Also assumes: Linear Algebra for ML") —
 drawing them would collapse thirteen readable graphs into one hairball.
 
+## Reader redesign and visual blocks (in progress)
+
+`docs/handoff/curriculum-reader-redesign.md` — the textbook-style reader, text
+figures, callouts, `chart`/`mermaid`/`widget` blocks, and the Systems Design
+content pass. Read it before touching `LessonReader.tsx` or chapter syntax.
+
 ## Adding material
 
 See `docs/curriculum-authoring-prompt.md` for the generation prompt and

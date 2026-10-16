@@ -7,6 +7,15 @@ import {
 } from "@/src/modules/curriculum/content";
 import { siblingLessons } from "@/src/modules/curriculum/curriculumProgress";
 import { LessonReader } from "@/src/modules/curriculum/components/LessonReader";
+import { Source_Serif_4 } from "next/font/google";
+
+const reading = Source_Serif_4({
+  variable: "--font-reading",
+  subsets: ["latin"],
+  weight: "variable",
+  style: ["normal", "italic"],
+  axes: ["opsz"],
+});
 
 interface LessonRouteProps {
   params: Promise<{ topicId: string; lessonId: string }>;
@@ -28,11 +37,8 @@ export default async function LessonRoute({ params }: LessonRouteProps) {
   // against what is actually on disk rather than joining the id onto a path.
   if (!topic || !lesson) notFound();
 
-  const { previous, next } = siblingLessons(
-    topicId,
-    lessonId,
-    loadCurriculumIndex(),
-  );
+  const index = loadCurriculumIndex();
+  const { previous, next } = siblingLessons(topicId, lessonId, index);
 
   return (
     <AppShell activeHref="/curriculum" title="Curriculum">
@@ -41,12 +47,13 @@ export default async function LessonRoute({ params }: LessonRouteProps) {
           `min-width: auto` lets it grow to its content's max-content width —
           so a wide code block inside a chapter widens the whole page instead of
           scrolling inside its own `overflow-x-auto`. */}
-      <div className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
+      <div className={`${reading.variable} min-w-0 px-4 py-6 sm:px-6 lg:px-8`}>
         <LessonReader
           lesson={lesson}
           next={next}
           previous={previous}
           topic={topic}
+          index={index}
         />
       </div>
     </AppShell>

@@ -67,6 +67,13 @@ rather than picking a "reasonable" alternative.
   `dangerouslySetInnerHTML` is allowed **only** for the user's own scratchpad text (highlight.js
   HTML-escapes what it highlights); this is not a licence to relax the markdown rule above —
   `Markdown.tsx` still never renders raw HTML from the DB.
+- Diagrams: `mermaid` — approved 2026-10-08 for curriculum chapters' ` ```mermaid ` blocks
+  (`docs/handoff/curriculum-reader-redesign.md`, PR C). Import it DYNAMICALLY inside an effect —
+  it touches `window` at module scope, the same SSR trap as pdfjs — so only chapters with a
+  diagram load it. Initialise with `securityLevel: "strict"` and `flowchart.htmlLabels: false`.
+  Inserting `mermaid.render()`'s SVG via `dangerouslySetInnerHTML` is allowed **only** for
+  repository chapter files, on the same narrow terms as highlight.js above; it does not relax
+  the `Markdown.tsx` rule for anything else.
 - PDF rendering: `pdfjs-dist` (Mozilla's PDF.js) — approved 2026-08-11 for the Reader module
   (migration 0042). Chosen over `react-pdf` because that's a wrapper around this same engine and
   its component API constrains the annotation overlay; the browser's native `<embed>` viewer was

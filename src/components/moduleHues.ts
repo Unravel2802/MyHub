@@ -69,3 +69,7 @@ export function hueSurfaceVar(hue: HueName): string {
     ? "var(--accent-surface)"
     : `var(--hue-${hue}-surface)`;
 }
+
+export function hueBorderVar(hue: HueName): string {
+  return hue === "accent" ? "var(--accent-border)" : `var(--hue-${hue}-border)`;
+}

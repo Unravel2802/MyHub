@@ -123,6 +123,18 @@ cross-region: 100000000
       → comfortably fits in memory. cache the timeline.
 ```
 
+Drawn as a system, those numbers imply this architecture:
+
+```mermaid
+flowchart LR
+  client[Client] -->|media| cdn[CDN]
+  client -->|115k QPS peak| lb[Load balancer]
+  cdn -->|40 TB/day, 95% hits| obj[(Object storage)]
+  lb --> app[App servers]
+  app -->|20 GB hot set| cache[(Cache)]
+  app -->|12k writes/s| db[(Postgres, partitioned)]
+```
+
 ```text
   the conclusions that fall out, without any further work
 

@@ -393,3 +393,152 @@ test("figure Copy reports success, resets, and selects text if clipboard fails",
     figure.getByRole("button", { name: "Copy", exact: true }),
   ).toBeVisible();
 });
+
+// PR B additions. All existing reader and responsive assertions stay unchanged.
+test("estimation charts render SVG and latency rows expose keyboard and hover tooltips", async ({
+  page,
+}) => {
+  await openEstimation(page);
+  await expect(
+    page.locator("[data-curriculum-reader] svg[role='img']"),
+  ).toHaveCount(2);
+  const latency = page.getByRole("region", {
+    name: "The latency ladder, log scale",
+    exact: true,
+  });
+  const rows = latency.locator("[data-chart-row]");
+  await rows.nth(1).focus();
+  await expect(latency.getByRole("tooltip")).toContainText(
+    "main memory: 100 ns",
+  );
+  await expect(latency.getByRole("tooltip")).toContainText(
+    "100× the first row",
+  );
+  await rows.nth(1).press("Tab");
+  await expect(latency.getByRole("tooltip")).toContainText("SSD read: 100 µs");
+  await rows.nth(2).blur();
+  await rows.nth(3).hover();
+  await expect(latency.getByRole("tooltip")).toContainText(
+    "same-DC round trip: 0.5 ms",
+  );
+  const egress = page.getByRole("region", {
+    name: "Monthly egress for 40 TB/day of media",
+    exact: true,
+  });
+  await expect(egress.locator('svg[role="img"]')).toHaveAttribute(
+    "role",
+    "img",
+  );
+  await expect(egress.locator('svg[role="img"]')).toHaveAttribute(
+    "aria-label",
+    /CDN, 95% hits: \$10–20k/,
+  );
+  const screenshot = test.info().outputPath("latency-chart.png");
+  await latency.screenshot({ path: screenshot });
+  await test
+    .info()
+    .attach("latency-chart", { path: screenshot, contentType: "image/png" });
+});
+
+test("estimation calculator starts at chapter values and changes its partition verdict at 1M DAU", async ({
+  page,
+}) => {
+  await openEstimation(page);
+  const calculator = page.getByRole("region", {
+    name: "Run the estimate yourself",
+    exact: true,
+  });
+  for (const value of ["12k/s", "120k QPS", "110 TB", "40 TB"])
+    await expect(calculator.getByText(value, { exact: true })).toBeVisible();
+  const partition = calculator.locator('[data-verdict="partition"]');
+  await expect(partition).toHaveAttribute("data-on", "true");
+  await expect(partition).toContainText(
+    "Writes exceed one Postgres primary → partition, or a different store",
+  );
+  const dau = calculator.getByRole("slider", {
+    name: "Daily active users",
+    exact: true,
+  });
+  await dau.focus();
+  await dau.press("Home");
+  await expect(dau).toHaveAttribute("aria-valuetext", "1M");
+  await expect(partition).toHaveAttribute("data-on", "false");
+  await expect(partition).toContainText("○");
+});
+
+test("estimation check-yourself uses a native disclosure and reveals its answer", async ({
+  page,
+}) => {
+  await openEstimation(page);
+  const check = page.locator("details").filter({
+    has: page.locator("summary", { hasText: "A service gets 50M DAU" }),
+  });
+  const answer = check.getByText("20,000 QPS", { exact: true });
+  await expect(answer).not.toBeVisible();
+  await expect(check.locator("summary")).toContainText("Check yourself");
+  await check.locator("summary").click();
+  await expect(check).toHaveAttribute("open", "");
+  await expect(answer).toBeVisible();
+  await expect(check).not.toContainText("[!CHECK]");
+});
+
+test("estimation callouts keep their labels, inline formatting and marker-free copy", async ({
+  page,
+}) => {
+  await openEstimation(page);
+  const key = page.getByRole("complementary", {
+    name: "Key point",
+    exact: true,
+  });
+  await expect(key).toContainText("Key point");
+  await expect(key.locator("strong")).toHaveText(
+    "That last block is the point of the exercise.",
+  );
+  await expect(key).not.toContainText("[!KEY]");
+  const pitfall = page.getByRole("complementary", {
+    name: "Pitfall",
+    exact: true,
+  });
+  await expect(pitfall).toContainText("Designing for the average.");
+  await expect(pitfall).not.toContainText("[!PITFALL]");
+  await expect(
+    page.getByRole("complementary", { name: "In the interview", exact: true }),
+  ).toContainText("Say each assumption out loud");
+});
+
+test("Raft keeps both entirely bold Key rule boxes", async ({ page }) => {
+  await mockSupabaseCurriculum(page, new FakeCurriculumDb());
+  await page.goto("/curriculum/distributed.consensus/03-raft-election-and-log");
+  const rules = page
+    .locator("[data-curriculum-reader] blockquote")
+    .filter({ has: page.getByText("Key rule", { exact: true }) });
+  await expect(rules).toHaveCount(2);
+  await expect(rules.nth(0).locator("strong")).not.toBeEmpty();
+  await expect(rules.nth(1).locator("strong")).not.toBeEmpty();
+});
+
+test("estimation charts scroll within their frames at 390px", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openEstimation(page);
+  const charts = page.locator("[data-curriculum-reader] svg[role='img']");
+  await expect(charts).toHaveCount(2);
+  for (const chart of await charts.all()) {
+    const dimensions = await chart.evaluate((svg) => {
+      const scroller = svg.parentElement!;
+      return {
+        svg: svg.getBoundingClientRect().width,
+        scroll: scroller.scrollWidth,
+        width: scroller.clientWidth,
+        overflow: getComputedStyle(scroller).overflowX,
+      };
+    });
+    expect(dimensions.svg).toBeGreaterThanOrEqual(560);
+    expect(dimensions.scroll).toBeGreaterThan(dimensions.width);
+    expect(dimensions.overflow).toBe("auto");
+  }
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+});

@@ -49,14 +49,15 @@ function violations(source: string) {
             errors.widgets.push(`${line}: ${raw}`);
           return null;
         },
-        blockquote: ({ node }) => {
+        blockquote: ({ node, children }) => {
           const elements =
             node?.children.filter((child) => child.type === "element") ?? [];
           const first = elements[0];
-          if (first?.type !== "element" || first.tagName !== "p") return null;
+          if (first?.type !== "element" || first.tagName !== "p")
+            return <>{children}</>;
           const text = hastText(first);
           const marker = /^\[!([^\]]+)\]/.exec(text);
-          if (!marker) return null;
+          if (!marker) return <>{children}</>;
           const line = node?.position?.start.line;
           if (!(CALLOUT_KINDS as readonly string[]).includes(marker[1]))
             errors.kinds.push(`${line}: ${marker[1]}`);
@@ -73,7 +74,7 @@ function violations(source: string) {
                 ))
           )
             errors.checks.push(`${line}: missing question or answer paragraph`);
-          return null;
+          return <>{children}</>;
         },
       }}
     >
@@ -93,6 +94,13 @@ describe("curriculum visual content gates", () => {
     expect(Object.values(errors).map((entries) => entries.length)).toEqual([
       1, 1, 1, 1,
     ]);
+  });
+  it("checks nested quotes and fences inside a quote too", () => {
+    const errors = violations(
+      "> [!KEY] Outer quote.\n>\n> > [!UNKNOWN] Nested.\n>\n> ```chart\n> invalid chart\n> ```",
+    );
+    expect(errors.kinds).toHaveLength(1);
+    expect(errors.charts).toHaveLength(1);
   });
   const results = files.map((file) => ({
     file: relative(ROOT, file),

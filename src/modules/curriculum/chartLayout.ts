@@ -1,5 +1,21 @@
 import type { ChartSpec } from "./chartBlock";
 
+export const CHART_DIMENSIONS = {
+  viewBoxWidth: 620,
+  minWidth: 600,
+  fontSize: 13,
+  rowHeight: 34,
+  barHeight: 20,
+  left: 220,
+  plotWidth: 280,
+  top: 20,
+} as const;
+
+export function chartAxisTitle(unit: string | null): string | null {
+  if (unit === "ns" || unit === "B") return null;
+  return unit?.startsWith("$") ? `USD${unit.slice(1)}` : unit;
+}
+
 export function chartLayout(spec: ChartSpec) {
   const values = spec.rows.flatMap((row) => [row.low, row.high]);
   let min: number;

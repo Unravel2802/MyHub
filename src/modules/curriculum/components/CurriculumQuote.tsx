@@ -69,7 +69,7 @@ export function CurriculumQuote({
     : withoutPrefix(first, marker.prefix.length);
   const label = (
     <span
-      className={`block font-mono text-xs uppercase tracking-wider ${labelColors[marker.kind]}`}
+      className={`${marker.kind === "CHECK" ? "inline" : "block"} font-mono text-xs uppercase tracking-wider ${labelColors[marker.kind]}`}
     >
       {labels[marker.kind]}
     </span>

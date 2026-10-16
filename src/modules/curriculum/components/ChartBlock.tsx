@@ -7,7 +7,7 @@ import {
   parseChartBlock,
   type ChartSpec,
 } from "../chartBlock";
-import { chartLayout } from "../chartLayout";
+import { CHART_DIMENSIONS, chartAxisTitle, chartLayout } from "../chartLayout";
 import { Figure } from "./Figure";
 import { VisualBlockFrame } from "./VisualBlockFrame";
 
@@ -15,7 +15,8 @@ function barPath(start: number, end: number, y: number): string {
   const direction = end < start ? -1 : 1;
   const edge = Math.abs(end - start) < 2 ? start + direction * 2 : end;
   const radius = Math.min(4, Math.abs(edge - start));
-  return `M ${start} ${y} H ${edge - direction * radius} Q ${edge} ${y} ${edge} ${y + radius} V ${y + 28 - radius} Q ${edge} ${y + 28} ${edge - direction * radius} ${y + 28} H ${start} Z`;
+  const height = CHART_DIMENSIONS.barHeight;
+  return `M ${start} ${y} H ${edge - direction * radius} Q ${edge} ${y} ${edge} ${y + radius} V ${y + height - radius} Q ${edge} ${y + height} ${edge - direction * radius} ${y + height} H ${start} Z`;
 }
 
 function BarChart({ spec }: { spec: ChartSpec }) {
@@ -24,10 +25,16 @@ function BarChart({ spec }: { spec: ChartSpec }) {
   const tooltipId = useId();
   const active = focused ?? hovered;
   const layout = chartLayout(spec);
-  const left = 236;
-  const width = 350;
-  const top = 20;
-  const rowHeight = 30;
+  const {
+    left,
+    plotWidth: width,
+    top,
+    rowHeight,
+    viewBoxWidth,
+    fontSize,
+    minWidth,
+    barHeight,
+  } = CHART_DIMENSIONS;
   const bottom = top + spec.rows.length * rowHeight;
   const height = bottom + 62;
   const x = (value: number) => left + layout.ratio(value) * width;
@@ -35,15 +42,14 @@ function BarChart({ spec }: { spec: ChartSpec }) {
   const label = (index: number) =>
     `${spec.rows[index].label}: ${formatChartRange(spec.rows[index].low, spec.rows[index].high, spec.unit)}`;
   const row = active === null ? null : spec.rows[active];
-  const axisTitle = spec.unit?.startsWith("$")
-    ? `USD${spec.unit.slice(1)}`
-    : spec.unit;
+  const axisTitle = chartAxisTitle(spec.unit);
   return (
     <>
       <div className="overflow-x-auto p-3">
         <svg
-          viewBox={`0 0 740 ${height}`}
-          className="min-w-[560px] w-full font-mono text-[11px]"
+          viewBox={`0 0 ${viewBoxWidth} ${height}`}
+          className="w-full font-mono"
+          style={{ minWidth, fontSize }}
           role="img"
           aria-label={spec.rows.map((_, index) => label(index)).join("; ")}
         >
@@ -90,7 +96,7 @@ function BarChart({ spec }: { spec: ChartSpec }) {
                 role="group"
                 aria-label={label(index)}
                 aria-describedby={active === index ? tooltipId : undefined}
-                className="outline-none"
+                style={{ outline: "none" }}
                 onMouseEnter={() => setHovered(index)}
                 onMouseLeave={() => setHovered(null)}
                 onFocus={() => setFocused(index)}
@@ -99,7 +105,7 @@ function BarChart({ spec }: { spec: ChartSpec }) {
                 <rect
                   x="0"
                   y={y - 2}
-                  width="735"
+                  width={viewBoxWidth - 4}
                   height={rowHeight - 2}
                   rx="4"
                   fill={
@@ -109,7 +115,7 @@ function BarChart({ spec }: { spec: ChartSpec }) {
                 />
                 <text
                   x={left - 12}
-                  y={y + 20}
+                  y={y + 19}
                   textAnchor="end"
                   fill="var(--body)"
                 >
@@ -123,7 +129,7 @@ function BarChart({ spec }: { spec: ChartSpec }) {
                       x={Math.min(baseline, end)}
                       y={y + 4}
                       width={Math.abs(end - baseline)}
-                      height="28"
+                      height={barHeight}
                       fill={color}
                     />
                     <path d={barPath(end, rangeEnd, y + 4)} fill={rangeColor} />
@@ -131,7 +137,7 @@ function BarChart({ spec }: { spec: ChartSpec }) {
                 )}
                 <text
                   x={Math.max(end, rangeEnd, baseline) + 8}
-                  y={y + 21}
+                  y={y + 19}
                   fill="var(--foreground)"
                   fontWeight="600"
                 >

@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { chartLayout } from "./chartLayout";
+import { CHART_DIMENSIONS, chartAxisTitle, chartLayout } from "./chartLayout";
 import { parseChartBlock } from "./chartBlock";
 
 function layout(source: string) {
@@ -25,4 +25,24 @@ it("uses nice currency ticks and keeps negative bars on the correct side of zero
 it("has a finite domain for a zero-only chart", () => {
   const chart = layout("type: bar\n---\nnone: 0");
   expect(Number.isFinite(chart.ratio(0))).toBe(true);
+});
+
+it("keeps chart text readable near 1:1 with distinct bars", () => {
+  expect(CHART_DIMENSIONS.viewBoxWidth).toBe(620);
+  expect(CHART_DIMENSIONS.rowHeight).toBe(34);
+  expect(CHART_DIMENSIONS.barHeight).toBe(20);
+  expect(CHART_DIMENSIONS.rowHeight - CHART_DIMENSIONS.barHeight).toBe(14);
+  expect(
+    (CHART_DIMENSIONS.fontSize * CHART_DIMENSIONS.minWidth) /
+      CHART_DIMENSIONS.viewBoxWidth,
+  ).toBeGreaterThanOrEqual(12);
+});
+it.each([
+  ["ns", null],
+  ["B", null],
+  [null, null],
+  ["$/month", "USD/month"],
+  ["requests/s", "requests/s"],
+])("only adds a useful axis title for %s", (unit, expected) => {
+  expect(chartAxisTitle(unit)).toBe(expected);
 });

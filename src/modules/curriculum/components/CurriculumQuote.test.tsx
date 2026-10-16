@@ -48,6 +48,7 @@ it("places the first paragraph in a native summary and the answer after it", () 
   );
   expect(html).toContain("<details");
   expect(html).toContain("Check yourself");
+  expect(html).toMatch(/<summary[^>]*><span class="inline /);
   expect(html).not.toContain("[!CHECK]");
   expect(html.indexOf("replicate")).toBeLessThan(html.indexOf("</summary>"));
   expect(html.indexOf("availability")).toBeGreaterThan(

@@ -214,7 +214,9 @@ test("creates and edits a behavioral story grouped by theme", async ({
   await expect(
     page.getByRole("heading", { name: "Technical leadership" }),
   ).toBeVisible();
-  await expect(page.getByText("Moved safely with feature flags")).toBeVisible();
+  await expect(
+    page.getByRole("listitem").getByText("Moved safely with feature flags"),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Edit" }).click();
   await page

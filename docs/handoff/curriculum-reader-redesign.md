@@ -589,7 +589,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR A built 2026-10-09, uncommitted; reviewed, fixes required (see below).
+**Status:** PR A fixes done, awaiting re-review
 
 ---
 

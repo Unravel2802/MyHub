@@ -4,6 +4,10 @@ import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ChapterHeader } from "./ChapterHeader";
 import { FinishCard } from "./FinishCard";
+import { calloutMarker, hastText, isKeyRule } from "../callout";
+import { ChartBlock } from "./ChartBlock";
+import { WidgetBlock } from "./WidgetBlock";
+import { CurriculumQuote } from "./CurriculumQuote";
 import { CodeBlock } from "./CodeBlock";
 import { ReadingProgress } from "./ReadingProgress";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -36,14 +40,6 @@ interface LessonReaderProps {
   previous: LessonMeta | null;
   next: LessonMeta | null;
   index: CurriculumIndex;
-}
-
-// Highlighted code contains nested spans; collect all text, preserving the source.
-function nodeText(node: {
-  value?: string;
-  children?: readonly Parameters<typeof nodeText>[0][];
-}): string {
-  return node.value ?? node.children?.map(nodeText).join("") ?? "";
 }
 
 function curriculumComponents(
@@ -84,53 +80,26 @@ function curriculumComponents(
         className?: string;
         children?: string;
       }>;
-      const raw = nodeText(node ?? {}).replace(/\n$/, "");
+      const raw = hastText(node ?? {}).replace(/\n$/, "");
       const language = code?.props?.className?.match(/language-([^\s]+)/)?.[1];
-      return language === "text" ? (
-        <Figure
-          raw={raw}
-          caption={
-            enclosingSection(outline, node?.position?.start.line ?? 0)?.text ??
-            "Figure"
-          }
-        />
-      ) : (
+      const caption =
+        enclosingSection(outline, node?.position?.start.line ?? 0)?.text ??
+        "Figure";
+      if (language === "text") return <Figure raw={raw} caption={caption} />;
+      if (language === "chart")
+        return <ChartBlock raw={raw} caption={caption} />;
+      if (language === "widget") return <WidgetBlock raw={raw} />;
+      return (
         <CodeBlock raw={raw} language={language ?? "code"}>
           {children}
         </CodeBlock>
       );
     },
-    blockquote: ({ children, node }) => {
-      const paragraphs = node?.children.filter(
-        (child) =>
-          child.type === "element" ||
-          (child.type === "text" && child.value.trim()),
-      );
-      const bold =
-        !!paragraphs?.length &&
-        paragraphs.every(
-          (child) =>
-            child.type === "element" &&
-            child.tagName === "p" &&
-            child.children.every(
-              (part) =>
-                (part.type === "text" && !part.value.trim()) ||
-                (part.type === "element" && part.tagName === "strong"),
-            ),
-        );
-      return bold ? (
-        <blockquote className="my-5 rounded-xl border border-[var(--track-border)] bg-[var(--track-surface)] p-5 text-body">
-          <p className="mb-2 font-mono text-xs uppercase text-[var(--track)]">
-            Key rule
-          </p>
-          {children}
-        </blockquote>
-      ) : (
-        <blockquote className="my-5 border-l-2 border-[var(--track-border)] pl-5 italic text-body">
-          {children}
-        </blockquote>
-      );
-    },
+    blockquote: ({ children, node }) => (
+      <CurriculumQuote marker={calloutMarker(node)} keyRule={isKeyRule(node)}>
+        {children}
+      </CurriculumQuote>
+    ),
     table: ({ children, ...props }) => (
       <div className="my-5 overflow-x-auto">
         <table

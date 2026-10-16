@@ -589,7 +589,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR A approved 2026-10-15 (re-review below). Next: PR B.
+**Status:** PR B approved 2026-10-15 (review below). Next: PR C, starting with the PR B chart follow-ups.
 
 ---
 
@@ -672,3 +672,154 @@ Non-blocking, fold into PR B:
 - `ChapterHeader`'s `/curriculum?topic=` fallback link is dead: the map
   doesn't read that param. Every topic has chapters today, so it can't be
   reached; drop it or link to `/curriculum`.
+
+## Appendix — B6 seed content (exact)
+
+The mockup link is private to the Lead Architect's account, so the exact text
+B6 seeds lives here. Insert into
+`content/curriculum/systems-design.estimation/01-back-of-envelope.md` at the
+marked places. Change no other prose.
+
+**1. After the first `text` figure under "## The numbers to memorise":**
+
+````markdown
+```chart
+type: bar
+scale: log
+unit: ns
+title: The latency ladder, log scale
+caption: Each gridline is 1,000× slower than the one before.
+---
+L1 cache: 1
+main memory: 100
+SSD read: 100000
+same-DC round trip: 500000
+disk seek: 5000000
+cross-region: 100000000
+```
+````
+
+**2. Replace the paragraph that starts "\*\*That last block is the point of the
+exercise.\*\*"** (the wording is unchanged; it becomes a callout), then add the
+widget straight after it:
+
+```markdown
+> [!KEY] **That last block is the point of the exercise.** The arithmetic is
+> worthless unless it produces architectural conclusions, and here four numbers
+> ruled out a single-database design and ruled in a CDN, a cache and
+> partitioning.
+
+Run the same estimate yourself: drag a slider and watch which conclusions flip.
+```
+
+````markdown
+```widget
+estimation-calculator
+```
+````
+
+**3. After the "the egress line is the one that catches people" figure under
+"## Cost, roughly":**
+
+````markdown
+```chart
+type: bar
+unit: $/month
+title: Monthly egress for 40 TB/day of media
+caption: The second, independent argument for the CDN.
+highlight: direct from object storage
+---
+direct from object storage: 96000
+through a CDN, 95% hits: 10000-20000
+```
+````
+
+**4. After the "## Common mistakes" figure, before "## What to take away":**
+
+```markdown
+> [!PITFALL] Designing for the average. 2,300 writes/s looks easy until the 5×
+> evening peak puts you at 12,000, past what one Postgres primary handles.
+
+> [!INTERVIEW] Say each assumption out loud before you multiply by it. The
+> interviewer will correct a bad assumption, but can't correct one they never
+> heard.
+
+> [!CHECK] A service gets 50M DAU, 10 requests each per day, at a 4× peak.
+> Roughly what peak QPS do you plan for?
+>
+> 50M × 10 = 500M requests a day. Divide by 10⁵ seconds: about 5,000 QPS on
+> average. Multiply by 4 for the peak: about **20,000 QPS**.
+
+> [!CHECK] Why does media, not post text, decide the storage architecture in
+> the worked example?
+>
+> Text is 100 GB a day; images are 40 TB a day, 400× more. That volume belongs
+> in object storage behind a CDN, which also fixes the egress bill.
+```
+
+### `estimation-calculator` copy
+
+| Element                         | Text                                                                                                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Frame bar label / title         | `INTERACTIVE` / Run the estimate yourself                                                                                                                                                              |
+| Caption                         | Starts at the chapter's numbers. Drag a slider and watch which architectural conclusions flip.                                                                                                         |
+| Inputs (label → range, default) | Daily active users → 1M–1B log slider, 100M · Posts per user per day → 0.5–10 step 0.5, 2 · Feed opens per user per day → 1–50, 20 · Peak ÷ average → 2–10×, 5× · Posts with a 2 MB image → 0–50%, 10% |
+| Stat tiles                      | Peak writes (`12k/s`) · Peak reads (`120k QPS`) · Text storage / year, ×3 (`110 TB`) · Media / day (`40 TB`)                                                                                           |
+| Verdict `partition`             | Writes exceed one Postgres primary → partition, or a different store                                                                                                                                   |
+| Verdict `cache`                 | Reads dominate → caching is the main lever                                                                                                                                                             |
+| Verdict `cdn`                   | Media dominates storage → object storage + CDN                                                                                                                                                         |
+| Verdict `egress`                | Egress would pass $50k/month → the CDN pays for itself                                                                                                                                                 |
+
+Stat values use two significant figures with k/M/B suffixes, and decimal bytes
+(`GB`, `TB`, `PB`). An "on" verdict shows `→` in `--track` with
+`--foreground` text; an "off" one shows `○` in `--muted` with muted text.
+
+## PR B review — 2026-10-15 (Claude)
+
+**Approved.** Lint, typecheck, unit (1,547) and the full E2E suite pass.
+`prep-tracker.spec.ts:200` failed once in the full run, then passed 40 of 40 in
+isolation: a pre-existing timing flake, not PR B. Confirmed in a real browser:
+both charts, the focus tooltip, the calculator at the chapter's numbers, all
+four callout kinds, check-yourself expanding, Key rule on the Raft chapter, and
+no page-level horizontal scroll at 390px. The contracts match B3/B4 exactly and
+the chapter diff is exactly the appendix.
+
+Fix at the start of PR C (none blocks merging B):
+
+1. **Chart text is too small.** The SVG's viewBox is 740 wide, but the column
+   renders it at about 600px, so the 11px labels land near 9px. Most of the
+   right side of the viewBox is also unused (the plot stops at x≈586). Size the
+   viewBox to the content column (about 620) so it renders close to 1:1, keep
+   rendered text at least 12px, and give bars real gaps (the mockup used a
+   20px bar in a 34px row).
+2. **Drop the axis title when the unit already formats the ticks** (`ns`,
+   `B`). The lone "ns" under the latency chart is noise. Keep it for `$/…`
+   and free-form units.
+3. **A focused chart row shows two rings** (the browser's focus outline plus
+   the `--track` stroke). Keep only the `--track` stroke.
+4. **Check yourself:** the disclosure triangle sits on its own line above the
+   label. Put it inline with "Check yourself".
+
+## Appendix — C4 seed content (exact)
+
+Insert into `content/curriculum/systems-design.estimation/01-back-of-envelope.md`
+directly after the worked example's first `text` figure (the one titled "a
+social app: 100M DAU") and before the "the conclusions that fall out" figure.
+Change no other prose.
+
+````markdown
+Drawn as a system, those numbers imply this architecture:
+
+```mermaid
+flowchart LR
+  client[Client] -->|media| cdn[CDN]
+  client -->|115k QPS peak| lb[Load balancer]
+  cdn -->|40 TB/day, 95% hits| obj[(Object storage)]
+  lb --> app[App servers]
+  app -->|20 GB hot set| cache[(Cache)]
+  app -->|12k writes/s| db[(Postgres, partitioned)]
+```
+````
+
+The frame's title falls back to the section heading ("A worked example"),
+like every other figure.

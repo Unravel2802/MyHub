@@ -589,7 +589,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR A fixes done, awaiting re-review
+**Status:** PR A approved 2026-10-15 (re-review below). Next: PR B.
 
 ---
 
@@ -655,3 +655,20 @@ it into `ChapterHeader`, `Figure`, `ChapterToc`, `ReadingProgress` and
 `FinishCard` files, and run Prettier on every touched file (lint-staged only
 formats at commit time). `Markdown.tsx`, `figureLines.ts` and the catalog
 addition need the same.
+
+## PR A re-review — 2026-10-15 (Claude)
+
+**Approved.** Lint, typecheck, unit and the full E2E suite (155) pass. Every
+bug and missing item from the first review was confirmed fixed in a real
+browser: captions follow their section, the progress bar reads 50% at the
+midpoint, figures are numbered and keep their blank lines, `□ … →` lines keep
+the arrow, the TOC tracks the active section and appears at 390px, the recap
+is numbered and in the TOC, and "Mark as read" is legible in dark mode. Key
+rule boxes render on `distributed.consensus/03-raft-election-and-log`.
+
+Non-blocking, fold into PR B:
+
+- Add an E2E case for the Key rule box (the Raft chapter above has two).
+- `ChapterHeader`'s `/curriculum?topic=` fallback link is dead: the map
+  doesn't read that param. Every topic has chapters today, so it can't be
+  reached; drop it or link to `/curriculum`.

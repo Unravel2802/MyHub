@@ -191,3 +191,205 @@ test("a path-traversal lesson id does not read a file off disk", async ({
   );
   expect(response?.status()).toBe(404);
 });
+
+// PR A regression cases. Existing curriculum cases above remain unchanged.
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+const ESTIMATION = "/curriculum/systems-design.estimation/01-back-of-envelope";
+const estimationSource = readFileSync(
+  path.join(
+    process.cwd(),
+    "content/curriculum/systems-design.estimation/01-back-of-envelope.md",
+  ),
+  "utf8",
+);
+const textFenceCount = estimationSource
+  .split("\n")
+  .filter((line) => /^```text\s*$/.test(line)).length;
+const sectionHeadings: string[] = [];
+let insideFence = false;
+for (const line of estimationSource.split("\n")) {
+  if (/^```/.test(line)) insideFence = !insideFence;
+  else if (!insideFence && line.startsWith("## "))
+    sectionHeadings.push(line.slice(3));
+}
+
+async function openEstimation(
+  page: Parameters<typeof mockSupabaseCurriculum>[0],
+) {
+  await mockSupabaseCurriculum(page, new FakeCurriculumDb());
+  await page.goto(ESTIMATION);
+  await expect(
+    page.getByRole("heading", {
+      name: "Back-of-envelope estimation",
+      exact: true,
+    }),
+  ).toBeVisible();
+}
+
+test("estimation renders every text fence as a numbered figure with its section caption", async ({
+  page,
+}) => {
+  await openEstimation(page);
+  const figures = page.locator("[data-curriculum-reader] figure");
+  await expect(figures).toHaveCount(textFenceCount);
+  // Playwright's ARIA snapshot omits generated counters. Chromium's full
+  // accessibility tree exposes their resolved text, so verify the real 1..n.
+  const cdp = await page.context().newCDPSession(page);
+  const { nodes } = await cdp.send("Accessibility.getFullAXTree");
+  const byId = new Map(nodes.map((node) => [node.nodeId, node]));
+  const textIn = (id: string): string => {
+    const node = byId.get(id);
+    if (node?.role?.value === "StaticText") return node.name?.value ?? "";
+    return (node?.childIds ?? []).map(textIn).join("");
+  };
+  const renderedFigures = nodes.filter((node) => node.role?.value === "figure");
+  expect(renderedFigures).toHaveLength(textFenceCount);
+  renderedFigures.forEach((figure, index) => {
+    expect(textIn(figure.nodeId)).toContain(`FIG ${index + 1}`);
+  });
+  await cdp.detach();
+  await expect(figures.first().locator("figcaption")).toContainText(
+    "The numbers to memorise",
+  );
+  await expect(
+    figures.first().getByRole("button", { name: "Copy", exact: true }),
+  ).toBeVisible();
+  const lines = figures.first().locator(".whitespace-pre");
+  const heights = await lines.evaluateAll((elements) =>
+    elements.map((element) => element.getBoundingClientRect().height),
+  );
+  expect(Math.min(...heights)).toBeGreaterThan(20);
+});
+
+test("estimation TOC includes each section and recap, and tracks the clicked heading", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openEstimation(page);
+  const toc = page
+    .locator("aside")
+    .getByRole("navigation", { name: "Chapter contents" });
+  await expect(toc.getByRole("link")).toHaveCount(sectionHeadings.length);
+  for (const heading of sectionHeadings)
+    await expect(
+      toc.getByRole("link", { name: heading, exact: true }),
+    ).toHaveCount(1);
+  const worked = toc.getByRole("link", {
+    name: "A worked example",
+    exact: true,
+  });
+  await worked.click();
+  await expect(worked).toHaveAttribute("aria-current", "location");
+  const heading = page.getByRole("heading", {
+    name: "A worked example",
+    exact: true,
+  });
+  await expect(heading).toBeInViewport();
+  expect(
+    await heading.evaluate((element) => element.getBoundingClientRect().top),
+  ).toBeLessThan(150);
+});
+
+test("estimation progress is half full at the midpoint of the article", async ({
+  page,
+}) => {
+  await openEstimation(page);
+  await page.locator("[data-curriculum-reader]").evaluate((article) => {
+    const rect = article.getBoundingClientRect();
+    window.scrollTo(
+      0,
+      window.scrollY + rect.top + (rect.height - window.innerHeight) / 2,
+    );
+  });
+  await expect
+    .poll(() =>
+      page
+        .locator("[data-reading-progress]")
+        .evaluate((bar) => new DOMMatrix(getComputedStyle(bar).transform).a),
+    )
+    .toBeGreaterThan(0.35);
+  await expect
+    .poll(() =>
+      page
+        .locator("[data-reading-progress]")
+        .evaluate((bar) => new DOMMatrix(getComputedStyle(bar).transform).a),
+    )
+    .toBeLessThan(0.65);
+});
+
+test("estimation recap has six numbered takeaways and finishes the chapter", async ({
+  page,
+}) => {
+  await openEstimation(page);
+  await expect(
+    page.locator("[data-chapter-recap]").getByRole("listitem"),
+  ).toHaveCount(6);
+  await page.getByRole("button", { name: "Mark as read", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Read", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Chapter complete", exact: true }),
+  ).toBeVisible();
+});
+
+test("estimation has an opening mobile chapter disclosure at 390px", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openEstimation(page);
+  const disclosure = page
+    .locator("details")
+    .filter({ has: page.locator("summary", { hasText: "In this chapter" }) });
+  await expect(disclosure).toBeVisible();
+  await disclosure.locator("summary").click();
+  await expect(disclosure).toHaveAttribute("open", "");
+  await expect(
+    disclosure.getByRole("link", { name: "A worked example", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+});
+
+test("figure Copy reports success, resets, and selects text if clipboard fails", async ({
+  page,
+}) => {
+  await openEstimation(page);
+  await page.evaluate(() =>
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async () => {} },
+    }),
+  );
+  const figure = page.locator("figure").first();
+  await figure.getByRole("button", { name: "Copy", exact: true }).click();
+  await expect(
+    figure.getByRole("button", { name: "Copied", exact: true }),
+  ).toBeVisible();
+  await expect(
+    figure.getByRole("button", { name: "Copy", exact: true }),
+  ).toBeVisible();
+  await page.evaluate(() =>
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async () => {
+          throw new Error("denied");
+        },
+      },
+    }),
+  );
+  await figure.getByRole("button", { name: "Copy", exact: true }).click();
+  await expect(
+    figure.getByRole("button", { name: "Text selected", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => window.getSelection()?.toString()),
+  ).toContain("TIME");
+  await expect(
+    figure.getByRole("button", { name: "Copy", exact: true }),
+  ).toBeVisible();
+});

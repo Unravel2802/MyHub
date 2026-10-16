@@ -89,8 +89,16 @@ export function SolutionEditorial({
 
       {solution.estimates.length > 0 ? (
         <Panel
-          description="Back-of-the-envelope figures that shape the architecture."
-          overline="Scale, latency & cost"
+          description={
+            category === "coding_design"
+              ? "Time and space per operation."
+              : "Back-of-the-envelope figures that shape the architecture."
+          }
+          overline={
+            category === "coding_design"
+              ? "Complexity"
+              : "Scale, latency & cost"
+          }
         >
           <div className="overflow-x-auto">
             <table className="w-full min-w-96 border-collapse text-left text-sm">

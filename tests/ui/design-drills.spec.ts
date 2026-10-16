@@ -33,6 +33,34 @@ const editorialDetail = {
   ],
 };
 
+const codingDesignDrill = designDrillRow({
+  id: "lru-cache",
+  slug: "design-lru-cache",
+  title: "Design LRU Cache",
+  category: "coding_design",
+  difficulty: "core",
+  prompt: "Implement an LRU cache with constant-time get and put operations.",
+  rubric: ["Uses a hash map", "Maintains recency in constant time"],
+  solution_detail: {
+    summary:
+      "Pair a hash map with a doubly linked list so lookup and recency updates stay constant time.",
+    sections: [
+      {
+        id: "approach",
+        heading: "Approach",
+        body: "Keep the least-recently-used entry at the tail.",
+      },
+    ],
+    estimates: [
+      {
+        label: "get / put",
+        value: "O(1) time",
+        note: "Hash lookup plus constant-time pointer updates",
+      },
+    ],
+  },
+});
+
 function seededDb() {
   return new FakeDesignDrillsDb([
     designDrillRow({
@@ -122,6 +150,65 @@ test("lists seeded drills and opens the structured editorial", async ({
       .locator("strong")
       .filter({ hasText: "read-heavy key-value lookup" }),
   ).toHaveText("read-heavy key-value lookup");
+});
+
+test("filters, attempts, and reveals a coding-design editorial", async ({
+  page,
+}) => {
+  const baseDb = seededDb();
+  const db = new FakeDesignDrillsDb([...baseDb.drills, codingDesignDrill]);
+  await load(page, db);
+
+  const codingRow = page
+    .getByRole("link", { name: "Design LRU Cache", exact: true })
+    .locator("xpath=ancestor::li[1]");
+  await expect(
+    codingRow.getByText("Coding design", { exact: true }),
+  ).toBeVisible();
+
+  await page
+    .getByRole("combobox", { name: "Category", exact: true })
+    .selectOption("coding_design");
+  await expect(codingRow).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "URL Shortener", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "ML Feature Store", exact: true }),
+  ).toHaveCount(0);
+
+  await codingRow.getByRole("button", { name: "Start drill" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Design LRU Cache", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Coding design", { exact: true }).first(),
+  ).toBeVisible();
+
+  await page
+    .getByLabel("Your design (scratchpad)")
+    .fill("Use a hash map and doubly linked list.");
+  await page.getByRole("button", { name: "Submit & self-grade" }).click();
+  await page.getByRole("checkbox", { name: "Uses a hash map" }).check();
+  await page.getByRole("radio", { name: /Solid/ }).check();
+  await page.getByRole("button", { name: "Finish attempt" }).click();
+
+  await expect.poll(() => db.attempts).toHaveLength(1);
+  const completedDrillLink = page.getByRole("link", {
+    name: "Design LRU Cache",
+    exact: true,
+  });
+  await expect(completedDrillLink).toBeVisible();
+  await completedDrillLink.click();
+  await expect(page).toHaveURL("/design-drills/design-lru-cache");
+  await page.getByRole("tab", { name: "Solution" }).click();
+  const solutionPanel = page.getByRole("tabpanel");
+  await expect(
+    solutionPanel.getByText("Complexity", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    solutionPanel.getByText("Scale, latency & cost", { exact: true }),
+  ).toHaveCount(0);
 });
 
 test("switches solution code languages with click and keyboard navigation", async ({

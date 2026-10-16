@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 export type DesignDrillRow = {
   id: string;
   slug: string;
-  category: "system_design" | "ml_system_design";
+  category: "system_design" | "ml_system_design" | "coding_design";
   difficulty: "warmup" | "core" | "advanced";
   title: string;
   prompt: string;

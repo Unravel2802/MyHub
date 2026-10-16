@@ -24,14 +24,16 @@ import {
 import type {
   DesignDrill,
   DesignDrillAttempt,
+  DesignDrillCategory,
   DesignDrillDifficulty,
   DesignDrillSelfRating,
 } from "@/src/modules/designDrills/types";
 
-const categoryLabels = {
+const categoryLabels: Record<DesignDrillCategory, string> = {
   system_design: "System design",
   ml_system_design: "ML system design",
-} as const;
+  coding_design: "Coding design",
+};
 
 const difficultyLabels: Record<DesignDrillDifficulty, string> = {
   warmup: "Warmup",
@@ -136,16 +138,17 @@ export function DrillProgressOverview({
               By category
             </h3>
             <ul className="mt-3 grid gap-3">
-              {(["system_design", "ml_system_design"] as const).map(
-                (category) => (
+              {Object.entries(categoryLabels).map(([category, label]) => {
+                const typedCategory = category as DesignDrillCategory;
+                return (
                   <CoverageRow
-                    bucket={coverage.byCategory[category]}
-                    hue={DESIGN_DRILL_CATEGORY_HUES[category]}
-                    key={category}
-                    label={categoryLabels[category]}
+                    bucket={coverage.byCategory[typedCategory]}
+                    hue={DESIGN_DRILL_CATEGORY_HUES[typedCategory]}
+                    key={typedCategory}
+                    label={label}
                   />
-                ),
-              )}
+                );
+              })}
             </ul>
           </section>
 

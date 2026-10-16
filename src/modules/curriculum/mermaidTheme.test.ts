@@ -20,6 +20,7 @@ it("resolves theme variables and preserves the required strict config", () => {
     startOnLoad: false,
     securityLevel: "strict",
     theme: "base",
+    htmlLabels: false,
     flowchart: { htmlLabels: false, curve: "basis" },
   });
   expect(config.themeVariables).toMatchObject({

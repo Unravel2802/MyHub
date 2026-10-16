@@ -16,6 +16,9 @@ export function mermaidTheme(root: HTMLElement): MermaidConfig {
     startOnLoad: false,
     securityLevel: "strict",
     theme: "base",
+    // v11.17 prefers this global switch over flowchart.htmlLabels. Set both
+    // so C3 always emits SVG text, including on versions using the legacy key.
+    htmlLabels: false,
     flowchart: { htmlLabels: false, curve: "basis" },
     themeVariables: {
       fontFamily,

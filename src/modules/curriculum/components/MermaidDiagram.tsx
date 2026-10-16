@@ -67,10 +67,15 @@ export function MermaidDiagram({
         );
         const svg = await task;
         if (disposed || version !== revision || svg === null) return;
-        const document = new DOMParser().parseFromString(svg, "image/svg+xml");
+        const svgDocument = new DOMParser().parseFromString(
+          svg,
+          "image/svg+xml",
+        );
         const width =
           Number(
-            document.documentElement.getAttribute("viewBox")?.split(/\s+/)[2],
+            svgDocument.documentElement
+              .getAttribute("viewBox")
+              ?.split(/\s+/)[2],
           ) || 0;
         setResult({ source: raw, svg, width, error: false });
       } catch (error) {

@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef } from "react";
 import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { cn } from "@/src/lib/cn";
@@ -7,6 +8,7 @@ import { cn } from "@/src/lib/cn";
 interface MarkdownProps {
   children: string;
   className?: string;
+  components?: Partial<Components>;
 }
 
 // Shared, XSS-safe GFM renderer. Deliberately NOT wired to `rehype-raw`: the
@@ -122,12 +124,21 @@ const components = {
   ),
 };
 
-export function Markdown({ children, className }: MarkdownProps) {
+export function Markdown({
+  children,
+  className,
+  components: overrides,
+}: MarkdownProps) {
   return (
     <div className={cn("md-content text-sm text-body", className)}>
       <ReactMarkdown
-        components={components}
-        rehypePlugins={[rehypeHighlight]}
+        components={{ ...components, ...overrides }}
+        rehypePlugins={[
+          [
+            rehypeHighlight,
+            { plainText: ["text", "chart", "mermaid", "widget"] },
+          ],
+        ]}
         remarkPlugins={[remarkGfm]}
       >
         {children}

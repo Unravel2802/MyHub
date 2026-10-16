@@ -1801,3 +1801,39 @@ export function trackById(id: string): Track | undefined {
 export function topicsInTrack(trackId: string): Topic[] {
   return TOPICS.filter((topic) => topic.trackId === trackId);
 }
+
+export interface TopicNeighbours {
+  position: { index: number; total: number };
+  buildsOn: Topic[];
+  unlocks: Topic[];
+}
+
+export function topicNeighbours(topicId: TopicId): TopicNeighbours {
+  const topic = topicById(topicId);
+  if (!topic)
+    return { position: { index: 0, total: 0 }, buildsOn: [], unlocks: [] };
+  const trackTopics = topicsInTrack(topic.trackId);
+  const sameTrackFirst = (entries: Topic[]) =>
+    entries
+      .sort(
+        (a, b) =>
+          Number(b.trackId === topic.trackId) -
+          Number(a.trackId === topic.trackId),
+      )
+      .slice(0, 3);
+  return {
+    position: {
+      index: trackTopics.findIndex((entry) => entry.id === topic.id) + 1,
+      total: trackTopics.length,
+    },
+    buildsOn: sameTrackFirst(
+      topic.prereqs.flatMap((id) => {
+        const entry = topicById(id);
+        return entry ? [entry] : [];
+      }),
+    ),
+    unlocks: sameTrackFirst(
+      TOPICS.filter((entry) => entry.prereqs.includes(topic.id)),
+    ),
+  };
+}

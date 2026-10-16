@@ -42,19 +42,22 @@ function parseLine(line: string): Segment[] {
       ...(label[4] ? [{ kind: "dim" as const, text: label[4] }] : []),
     ];
   const leading = /^(\s*)([✗□✓])/.exec(line);
-  if (leading)
-    return [
+  const segments: Segment[] = [];
+  if (leading) {
+    segments.push(
       ...(leading[1] ? [{ kind: "text" as const, text: leading[1] }] : []),
       { kind: leading[2] === "✗" ? "cross" : "box", text: leading[2] },
-      { kind: "text", text: line.slice(leading[0].length) },
-    ];
+    );
+    line = line.slice(leading[0].length);
+  }
   const flag = line.indexOf("←");
   const arrow = line.indexOf("→");
   const marker = flag >= 0 ? flag : arrow >= 0 ? arrow : -1;
   if (marker >= 0)
     return [
+      ...segments,
       { kind: "text", text: line.slice(0, marker) },
       { kind: flag >= 0 ? "flag" : "arrow", text: line.slice(marker) },
     ];
-  return [{ kind: "text", text: line }];
+  return [...segments, { kind: "text", text: line }];
 }

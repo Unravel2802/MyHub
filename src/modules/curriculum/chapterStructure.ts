@@ -78,3 +78,11 @@ export function chapterOutline(markdown: string): OutlineEntry[] {
     ];
   });
 }
+
+// Source positions, rather than render order, keep captions stable in StrictMode.
+export function enclosingSection(
+  outline: OutlineEntry[],
+  line: number,
+): OutlineEntry | undefined {
+  return [...outline].reverse().find((entry) => entry.line < line);
+}

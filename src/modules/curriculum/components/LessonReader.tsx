@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, Copy, Star } from "lucide-react";
+import { ReadingProgress } from "./ReadingProgress";
+import { ArrowLeft, ArrowRight, Check, Star } from "lucide-react";
 import {
   hueBorderVar,
   hueSurfaceVar,
@@ -11,10 +12,11 @@ import {
 import { Markdown } from "@/src/components/ui/Markdown";
 import {
   chapterOutline,
+  enclosingSection,
   slugifyHeading,
   splitTakeaways,
 } from "@/src/modules/curriculum/chapterStructure";
-import { parseFigure } from "@/src/modules/curriculum/figureLines";
+import { Figure } from "./Figure";
 import {
   topicNeighbours,
   trackById,
@@ -38,63 +40,6 @@ interface LessonReaderProps {
   index: CurriculumIndex;
 }
 
-function Figure({ raw, caption }: { raw: string; caption: string }) {
-  const parsed = parseFigure(raw);
-  const [copied, setCopied] = useState(false);
-  return (
-    <figure
-      className="my-6 min-w-0 overflow-hidden rounded-xl border border-border"
-      style={
-        {
-          "--grid": "color-mix(in oklab, var(--border) 55%, transparent)",
-        } as React.CSSProperties
-      }
-    >
-      <figcaption className="flex items-center gap-3 border-b border-border px-4 py-2 font-mono text-[11px] uppercase tracking-wider">
-        <span className="font-semibold text-[var(--track)]">FIG</span>
-        <span className="min-w-0 flex-1 truncate text-muted">
-          {parsed.title ?? caption}
-        </span>
-        <button
-          className="inline-flex items-center gap-1 text-muted hover:text-foreground"
-          onClick={() => {
-            void navigator.clipboard.writeText(raw);
-            setCopied(true);
-          }}
-          type="button"
-        >
-          <Copy aria-hidden className="size-3" />
-          {copied ? "Copied" : "Copy"}
-        </button>
-      </figcaption>
-      <div className="overflow-x-auto bg-[linear-gradient(var(--grid)_1px,transparent_1px),linear-gradient(90deg,var(--grid)_1px,transparent_1px)] bg-[size:22px_22px] p-4 font-mono text-[13.5px] leading-[1.7]">
-        {parsed.lines.map((line, i) => (
-          <div className="whitespace-pre" key={i}>
-            {line.map((segment, j) => (
-              <span
-                className={
-                  {
-                    text: "text-body",
-                    label: "font-semibold text-[var(--track)]",
-                    dim: "text-muted",
-                    arrow: "font-medium text-[var(--track)]",
-                    flag: "rounded bg-[var(--hue-amber-surface)] px-1 text-[var(--hue-amber)]",
-                    cross: "text-danger",
-                    box: "text-[var(--track)]",
-                  }[segment.kind] ?? "text-body"
-                }
-                key={j}
-              >
-                {segment.text}
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
-    </figure>
-  );
-}
-
 function curriculumComponents(
   outline: ReturnType<typeof chapterOutline>,
 ): Components {
@@ -116,7 +61,7 @@ function curriculumComponents(
             {children}
           </h2>
           <a
-            aria-label={`Link to ${String(children)}`}
+            aria-label={`Link to ${entry?.text ?? id}`}
             className="ml-2 text-[var(--track)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
             href={`#${id}`}
           >
@@ -125,7 +70,7 @@ function curriculumComponents(
         </div>
       );
     },
-    pre: ({ children }) => {
+    pre: ({ children, node }) => {
       const code = children as React.ReactElement<{
         className?: string;
         children?: string;
@@ -133,7 +78,13 @@ function curriculumComponents(
       const raw = String(code?.props?.children ?? "").replace(/\n$/, "");
       const language = code?.props?.className?.match(/language-(\w+)/)?.[1];
       return language === "text" ? (
-        <Figure raw={raw} caption={outline.at(-1)?.text ?? "Figure"} />
+        <Figure
+          raw={raw}
+          caption={
+            enclosingSection(outline, node?.position?.start.line ?? 0)?.text ??
+            "Figure"
+          }
+        />
       ) : (
         <pre className="mt-5 overflow-x-auto rounded-lg border border-border border-l-4 border-l-[var(--track)] bg-surface-subtle p-4 font-mono text-sm leading-relaxed">
           {children}
@@ -185,31 +136,9 @@ export function LessonReader({
   const fetchProgress = useCurriculumStore((store) => store.fetchProgress);
   const setCompleted = useCurriculumStore((store) => store.setCompleted);
   const setStarred = useCurriculumStore((store) => store.setStarred);
-  const [progress, setProgress] = useState(0);
   useEffect(() => {
     void fetchProgress();
   }, [fetchProgress]);
-  useEffect(() => {
-    const onScroll = () => {
-      const article = document.querySelector("[data-curriculum-reader]");
-      if (!article) return;
-      const max = article.scrollHeight - window.innerHeight;
-      setProgress(
-        max <= 0
-          ? 1
-          : Math.min(
-              1,
-              Math.max(
-                0,
-                (window.scrollY - article.getBoundingClientRect().top) / max,
-              ),
-            ),
-      );
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
   const done = completed[key] !== undefined;
   const track = trackById(topic.trackId);
   const neighbours = topicNeighbours(topic.id);
@@ -221,10 +150,6 @@ export function LessonReader({
     index,
     new Set(Object.keys(completed)),
   );
-  const minutesLeft =
-    lesson.meta.minutes == null
-      ? null
-      : Math.round(lesson.meta.minutes * (1 - progress));
   const cssVars = {
     "--track": hueVar(track?.hue ?? "accent"),
     "--track-surface": hueSurfaceVar(track?.hue ?? "accent"),
@@ -242,11 +167,6 @@ export function LessonReader({
       data-curriculum-reader
       style={cssVars}
     >
-      <div
-        className="fixed inset-x-0 top-0 z-20 h-[3px] origin-left bg-[var(--track)] motion-reduce:transition-none"
-        style={{ transform: `scaleX(${progress})` }}
-        aria-hidden
-      />
       <div className="min-w-0">
         <nav
           aria-label="Breadcrumb"
@@ -317,7 +237,7 @@ export function LessonReader({
             </div>
           ) : null}
         </header>
-        <div className="[font-family:var(--font-reading),Georgia,serif] text-[18px] leading-[1.65] text-body [&_h2]:font-sans [&_h2]:text-[27px] [&_h2]:font-semibold [&_h2]:leading-tight [&_h2]:text-foreground [&_p:first-child]:text-[19px] [&_p:first-child]:first-letter:float-left [&_p:first-child]:first-letter:mr-2 [&_p:first-child]:first-letter:text-[3.4em] [&_p:first-child]:first-letter:font-sans [&_p:first-child]:first-letter:font-semibold [&_p:first-child]:first-letter:text-[var(--track)]">
+        <div className="[font-family:var(--font-reading),Georgia,serif] text-[18px] leading-[1.65] text-body [&_h2]:font-sans [&_h2]:text-[27px] [&_h2]:font-semibold [&_h2]:leading-tight [&_h2]:text-foreground [&>.md-content>p:first-child]:text-[19px] [&>.md-content>p:first-child]:first-letter:float-left [&>.md-content>p:first-child]:first-letter:mr-2 [&>.md-content>p:first-child]:first-letter:text-[3.4em] [&>.md-content>p:first-child]:first-letter:font-sans [&>.md-content>p:first-child]:first-letter:font-semibold [&>.md-content>p:first-child]:first-letter:text-[var(--track)]">
           <Markdown components={components}>{main}</Markdown>
           {takeaways ? (
             <section className="mt-10 rounded-xl border border-border bg-surface p-6">
@@ -342,7 +262,7 @@ export function LessonReader({
           <div className="mt-5 flex flex-wrap gap-3">
             <button
               aria-pressed={done}
-              className="inline-flex items-center gap-2 rounded-md bg-[var(--track)] px-4 py-2 text-sm font-medium text-white"
+              className="inline-flex items-center gap-2 rounded-md bg-[var(--track)] px-4 py-2 text-sm font-medium text-canvas"
               disabled={pendingKeys.includes(key)}
               onClick={() => void setCompleted(key, !done)}
               type="button"
@@ -404,31 +324,7 @@ export function LessonReader({
           )}
         </nav>
       </div>
-      <aside className="hidden min-w-0 lg:block">
-        <div className="sticky top-8">
-          <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
-            In this chapter
-          </p>
-          <nav className="mt-3 border-l border-border">
-            {outline.map((entry) => (
-              <a
-                className="block border-l-2 border-transparent py-1 pl-3 text-sm text-muted hover:border-[var(--track)] hover:text-[var(--track)]"
-                href={`#${entry.id}`}
-                key={entry.id}
-              >
-                {entry.text}
-              </a>
-            ))}
-          </nav>
-          {minutesLeft !== null ? (
-            <p className="mt-6 font-mono text-xs text-muted">
-              {minutesLeft === 0
-                ? "You're at the end"
-                : `${minutesLeft} min left`}
-            </p>
-          ) : null}
-        </div>
-      </aside>
+      <ReadingProgress outline={outline} minutes={lesson.meta.minutes} />
     </article>
   );
 }

@@ -589,7 +589,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR B approved 2026-10-15 (review below). Next: PR C, starting with the PR B chart follow-ups.
+**Status:** PR C done, awaiting review
 
 ---
 

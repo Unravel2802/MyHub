@@ -542,3 +542,169 @@ test("estimation charts scroll within their frames at 390px", async ({
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390);
 });
+
+// PR C additions. Existing curriculum and responsive cases are untouched.
+import { readdirSync } from "node:fs";
+
+test("estimation renders the seeded Mermaid diagram and re-renders when dark mode is added", async ({
+  page,
+}) => {
+  await page.addInitScript(() => localStorage.setItem("myhub-theme", "light"));
+  await openEstimation(page);
+  const diagram = page.locator("[data-mermaid-diagram]");
+  await expect(diagram).toHaveCount(1);
+  await expect(
+    diagram.getByRole("region", { name: "A worked example", exact: true }),
+  ).toContainText("DIAGRAM");
+  const svg = diagram.locator("[data-mermaid-svg] > svg");
+  await expect(svg).toBeVisible({ timeout: 20000 });
+  await expect(svg).toContainText("Client");
+  await expect(svg).toContainText("Postgres, partitioned");
+  await expect(svg.locator("foreignObject")).toHaveCount(0);
+  await expect(page.locator("[data-mermaid-error]")).toHaveCount(0);
+  const beforeId = await svg.getAttribute("id");
+  expect(beforeId).not.toContain(":");
+  const node = svg.locator(".node rect").first();
+  const beforeFill = await node.evaluate(
+    (element) => getComputedStyle(element).fill,
+  );
+  await page.evaluate(() => document.documentElement.classList.add("dark"));
+  await expect.poll(() => svg.getAttribute("id")).not.toBe(beforeId);
+  await expect(svg).toBeVisible();
+  await expect
+    .poll(() => node.evaluate((element) => getComputedStyle(element).fill))
+    .not.toBe(beforeFill);
+  await expect(page.locator("[data-mermaid-error]")).toHaveCount(0);
+  const screenshot = test.info().outputPath("mermaid-dark.png");
+  await diagram.screenshot({ path: screenshot });
+  await test
+    .info()
+    .attach("mermaid-dark", { path: screenshot, contentType: "image/png" });
+});
+
+test("a broken Mermaid diagram preserves its source and displays Diagram error", async ({
+  page,
+}) => {
+  await page.goto("/test-only/curriculum-mermaid");
+  const diagram = page.locator("[data-mermaid-error]");
+  await expect(diagram).toBeVisible({ timeout: 20000 });
+  await expect(
+    diagram.getByText("Diagram error", { exact: true }),
+  ).toBeVisible();
+  await expect(diagram.locator("figure")).toContainText("flowchart LR");
+  await expect(diagram.locator("figure")).toContainText("A[unterminated");
+  await expect(diagram.locator("[data-mermaid-svg]")).toHaveCount(0);
+  // Mermaid's temporary syntax-error SVG must be cleaned up too.
+  await expect(page.locator("body > div[id^='dmermaid-']")).toHaveCount(0);
+});
+
+test("chapters without Mermaid make no Mermaid chunk request, with a positive control", async ({
+  page,
+}) => {
+  // Chunk filenames are hashed. Discover the library chunks in the actual
+  // production build using Mermaid's public API name; don't guess filenames.
+  const chunkDir = path.join(process.cwd(), ".next/static/chunks");
+  const mermaidChunks = new Set(
+    readdirSync(chunkDir)
+      .filter(
+        (file) =>
+          file.endsWith(".js") &&
+          readFileSync(path.join(chunkDir, file), "utf8").includes(
+            "mermaidAPI",
+          ),
+      )
+      .map((file) => `/_next/static/chunks/${file}`),
+  );
+  expect(mermaidChunks.size).toBeGreaterThan(0);
+  const requested: string[] = [];
+  page.on("request", (request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (mermaidChunks.has(pathname)) requested.push(pathname);
+  });
+  await mockSupabaseCurriculum(page, new FakeCurriculumDb());
+  await page.goto(`/curriculum/${DS}/${CHAPTERS[1]}`);
+  await expect(
+    page.getByRole("heading", { name: "Hash tables", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Revisit later", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Flagged to revisit", exact: true }),
+  ).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  expect(requested).toEqual([]);
+  // The same observer must detect the library when a diagram is present.
+  await page.goto(ESTIMATION);
+  await expect(page.locator("[data-mermaid-svg] > svg")).toBeVisible({
+    timeout: 20000,
+  });
+  expect(requested.length).toBeGreaterThan(0);
+});
+
+test("wide Mermaid diagrams scroll inside their frame at 390px", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openEstimation(page);
+  const svg = page.locator("[data-mermaid-svg] > svg");
+  await expect(svg).toBeVisible({ timeout: 20000 });
+  const geometry = await svg.evaluate((element) => {
+    const scroller = element.closest("[data-mermaid-svg]")!.parentElement!;
+    return {
+      svg: element.getBoundingClientRect().width,
+      width: scroller.clientWidth,
+      scroll: scroller.scrollWidth,
+      overflow: getComputedStyle(scroller).overflowX,
+    };
+  });
+  expect(geometry.svg).toBeGreaterThan(geometry.width);
+  expect(geometry.scroll).toBeGreaterThan(geometry.width);
+  expect(geometry.overflow).toBe("auto");
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+});
+
+test("PR B follow-ups keep chart text readable, one focus stroke and inline disclosure labels", async ({
+  page,
+}) => {
+  await openEstimation(page);
+  const chart = page.getByRole("region", {
+    name: "The latency ladder, log scale",
+    exact: true,
+  });
+  const svg = chart.locator("svg[role='img']");
+  expect(
+    await svg.evaluate(
+      (element) => (element as SVGSVGElement).viewBox.baseVal.width,
+    ),
+  ).toBe(620);
+  const fontSizes = await svg.locator("text").evaluateAll((elements) =>
+    elements.map((element) => {
+      const matrix = (element as SVGTextElement).getScreenCTM()!;
+      return (
+        parseFloat(getComputedStyle(element).fontSize) *
+        Math.hypot(matrix.a, matrix.b)
+      );
+    }),
+  );
+  expect(Math.min(...fontSizes)).toBeGreaterThanOrEqual(12);
+  await expect(svg.locator("text").filter({ hasText: /^ns$/ })).toHaveCount(0);
+  const row = chart.locator("[data-chart-row]").first();
+  await row.focus();
+  expect(
+    await row.evaluate((element) => getComputedStyle(element).outlineStyle),
+  ).toBe("none");
+  await expect(row.locator("rect").first()).toHaveAttribute(
+    "stroke",
+    "var(--track)",
+  );
+  const checkLabel = page
+    .locator("details summary span")
+    .filter({ hasText: /^Check yourself$/ })
+    .first();
+  expect(
+    await checkLabel.evaluate((element) => getComputedStyle(element).display),
+  ).toBe("inline");
+});

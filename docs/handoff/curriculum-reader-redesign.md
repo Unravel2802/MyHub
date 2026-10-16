@@ -672,3 +672,104 @@ Non-blocking, fold into PR B:
 - `ChapterHeader`'s `/curriculum?topic=` fallback link is dead: the map
   doesn't read that param. Every topic has chapters today, so it can't be
   reached; drop it or link to `/curriculum`.
+
+## Appendix — B6 seed content (exact)
+
+The mockup link is private to the Lead Architect's account, so the exact text
+B6 seeds lives here. Insert into
+`content/curriculum/systems-design.estimation/01-back-of-envelope.md` at the
+marked places. Change no other prose.
+
+**1. After the first `text` figure under "## The numbers to memorise":**
+
+````markdown
+```chart
+type: bar
+scale: log
+unit: ns
+title: The latency ladder, log scale
+caption: Each gridline is 1,000× slower than the one before.
+---
+L1 cache: 1
+main memory: 100
+SSD read: 100000
+same-DC round trip: 500000
+disk seek: 5000000
+cross-region: 100000000
+```
+````
+
+**2. Replace the paragraph that starts "\*\*That last block is the point of the
+exercise.\*\*"** (the wording is unchanged; it becomes a callout), then add the
+widget straight after it:
+
+```markdown
+> [!KEY] **That last block is the point of the exercise.** The arithmetic is
+> worthless unless it produces architectural conclusions, and here four numbers
+> ruled out a single-database design and ruled in a CDN, a cache and
+> partitioning.
+
+Run the same estimate yourself: drag a slider and watch which conclusions flip.
+```
+
+````markdown
+```widget
+estimation-calculator
+```
+````
+
+**3. After the "the egress line is the one that catches people" figure under
+"## Cost, roughly":**
+
+````markdown
+```chart
+type: bar
+unit: $/month
+title: Monthly egress for 40 TB/day of media
+caption: The second, independent argument for the CDN.
+highlight: direct from object storage
+---
+direct from object storage: 96000
+through a CDN, 95% hits: 10000-20000
+```
+````
+
+**4. After the "## Common mistakes" figure, before "## What to take away":**
+
+```markdown
+> [!PITFALL] Designing for the average. 2,300 writes/s looks easy until the 5×
+> evening peak puts you at 12,000, past what one Postgres primary handles.
+
+> [!INTERVIEW] Say each assumption out loud before you multiply by it. The
+> interviewer will correct a bad assumption, but can't correct one they never
+> heard.
+
+> [!CHECK] A service gets 50M DAU, 10 requests each per day, at a 4× peak.
+> Roughly what peak QPS do you plan for?
+>
+> 50M × 10 = 500M requests a day. Divide by 10⁵ seconds: about 5,000 QPS on
+> average. Multiply by 4 for the peak: about **20,000 QPS**.
+
+> [!CHECK] Why does media, not post text, decide the storage architecture in
+> the worked example?
+>
+> Text is 100 GB a day; images are 40 TB a day, 400× more. That volume belongs
+> in object storage behind a CDN, which also fixes the egress bill.
+```
+
+### `estimation-calculator` copy
+
+| Element                         | Text                                                                                                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Frame bar label / title         | `INTERACTIVE` / Run the estimate yourself                                                                                                                                                              |
+| Caption                         | Starts at the chapter's numbers. Drag a slider and watch which architectural conclusions flip.                                                                                                         |
+| Inputs (label → range, default) | Daily active users → 1M–1B log slider, 100M · Posts per user per day → 0.5–10 step 0.5, 2 · Feed opens per user per day → 1–50, 20 · Peak ÷ average → 2–10×, 5× · Posts with a 2 MB image → 0–50%, 10% |
+| Stat tiles                      | Peak writes (`12k/s`) · Peak reads (`120k QPS`) · Text storage / year, ×3 (`110 TB`) · Media / day (`40 TB`)                                                                                           |
+| Verdict `partition`             | Writes exceed one Postgres primary → partition, or a different store                                                                                                                                   |
+| Verdict `cache`                 | Reads dominate → caching is the main lever                                                                                                                                                             |
+| Verdict `cdn`                   | Media dominates storage → object storage + CDN                                                                                                                                                         |
+| Verdict `egress`                | Egress would pass $50k/month → the CDN pays for itself                                                                                                                                                 |
+
+Stat values use two significant figures with k/M/B suffixes, and decimal bytes
+(`GB`, `TB`, `PB`). An "on" verdict shows `→` in `--track` with
+`--foreground` text; an "off" one shows `○` in `--muted` with muted text.

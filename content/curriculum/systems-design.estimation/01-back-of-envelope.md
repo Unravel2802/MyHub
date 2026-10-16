@@ -42,6 +42,21 @@ options in and out, which is all the decision needs.
     network            25–100 Gbps
 ```
 
+```chart
+type: bar
+scale: log
+unit: ns
+title: The latency ladder, log scale
+caption: Each gridline is 1,000× slower than the one before.
+---
+L1 cache: 1
+main memory: 100
+SSD read: 100000
+same-DC round trip: 500000
+disk seek: 5000000
+cross-region: 100000000
+```
+
 ## Powers of two, for storage
 
 ```text
@@ -119,9 +134,16 @@ options in and out, which is all the decision needs.
        is achievable
 ```
 
-**That last block is the point of the exercise.** The arithmetic is worthless
-unless it produces architectural conclusions, and here four numbers ruled out a
-single-database design and ruled in a CDN, a cache and partitioning.
+> [!KEY] **That last block is the point of the exercise.** The arithmetic is
+> worthless unless it produces architectural conclusions, and here four numbers
+> ruled out a single-database design and ruled in a CDN, a cache and
+> partitioning.
+
+Run the same estimate yourself: drag a slider and watch which conclusions flip.
+
+```widget
+estimation-calculator
+```
 
 ## Estimating with confidence
 
@@ -176,6 +198,17 @@ single-database design and ruled in a CDN, a cache and partitioning.
   → which is a second, independent argument for the CDN
 ```
 
+```chart
+type: bar
+unit: $/month
+title: Monthly egress for 40 TB/day of media
+caption: The second, independent argument for the CDN.
+highlight: direct from object storage
+---
+direct from object storage: 96000
+through a CDN, 95% hits: 10000-20000
+```
+
 ## Common mistakes
 
 ```text
@@ -187,6 +220,25 @@ single-database design and ruled in a CDN, a cache and partitioning.
      "about 2,000"
   ✗  computing numbers and drawing no conclusion from them
 ```
+
+> [!PITFALL] Designing for the average. 2,300 writes/s looks easy until the 5×
+> evening peak puts you at 12,000, past what one Postgres primary handles.
+
+> [!INTERVIEW] Say each assumption out loud before you multiply by it. The
+> interviewer will correct a bad assumption, but can't correct one they never
+> heard.
+
+> [!CHECK] A service gets 50M DAU, 10 requests each per day, at a 4× peak.
+> Roughly what peak QPS do you plan for?
+>
+> 50M × 10 = 500M requests a day. Divide by 10⁵ seconds: about 5,000 QPS on
+> average. Multiply by 4 for the peak: about **20,000 QPS**.
+
+> [!CHECK] Why does media, not post text, decide the storage architecture in
+> the worked example?
+>
+> Text is 100 GB a day; images are 40 TB a day, 400× more. That volume belongs
+> in object storage behind a CDN, which also fixes the egress bill.
 
 ## What to take away
 

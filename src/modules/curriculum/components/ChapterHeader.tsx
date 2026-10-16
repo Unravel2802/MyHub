@@ -18,7 +18,6 @@ export function ChapterHeader({
   const neighbours = topicNeighbours(topic.id);
   return (
     <div className="min-w-0 min-[1060px]:col-start-1 min-[1060px]:row-start-1">
-      {" "}
       <nav
         aria-label="Breadcrumb"
         className="mb-5 flex flex-wrap items-center gap-2 text-sm text-muted"

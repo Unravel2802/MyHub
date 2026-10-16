@@ -36,8 +36,11 @@ export function splitTakeaways(body: string): {
       break;
     }
   }
+  // Slice the original source so whitespace outside the recap is untouched.
+  const sourceLines = body.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+  const offset = (line: number) => sourceLines.slice(0, line).join("").length;
   return {
-    main: [...lines.slice(0, at), ...lines.slice(end)].join("\n").trim(),
+    main: body.slice(0, offset(at)) + body.slice(offset(end)),
     takeaways: lines
       .slice(at + 1, end)
       .join("\n")

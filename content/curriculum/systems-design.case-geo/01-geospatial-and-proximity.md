@@ -31,6 +31,17 @@ the objects move.
   → the WRITE volume dominates by four orders of magnitude
 ```
 
+```chart
+type: bar
+scale: log
+unit: operations/s
+title: Moving positions dominate traffic
+caption: The query rate is the chapter's approximate 280/s.
+---
+Position updates: 2500000
+Proximity queries: 280
+```
+
 Stating that ratio early reframes the problem: it is not a search problem with
 some updates, it is a write-heavy problem with occasional queries.
 
@@ -111,6 +122,16 @@ some updates, it is a write-heavy problem with occasional queries.
      every ping
 ```
 
+```mermaid
+flowchart TB
+  P[Driver pings: 2.5M per second] --> C{Cell changed?}
+  C -->|Yes| R[Remove old cell entry]
+  R --> A[Add new cell entry]
+  C -->|No| K[Keep cell membership]
+  A --> T[Ephemeral position with TTL]
+  K --> T
+```
+
 ```text
   Redis structure
 
@@ -167,6 +188,14 @@ some updates, it is a write-heavy problem with occasional queries.
     answer for the decision.
 ```
 
+```mermaid
+flowchart TB
+  Q[Query: below 100 ms] --> C[Cell and neighbours]
+  C --> H[Haversine shortlist]
+  H --> R[Road ETA for top few]
+  R --> K[Return nearest candidates]
+```
+
 ## Sharding
 
 ```text
@@ -181,6 +210,22 @@ some updates, it is a write-heavy problem with occasional queries.
 
 The hot-cell problem is the partitioning topic's skew problem in geographic form,
 and the answer is the same: split the hot key, and accept a bounded fan-out.
+
+> [!PITFALL] A geohash prefix alone misses nearby points across a cell boundary. Query the cell and its eight neighbours, then compute exact distances; a bounding cell is not a circular radius.
+
+> [!INTERVIEW] How would you handle a hot Manhattan cell compared with a rural county? Explain hierarchical subdivision and bounded neighbour fan-out, then show why a fixed radius fails at both densities.
+
+> [!CHECK] How do the driver and ride-request rates compare?
+>
+> 10M drivers / 4 s = 2.5M position writes/s. 1M ride requests / 3,600 s is about 280 queries/s, so writes dominate by roughly 2,500,000 / 280, or nearly 9,000 times.
+
+> [!CHECK] Why is a nearby driver not necessarily the best arrival-time choice?
+>
+> The chapter's driver 500 m away across a river takes 15 minutes by road. Haversine cheaply shortlists spatial neighbours, then road-distance or ETA computation chooses among the top few using the actual route.
+
+> [!CHECK] How should the search react to 5,000 drivers within 1 km versus zero?
+>
+> Start with a small radius and widen only until enough candidates exist or the maximum is reached. The dense case avoids collecting thousands when only 20 are needed; the rural case expands rather than failing at a fixed 1 km.
 
 ## What to take away
 

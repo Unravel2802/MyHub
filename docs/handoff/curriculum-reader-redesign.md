@@ -592,7 +592,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR C reviewed 2026-10-16: one fix required before merge (see below).
+**Status:** PR C fix done, awaiting re-review
 
 ---
 

@@ -21,9 +21,19 @@ constraints before committing to a shape.
   7. TRADE-OFFS        what did we give up, and why?      ~5 min
 ```
 
-**The order is load-bearing.** Drawing boxes before establishing scale produces an
-architecture with no justification, and the most common failure in a design
-discussion is starting at step 5.
+```mermaid
+flowchart TB
+  R[Requirements: 5 min] --> S[Scale: 5 min]
+  S --> A[API: 5 min]
+  A --> D[Data model: 5 min]
+  D --> H[High-level design: 10 min]
+  H --> V[Deep dive: 10 min]
+  V --> T[Trade-offs: 5 min]
+```
+
+> [!KEY] **The order is load-bearing.** Drawing boxes before establishing scale produces an
+> architecture with no justification, and the most common failure in a design
+> discussion is starting at step 5.
 
 ## Requirements
 
@@ -72,6 +82,17 @@ before design.
     100 QPS        one server, one database. done.
     1M QPS         partitioning, caching, CDN, async
                    processing, and a much larger team
+```
+
+```chart
+type: bar
+scale: log
+unit: QPS
+title: Load changes the design
+caption: The two workloads in this section; logarithmic scale.
+---
+One server: 100
+Partitioned system: 1000000
 ```
 
 ```text
@@ -241,6 +262,22 @@ operation needs a single-leader store while the rest can be eventually consisten
 **Think out loud.** The diagram is an artifact of the conversation, not the
 deliverable. A design that arrives silently and correctly demonstrates less than
 one reasoned through aloud with a wrong turn corrected.
+
+> [!PITFALL] Drawing the high-level design first skips the constraints that justify it. Compute the load before adding components, then say which number forces each one.
+
+> [!INTERVIEW] If the interviewer changes the read:write ratio, revisit the cache and fan-out choices. Explain which component loses its justification and what you would replace it with.
+
+> [!CHECK] Why do requirements and scale precede the high-level design?
+>
+> Requirements bound the operations; scale supplies the load. Only then can a component be justified: the chapter uses 40k writes/s to motivate partitioning and 400k reads/s at 10:1 to motivate caching.
+
+> [!CHECK] What is the read:write ratio in the 400k-read, 40k-write example, and what does it suggest?
+>
+> 400,000 / 40,000 = 10 reads per write. That read-heavy workload makes caching a candidate for absorbing most reads; the ratio motivates the component rather than merely naming a pattern.
+
+> [!CHECK] Why is a hybrid timeline preferable in the trade-off example?
+>
+> Reads outnumber writes 100:1, so precomputing saves frequent reads. But millions of followers make one post generate millions of writes; accounts around the stated 10,000-follower split move to the read path instead.
 
 ## What to take away
 

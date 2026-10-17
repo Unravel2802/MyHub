@@ -646,9 +646,16 @@ test("wide Mermaid diagrams scroll inside their frame at 390px", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await openEstimation(page);
+  // The estimation seed is now TB and can fit on mobile. Use a genuinely
+  // wide synthetic diagram to keep exercising the horizontal-scroll path.
+  await page.goto("/test-only/curriculum-mermaid?variant=wide");
   const svg = page.locator("[data-mermaid-svg] > svg");
   await expect(svg).toBeVisible({ timeout: 20000 });
+  const hint = page.getByText("Scroll →", { exact: true });
+  const fade = page.locator("[data-mermaid-scroll-fade]");
+  const viewport = page.locator("[data-mermaid-viewport]");
+  await expect(hint).toBeVisible();
+  await expect(fade).toHaveCSS("background-image", /linear-gradient/);
   const geometry = await svg.evaluate((element) => {
     const scroller = element.closest("[data-mermaid-svg]")!.parentElement!;
     return {
@@ -664,6 +671,35 @@ test("wide Mermaid diagrams scroll inside their frame at 390px", async ({
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390);
+  await expect
+    .poll(() =>
+      svg.evaluate((element) => {
+        const svg = element as SVGSVGElement;
+        return svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
+      }),
+    )
+    .toBeCloseTo(0.75, 2);
+  await viewport.evaluate((element) => {
+    element.scrollLeft = element.scrollWidth;
+  });
+  await expect(hint).toHaveCount(0);
+  await expect(fade).toHaveCount(0);
+  await viewport.evaluate((element) => {
+    element.scrollLeft = 0;
+  });
+  await expect(hint).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect
+    .poll(() =>
+      viewport.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth + 1,
+      ),
+    )
+    .toBe(true);
+  await expect(hint).toHaveCount(0);
+  await expect(fade).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(hint).toBeVisible();
 });
 
 test("PR B follow-ups keep chart text readable, one focus stroke and inline disclosure labels", async ({
@@ -707,4 +743,109 @@ test("PR B follow-ups keep chart text readable, one focus stroke and inline disc
   expect(
     await checkLabel.evaluate((element) => getComputedStyle(element).display),
   ).toBe("inline");
+});
+
+// PR C re-review: fit the full diagram, with an explicit cue only when needed.
+test("the estimation diagram fits every node inside its desktop frame", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await openEstimation(page);
+  const diagram = page.locator("[data-mermaid-diagram]");
+  await expect(diagram.locator("[data-mermaid-svg] > svg")).toBeVisible({
+    timeout: 20000,
+  });
+  await diagram.scrollIntoViewIfNeeded();
+  const allNodesFit = () =>
+    diagram.locator("[data-mermaid-viewport]").evaluate((viewport) => {
+      const box = viewport.getBoundingClientRect();
+      const nodes = Array.from(viewport.querySelectorAll("g.node"));
+      return (
+        nodes.length > 0 &&
+        nodes.every((node) => {
+          const bounds = node.getBoundingClientRect();
+          return (
+            bounds.left >= box.left - 1 &&
+            bounds.right <= box.right + 1 &&
+            bounds.top >= box.top - 1 &&
+            bounds.bottom <= box.bottom + 1
+          );
+        })
+      );
+    });
+  await expect.poll(allNodesFit).toBe(true);
+  await expect(diagram.getByText("Scroll →", { exact: true })).toHaveCount(0);
+  await expect(diagram.locator("[data-mermaid-scroll-fade]")).toHaveCount(0);
+  // The same sizing rule must run again after Mermaid produces a new themed SVG.
+  const svg = diagram.locator("[data-mermaid-svg] > svg");
+  const before = await svg.getAttribute("id");
+  await page.evaluate(() => document.documentElement.classList.toggle("dark"));
+  await expect.poll(() => svg.getAttribute("id")).not.toBe(before);
+  await expect.poll(allNodesFit).toBe(true);
+  await expect(diagram.getByText("Scroll →", { exact: true })).toHaveCount(0);
+  const screenshot = test.info().outputPath("mermaid-fit-desktop.png");
+  await diagram.screenshot({ path: screenshot });
+  await test.info().attach("mermaid-fit-desktop", {
+    path: screenshot,
+    contentType: "image/png",
+  });
+});
+
+test("mobile diagram overflow cues disappear at the end and recompute on resize", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openEstimation(page);
+  const diagram = page.locator("[data-mermaid-diagram]");
+  const svg = diagram.locator("[data-mermaid-svg] > svg");
+  const viewport = diagram.locator("[data-mermaid-viewport]");
+  const hint = diagram.getByText("Scroll →", { exact: true });
+  const fade = diagram.locator("[data-mermaid-scroll-fade]");
+  await expect(svg).toBeVisible({ timeout: 20000 });
+  await expect
+    .poll(() =>
+      svg.evaluate((element) => {
+        const svg = element as SVGSVGElement;
+        return svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
+      }),
+    )
+    .toBeGreaterThanOrEqual(0.749);
+  const overflows = await viewport.evaluate(
+    (element) => element.scrollWidth > element.clientWidth + 1,
+  );
+  if (overflows) {
+    await expect(hint).toBeVisible();
+    await expect(fade).toBeVisible();
+    await expect(fade).toHaveCSS("background-image", /linear-gradient/);
+    await viewport.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+    await expect(hint).toHaveCount(0);
+    await expect(fade).toHaveCount(0);
+    await viewport.evaluate((element) => {
+      element.scrollLeft = 0;
+    });
+    await expect(hint).toBeVisible();
+  } else {
+    await expect(hint).toHaveCount(0);
+    await expect(fade).toHaveCount(0);
+  }
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect
+    .poll(() =>
+      viewport.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth + 1,
+      ),
+    )
+    .toBe(true);
+  await expect(hint).toHaveCount(0);
+  await expect(fade).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  if (overflows) await expect(hint).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(390);
 });

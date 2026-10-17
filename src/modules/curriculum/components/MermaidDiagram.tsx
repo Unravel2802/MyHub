@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { diagramFit } from "../diagramFit";
 import { mermaidTheme } from "../mermaidTheme";
 import { Figure } from "./Figure";
 import { VisualBlockFrame } from "./VisualBlockFrame";
@@ -24,8 +25,14 @@ export function MermaidDiagram({
   caption: string;
 }) {
   const root = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  const svgRoot = useRef<HTMLDivElement>(null);
   const id = useId().replace(/:/g, "");
   const [result, setResult] = useState<DiagramResult | null>(null);
+  const [availableWidth, setAvailableWidth] = useState(0);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const current = result?.source === raw ? result : null;
+  const fit = diagramFit(current?.width ?? 0, availableWidth);
 
   useEffect(() => {
     const element = root.current;
@@ -103,7 +110,36 @@ export function MermaidDiagram({
     };
   }, [raw, id]);
 
-  const current = result?.source === raw ? result : null;
+  useEffect(() => {
+    const viewport = scroller.current;
+    if (!viewport || !current?.svg) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const style = getComputedStyle(viewport);
+      const padding =
+        parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+      setAvailableWidth(Math.max(0, viewport.clientWidth - padding));
+      setCanScrollRight(
+        viewport.scrollWidth - viewport.clientWidth - viewport.scrollLeft > 1,
+      );
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(viewport);
+    if (svgRoot.current) observer.observe(svgRoot.current);
+    viewport.addEventListener("scroll", schedule, { passive: true });
+    schedule();
+    return () => {
+      observer.disconnect();
+      viewport.removeEventListener("scroll", schedule);
+      cancelAnimationFrame(frame);
+    };
+  }, [current?.svg]);
+
+  const showScrollCue = fit.overflows && canScrollRight;
   return (
     <div
       ref={root}
@@ -113,15 +149,37 @@ export function MermaidDiagram({
     >
       <VisualBlockFrame label="DIAGRAM" title={caption} raw={raw}>
         {current?.svg ? (
-          <div className="overflow-x-auto p-4">
-            {/* C3 is the sole raw-SVG exception: repository chapter source only,
-            Mermaid securityLevel=strict sanitizes it; htmlLabels=false. */}
+          <div className="relative">
             <div
-              data-mermaid-svg
-              style={{ width: current.width || undefined }}
-              className="mx-auto [&_svg]:block [&_svg]:h-auto [&_svg]:!max-w-none"
-              dangerouslySetInnerHTML={{ __html: current.svg }}
-            />
+              ref={scroller}
+              data-mermaid-viewport
+              className="overflow-x-auto p-4"
+            >
+              {/* C3 is the sole raw-SVG exception: repository chapter source only,
+            Mermaid securityLevel=strict sanitizes it; htmlLabels=false. */}
+              <div
+                ref={svgRoot}
+                data-mermaid-svg
+                style={{ width: fit.width || undefined }}
+                className="mx-auto [&_svg]:block [&_svg]:h-auto [&_svg]:!max-w-none"
+                dangerouslySetInnerHTML={{ __html: current.svg }}
+              />
+            </div>
+            {showScrollCue && (
+              <>
+                <div
+                  aria-hidden
+                  data-mermaid-scroll-fade
+                  className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-linear-to-l from-surface to-transparent"
+                />
+                <span
+                  data-mermaid-scroll-hint
+                  className="pointer-events-none absolute right-3 bottom-2 rounded bg-surface px-2 py-1 font-mono text-xs text-muted"
+                >
+                  Scroll →
+                </span>
+              </>
+            )}
           </div>
         ) : (
           <div className="px-4">

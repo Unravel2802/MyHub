@@ -46,6 +46,19 @@ estimation before any component is drawn.
      5. your API marks the upload complete
 ```
 
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant A as API
+  participant S as Storage
+  C->>A: Ask for upload URL
+  A->>A: Authorise, record pending intent
+  A-->>C: Pre-signed URL
+  C->>S: Direct upload: 100 TB/day fleet-wide
+  S-->>A: Completion event
+  A->>A: Mark complete
+```
+
 ```text
   → your servers see kilobytes of metadata, not terabytes of
     content.
@@ -88,6 +101,16 @@ traversing your application, they should.
     "complete"
   → a reconciliation job finds pending rows older than N
     hours and objects with no row, and cleans both
+```
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  [*] --> Pending: Write metadata first
+  Pending --> Complete: Object uploaded
+  Pending --> Cleanup: Older than N hours
+  Complete --> [*]
+  Cleanup --> [*]
 ```
 
 The reconciliation job is not optional here — it is the mechanism that keeps two
@@ -147,6 +170,17 @@ content, so it can be cached forever with no invalidation.
     benefit
 ```
 
+```chart
+type: bar
+scale: linear
+unit: $/month
+title: Monthly egress cost
+caption: Chapter estimates for 1 PB/day and 95% CDN hits.
+---
+Direct storage: 80000000
+CDN: 10000000-20000000
+```
+
 ```text
   cache control
     immutable content (hashed keys)   max-age=31536000, immutable
@@ -155,9 +189,9 @@ content, so it can be cached forever with no invalidation.
                                       and NOT cached publicly
 ```
 
-**Content-addressed keys and immutable caching go together.** If the key is the
-hash, the content can never change, so the cache never needs invalidating — which
-removes the hardest part of CDN operation.
+> [!KEY] **Content-addressed keys and immutable caching go together.** If the key is the
+> hash, the content can never change, so the cache never needs invalidating — which
+> removes the hardest part of CDN operation.
 
 ## Durability
 
@@ -196,6 +230,22 @@ retention window are what protect against the failure that actually happens.
     4. compression, where the content is compressible
     5. deleting what nobody accesses
 ```
+
+> [!PITFALL] A successful metadata insert does not prove the object exists, and an uploaded object does not prove a complete row exists. Use pending-then-complete plus reconciliation to clean both kinds of orphan.
+
+> [!INTERVIEW] Does content deduplication reveal whether another user has a file? Explain the observable existence leak, the reference count needed for deletion and why per-account deduplication changes the boundary.
+
+> [!CHECK] Why does a signed upload URL matter at the stated upload volume?
+>
+> 50M files/day × 2 MB = 100 TB/day. Direct upload sends those bytes from clients to storage; the application handles authorisation and metadata rather than carrying that 100 TB.
+
+> [!CHECK] How do hashed keys remove cache invalidation for a blob?
+>
+> The key is sha256(content). Changing the content changes the key, so a blob under an existing key is immutable and may be cached forever; a new version is a different object.
+
+> [!CHECK] Why are versioning and soft delete still necessary with replicated or erasure-coded storage?
+>
+> Redundancy preserves bytes through hardware failures but also preserves a mistaken deletion. Versioning and a retention window retain the previous object so user or application deletions can be reversed.
 
 ## What to take away
 

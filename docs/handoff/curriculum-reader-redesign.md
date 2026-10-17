@@ -592,7 +592,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR C approved and merged 2026-10-16. Next: PR D (Systems Design content pass).
+**Status:** PR D done, awaiting review
 
 ---
 
@@ -874,3 +874,16 @@ a real browser:
 
 Nit for later, not blocking: on a phone the "Scroll →" hint sits over the
 bottom edge of the last row of nodes. Move it into the frame's padding.
+
+## Candidate widgets
+
+- `systems-design.case-ratelimit`: compare fixed-window boundary bursts with
+  token-bucket refill and capacity using a draggable request timeline.
+- `systems-design.case-feeds`: vary followers and posting rate to expose the
+  timeline-write cost and choose a hybrid fan-out threshold.
+- `systems-design.case-metrics`: multiply bounded label cardinalities and show
+  how adding a user-id label changes the series count and ingest budget.
+- `systems-design.case-geo`: move a query across cell boundaries and expand its
+  radius to show neighbour lookup, candidate filtering and road-ETA reranking.
+- `systems-design.case-collab`: step through concurrent local edits, offline
+  reconnection and relative cursor positions without persisting awareness.

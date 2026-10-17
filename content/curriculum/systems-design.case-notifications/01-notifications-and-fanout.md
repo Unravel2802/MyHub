@@ -28,6 +28,17 @@ reason people uninstall the app.
   → the burst is the design constraint, not the average
 ```
 
+```chart
+type: bar
+scale: linear
+unit: notifications/s
+title: Broadcast versus steady delivery
+caption: Approximate rates stated here; provision for the burst.
+---
+Steady: 3000
+Broadcast peak: 200000
+```
+
 ## The pipeline
 
 ```text
@@ -35,6 +46,16 @@ reason people uninstall the app.
         ──▶ [dedupe] ──▶ [template render] ──▶ [channel router]
         ──▶ [provider] ──▶ device
                         └─▶ [delivery tracking]
+```
+
+```mermaid
+flowchart TB
+  E[Event: peak 200000 per second] --> P[Send-time preferences]
+  P --> R[Per-user rate limit]
+  R --> D[Atomic dedupe]
+  D --> T[Template and channel]
+  T --> V[Provider]
+  V --> U[Device and delivery tracking]
 ```
 
 ```text
@@ -179,6 +200,22 @@ notification is a request to 50M people to open your app at the same second.
   □  and rendering happens at SEND time, so the content
      reflects current data
 ```
+
+> [!PITFALL] Checking preferences only when an event is triggered can send after a user opts out. Re-evaluate at send time, and keep the transactional-versus-marketing distinction explicit in the schema.
+
+> [!INTERVIEW] How would you send a broadcast to 50M users without overwhelming the provider or your own API? Walk through one trigger job, checkpointed expansion, per-provider quotas and spreading sends over time.
+
+> [!CHECK] What does coalescing the five-like example change?
+>
+> Five likes in 10 minutes become one buffered summary: Alice and 4 others liked your post. The user receives 1 notification rather than 5, while the aggregation retains all five events.
+
+> [!CHECK] Which dimensions belong in the deduplication key, and how long should it live?
+>
+> Use (user, event, channel), checked atomically. Retain it longer than the longest retry path, otherwise a late retry outlives the key and delivers the same event again.
+
+> [!CHECK] How do hard and soft bounces differ operationally?
+>
+> An invalid address is a hard bounce, so stop sending permanently. A full mailbox is a soft bounce, so retry with backoff; a spam complaint instead triggers immediate opt-out.
 
 ## What to take away
 

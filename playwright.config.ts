@@ -27,6 +27,8 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   webServer: {
     command: "npm run build && npm run start",
+    // Enable guarded browser fixtures only for this production-build test server.
+    env: { MYHUB_UI_TESTS: "1" },
     // NOT reused. Reusing a running `next dev` would silently put local runs
     // back in dev mode — which is exactly the configuration this change exists
     // to stop testing against, and would make local and CI disagree.

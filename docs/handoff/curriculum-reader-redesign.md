@@ -543,7 +543,10 @@ Add, where each genuinely helps (not as decoration):
    (sequenceDiagram) and state machines (stateDiagram-v2). Keep an existing
    ```text figure when it carries numbers or a table; add the mermaid diagram
    next to it, not instead of it. Put the key quantity on edges or in node
-   labels ("12k writes/s"). flowchart LR, at most ~10 nodes, labels short.
+   labels ("12k writes/s"). Use `flowchart TB` (top to bottom): the reading
+   column is about 620px wide, so a left-to-right chart longer than three
+   boxes in a row cannot render at a readable size. Use LR only for a chain
+   of three boxes or fewer. At most ~10 nodes, labels short.
 2. `chart` blocks — 0 to 2, only where the chapter already states numbers that
    compare (a latency ladder, a cost comparison, a capacity budget). Grammar:
      ```chart
@@ -589,7 +592,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR B approved 2026-10-15 (review below). Next: PR C, starting with the PR B chart follow-ups.
+**Status:** PR C approved and merged 2026-10-16. Next: PR D (Systems Design content pass).
 
 ---
 
@@ -823,3 +826,51 @@ flowchart LR
 
 The frame's title falls back to the section heading ("A worked example"),
 like every other figure.
+
+## PR C review — 2026-10-16 (Claude)
+
+Lint, typecheck, unit (1,565) and the full E2E suite (166) pass. Confirmed in
+a real browser:
+
+- Mermaid loads lazily and emits pure SVG (no `foreignObject`, no `script`).
+- It re-themes on a light/dark flip.
+- The chart follow-ups are fixed: labels render at about 12.6px, the bars have
+  gaps, there's no stray "ns", and a focused row shows a single ring.
+- The test-only fixture route 404s unless `MYHUB_UI_TESTS=1`.
+- There is no page-level horizontal scroll at 390px.
+
+**One blocking fix before merge:**
+
+1. **Diagrams render at their natural width and get cut off.** The estimation
+   diagram is about 1,000px wide in a ~620px frame, so on desktop the reader
+   sees Client, CDN and Load balancer, and Object storage, App servers, Cache
+   and Postgres are hidden off the right edge with no cue that the frame
+   scrolls. Fit the diagram to the frame. Scale it down to the frame width,
+   but never below 0.75× its natural size. Past that point, render it at 0.75×
+   and let the frame scroll horizontally, with a visible cue: a right-edge
+   fade and a "Scroll →" hint that both disappear once scrolled to the end.
+   Recompute when the frame resizes. E2E: at 1440px wide, every node of the
+   estimation diagram is inside the frame's visible box.
+
+**Content and docs (part of the same fix):**
+
+2. Change the C4 seed to `flowchart TB` and keep everything else in the block
+   identical. The left-to-right guidance was Claude's error in this brief; it
+   is corrected in PR D's prompt above.
+3. `docs/curriculum-authoring-prompt.md` says "Prefer flowchart LR". Change
+   it to match PR D's prompt: TB by default, LR only for a chain of three
+   boxes or fewer.
+
+## PR C re-review — 2026-10-16 (Claude)
+
+**Approved.** Lint, typecheck and unit tests (1,573) pass. In the E2E run,
+167 passed and 1 failed: `prep-tracker.spec.ts:200`, the known flake fixed on
+`test/prep-story-flake`, not yet merged. Confirmed in a real browser:
+
+- **Desktop:** the estimation diagram renders top to bottom at natural size
+  (441×495), all seven nodes sit inside the frame, and no scroll hint appears.
+- **390px:** it scales to the 0.75 floor and scrolls inside its frame, with
+  the fade and the "Scroll →" hint. The page itself has no horizontal scroll.
+
+Nit for later, not blocking: on a phone the "Scroll →" hint sits over the
+bottom edge of the last row of nodes. Move it into the frame's padding.

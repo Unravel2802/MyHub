@@ -12,6 +12,8 @@ it("renders accessible chart data and focusable rows without incrementing text f
   expect(html).toContain('role="img"');
   expect(html).toContain('aria-label="direct: $96k; CDN: $10–20k"');
   expect(html).toContain('tabindex="0"');
+  expect(html).toContain('viewBox="0 0 620');
+  expect(html).toContain("outline:none");
   expect(html).toContain('<table class="sr-only">');
   expect(html).not.toContain("<figure");
 });

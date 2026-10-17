@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChapterHeader } from "./ChapterHeader";
 import { FinishCard } from "./FinishCard";
 import { calloutMarker, hastText, isKeyRule } from "../callout";
+import { MermaidDiagram } from "./MermaidDiagram";
 import { ChartBlock } from "./ChartBlock";
 import { WidgetBlock } from "./WidgetBlock";
 import { CurriculumQuote } from "./CurriculumQuote";
@@ -88,6 +89,8 @@ function curriculumComponents(
       if (language === "text") return <Figure raw={raw} caption={caption} />;
       if (language === "chart")
         return <ChartBlock raw={raw} caption={caption} />;
+      if (language === "mermaid")
+        return <MermaidDiagram raw={raw} caption={caption} />;
       if (language === "widget") return <WidgetBlock raw={raw} />;
       return (
         <CodeBlock raw={raw} language={language ?? "code"}>

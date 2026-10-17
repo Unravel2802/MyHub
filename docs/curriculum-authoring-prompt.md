@@ -17,19 +17,27 @@ than regenerating the lot. Long chapters are wanted, so expect to do this.
 
 ## What actually renders
 
-Chapters go through `src/components/ui/Markdown.tsx` — GitHub-flavoured
-markdown with syntax-highlighted code fences. Concretely:
+Chapters use the shared safe GFM renderer with curriculum-only components.
+Other Markdown consumers keep their existing rendering.
 
-| Works                                           | Does not render              |
-| ----------------------------------------------- | ---------------------------- |
-| Headings `##`–`######`, lists, blockquotes      | Raw HTML (stripped silently) |
-| GFM tables                                      | LaTeX / MathJax              |
-| Fenced code with a language tag                 | Mermaid diagrams             |
-| ASCII / box-drawing diagrams in a ```text fence | Images (no asset pipeline)   |
+| Syntax                                          | Curriculum rendering                                                                             |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Headings `##`–`######`, lists and GFM tables    | Numbered sections, chapter TOC, readable tables                                                  |
+| `text` fence                                    | Numbered text figure with caption and Copy                                                       |
+| Other language-tagged code fence                | Highlighted code with language bar and Copy                                                      |
+| `chart` fence                                   | Single-series horizontal bar chart; linear/log scales, ranges and a highlight row                |
+| `mermaid` fence                                 | Flowchart, sequence or state diagram, rendered lazily with the chapter's track and current theme |
+| `widget` fence containing a registered id       | Interactive component from `widgets/registry.ts`, such as `estimation-calculator`                |
+| `> [!KEY]`                                      | Key point callout                                                                                |
+| `> [!PITFALL]`                                  | Pitfall callout                                                                                  |
+| `> [!INTERVIEW]`                                | In the interview callout                                                                         |
+| `> [!CHECK]` question, blank quote line, answer | Native Check yourself disclosure                                                                 |
+| Entirely bold, unmarked blockquote              | Key rule box; other blockquotes remain quotations                                                |
 
-So **diagrams are ASCII inside a fenced block**. That is a real constraint, not
-a degraded one: a monospace box-and-arrow diagram carries structure perfectly
-well, and it diffs in git. The prompt below asks for them explicitly.
+Raw HTML is not rendered. Mermaid's SVG is generated and sanitized by Mermaid
+in strict mode, with HTML labels disabled; content cannot supply raw SVG or HTML.
+LaTeX/MathJax and an image asset pipeline are not supported. Text figures remain
+the right format for byte layouts, arithmetic, budgets and aligned tables.
 
 ---
 
@@ -74,7 +82,20 @@ FILE RULES — these are parsed by a program, so they are not negotiable:
 - Fenced code blocks must carry a language tag (```python, ```sql, ```text).
 - GitHub-flavoured markdown tables are supported and encouraged.
 - LaTeX is NOT rendered. Write maths as plain text or inside a ```text fence.
-- Mermaid is NOT rendered. Diagrams are ASCII — see below.
+- Mermaid flowchart, sequence and state diagrams render from ```mermaid fences.
+  Use 1–3 where they explain architecture, request flows or state transitions.
+  Use flowchart TB by default; LR only for a chain of three boxes or fewer.
+  Keep diagrams to at most about 10 nodes, with short labels and quantities on
+  edges or node labels ("12k writes/s"). Keep text figures for numbers, tables
+  and memory layouts; place Mermaid next to them rather than replacing them.
+- Callouts: > [!KEY] for the main invariant, > [!PITFALL] for a named failure
+  mode, > [!INTERVIEW] for what to say out loud. A > [!CHECK] has the question
+  in the first paragraph, then a blank > line and an answer with working.
+- A ```chart block has header keys type: bar, scale: linear or log, optional
+  unit/title/caption/highlight, then a line exactly --- and 1–12 label: value
+  rows. Values are plain numbers (1e8 allowed) or low-high ranges. Log values
+  must be positive. Use only numbers the chapter itself states.
+- Do NOT add widget blocks: widget ids refer to reviewed components in code.
 
 LENGTH — there is no upper limit, and this matters:
 - Write until the idea is genuinely covered, not until a word count is hit. A
@@ -91,8 +112,10 @@ LENGTH — there is no upper limit, and this matters:
   chapters are still to come. Never compress the last two chapters to fit.
 
 DIAGRAMS — include them wherever structure, flow or layout is part of the idea.
-Aim for at least one per chapter, more where it earns its place. Use a ```text
-fence and box-drawing or plain ASCII. The forms that work:
+Aim for at least one per chapter, more where it earns its place. Use Mermaid
+for architecture flowcharts, request sequences and state transitions; keep a
+```text fence for aligned numbers, byte layouts or when the text itself is the
+clearest diagram. These text forms also work:
 
 - Box and arrow, for architecture and data flow:
   ```text

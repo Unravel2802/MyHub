@@ -99,6 +99,14 @@ request, which is exactly what a rate limiter cannot afford.
       any meaningful period
 ```
 
+```mermaid
+flowchart TB
+  R[1M requests per second] --> L[100 servers: local budgets]
+  L -->|Usage once per second| C[Coordinator]
+  C -->|Redistribute remaining budget| L
+  L --> A[Allow or reject locally]
+```
+
 **This is the coordination lesson made concrete**: the requirement looks like it
 needs per-request agreement, and decoupling the coordination frequency from the
 request rate is what makes it affordable.
@@ -151,9 +159,18 @@ request rate is what makes it affordable.
                     preserved
 ```
 
-**Degrade to local limits.** It is the only option that preserves both properties
-approximately, and it requires the local path to exist and be exercised — which is
-the tested-fallback point from the resilience topic.
+```mermaid
+flowchart TB
+  R[Request: check below 1 ms] --> H{Redis available?}
+  H -->|Yes| S[Atomic shared check]
+  H -->|No| L[Local per-server limit]
+  S --> D[Allow or reject]
+  L --> D
+```
+
+> [!KEY] **Degrade to local limits.** It is the only option that preserves both properties
+> approximately, and it requires the local path to exist and be exercised — which is
+> the tested-fallback point from the resilience topic.
 
 ## The response
 
@@ -214,6 +231,22 @@ The same problem without the limit:
     a view count       batched, approximate
     unique visitors    HyperLogLog
 ```
+
+> [!PITFALL] A separate read and increment lets concurrent requests pass the same check. Make the check-and-increment atomic.
+
+> [!INTERVIEW] If the shared counter disappears, compare fail-open, fail-closed and tested local limits. Explain what each sacrifices and why the local path needs to be exercised before the outage.
+
+> [!CHECK] Why does a fixed-window limit of 100 permit 200 requests in two seconds?
+>
+> Send 100 at 0:59 and another 100 at 1:00, across the reset. Each window stays at 100, but the two-second interval contains 100 + 100 = 200; a boundary permits twice the limit.
+
+> [!CHECK] What unfairness does dividing a 1,000/s limit across 100 servers introduce?
+>
+> 1,000 / 100 = 10/s per server. A busy server rejects at 10 even while another uses only 2, so unused allowance is stranded; periodic demand-based budget redistribution reduces that imbalance.
+
+> [!CHECK] What does a 16-way sharded counter trade for write throughput?
+>
+> Each increment chooses one of 16 shards, distributing the hot-key writes. A read must sum all 16 counters, so writes can gain the stated 16× throughput at the cost of a bounded scatter-gather read.
 
 ## What to take away
 

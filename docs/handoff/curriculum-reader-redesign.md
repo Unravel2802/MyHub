@@ -592,7 +592,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR C fix done, awaiting re-review
+**Status:** PR C approved and merged 2026-10-16. Next: PR D (Systems Design content pass).
 
 ---
 
@@ -860,3 +860,17 @@ a real browser:
 3. `docs/curriculum-authoring-prompt.md` says "Prefer flowchart LR". Change
    it to match PR D's prompt: TB by default, LR only for a chain of three
    boxes or fewer.
+
+## PR C re-review — 2026-10-16 (Claude)
+
+**Approved.** Lint, typecheck and unit tests (1,573) pass. In the E2E run,
+167 passed and 1 failed: `prep-tracker.spec.ts:200`, the known flake fixed on
+`test/prep-story-flake`, not yet merged. Confirmed in a real browser:
+
+- **Desktop:** the estimation diagram renders top to bottom at natural size
+  (441×495), all seven nodes sit inside the frame, and no scroll hint appears.
+- **390px:** it scales to the 0.75 floor and scrolls inside its frame, with
+  the fade and the "Scroll →" hint. The page itself has no horizontal scroll.
+
+Nit for later, not blocking: on a phone the "Scroll →" hint sits over the
+bottom edge of the last row of nodes. Move it into the frame's padding.

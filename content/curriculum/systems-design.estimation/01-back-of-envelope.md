@@ -126,7 +126,7 @@ cross-region: 100000000
 Drawn as a system, those numbers imply this architecture:
 
 ```mermaid
-flowchart LR
+flowchart TB
   client[Client] -->|media| cdn[CDN]
   client -->|115k QPS peak| lb[Load balancer]
   cdn -->|40 TB/day, 95% hits| obj[(Object storage)]

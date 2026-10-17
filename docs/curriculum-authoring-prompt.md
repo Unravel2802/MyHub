@@ -84,7 +84,8 @@ FILE RULES — these are parsed by a program, so they are not negotiable:
 - LaTeX is NOT rendered. Write maths as plain text or inside a ```text fence.
 - Mermaid flowchart, sequence and state diagrams render from ```mermaid fences.
   Use 1–3 where they explain architecture, request flows or state transitions.
-  Prefer flowchart LR, at most about 10 nodes, short labels, and quantities on
+  Use flowchart TB by default; LR only for a chain of three boxes or fewer.
+  Keep diagrams to at most about 10 nodes, with short labels and quantities on
   edges or node labels ("12k writes/s"). Keep text figures for numbers, tables
   and memory layouts; place Mermaid next to them rather than replacing them.
 - Callouts: > [!KEY] for the main invariant, > [!PITFALL] for a named failure

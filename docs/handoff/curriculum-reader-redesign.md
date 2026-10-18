@@ -592,7 +592,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR D approved and merged 2026-10-18. A–D complete; follow-ups listed under "PR D review".
+**Status:** Polish PR done, awaiting review
 
 ---
 

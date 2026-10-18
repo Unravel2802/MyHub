@@ -20,6 +20,15 @@ export function mermaidTheme(root: HTMLElement): MermaidConfig {
     // so C3 always emits SVG text, including on versions using the legacy key.
     htmlLabels: false,
     flowchart: { htmlLabels: false, curve: "basis" },
+    // Mermaid scopes themeCSS to this SVG. Only sequence message text gets a
+    // surface-coloured backing stroke, painted before the foreground glyphs,
+    // so crossing lifelines disappear behind the label without changing fill.
+    themeCSS: `.messageText {
+      paint-order: stroke;
+      stroke: ${surface} !important;
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }`,
     themeVariables: {
       fontFamily,
       background: surface,

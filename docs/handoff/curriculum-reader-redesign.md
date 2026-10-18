@@ -927,6 +927,50 @@ are all green.
 
 `test/prep-story-flake` was merged to `main` separately (27935e9).
 
+## Track pass: Distributed Systems (planned 2026-10-18)
+
+Same job as PR D (augment, never rewrite), but the track's shape differs:
+83 chapters across 16 topics, about 1,400 words each, where Systems Design
+had one long chapter per topic. PR D's quotas are per chapter and would
+flood this track, so they're rescaled below. Everything else in PR D's
+prompt still applies, including `flowchart TB` by default and LR only for a
+chain of three or fewer.
+
+**Batches**, one branch and one review each, in prerequisite order:
+
+| Batch | Branch                     | Topics                                                  |
+| ----- | -------------------------- | ------------------------------------------------------- |
+| DS1   | `curriculum-distributed-1` | fundamentals, rpc, time, replication (23 chapters)      |
+| DS2   | `curriculum-distributed-2` | partitioning, consistency, consensus, transactions (21) |
+| DS3   | `curriculum-distributed-3` | messaging, coordination, load-balancing, failure (21)   |
+| DS4   | `curriculum-distributed-4` | batch-stream, membership, crdt, scheduling (18)         |
+
+**Quotas, per chapter:**
+
+- `mermaid`: 0–2. Add one wherever the chapter describes a mechanism, a
+  message flow or a state machine (sequenceDiagram suits most protocol
+  chapters, stateDiagram-v2 suits role and lifecycle changes). Add none
+  where the chapter is pure reasoning.
+- `chart`: 0–1, only for numbers the chapter itself states that compare.
+- `> [!KEY]`: 0–2 conversions of "**Bold sentence.**" run-ins, wording
+  kept word for word. **Don't touch existing all-bold blockquotes**: they
+  already render as "Key rule" boxes (e.g. Raft's term and log-matching
+  rules).
+- `> [!CHECK]`: exactly 2, just before "## What to take away".
+
+**Quotas, per topic:**
+
+- `> [!PITFALL]`: 1–3 in total, each in the chapter that discusses that
+  failure.
+- `> [!INTERVIEW]`: exactly 1, in the chapter it best fits.
+
+**Gate:** generalise `tests/ui/curriculum-systems-design.spec.ts` into a
+track-driven spec that lists chapters from the `content/curriculum/<track>.*`
+directories, so each batch only has to add its track prefix. It applies the
+same assertions to every chapter: no `data-mermaid-error`, no "Chart error" or
+"Widget not found", every diagram renders an svg, no "Scroll →" at 1440px,
+and no page-level horizontal scroll at 390px.
+
 ## Candidate widgets
 
 - `systems-design.case-ratelimit`: compare fixed-window boundary bursts with

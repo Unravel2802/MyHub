@@ -26,10 +26,20 @@ assume.
     pub/sub (LISTEN/NOTIFY)
 ```
 
-**The default answer is Postgres, and you should be able to say why you are
-leaving it.** A great many designs introduce four specialised stores for a
-workload one relational database would serve, and each additional store is
-operational surface, another consistency boundary and another thing to back up.
+```chart
+type: bar
+scale: linear
+unit: queries/s
+title: Single-instance starting point
+caption: The stated well-tuned Postgres range; not a universal limit.
+---
+Simple queries: 20000-50000
+```
+
+> [!KEY] **The default answer is Postgres, and you should be able to say why you are
+> leaving it.** A great many designs introduce four specialised stores for a
+> workload one relational database would serve, and each additional store is
+> operational surface, another consistency boundary and another thing to back up.
 
 ```text
   the honest framing for a design conversation:
@@ -153,6 +163,13 @@ operational surface, another consistency boundary and another thing to back up.
     ClickHouse    analytics
 ```
 
+```mermaid
+flowchart TB
+  P[Postgres: source of truth] --> C[CDC or outbox]
+  C -->|50M-document search requirement| S[Search index]
+  C --> A[Analytics store]
+```
+
 ```text
   the cost people underestimate
 
@@ -209,6 +226,22 @@ ordering matters, and it is the same argument the partitioning chapter made.
 
 That structure — choice, reason, alternative, what the alternative would have
 bought — is what distinguishes a designed decision from a recited preference.
+
+> [!PITFALL] A derived search index is not the system of record. Adding it creates a permanent CDC or outbox path, another consistency boundary and another operational system to maintain.
+
+> [!INTERVIEW] Defend Cassandra for the chapter's 50k-write/s message workload against partitioned Postgres. Include the partition-plus-clustering access pattern and what retaining Postgres would buy operationally.
+
+> [!CHECK] Which two keys make recent conversation messages a natural wide-column query?
+>
+> Use the conversation as the partition key and message order as the clustering column. All messages for one conversation are colocated and ordered, so newest-first history is a range within one partition.
+
+> [!CHECK] Why does a one-hop relationship not by itself justify a graph database?
+>
+> A relational join already answers one-hop relationships. Multi-hop traversal is the distinguishing graph access pattern; without it, adding a graph store adds operating and synchronisation costs without the stated need.
+
+> [!CHECK] Which four steps should precede partitioning in the single-store scaling path?
+>
+> Index the query, cache, add read replicas, then scale vertically. These four moves are reversible and cheap; partitioning follows because cross-partition operations and rebalancing impose a lasting cost.
 
 ## What to take away
 

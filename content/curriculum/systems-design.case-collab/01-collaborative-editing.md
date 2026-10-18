@@ -79,6 +79,15 @@ either has the required algebraic properties or does not.
                      (durable)   (periodic)  (ephemeral)
 ```
 
+```mermaid
+flowchart TB
+  A[Local CRDT and IndexedDB] -->|Below 200 ms| S[Sync server]
+  B[Another local replica] --> S
+  S --> L[Durable update log]
+  S --> N[Periodic snapshots]
+  S --> W[Ephemeral awareness]
+```
+
 ```text
   the sync server RELAYS and PERSISTS. it does not arbitrate.
 
@@ -189,6 +198,15 @@ place people least expect it.
       pub/sub layer between servers
 ```
 
+```mermaid
+flowchart TB
+  E[500 concurrent editors] --> S[Document-owner relay]
+  S -->|Each update to 499 others| F[Other document sessions]
+  S --> C{Hot-document control}
+  C --> L[Cap concurrent editors]
+  C --> P[Shard relay with pub-sub]
+```
+
 ## Offline
 
 ```text
@@ -226,6 +244,22 @@ place people least expect it.
                 needs a defined behaviour (orphan it, or
                 resolve it)
 ```
+
+> [!PITFALL] A convergent CRDT also merges unauthorised updates. Validate permissions at the sync server before relaying or persisting; convergence alone does not enforce document roles.
+
+> [!INTERVIEW] What should a user see after two weeks of offline edits? Separate the CRDT's automatic convergent merge from the product decision about presenting surprising changes and history.
+
+> [!CHECK] Why does local-first editing rule out a network round trip per keystroke?
+>
+> The keystroke must apply instantly before the network knows about it. Concurrent edits are therefore unavoidable, so the replicas need a convergent merge rather than a lock or leader approval on each local edit.
+
+> [!CHECK] What fan-out does one update create in a document with 500 editors?
+>
+> The relay forwards it to the other 500 − 1 = 499 editors. One server bears that fan-out for the hot document, motivating a concurrency cap or pub/sub between relay shards.
+
+> [!CHECK] Why keep awareness outside the persisted document?
+>
+> Cursor changes occur on every keystroke. Putting them in the CRDT would retain an extra operation per keypress per user forever; a separate last-write-wins, TTL-based awareness channel can discard that ephemeral state.
 
 ## What to take away
 

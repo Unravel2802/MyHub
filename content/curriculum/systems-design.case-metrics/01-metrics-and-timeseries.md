@@ -56,10 +56,21 @@ thing that actually kills these systems is cardinality.
   → the system dies. not slowly — it falls over.
 ```
 
-**Never put an unbounded value in a label.** User ids, request ids, session ids,
-full URLs, email addresses — each turns a metrics system into an outage. This is
-the single most important operational fact about time-series databases, and it is
-learned the hard way with striking regularity.
+```chart
+type: bar
+scale: log
+unit: series
+title: A high-cardinality label multiplies series
+caption: The chapter's cardinality products; logarithmic scale.
+---
+Bounded labels: 25000000
+With user_id: 25000000000000
+```
+
+> [!KEY] **Never put an unbounded value in a label.** User ids, request ids, session ids,
+> full URLs, email addresses — each turns a metrics system into an outage. This is
+> the single most important operational fact about time-series databases, and it is
+> learned the hard way with striking regularity.
 
 ```text
   the rule
@@ -88,6 +99,17 @@ learned the hard way with striking regularity.
   → the Gorilla paper's result: ~16 bytes per point down to
     ~1.4 bytes
   → a 10× storage reduction from encoding alone
+```
+
+```chart
+type: bar
+scale: linear
+unit: B
+title: Encoding reduces bytes per point
+caption: Approximate per-point sizes quoted in this section.
+---
+Raw point: 16
+Compressed point: 1.4
 ```
 
 ```text
@@ -140,6 +162,15 @@ important question unanswerable later.
                                         ▼
                                   [persisted block] ──▶ object
                                                         storage
+```
+
+```mermaid
+flowchart TB
+  A[Agents: 1M points per second] --> G[Ingest gateway]
+  G --> Q[Bounded buffer]
+  Q --> H[In-memory head and WAL]
+  H -->|Every 2 hours| B[Immutable block]
+  B --> O[Object storage]
 ```
 
 ```text
@@ -200,6 +231,22 @@ important question unanswerable later.
   because high CPU may be fine, and the symptom is what a
   user experiences.
 ```
+
+> [!PITFALL] Do not put user IDs, request IDs or full URLs in metric labels. Each label multiplies the series count; move unbounded detail to logs or traces and bound the series a query may touch.
+
+> [!INTERVIEW] A one-year dashboard is slow. Explain choosing the hourly rollup rather than raw 10-second points, then name the aggregates and sketches needed to keep later combinations meaningful.
+
+> [!CHECK] What does adding the user_id label do to the example series count?
+>
+> 50 services × 5 methods × 10 statuses × 10,000 hosts = 25M series. Multiply by 1M user IDs to get 25 trillion series, explaining why a single unbounded label can overwhelm the system.
+
+> [!CHECK] What raw ingest volume follows from the host example?
+>
+> 10,000 hosts × 1,000 metrics / 10 s = 1M points/s. At 16 bytes each, that is 16 MB/s and roughly 1.4 TB/day, before compression or downsampling.
+
+> [!CHECK] Why can you not combine hourly p99 values into a daily p99?
+>
+> Percentiles do not retain the underlying distribution, so a p99 of p99s is meaningless. Store mergeable quantile sketches; also retain min, max, sum and count so aggregates can be recombined correctly.
 
 ## What to take away
 

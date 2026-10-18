@@ -55,6 +55,17 @@ possible place.
                          object storage ──▶ CDN
 ```
 
+```mermaid
+flowchart TB
+  C[Client] -->|Signed upload URL| O[Original in object storage]
+  O --> Q[Transcode queue]
+  Q --> W[Parallel chunk workers]
+  W --> L[1080p, 720p, 480p ladder]
+  L --> M[Segments and manifest]
+  M --> S[Object storage]
+  S --> D[CDN]
+```
+
 ```text
   □  upload goes DIRECTLY to storage via a signed URL —
      the same decision as the object-storage case
@@ -79,6 +90,18 @@ possible place.
             ▲    ▲    ▲
         the CLIENT picks a rendition per segment, based on
         measured throughput and buffer level
+```
+
+```mermaid
+sequenceDiagram
+  participant P as Player
+  participant C as CDN
+  P->>C: Fetch manifest
+  C-->>P: Rendition ladder
+  P->>C: Low rendition: 2-6 s segment
+  C-->>P: Immutable segment
+  P->>P: Measure throughput and buffer
+  P->>C: Next segment at chosen quality
 ```
 
 ```text
@@ -189,6 +212,22 @@ bandwidth at no quality cost.
 Startup time is the one to optimise first: it correlates most strongly with
 abandonment, and it is improved by short initial segments, a low starting
 rendition and warm edge caches — all cheap.
+
+> [!PITFALL] Choosing the highest initial rendition can delay startup and trigger rebuffering. Start low, measure throughput and buffer level on the client, then adapt per segment; the server only serves immutable files.
+
+> [!INTERVIEW] Would you spend more on AV1 encoding for every video? Compare encoding paid once with bandwidth paid on every view, and explain why popular content and the long tail get different choices.
+
+> [!CHECK] How many watch-hours per day does the stated workload represent?
+>
+> 10M users × 30 minutes = 300M minutes/day. Divide by 60 to get 5M watch-hours/day, which explains why reducing delivered bytes dominates the architecture.
+
+> [!CHECK] What does origin shield change in the 200-edge-miss example?
+>
+> A mid-tier cache sits between edge caches and origin. The 200 edge misses share one origin fetch instead of each reaching storage, reducing origin work while preserving edge delivery.
+
+> [!CHECK] What is the trade when shortening segments?
+>
+> Shorter segments permit faster startup and more frequent adaptation, but create more requests and less compression efficiency. Longer segments reverse that trade; the chapter gives 2–6 seconds as the usual range and 1–2 seconds for live.
 
 ## What to take away
 

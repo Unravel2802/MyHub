@@ -24,9 +24,9 @@ it. The decisions below are the ones that are cheap now and very expensive later
     ✗ no random access to "page 47"
 ```
 
-**Use cursor pagination.** Offset pagination is the single most common API design
-mistake that becomes unfixable: once clients depend on page numbers, changing it
-is a breaking change, and by then the deep pages are timing out.
+> [!KEY] **Use cursor pagination.** Offset pagination is the single most common API design
+> mistake that becomes unfixable: once clients depend on page numbers, changing it
+> is a breaking change, and by then the deep pages are timing out.
 
 ```text
   the cursor should be OPAQUE — base64 of the sort key —
@@ -45,6 +45,14 @@ is a breaking change, and by then the deep pages are timing out.
   server: seen this key?
     yes → return the STORED RESPONSE, do nothing
     no  → perform, store the response against the key
+```
+
+```mermaid
+flowchart TB
+  R[POST with Idempotency-Key] --> K{Key already stored?}
+  K -->|Yes: zero new effects| S[Replay stored response]
+  K -->|No| T[Effect and response in one transaction]
+  T --> S
 ```
 
 ```text
@@ -146,6 +154,16 @@ nothing.
   → and the client polls, or receives a webhook
 ```
 
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant A as API
+  C->>A: POST /exports
+  A-->>C: 202: job_id, status_url
+  C->>A: GET /jobs/id
+  A-->>C: Status, progress, result_url
+```
+
 ```text
   webhooks, if you offer them
     □  SIGN the payload so receivers can verify it
@@ -186,6 +204,22 @@ response solves the common case for free.
   □  IDs as strings, always (JSON numbers lose precision
      above 2^53)
 ```
+
+> [!PITFALL] Recording an idempotency flag separately from the write leaves a crash window. The key, effect and replayable response must commit together; a flag alone cannot reproduce the original result.
+
+> [!INTERVIEW] A client reports that a successful POST is followed by a GET returning 404. Explain replica lag, then compare returning the created object with passing a version token to subsequent reads.
+
+> [!CHECK] Why can offset pagination skip or repeat items during concurrent inserts?
+>
+> An insert changes the positions before the offset. The next page still discards the old number of rows, so its boundary shifts; an opaque cursor instead resumes after a stable sort key.
+
+> [!CHECK] What must happen when a payment request repeats its idempotency key?
+>
+> Look up the key and return its stored response, performing zero additional payments. For a new key, commit the effect and response with the key in the same transaction so a crash cannot separate them.
+
+> [!CHECK] Why should JSON IDs be strings even if the database uses numbers?
+>
+> JSON numbers lose precision above 2^53. Serialising the ID as a string preserves every digit, so the client sends back the same identifier rather than a rounded one.
 
 ## What to take away
 

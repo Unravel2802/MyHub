@@ -33,6 +33,17 @@ interesting reasoning.
     media dominates → object storage + CDN
 ```
 
+```chart
+type: bar
+scale: linear
+unit: requests/s
+title: Feed request peaks
+caption: Approximate peak rates stated in the chapter.
+---
+Posts: 12000
+Timeline reads: 115000
+```
+
 ## The naive design, and why it fails
 
 ```text
@@ -55,9 +66,9 @@ interesting reasoning.
   it is correct and it cannot be served.
 ```
 
-**Stating this explicitly is the move that motivates everything else.** The design
-is not a pattern applied from memory; it is what remains after the obvious query
-is ruled out.
+> [!KEY] **Stating this explicitly is the move that motivates everything else.** The design
+> is not a pattern applied from memory; it is what remains after the obvious query
+> is ruled out.
 
 ## Fan-out on write
 
@@ -68,6 +79,15 @@ is ruled out.
   post ──▶ [posts store]
        └─▶ queue ──▶ workers ──▶ for each follower:
                                    LPUSH timeline:{follower}
+```
+
+```mermaid
+flowchart TB
+  P[Post: 2300 per second] --> S[Posts store]
+  P --> Q[Durable queue]
+  Q --> W[Fan-out workers]
+  W -->|500 followers per post| T[Redis timelines]
+  T -->|LRANGE: 20 entries| R[Timeline read]
 ```
 
 ```text
@@ -122,6 +142,15 @@ bounded one.
 
   → most users follow only a handful of large accounts, so
     the read-time merge is small and bounded.
+```
+
+```mermaid
+flowchart TB
+  P[New post] --> F{Followers below 10000?}
+  F -->|Yes| W[Push to active timelines]
+  F -->|No: includes 50M celebrity| L[Keep for read-time pull]
+  W --> M[Merge on read]
+  L --> M
 ```
 
 ```text
@@ -214,6 +243,22 @@ weaker than the posts store's.
   a cap on timeline length — bounding an otherwise unbounded
   store, at the cost of a slow path for deep scrolling
 ```
+
+> [!PITFALL] Putting a 50M-follower account on the normal fan-out queue creates 50M writes for one post and delays everyone else. Use the hybrid threshold, and avoid filling timelines for inactive users.
+
+> [!INTERVIEW] How does ranking change fan-out? Explain why the pushed entries become roughly 1,000 candidates, why scoring returns to the read path and why a short-lived ranked-result cache helps.
+
+> [!CHECK] How many timeline writes per second do 2,300 posts/s with 500 followers each require?
+>
+> 2,300 × 500 = 1,150,000 timeline writes/s. Fan-out makes reads cheap by paying that multiplication on writes, which is why the follower distribution matters.
+
+> [!CHECK] How much raw space do the capped materialised timelines require?
+>
+> 100M users × 800 post IDs × 8 bytes = 640,000,000,000 bytes, about 640 GB. Capping each timeline bounds storage; older content follows the slower on-demand path.
+
+> [!CHECK] Why can the entire timeline cache be lost without losing the posts?
+>
+> The posts store is the source of truth and the timeline is derived. A cache miss rebuilds from posts, so losing Redis causes expensive recomputation rather than destruction of the original posts.
 
 ## What to take away
 

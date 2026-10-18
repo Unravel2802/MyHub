@@ -70,6 +70,14 @@ The step people skip, and the one with the best return:
       component
 ```
 
+```mermaid
+flowchart TB
+  R[Reads: 10 per write] --> C{Cache}
+  C -->|90% hits| H[Return cached value]
+  C -->|10% misses| D[Database]
+  W[All writes] --> D
+```
+
 ```text
   and the discipline from the caching topic
     □  name what staleness you are accepting
@@ -90,8 +98,8 @@ The step people skip, and the one with the best return:
   tax.
 ```
 
-**Buy the bigger machine.** It ends eventually, and it ends much later than most
-designs assume — and the year it buys is a year spent on the product.
+> [!KEY] **Buy the bigger machine.** It ends eventually, and it ends much later than most
+> designs assume — and the year it buys is a year spent on the product.
 
 ## Scaling reads
 
@@ -128,6 +136,16 @@ designs assume — and the year it buys is a year spent on the product.
     files do not belong in a database
     → and signed URLs let clients upload and download
       directly, bypassing your servers
+```
+
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant A as API
+  participant S as Storage
+  C->>A: Request signed URL
+  A-->>C: Signed URL
+  C->>S: Upload 50 MB directly
 ```
 
 The direct-upload pattern is worth naming: issuing a signed URL so the client
@@ -225,6 +243,22 @@ because retrofitting it into a stateful service is painful.
 **Design for 10×, not 1000×.** A system that handles ten times current load buys
 you the time to learn what the next constraint actually is, which is better
 information than any amount of anticipation.
+
+> [!PITFALL] A cache can hide a missing index until a cold start sends every request to the database. Fix the query first, and protect refill with single-flight or stale-while-revalidate.
+
+> [!INTERVIEW] If read replicas stop helping as load grows, separate the write bottleneck from the read bottleneck. Explain why every replica still applies every write before proposing partitioning.
+
+> [!CHECK] At a 10:1 read:write ratio and 90% cache hits, how many database operations remain per original 11?
+>
+> Of 10 reads, 10% reach the database: 1 read. Add the 1 write to get 2 operations rather than 11, a reduction of 11 / 2 = 5.5 times, matching the chapter's roughly 5× statement.
+
+> [!CHECK] Why do replicas fail to scale the write path?
+>
+> Every replica applies every write from the primary. Adding replicas distributes reads but does not divide the write stream; partitioning divides ownership of writes instead.
+
+> [!CHECK] What does a signed URL remove from the application in the 50 MB upload example?
+>
+> The client sends the 50 MB directly to object storage. The application issues the URL instead of buffering and forwarding the file, removing that content bandwidth, memory and latency from its path.
 
 ## What to take away
 

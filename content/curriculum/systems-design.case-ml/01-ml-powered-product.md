@@ -72,6 +72,14 @@ what happens when it is wrong, and how it improves.
                                                22 ms
 ```
 
+```mermaid
+flowchart TB
+  O[Offline: 50M item embeddings] --> I[ANN index]
+  I -->|Retrieve 500: 5 ms| R[Candidates]
+  R -->|Small model: 15 ms| S[Ranked results]
+  S -->|Rules: 2 ms| U[Response: 22 ms]
+```
+
 The two-stage funnel is the same structure as search, RAG and recommendation —
 cheap retrieval over everything, expensive scoring over a few hundred.
 
@@ -86,6 +94,20 @@ cheap retrieval over everything, expensive scoring over a few hundred.
     transform                   3 ms
     predict                    15 ms
     post-process                2 ms
+```
+
+```chart
+type: bar
+scale: linear
+unit: ms
+title: Request latency breakdown
+caption: Feature fetching is the largest stated stage.
+---
+Validate: 1
+Feature fetch: 30
+Transform: 3
+Predict: 15
+Post-process: 2
 ```
 
 ```text
@@ -132,6 +154,16 @@ cheap retrieval over everything, expensive scoring over a few hundred.
         ──▶ observe the outcome
         ──▶ join them later
         ──▶ next training set
+```
+
+```mermaid
+flowchart TB
+  S[Serve prediction] --> L[Log served vector and version]
+  L --> J[Join observed outcome]
+  J --> T[Next training set]
+  T --> M[Train and evaluate]
+  M --> S
+  S -->|Permanent holdout fraction| H[Measure business value]
 ```
 
 ```text
@@ -198,6 +230,22 @@ offline metrics into one whose contribution is measured continuously.
                           ──▶ [evaluation gate]
                           ──▶ [registry]
 ```
+
+> [!PITFALL] Putting a degradable model in the readiness probe turns a model outage into an application outage. Keep the fallback usable and monitor when it activates; cached predictions or rules can preserve the product path.
+
+> [!INTERVIEW] When would batch scoring fail to meet the feature's needs? Identify information available only at request time, then explain which expensive work can still be precomputed in a hybrid.
+
+> [!CHECK] What is the online latency of the recommendation funnel example?
+>
+> Retrieval takes about 5 ms, ranking about 15 ms and business rules about 2 ms. Add 5 + 15 + 2 = 22 ms, with embeddings for 50M items already computed offline.
+
+> [!CHECK] Which request stage should you investigate first in the feature-path example?
+>
+> Feature fetching takes 30 ms, versus 15 ms for prediction. The full path is 1 + 30 + 3 + 15 + 2 = 51 ms; batching the lookup targets its largest component before optimising inference.
+
+> [!CHECK] Why log the served feature vector rather than recomputing it for training?
+>
+> Recomputation can use different values or definitions from those seen by the model. Logging the actual vector and model version preserves the prediction context; joining the later outcome then produces a faithful training example.
 
 ## What to take away
 

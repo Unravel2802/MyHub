@@ -173,6 +173,19 @@ guarantees the cache has not drifted.
     write outcome │
 ```
 
+```mermaid
+sequenceDiagram
+  participant A as API
+  participant D as Ledger DB
+  participant P as Provider
+  A->>D: Record pending intent
+  A->>P: Charge with provider idempotency key
+  P-->>A: Outcome or timeout
+  A->>P: Query key status on timeout
+  A->>D: Record known outcome
+  P-->>A: Daily settlement for reconciliation
+```
+
 ```text
   □  record the INTENT before calling out — otherwise a
      timeout leaves no record that you tried
@@ -194,6 +207,18 @@ catches the difference.
      │             │              │
      ▼             ▼              ▼
   FAILED       EXPIRED        REFUNDED
+```
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  PENDING --> AUTHORISED
+  PENDING --> FAILED
+  AUTHORISED --> CAPTURED
+  AUTHORISED --> EXPIRED
+  CAPTURED --> SETTLED
+  CAPTURED --> REFUNDED
+  note right of CAPTURED: Ledger entries sum to 0
 ```
 
 ```text
@@ -239,6 +264,22 @@ catches the difference.
   the DISCREPANCY COUNT is a health metric.
   a rise means something upstream changed.
 ```
+
+> [!PITFALL] A provider timeout does not mean the charge failed. Persist intent first, reuse the provider's idempotency key and query its status before retrying; reconcile your records against settlement daily.
+
+> [!INTERVIEW] Why does partitioning by account make a transfer harder than a balance read? Trace the two-account boundary, then state what a 2PC or saga approach must preserve about the ledger.
+
+> [!CHECK] What invariant should the $50 transfer satisfy?
+>
+> Alice receives an entry of −50 and Bob one of +50. Their sum is −50 + 50 = 0, so the transfer moves money without creating or destroying it; reconciliation checks that invariant across entries.
+
+> [!CHECK] How can balance reads be O(1) while the ledger stays append-only?
+>
+> Update a materialised balance in the same transaction as new entries. Read that balance directly, then periodically compare it with SUM(entries); the entries remain the truth and the balance is a reconciled cache.
+
+> [!CHECK] What stops a client retry after a charge timeout from charging twice?
+>
+> The client reuses a key generated before the first attempt. The unique key, effect and saved response commit atomically; a duplicate replays the saved response rather than performing another charge.
 
 ## What to take away
 

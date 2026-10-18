@@ -78,6 +78,17 @@ the gateway re-registering on connect.
   6. for offline recipients, enqueue a push notification
 ```
 
+```mermaid
+flowchart TB
+  C[Client] --> G[Gateway]
+  G --> S[Chat service]
+  S --> N[Assign conversation sequence]
+  N --> P[Persist message]
+  P --> A[Acknowledge sender]
+  A --> R[Look up recipient gateway]
+  R -->|Delivery budget below 500 ms| D[Recipient device]
+```
+
 ```text
   the ordering guarantee
 
@@ -103,6 +114,14 @@ sequence is unambiguous and cheap.
     READ       the recipient opened it
 
   → each is a separate acknowledgement travelling back
+```
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  [*] --> SENT: Durable server acknowledgement
+  SENT --> DELIVERED: Device acknowledgement
+  DELIVERED --> READ: Recipient opened it
 ```
 
 ```text
@@ -244,6 +263,22 @@ ephemeral, lossy, scoped to what the user can see.
 The reconnection storm is the failure specific to this design: a stateful
 connection tier makes every deploy a mass-reconnection event, and it must be
 staggered deliberately.
+
+> [!PITFALL] Do not acknowledge a message before persistence or order it by client timestamps. Persist first, then use the partition owner's per-conversation sequence; clocks cannot supply that ordering guarantee.
+
+> [!INTERVIEW] What happens during a rolling deploy of 1,000 gateways? Trace reconnect, registry refresh and gap recovery, then explain why staggering the deploy and jittering client backoff avoid a 50M-client reconnection storm.
+
+> [!CHECK] How many gateways does the stated 50M-connection workload need?
+>
+> 50,000,000 connections / 50,000 per gateway = 1,000 gateways. At roughly 10 KB each, the connections also account for about 500 GB across the fleet.
+
+> [!CHECK] How does the unread design avoid 200 count queries on app open?
+>
+> Maintain latest_seq per conversation and last_read_seq per user and conversation. Subtract unread = latest_seq − last_read_seq for each, then sum the differences for the badge instead of scanning messages.
+
+> [!CHECK] How does a reconnecting client recover messages missed while offline?
+>
+> It retains its last received sequence N and requests everything after N. The server serves the ordered gap from durable history, with pagination bounding a long absence; push delivery itself need not be guaranteed.
 
 ## What to take away
 

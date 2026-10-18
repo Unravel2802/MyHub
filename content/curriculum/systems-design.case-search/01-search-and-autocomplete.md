@@ -23,6 +23,17 @@ different freshness requirements.
     personalised and trending suggestions
 ```
 
+```chart
+type: bar
+scale: linear
+unit: ms
+title: Different latency budgets
+caption: Upper latency budgets, not measured response times.
+---
+Search: 200
+Autocomplete: 50
+```
+
 ```text
   10,000 searches/second
   autocomplete: ~5 requests per search (one per keystroke)
@@ -83,6 +94,16 @@ volume at a quarter of the budget, and it cannot run through the search path.
       └─▶ shard N ─┘
              │
         merge, re-rank, return the global top k
+```
+
+```mermaid
+flowchart TB
+  Q[Query] --> C[Coordinator]
+  C --> A[Document shard A]
+  C --> B[Document shard B]
+  A -->|Local top k| M[Merge global top k]
+  B -->|Local top k| M
+  M --> R[Re-rank: top 1000 to top 10]
 ```
 
 ```text
@@ -168,6 +189,14 @@ because embeddings lose exactly the identifiers and proper nouns BM25 finds.
      event
 ```
 
+```mermaid
+flowchart TB
+  L[Query logs] -->|Hourly rebuild| T[In-memory trie: 500 MB]
+  K[Keystroke: 50000 per second] --> P[Prefix walk]
+  T --> P
+  P -->|Below 50 ms| R[Precomputed top k]
+```
+
 ```text
   TYPO TOLERANCE
     edit distance ≤ 1 or 2, via a fuzzy trie walk or a
@@ -180,9 +209,9 @@ because embeddings lose exactly the identifiers and proper nouns BM25 finds.
     → recompute the trie hourly from a rolling window
 ```
 
-**Autocomplete is a precomputation problem, not a search problem.** Once the top-k
-per prefix is materialised, serving is a hash lookup — which is what makes 50 ms
-achievable at 50,000 QPS.
+> [!KEY] **Autocomplete is a precomputation problem, not a search problem.** Once the top-k
+> per prefix is materialised, serving is a hash lookup — which is what makes 50 ms
+> achievable at 50,000 QPS.
 
 ## Caching
 
@@ -211,6 +240,22 @@ achievable at 50,000 QPS.
                                              ▲
                         query logs ──▶ [hourly trie build]
 ```
+
+> [!PITFALL] Using different analysis at query time and index time produces tokens that cannot match. Share the analysis path; adding shards cannot repair mismatched tokenisation.
+
+> [!INTERVIEW] A 50-shard query waits on its slowest shard. Explain when you would hedge to a replica and when you would return deadline-bounded partial results, including how the response marks incompleteness.
+
+> [!CHECK] How do autocomplete load and latency compare with search?
+>
+> 10,000 searches/s × about 5 keystrokes = 50,000 autocomplete requests/s. Its 50 ms budget is 50 / 200 = one quarter of search's 200 ms budget, motivating a separate precomputed serving path.
+
+> [!CHECK] Why shard by document rather than term in this design?
+>
+> Each shard holds a complete index of its own documents. The coordinator sends a query to every shard, takes each local top k and merges them into the global top k; latency then depends on the slowest shard.
+
+> [!CHECK] What happens when index segments are sealed more frequently?
+>
+> New writes become searchable sooner, but queries must search and merge more segments. Less frequent sealing reverses the trade: fewer segments and cheaper queries, with older visible data.
 
 ## What to take away
 

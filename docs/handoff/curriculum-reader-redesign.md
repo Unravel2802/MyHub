@@ -592,7 +592,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR C approved and merged 2026-10-16. Next: PR D (Systems Design content pass).
+**Status:** PR D approved and merged 2026-10-18. A–D complete; follow-ups listed under "PR D review".
 
 ---
 
@@ -874,3 +874,52 @@ a real browser:
 
 Nit for later, not blocking: on a phone the "Scroll →" hint sits over the
 bottom edge of the last row of nodes. Move it into the frame's padding.
+
+## PR D review — 2026-10-18 (Claude)
+
+**Approved.** Lint, typecheck and unit tests (1,573) pass. In the E2E run,
+186 passed and 1 failed: `prep-tracker.spec.ts:200`, the known flake fixed
+on `test/prep-story-flake`, not yet merged. The new
+`curriculum-systems-design.spec.ts` gate passes for all 18 chapters.
+
+What was checked independently:
+
+- **Prose kept.** In all 17 chapters every original line survives, apart
+  from [!KEY] conversions, which keep the wording word for word (0 lost
+  lines).
+- **Counts within the rules.** 1–2 diagrams, 0–2 charts, ≤3 KEY,
+  1 PITFALL, 1 INTERVIEW and exactly 3 CHECK per chapter.
+- **Charts grounded.** Every chart number is stated in its chapter's
+  original text.
+- **Answers correct.** All 51 CHECK answers were re-derived; the
+  arithmetic holds.
+- **Diagram direction.** The 29 diagrams are 21 TB flowcharts,
+  5 sequenceDiagrams and 3 stateDiagram-v2s, with no LR.
+- **Rendering.** Sequence and state diagrams were inspected at 1440px and
+  390px.
+
+Follow-ups, none blocking:
+
+1. **Two charts carry no comparison.** Remove them.
+   - `systems-design.tradeoffs` charts batch sizes 1 vs 128, which isn't a
+     quantity that trades against anything.
+   - `systems-design.storage-choice` is a single-row chart.
+2. **In sequence diagrams, lifelines run through the message labels**
+   (e.g. "Charge with provider idempotency key" on case-payments). Give
+   message text a surface-coloured background in the Mermaid theme.
+3. **The PR C nit still stands:** the "Scroll →" hint overlaps the last row
+   of nodes on phones.
+4. **Merge `test/prep-story-flake`** so the full suite is green again.
+
+## Candidate widgets
+
+- `systems-design.case-ratelimit`: compare fixed-window boundary bursts with
+  token-bucket refill and capacity using a draggable request timeline.
+- `systems-design.case-feeds`: vary followers and posting rate to expose the
+  timeline-write cost and choose a hybrid fan-out threshold.
+- `systems-design.case-metrics`: multiply bounded label cardinalities and show
+  how adding a user-id label changes the series count and ingest budget.
+- `systems-design.case-geo`: move a query across cell boundaries and expand its
+  radius to show neighbour lookup, candidate filtering and road-ETA reranking.
+- `systems-design.case-collab`: step through concurrent local edits, offline
+  reconnection and relative cursor positions without persisting awareness.

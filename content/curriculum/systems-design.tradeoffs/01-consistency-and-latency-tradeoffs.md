@@ -83,9 +83,18 @@ The trade that shapes most consumer architectures:
   thousands to tens of thousands.
 ```
 
-**Say the threshold and why.** "Above 10,000 followers, a single post is 10,000
-writes, which at our posting rate is more write volume than the timeline store can
-absorb — so those go on the read path" is a designed decision.
+```mermaid
+flowchart TB
+  P[New post] --> F{Follower count}
+  F -->|Below threshold| W[Push timeline entries]
+  F -->|Above 10000 in example| R[Read-time pull]
+  W --> M[Merge on timeline read]
+  R --> M
+```
+
+> [!KEY] **Say the threshold and why.** "Above 10,000 followers, a single post is 10,000
+> writes, which at our posting rate is more write volume than the timeline store can
+> absorb — so those go on the read path" is a designed decision.
 
 ## Storage versus compute
 
@@ -119,6 +128,17 @@ absorb — so those go on the read path" is a designed decision.
 
   → and the right point depends on whether a human is
     waiting.
+```
+
+```chart
+type: bar
+scale: linear
+unit: items/batch
+title: Batch size is a latency trade
+caption: Batch sizes stated here; no throughput measurements implied.
+---
+Lowest-latency batch: 1
+Higher-throughput batch: 128
 ```
 
 The same trade appears as `linger.ms` in a message producer, as batch size in
@@ -190,6 +210,22 @@ reasoned to it rather than recalled it.
   ✗  not saying what was given up
   ✗  a trade-off with no number behind it
 ```
+
+> [!PITFALL] Choosing strong consistency everywhere charges every read for coordination; choosing eventual consistency everywhere breaks operations such as balance checks and compare-and-set. Choose per operation, and state the staleness bound.
+
+> [!INTERVIEW] What product requirement would reverse the one-second timeline decision? Contrast a social timeline with a trading feed, then say why read-your-writes repairs the social writer's experience.
+
+> [!CHECK] At the example threshold, how much fan-out does one post create for 10,000 followers?
+>
+> Fan-out on write creates one timeline entry per follower: 1 × 10,000 = 10,000 writes. The threshold moves such accounts to read-time assembly when the posting rate exceeds the timeline store's capacity.
+
+> [!CHECK] Why precompute a follower count read 1,000 times per write?
+>
+> One write can update a materialised count that serves 1,000 reads. This exchanges storage and acceptable staleness for avoiding the same computation on every read; a monthly report has the opposite access pattern.
+
+> [!CHECK] What does changing batch size from 1 to 128 buy and cost?
+>
+> It groups 128 items rather than sending each alone, improving throughput through batching. Items wait for the batch, so queueing latency rises; the chapter gives sizes, not a measured 128× speedup.
 
 ## What to take away
 

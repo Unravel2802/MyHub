@@ -174,7 +174,7 @@ export function MermaidDiagram({
                 />
                 <span
                   data-mermaid-scroll-hint
-                  className="pointer-events-none absolute right-3 bottom-2 rounded bg-surface px-2 py-1 font-mono text-xs text-muted"
+                  className="pointer-events-none relative block bg-surface px-5 pb-3 text-right font-mono text-xs text-muted"
                 >
                   Scroll →
                 </span>

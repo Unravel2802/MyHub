@@ -130,17 +130,6 @@ flowchart TB
     waiting.
 ```
 
-```chart
-type: bar
-scale: linear
-unit: items/batch
-title: Batch size is a latency trade
-caption: Batch sizes stated here; no throughput measurements implied.
----
-Lowest-latency batch: 1
-Higher-throughput batch: 128
-```
-
 The same trade appears as `linger.ms` in a message producer, as batch size in
 model serving, and as group commit in a database. Recognising it as one trade
 rather than three settings is worth doing.

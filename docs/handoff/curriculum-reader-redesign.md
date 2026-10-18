@@ -592,7 +592,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** PR D approved and merged 2026-10-18. A–D complete; follow-ups listed under "PR D review".
+**Status:** A–D and the polish PR approved and merged 2026-10-18. Systems Design is the first fully augmented track.
 
 ---
 
@@ -910,6 +910,22 @@ Follow-ups, none blocking:
 3. **The PR C nit still stands:** the "Scroll →" hint overlaps the last row
    of nodes on phones.
 4. **Merge `test/prep-story-flake`** so the full suite is green again.
+
+## Polish PR review — 2026-10-18 (Claude)
+
+**Approved.** Lint, typecheck, unit (1,573) and the full E2E suite (189)
+are all green.
+
+1. **Charts removed.** The two charts are gone, and no other text changed.
+2. **Sequence labels.** A surface-coloured `paint-order: stroke` halo now
+   backs `.messageText`, so lifelines no longer cut through the glyphs.
+   Because a halo hugs the letterforms, the line still shows briefly above
+   and below a label. A solid rect behind each label would hide it fully,
+   but that isn't worth more work now.
+3. **Scroll hint.** On phones the hint now sits in its own row below the
+   drawing and no longer covers nodes.
+
+`test/prep-story-flake` was merged to `main` separately (27935e9).
 
 ## Candidate widgets
 

@@ -26,16 +26,6 @@ assume.
     pub/sub (LISTEN/NOTIFY)
 ```
 
-```chart
-type: bar
-scale: linear
-unit: queries/s
-title: Single-instance starting point
-caption: The stated well-tuned Postgres range; not a universal limit.
----
-Simple queries: 20000-50000
-```
-
 > [!KEY] **The default answer is Postgres, and you should be able to say why you are
 > leaving it.** A great many designs introduce four specialised stores for a
 > workload one relational database would serve, and each additional store is

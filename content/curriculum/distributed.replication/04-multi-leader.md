@@ -208,8 +208,7 @@ The honest picture of what you take on:
 > global invariant. Centralise that decision, pre-divide the resource, or
 > explicitly accept and compensate for the violation.
 
-> [!CHECK] Why can two locally valid $80 withdrawals violate the non-negative-
-> balance invariant?
+> [!CHECK] Why can two locally valid $80 withdrawals violate the non-negative-balance invariant?
 >
 > Both regions start from $100 and independently see enough funds,
 > leaving $20 locally. Applying both withdrawals gives $100 - $80 - $80

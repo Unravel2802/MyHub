@@ -224,8 +224,7 @@ wrong, and the one it gets wrong will be different each time.
 
 > [!CHECK] What concurrency does Little's Law give for 1,000 req/s at 5 ms?
 >
-> Convert 5 ms to 0.005 seconds, then multiply: 1,000 × 0.005 = 5 in-
-> flight requests. The chapter starts near a pool of 10, then checks
+> Convert 5 ms to 0.005 seconds, then multiply: 1,000 × 0.005 = 5 in-flight requests. The chapter starts near a pool of 10, then checks
 > downstream capacity; 200 connections would permit unnecessary
 > overload.
 

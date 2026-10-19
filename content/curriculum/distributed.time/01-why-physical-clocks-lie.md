@@ -254,8 +254,7 @@ mechanism** or a **duration measurement** — two jobs they cannot do.
 >
 > A writes at real time 100.000 with timestamp 100.010 because its clock
 > is 10 ms fast. B writes later at 100.005 with timestamp 100.005.
-> Comparing timestamps chooses A and silently discards B's later real-
-> time write.
+> Comparing timestamps chooses A and silently discards B's later real-time write.
 
 ## What to take away
 

@@ -236,8 +236,7 @@ prose. Three rules:
 > [!CHECK] What evidence makes removing name safe after migrating to full_name?
 >
 > Instrument reads and writes of the old field. Keep accepting it while
-> clients migrate, then require zero usage for longer than the longest-
-> period consumer. Otherwise a monthly batch job can still depend on it.
+> clients migrate, then require zero usage for longer than the longest-period consumer. Otherwise a monthly batch job can still depend on it.
 
 ## What to take away
 

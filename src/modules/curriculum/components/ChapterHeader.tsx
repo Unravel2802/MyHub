@@ -28,7 +28,7 @@ export function ChapterHeader({
         <span aria-hidden>/</span>
         <Link href="/curriculum">{topic.label}</Link>
       </nav>
-      <header className="mb-10">
+      <header>
         <div className="flex flex-wrap items-center gap-3 font-mono text-xs uppercase tracking-wider text-muted">
           <span className="inline-flex items-center gap-2 rounded-full bg-[var(--track-surface)] px-2 py-1 text-[var(--track)]">
             <span

@@ -107,6 +107,29 @@ cloud machines, and do not be shocked by seconds.** Any logic whose correctness
 depends on two machines' clocks agreeing more closely than that is broken; it
 just has not failed yet.
 
+```mermaid
+sequenceDiagram
+  participant C as NTP client
+  participant S as Time server
+  C->>S: Send at t1
+  Note over S: Receive at t2
+  Note over S: Send at t3
+  S-->>C: Reply received at t4
+  Note over C: Offset assumes symmetric path delays
+```
+
+```chart
+type: bar
+scale: log
+unit: ms
+title: Stated wall-clock error ranges
+caption: These are typical ranges, not hard uncertainty bounds.
+---
+Same LAN with good NTP: 0.1-1
+Public internet NTP: 1-50
+Loaded cloud VM: 10-100
+```
+
 ## The ways the wall clock moves unexpectedly
 
 **Slewing versus stepping.** NTP prefers to *slew* — speed the clock up or slow
@@ -214,6 +237,25 @@ milliseconds is far better than the human-relevant resolution.
 
 The error is not using wall clocks. It is using them as an **ordering
 mechanism** or a **duration measurement** — two jobs they cannot do.
+
+> [!PITFALL] Wall-clock duration measurement: a backwards NTP step can
+> turn elapsed time negative and break retries or expiry logic. Use a
+> monotonic clock for the duration; keep wall time for points in time.
+
+> [!CHECK] Why can subtracting two wall-clock readings give a negative duration?
+>
+> NTP can step the clock backwards between the start and end readings.
+> The later reading can then be smaller than the earlier one. A
+> monotonic clock does not jump backwards and is the clock for elapsed
+> durations.
+
+> [!CHECK] Which write wins in the chapter's skewed last-write-wins example, and
+> why is that wrong?
+>
+> A writes at real time 100.000 with timestamp 100.010 because its clock
+> is 10 ms fast. B writes later at 100.005 with timestamp 100.005.
+> Comparing timestamps chooses A and silently discards B's later real-
+> time write.
 
 ## What to take away
 

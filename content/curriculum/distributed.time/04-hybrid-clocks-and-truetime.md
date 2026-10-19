@@ -149,6 +149,15 @@ accuracy with a published error bound, which lets non-Google systems consider
 this design. It is a genuine shift: the uncertainty being *knowable* is the
 enabling property, more than it being small.
 
+```mermaid
+flowchart TB
+  A[Choose commit timestamp] -->|s = TT.now latest| B[Commit work]
+  B -->|check earliest| C{TT.now earliest greater than s?}
+  C -->|no: uncertainty remains| D[Keep waiting]
+  D -->|sample interval again| C
+  C -->|yes: uncertainty elapsed| E[Release locks and acknowledge]
+```
+
 ## Where each belongs
 
 ```text
@@ -188,6 +197,25 @@ Whatever you choose, these apply:
   □  Do not compare timestamps from systems using different schemes.
      An HLC value and a wall-clock value are not the same kind of thing.
 ```
+
+> [!PITFALL] Future-clock contamination: HLC takes a maximum, so a
+> clock far ahead drags peers' physical components forward. Enforce the
+> maximum offset and define the refusal or shutdown behaviour explicitly.
+
+> [!CHECK] Why does B receive HLC (100,2) when A sends (100,1) and B's wall clock
+> says 99?
+>
+> The physical component takes the maximum of local state, received time
+> and wall time, giving 100. The received physical time wins, so
+> increment its logical counter: 1 + 1 = 2. Thus (100,1) < (100,2)
+> despite skew.
+
+> [!CHECK] What condition ends TrueTime commit wait, and what latency does the
+> stated uncertainty imply?
+>
+> Choose s = TT.now().latest, then wait until TT.now().earliest > s. The
+> stated uncertainty ε is 1–7 ms, so the chapter's roughly 2ε wait adds
+> about 2–14 ms before acknowledging the write.
 
 ## What to take away
 

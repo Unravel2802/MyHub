@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@/src/lib/cn";
 import { topicNeighbours, trackById } from "../curriculumCatalog";
 import { topicState } from "../curriculumProgress";
 import type { Topic, Lesson, CurriculumIndex } from "../types";
@@ -61,7 +62,12 @@ export function ChapterHeader({
             ).map(([label, entries]) =>
               entries.length ? (
                 <div
-                  className="rounded-xl border border-border bg-surface p-4"
+                  className={cn(
+                    "rounded-xl border border-border bg-surface p-4",
+                    (!neighbours.buildsOn.length ||
+                      !neighbours.unlocks.length) &&
+                      "sm:col-span-2",
+                  )}
                   key={label}
                 >
                   <p className="font-mono text-[11px] uppercase tracking-wider text-muted">

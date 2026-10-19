@@ -849,3 +849,163 @@ test("mobile diagram overflow cues disappear at the end and recompute on resize"
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390);
 });
+
+// Keep these measurements on a real chapter with no prerequisites, after fonts
+// settle: fallback-font metrics can otherwise hide spacing regressions.
+test.describe("chapter reader visual rhythm", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockSupabaseCurriculum(page, new FakeCurriculumDb());
+    await page.setViewportSize({ width: 1440, height: 1200 });
+    await page.goto("/curriculum/foundations.programming/01-what-a-program-is");
+    await expect(page.locator(".curriculum-main > p").first()).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+  });
+
+  test("a lone Unlocks card spans the header", async ({ page }) => {
+    const header = page.locator("[data-curriculum-reader] header");
+    await expect(header.getByText("Builds on", { exact: true })).toHaveCount(0);
+    const card = header.getByText("Unlocks", { exact: true }).locator("..");
+    const headerBox = await header.boundingBox();
+    const cardBox = await card.boundingBox();
+    expect(headerBox).not.toBeNull();
+    expect(cardBox).not.toBeNull();
+    expect(cardBox!.width / headerBox!.width).toBeGreaterThanOrEqual(0.95);
+  });
+
+  test("the opening paragraph has one header gap", async ({ page }) => {
+    const header = await page
+      .locator("[data-curriculum-reader] header")
+      .boundingBox();
+    const paragraph = await page
+      .locator(".curriculum-main > p")
+      .first()
+      .boundingBox();
+    expect(header).not.toBeNull();
+    expect(paragraph).not.toBeNull();
+    const gap = paragraph!.y - (header!.y + header!.height);
+    expect(gap).toBeGreaterThanOrEqual(32);
+    expect(gap).toBeLessThanOrEqual(64);
+  });
+
+  test("section and recap numbers are readable without changing heading names", async ({
+    page,
+  }) => {
+    for (const heading of [
+      page.locator(".curriculum-main h2").first(),
+      page.locator("[data-chapter-recap] h2"),
+    ]) {
+      const number = heading.locator("..").locator("span[aria-hidden]");
+      expect(
+        await number.evaluate((element) =>
+          parseFloat(getComputedStyle(element).fontSize),
+        ),
+      ).toBeGreaterThanOrEqual(15);
+      await expect(number).toHaveCSS("font-weight", "600");
+      await expect(number).toHaveCSS("font-variant-numeric", "tabular-nums");
+      await expect(number).toHaveAttribute("aria-hidden", "true");
+      await expect(heading).toHaveAccessibleName(
+        (await heading.textContent())!,
+      );
+    }
+  });
+
+  test("the serif initial occupies two lines in native and fallback layouts", async ({
+    page,
+  }) => {
+    const paragraph = page.locator(".curriculum-main > p").first();
+    const measureInitial = () =>
+      paragraph.evaluate((element) => {
+        const initial = getComputedStyle(element, "::first-letter");
+        const text = element.firstChild!;
+        const glyph = text.textContent!.slice(0, 1);
+        const range = document.createRange();
+        range.setStart(text, 0);
+        range.setEnd(text, 1);
+        const context = document.createElement("canvas").getContext("2d")!;
+        context.font = `${initial.fontWeight} ${initial.fontSize} ${initial.fontFamily}`;
+        // Chromium reports an unscaled Range height and computed font size for
+        // native initial-letter. Its rendered advance IS scaled. Compare that
+        // advance with the same loaded glyph on canvas to recover the used em
+        // height, rather than asserting the declared initial-letter value alone.
+        const renderedEm =
+          (range.getBoundingClientRect().width /
+            context.measureText(glyph).width) *
+          parseFloat(initial.fontSize);
+        range.setStart(text, 1);
+        range.setEnd(text, text.textContent!.length);
+        const left = element.getBoundingClientRect().left;
+        const lineIndents = Array.from(range.getClientRects())
+          .slice(0, 3)
+          .map((rect) => rect.left - left);
+        return {
+          lineIndents,
+          ratio: renderedEm / parseFloat(getComputedStyle(element).lineHeight),
+          family: initial.fontFamily,
+          weight: initial.fontWeight,
+          float: initial.cssFloat,
+        };
+      });
+    const native = await measureInitial();
+    expect(native.ratio).toBeGreaterThanOrEqual(1.6);
+    expect(native.ratio).toBeLessThanOrEqual(2.4);
+    expect(native.family).toContain("Source Serif 4");
+    expect(native.weight).toBe("600");
+    expect(native.lineIndents).toHaveLength(3);
+    expect(native.lineIndents[0]).toBeGreaterThan(5);
+    expect(native.lineIndents[1]).toBeGreaterThan(5);
+    expect(Math.abs(native.lineIndents[2])).toBeLessThanOrEqual(1);
+    const screenshot = test.info().outputPath("reader-after.png");
+    await page.screenshot({ path: screenshot });
+    await test.info().attach("reader-after", {
+      path: screenshot,
+      contentType: "image/png",
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(390);
+    await page.setViewportSize({ width: 1440, height: 1200 });
+
+    // Remove only the native enhancement from the loaded stylesheet, exercising
+    // the real shipped fallback rather than duplicating its declarations here.
+    const removed = await page.evaluate(() => {
+      let count = 0;
+      const visit = (sheet: CSSStyleSheet | CSSGroupingRule) => {
+        for (let i = sheet.cssRules.length - 1; i >= 0; i--) {
+          const rule = sheet.cssRules[i];
+          if (
+            rule instanceof CSSSupportsRule &&
+            rule.conditionText.includes("initial-letter")
+          ) {
+            sheet.deleteRule(i);
+            count++;
+          } else if (rule instanceof CSSGroupingRule) {
+            visit(rule);
+          }
+        }
+      };
+      for (const sheet of document.styleSheets) visit(sheet);
+      return count;
+    });
+    expect(removed).toBeGreaterThan(0);
+    const fallback = await measureInitial();
+    expect(fallback.float).toBe("left");
+    expect(fallback.lineIndents).toHaveLength(3);
+    expect(fallback.lineIndents[0]).toBeGreaterThan(5);
+    expect(fallback.lineIndents[1]).toBeGreaterThan(5);
+    expect(Math.abs(fallback.lineIndents[2])).toBeLessThanOrEqual(1);
+    const fallbackScreenshot = test.info().outputPath("reader-fallback.png");
+    await page.screenshot({ path: fallbackScreenshot });
+    await test.info().attach("reader-fallback", {
+      path: fallbackScreenshot,
+      contentType: "image/png",
+    });
+    expect(fallback.ratio).toBeGreaterThanOrEqual(1.6);
+    expect(fallback.ratio).toBeLessThanOrEqual(2.4);
+    // Neither mode may make the narrow page scroll horizontally.
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(390);
+  });
+});

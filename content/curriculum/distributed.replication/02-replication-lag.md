@@ -85,6 +85,18 @@ laptop. A session-scoped token does not help, because it is a different session.
 If your product needs cross-device read-your-writes, the token must be tied to
 the *user*, not the session — stored server-side against their identity.
 
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant L as Leader
+  participant R as Replica
+  C->>L: Write comment
+  L-->>C: Write-position token
+  C->>R: Read at least token
+  Note over R: Replay up to token
+  R-->>C: Comment visible
+```
+
 ## Anomaly 2: monotonic reads
 
 ```text
@@ -201,6 +213,21 @@ something stronger says so in code that a reviewer can see:
 order = orders.get(id)                                # eventual, any replica
 order = orders.get(id, consistency=READ_YOUR_WRITES)  # visible decision
 ```
+
+> [!CHECK] Why is a write-position token more exact than reading from the leader
+> for N seconds?
+>
+> The token identifies the write's replication position. The router
+> chooses a replica already past it, or the replica waits until it
+> catches up. A fixed time window guesses at lag and can expire too
+> early or send unnecessary reads to the leader.
+
+> [!CHECK] Why can sticky routing still violate monotonic reads after a replica
+> dies?
+>
+> Reads normally return to the same replica, but failure remaps the user
+> to another replica that may be further behind. Carry the last-seen
+> position and have the replacement wait for it before serving the read.
 
 ## What to take away
 

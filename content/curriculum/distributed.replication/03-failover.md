@@ -98,9 +98,9 @@ The standard tooling response is `pg_rewind` (Postgres) or an equivalent that
 rewinds the returning node to the divergence point and re-syncs from there. The
 writes are still lost — the tool just prevents the divergence becoming permanent.
 
-**The only real prevention is not acknowledging writes that only one node has.**
-Semi-synchronous replication — ack once a follower has it — trades write latency
-for the guarantee that a promotable follower holds every acknowledged write.
+> [!KEY] **The only real prevention is not acknowledging writes that only one node has.**
+> Semi-synchronous replication — ack once a follower has it — trades write latency
+> for the guarantee that a promotable follower holds every acknowledged write.
 
 ## Step 4: split brain, and fencing
 
@@ -156,6 +156,14 @@ and standard in traditional HA clustering.
 a majority of nodes and must renew it; a minority partition cannot elect
 anything and the old leader's lease expires on its own. This is what Raft-based
 systems do, and why they are so much easier to operate correctly.
+
+```mermaid
+flowchart TB
+  A[Old leader writes] -->|token 5 accepted| B[Storage highest = 5]
+  B -->|new leader writes token 6| C[Storage highest = 6]
+  C -->|old leader resumes with token 5| D{Token below highest?}
+  D -->|5 is less than 6| E[Storage rejects stale write]
+```
 
 ## Automatic or manual?
 
@@ -237,6 +245,30 @@ This is worth checking for whatever you run, because "how long does a follower
 take to rejoin after a failover" is the number that determines how long you are
 running without redundancy afterwards — and running without redundancy is when
 the second failure happens.
+
+> [!PITFALL] Split brain: detecting an unreachable leader does not stop
+> it from accepting writes. Fence the old leader at the protected resource
+> so a stale leadership claim cannot corrupt the new leader's data.
+
+> [!INTERVIEW] State RPO and RTO separately, then trace detect, elect,
+> promote and redirect. Explain which acknowledged writes the promoted
+> follower holds and how storage rejects the returning old leader.
+
+> [!CHECK] Why must storage enforce a fencing token instead of trusting a leader
+> to stop itself?
+>
+> A paused or partitioned leader may not learn that it was replaced.
+> Storage records the highest term it has seen: after accepting token 6,
+> it rejects the old leader's token 5. Safety no longer depends on the
+> old leader knowing its status.
+
+> [!CHECK] Are RPO 0 and asynchronous replication compatible in this chapter's
+> failover model?
+>
+> No. Async acknowledgement can precede replication, so failure can lose
+> successful writes. RPO 0 requires the write to reach a promotable
+> follower before acknowledgement, using synchronous or semi-synchronous
+> replication at a latency cost.
 
 ## What to take away
 

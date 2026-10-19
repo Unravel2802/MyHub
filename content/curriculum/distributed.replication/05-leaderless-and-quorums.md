@@ -116,6 +116,15 @@ enabled is not offering what the inequality suggests.
 whether it does so before or after returning to the client differs by system and
 by setting, and "before" costs latency.
 
+```mermaid
+flowchart TB
+  W[Write quorum] -->|W=3 acknowledgements| A[Replicas 1 and 2]
+  W -->|write v2| I[Replica 3]
+  R[Read quorum] -->|R=3 responses| B[Replicas 4 and 5]
+  R -->|read v2| I
+  I -->|shared replica| O[Read and write sets overlap]
+```
+
 ## Keeping replicas converged
 
 Two mechanisms, and both are needed.
@@ -225,6 +234,26 @@ The two cells worth reading together are "failover complexity: high" for single
 leader and "none" for leaderless. That is the real trade at the heart of Dynamo's
 design: it gave up ordering and constraints to eliminate the entire class of
 failover problems from the previous chapter.
+
+> [!PITFALL] Sloppy quorum: accepting writes on substitute reachable
+> nodes preserves availability but can leave the read set with no copy of
+> the write. R + W > N assumes sets drawn from the same home replicas;
+> hinted handoff restores data later, not the overlap during the partition.
+
+> [!CHECK] For N=5, W=3 and R=3, why must the read and write sets overlap?
+>
+> If disjoint, the sets would need 3 + 3 = 6 distinct replicas, but only
+> 5 home replicas exist. Therefore they share at least one. This proves
+> overlap, not linearizability under concurrent writes or sloppy
+> quorums.
+
+> [!CHECK] Why must a replica offline beyond the tombstone grace period be
+> rebuilt?
+>
+> Its peers may already have collected the delete markers while it still
+> holds the old rows. On rejoining, repair can mistake those rows for
+> missing data and resurrect them. Rebuilding from current peers avoids
+> reintroducing the stale values.
 
 ## What to take away
 

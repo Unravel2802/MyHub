@@ -592,7 +592,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** A–D and the polish PR approved and merged 2026-10-18. Systems Design is the first fully augmented track.
+**Status:** DS1 done, awaiting review
 
 ---
 
@@ -983,3 +983,12 @@ and no page-level horizontal scroll at 390px.
   radius to show neighbour lookup, candidate filtering and road-ETA reranking.
 - `systems-design.case-collab`: step through concurrent local edits, offline
   reconnection and relative cursor positions without persisting awareness.
+
+- `distributed.fundamentals`: vary fan-out and per-call tail probability to
+  show how the slowest dependency determines the parent request's latency.
+- `distributed.rpc`: step producer and consumer rates through a bounded queue
+  to compare blocking, dropping and rejecting when capacity is reached.
+- `distributed.time`: step through send and receive events while comparing
+  Lamport timestamps and vector-clock concurrency verdicts.
+- `distributed.replication`: select read and write sets from home replicas,
+  then enable sloppy quorums to expose when overlap no longer holds.

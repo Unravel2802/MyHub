@@ -37,6 +37,17 @@ you what to give up:
   durability     → needs writes on stable storage in >1 place BEFORE ack
 ```
 
+```chart
+type: bar
+scale: linear
+unit: ms
+title: Read locality in the chapter's example
+caption: Nearby copies reduce propagation delay but add consistency work.
+---
+Local replica read: 1
+Cross-continent read: 150
+```
+
 Note the tension between 3 and everything: replicas near users are far apart, so
 keeping them consistent costs the speed of light. That is the trade the whole
 rest of the track keeps returning to.
@@ -78,12 +89,12 @@ Every replication system is one of these three, or a hybrid.
 | Operational complexity | low | **high** | medium |
 | Ordering | total, per leader | per-leader only | none inherent |
 
-**Default to single leader.** It is what every relational database does, it makes
-conflicts structurally impossible, and it gives you a total order for free. Move
-off it only when a specific requirement forces you: writes must continue during a
-partition, or writes must be local in several regions. Those are real
-requirements, and they are rarer than the architectural enthusiasm for
-multi-master suggests.
+> [!KEY] **Default to single leader.** It is what every relational database does, it makes
+> conflicts structurally impossible, and it gives you a total order for free. Move
+> off it only when a specific requirement forces you: writes must continue during a
+> partition, or writes must be local in several regions. Those are real
+> requirements, and they are rarer than the architectural enthusiasm for
+> multi-master suggests.
 
 ## What actually gets replicated
 
@@ -187,6 +198,15 @@ told they succeeded. Whether that is acceptable is a product decision — it is
 fine for a view counter, not for orders — but it must be a *decision*, because
 the default in most systems is async.
 
+```mermaid
+flowchart TB
+  C[Client] -->|write| L[Leader]
+  L -->|replicate write| F[Required follower]
+  L -->|async; not awaited| A[Follower may lag]
+  F -->|durable ack| W[Leader waits for required ack]
+  W -->|commit acknowledged| R[Client receives success]
+```
+
 ## Chain and other topologies
 
 How replicas are wired matters at scale:
@@ -211,6 +231,20 @@ With 50 replicas, a star topology means the leader sends every write 50 times,
 and its network becomes the bottleneck long before its CPU does. Trees or chains
 fan the work out. The trade is failure handling: a broken link in a chain stalls
 everything behind it, so systems using them need explicit repair logic.
+
+> [!CHECK] How many acknowledged writes are at risk with 100 ms of async lag at
+> 1,000 writes/s?
+>
+> Convert 100 ms to 0.1 seconds. Multiplying 1,000 writes/s × 0.1 s
+> gives 100 writes acknowledged by the leader but not yet replicated.
+> Losing the leader can lose those writes.
+
+> [!CHECK] Why does adding ten replicas not multiply write capacity by ten?
+>
+> Every replica must apply every write. Replicas can divide read
+> traffic, but ten replicas perform ten copies of the write work rather
+> than dividing it. Replication serves availability, read throughput,
+> locality or durability; it is not write partitioning.
 
 ## What to take away
 

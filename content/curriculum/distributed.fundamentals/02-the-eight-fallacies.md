@@ -48,6 +48,15 @@ The pattern — write the intent durably, then act on it asynchronously with
 retries — is the **transactional outbox**, and it is the standard answer to
 "this call might not happen". You will meet it again in distributed transactions.
 
+```mermaid
+flowchart TB
+  A[Order request] -->|insert pending order| B[(Database)]
+  A -->|enqueue in same transaction| C[(Outbox)]
+  C -->|durable intent| D[Worker]
+  D -->|reserve stock with retries| E[Inventory]
+  D -->|send confirmation| F[Email]
+```
+
 ## 2. Latency is zero
 
 **The assumption:** a call to another service is roughly as cheap as a call to
@@ -226,6 +235,24 @@ The practical form. For each remote call in a design, ask:
 
 Eight questions, and they will find more real defects in an hour of design
 review than a week of load testing.
+
+> [!PITFALL] Cached topology: resolving an address once at import leaves
+> the client calling a replaced pod. Discovery, TTLs and connection draining
+> must account for endpoints changing while the caller stays alive.
+
+> [!CHECK] How does batching remove the chapter's N+1 product lookup?
+>
+> The original fetches the order list once and then fetches each of 200
+> products separately: 201 round trips. Collecting SKUs and calling
+> get_many replaces the product loop with one call, giving two round
+> trips total.
+
+> [!CHECK] Why does resolving a backend IP once at import fail during a rolling
+> deploy?
+>
+> The replacement pod has a different address, while the process keeps
+> the cached address. Honour DNS TTLs or use service discovery and
+> health-checked pools so calls can follow topology changes.
 
 ## What to take away
 

@@ -27,10 +27,20 @@ test("sequence message labels paint a surface backing beneath their text", async
     // Check the rendered SVG, including the new token colour after re-theming.
     await expect
       .poll(() =>
-        label.evaluate((text) => {
+        page.evaluate(() => {
+          // Theme changes replace Mermaid's SVG. Query and inspect in one
+          // synchronous callback so a detached old label cannot escape the poll.
+          const text = Array.from(
+            document.querySelectorAll<SVGTextElement>("text.messageText"),
+          ).find((element) =>
+            element.textContent?.includes(
+              "Charge with provider idempotency key",
+            ),
+          );
           const frame = text
-            .closest("[data-mermaid-diagram]")!
-            .querySelector("section")!;
+            ?.closest("[data-mermaid-diagram]")
+            ?.querySelector("section");
+          if (!text || !frame) return null;
           const style = getComputedStyle(text);
           const surface = getComputedStyle(frame).backgroundColor;
           return {

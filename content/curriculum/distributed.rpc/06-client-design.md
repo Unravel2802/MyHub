@@ -38,12 +38,12 @@ The settings that matter, and the failure each one prevents:
 | **Acquire timeout** | 1 s or less | Unbounded waiting when the pool is exhausted |
 | Max connection lifetime | 5–30 min | Sticking to instances that should have rotated |
 
-**The acquire timeout is the one people omit**, and its absence produces a
-distinctive failure: the service appears to hang rather than error. Every request
-is waiting for a connection, none are timing out, the thread pool fills, and
-health checks fail for reasons unrelated to the actual problem. A bimodal latency
-histogram — most requests fast, a cluster at exactly the acquire timeout — is the
-signature of pool exhaustion.
+> [!KEY] **The acquire timeout is the one people omit**, and its absence produces a
+> distinctive failure: the service appears to hang rather than error. Every request
+> is waiting for a connection, none are timing out, the thread pool fills, and
+> health checks fail for reasons unrelated to the actual problem. A bimodal latency
+> histogram — most requests fast, a cluster at exactly the acquire timeout — is the
+> signature of pool exhaustion.
 
 **Max connection lifetime** is subtler and matters specifically in autoscaled
 environments. A pooled connection pins you to one server instance; without a
@@ -115,6 +115,16 @@ returning errors or is much slower than its peers, then probe it periodically to
 see whether it has recovered. It is a circuit breaker applied per endpoint rather
 than per dependency, and it is what stops one bad instance degrading a
 percentage of all requests.
+
+```mermaid
+flowchart TB
+  A[RPC call] -->|discover endpoints| B[Sample two backends]
+  B -->|choose less loaded| C[Acquire pooled connection]
+  C -->|acquired within timeout| D[Send request]
+  C -->|acquire timeout| E[Fail promptly]
+  D -->|response or error| F[Release connection to pool]
+  F -->|lifetime limit reached| G[Rotate connection]
+```
 
 ## Health checks: the distinction that matters
 
@@ -211,6 +221,21 @@ Pulling this chapter and the timeouts chapter together:
 Configure this **once, in a shared client library**, rather than per service.
 Every service that configures its own HTTP client will get at least one of these
 wrong, and the one it gets wrong will be different each time.
+
+> [!CHECK] What concurrency does Little's Law give for 1,000 req/s at 5 ms?
+>
+> Convert 5 ms to 0.005 seconds, then multiply: 1,000 × 0.005 = 5 in-
+> flight requests. The chapter starts near a pool of 10, then checks
+> downstream capacity; 200 connections would permit unnecessary
+> overload.
+
+> [!CHECK] Why must a database health check belong to readiness rather than
+> liveness?
+>
+> A database blip would make every liveness probe fail and restart all
+> instances, adding restart load to the struggling database. Readiness
+> removes instances from traffic without restarting otherwise
+> functioning processes.
 
 ## What to take away
 

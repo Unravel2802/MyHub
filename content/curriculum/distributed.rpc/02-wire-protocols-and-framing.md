@@ -113,6 +113,25 @@ connection instead of starting over.
 | Header compression | none | HPACK | QPACK |
 | Connection migration | no | no | yes |
 
+```mermaid
+flowchart TB
+  L[Packet lost] -->|gap in TCP byte stream| T[TCP waits for retransmit]
+  T -->|ordered bytes withheld| A[HTTP/2 streams stall]
+  L -->|QUIC per-stream reliability| Q[Affected stream waits]
+  Q -->|other streams have their bytes| R[Other streams continue]
+```
+
+```chart
+type: bar
+scale: linear
+unit: bytes
+title: The illustrated user message on the wire
+caption: Sizes stated for the chapter's JSON and Protobuf example.
+---
+JSON: 31
+Protobuf: 5
+```
+
 ## Text versus binary encoding
 
 | | Text (JSON) | Binary (Protobuf) |
@@ -217,6 +236,21 @@ single backend behind a naive L4 load balancer will not balance**: one long-live
 connection carries every request, so it all lands on one instance. This is a
 surprisingly common production incident, and the fix is an L7 load balancer that
 balances at the request level, or client-side load balancing.
+
+> [!CHECK] Why does HTTP/2 still stall unrelated streams on packet loss?
+>
+> HTTP/2 interleaves frames on a single TCP byte stream. TCP withholds
+> bytes after a gap until retransmission fills it, so streams whose
+> packets arrived can still be blocked. QUIC provides reliability per
+> stream.
+
+> [!CHECK] Why must the chapter's large integer ID cross a JSON boundary as a
+> string?
+>
+> The example sends 9007199254740993 but JavaScript reads
+> 9007199254740992. Number uses floating point and cannot represent that
+> integer exactly. A string preserves the identifier's digits without
+> numeric rounding.
 
 ## What to take away
 

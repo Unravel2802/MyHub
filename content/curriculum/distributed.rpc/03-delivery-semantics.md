@@ -110,6 +110,22 @@ The unique constraint is doing the concurrency control. This shape — insert a
 deduplication row in the same transaction as the effect, and let the database
 reject the second one — is the workhorse pattern for at-least-once consumers.
 
+```mermaid
+sequenceDiagram
+  participant B as Broker
+  participant W as Worker
+  participant D as Database
+  B->>W: Event
+  W->>D: Unique ID plus effect
+  Note over D: One transaction
+  D-->>W: Commit
+  W--xB: Ack lost
+  B->>W: Redeliver event
+  W->>D: Same unique ID
+  D-->>W: Duplicate rejected
+  W-->>B: Ack without new effect
+```
+
 ## "Exactly once" — what it can and cannot mean
 
 The claim in its literal form is impossible. A message is delivered by sending
@@ -239,6 +255,30 @@ semantics, systems that handle money run a reconciliation job that compares
 independent records and repairs differences — because the guarantees hold only
 as far as the code implementing them is correct, and reconciliation is what
 catches the case where it was not.
+
+> [!PITFALL] Deduplication race: checking an in-memory set or reading a
+> marker before writing it does not arbitrate concurrent consumers. The
+> unique marker and effect need one atomic transactional boundary.
+
+> [!INTERVIEW] For an exactly-once claim, name the effect, the transaction
+> boundary and the deduplication window. Then trace a crash after the
+> effect but before acknowledgement, including any external call.
+
+> [!CHECK] How can concurrent redelivery defeat a read-then-write deduplication
+> check?
+>
+> Both workers can read that the event is absent before either writes
+> its marker. Both then apply the effect. Inserting a unique event ID in
+> the same transaction as the effect lets the database reject the
+> duplicate atomically.
+
+> [!CHECK] Does a Kafka transaction make an external HTTP side effect exactly
+> once?
+>
+> The transaction commits Kafka offsets and Kafka output together. An
+> external HTTP call is outside that boundary, so its effect is not
+> covered. The external provider's own idempotency mechanism must
+> protect that leg.
 
 ## What to take away
 

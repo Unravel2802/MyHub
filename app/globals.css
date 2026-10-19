@@ -707,3 +707,28 @@ body {
   font-family: var(--font-geist-mono), monospace;
   font-size: 12px;
 }
+
+/* Only the chapter body's direct opening paragraph gets an initial. The
+   fallback uses Source Serif's cap height to span the first two baselines. */
+[data-curriculum-reader] .curriculum-main > p:first-child::first-letter {
+  float: left;
+  font-family: var(--font-reading), Georgia, serif;
+  font-size: 3.5em;
+  font-weight: 600;
+  line-height: 0.85;
+  margin-block-start: 0.02em;
+  margin-inline-end: 0.12em;
+  color: var(--track);
+}
+
+@supports (initial-letter: 2) or (-webkit-initial-letter: 2) {
+  [data-curriculum-reader] .curriculum-main > p:first-child::first-letter {
+    float: none;
+    font-size: inherit;
+    line-height: normal;
+    margin-block-start: 0;
+    margin-inline-end: 0.2em;
+    -webkit-initial-letter: 2;
+    initial-letter: 2;
+  }
+}

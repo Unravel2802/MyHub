@@ -7,8 +7,8 @@ summary: The OWASP Top 10 in practice — the same trust-boundary mistake, reapp
 Nearly every vulnerability in this chapter is a variation on ONE mistake:
 treating attacker-controlled input as though it were trusted, at some point
 where that trust matters. The specific forms it takes — SQL injection, XSS,
-SSRF — look unrelated on the surface; underneath, they're the same trust-
-boundary failure from the Security Foundations chapter, applied to a
+SSRF — look unrelated on the surface; underneath, they're the same
+trust-boundary failure from the Security Foundations chapter, applied to a
 different sink.
 
 ## Injection: data treated as code
@@ -203,7 +203,6 @@ different sink.
    code is equivalent to running attacker-supplied code directly — a
    data-only format (JSON, Protobuf) eliminates the vulnerability class by
    having no mechanism to embed behavior at all.
-5. Every vulnerability in this chapter is the same failure — attacker-
-   controlled input reaching a sensitive operation without being treated as
-   untrusted — applied to a different sink, not ten unrelated things to
-   memorize.
+5. Every vulnerability in this chapter is the same failure — attacker-controlled
+   input reaching a sensitive operation without being treated as untrusted —
+   applied to a different sink, not ten unrelated things to memorize.

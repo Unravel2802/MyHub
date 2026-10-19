@@ -131,6 +131,6 @@ trains most modern machine learning models.
    reality with the model's predicted distribution — "loss function" and
    "coding efficiency" are the same object.
 5. KL divergence isolates the cost of a model being wrong from the true
-   distribution's own inherent unpredictability — it differs from cross-
-   entropy by exactly the true distribution's entropy, a constant during
+   distribution's own inherent unpredictability — it differs from
+   cross-entropy by exactly the true distribution's entropy, a constant during
    training, which is why minimizing either one is equivalent.

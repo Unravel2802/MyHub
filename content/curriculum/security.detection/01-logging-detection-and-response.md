@@ -153,8 +153,8 @@ asks genuinely different questions of the same underlying data.
 4. Answering a real investigation's questions needs correlated data across
    systems, which is exactly why centralized log aggregation matters
    enormously for security, not merely for convenience.
-5. A security incident follows the same detect-mitigate-investigate-
-   postmortem structure as any other, with one addition: preserving
-   forensic evidence sometimes means isolating rather than immediately
-   restoring a compromised system, creating a real tension with mitigate-
-   before-diagnose that a reliability outage doesn't have.
+5. A security incident follows the same detect-mitigate-investigate-postmortem
+   structure as any other, with one addition: preserving forensic evidence
+   sometimes means isolating rather than immediately restoring a compromised
+   system, creating a real tension with mitigate-before-diagnose that a
+   reliability outage doesn't have.

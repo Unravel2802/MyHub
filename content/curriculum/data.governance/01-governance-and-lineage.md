@@ -138,6 +138,6 @@ rule, it's a hope.
    hold both freely-shareable aggregates and genuinely sensitive PII side
    by side.
 5. Governance tooling turns retention and deletion from documented policy
-   into mechanical enforcement — an automated retention job, and lineage-
-   traced deletion that reaches every downstream table a user's data ever
-   propagated into.
+   into mechanical enforcement — an automated retention job, and lineage-traced
+   deletion that reaches every downstream table a user's data ever propagated
+   into.

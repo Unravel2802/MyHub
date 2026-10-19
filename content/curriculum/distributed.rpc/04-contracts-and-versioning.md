@@ -134,8 +134,8 @@ catch that.
 
 ## Contract testing
 
-Integration testing every pair of services is quadratic and slow. **Consumer-
-driven contract testing** inverts it:
+Integration testing every pair of services is quadratic and slow.
+**Consumer-driven contract testing** inverts it:
 
 ```text
   1. each CONSUMER writes what it needs from the provider:

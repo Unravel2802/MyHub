@@ -146,6 +146,6 @@ distracting one.
    genuine physical response some users have to motion, and it needs an
    actual functional fallback, not just an instant version of the same
    effect.
-5. A compositor-only animation is cheap, not free — enough competing main-
-   thread work can still cause it to drop frames, which is why animation
+5. A compositor-only animation is cheap, not free — enough competing
+   main-thread work can still cause it to drop frames, which is why animation
    performance needs testing under realistic, not idle, conditions.

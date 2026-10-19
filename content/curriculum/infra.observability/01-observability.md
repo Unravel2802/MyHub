@@ -141,8 +141,8 @@ that only has one of them has real blind spots for the other two.
    staring at a dashboard for one specific failed request) wastes real
    time.
 2. Structured logging makes a field directly queryable instead of buried in
-   free text a machine has to parse back out — the errors-and-failure-
-   design discipline applied to operational logging.
+   free text a machine has to parse back out — the
+   errors-and-failure-design discipline applied to operational logging.
 3. A high-cardinality metric label (a user id, a raw request id) creates a
    separate time series per distinct value, which is a real, common
    incident cause when a metrics backend's cost or performance suddenly

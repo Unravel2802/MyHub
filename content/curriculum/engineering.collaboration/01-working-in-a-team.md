@@ -150,9 +150,9 @@ stops being reliable.
    hours and a timezone away actually needs, not referencing a conversation
    they weren't part of.
 2. Code ownership is a spectrum, and most functioning teams deliberately
-   land between the extremes — strong ownership for critical, high-blast-
-   radius systems, looser collective ownership where a bottleneck would
-   cost more than the accountability gap.
+   land between the extremes — strong ownership for critical, high-blast-radius
+   systems, looser collective ownership where a bottleneck would cost more than
+   the accountability gap.
 3. Stating the reasoning behind a position, not just the position itself,
    is what turns disagreement into something resolvable through discussion
    rather than two people repeating conclusions louder at each other.

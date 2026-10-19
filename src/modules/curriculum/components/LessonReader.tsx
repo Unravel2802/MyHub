@@ -55,7 +55,7 @@ function curriculumComponents(
         <div className="group relative mt-12 first:mt-0 [&>h2]:inline">
           <span
             aria-hidden
-            className="mr-2 inline-block font-mono text-xs font-semibold text-[var(--track)]"
+            className="mr-2 inline-block align-baseline font-mono text-base font-semibold tabular-nums text-[var(--track)]"
           >
             {String(entry?.number ?? 1).padStart(2, "0")}
           </span>

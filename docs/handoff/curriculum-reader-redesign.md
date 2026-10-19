@@ -592,7 +592,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** DS1 done, awaiting review
+**Status:** DS1 approved 2026-10-19, pending a 4-line content fix (see "DS1 review"). Reader follow-ups 5–6 go on `curriculum-reader-tweaks`.
 
 ---
 
@@ -970,6 +970,48 @@ directories, so each batch only has to add its track prefix. It applies the
 same assertions to every chapter: no `data-mermaid-error`, no "Chart error" or
 "Widget not found", every diagram renders an svg, no "Scroll →" at 1440px,
 and no page-level horizontal scroll at 390px.
+
+## DS1 review — 2026-10-19 (Claude)
+
+**Approved, after one small content fix.** In an isolated worktree on port
+3100, unit tests (1,573) and the full E2E suite (212, including the new
+track-driven gate over 18 Systems Design + 23 Distributed chapters) all pass.
+Codex had switched the shared checkout to `curriculum-reader-tweaks`
+mid-review, so the first run was discarded.
+
+What was checked independently:
+
+- **Prose.** Every original line survives in all 23 chapters.
+- **Quotas.** Per chapter: 1 diagram, ≤1 chart, ≤2 KEY, exactly 2 CHECK.
+  Per topic: 3 PITFALL and 1 INTERVIEW.
+- **Charts.** Every value is stated in its chapter.
+- **Answers.** All 46 CHECK answers were re-derived and are correct.
+- **Diagrams.** 12 TB flowcharts, 9 sequence diagrams and 1 state diagram,
+  with no LR.
+
+**Content fix on this branch (blocking):** four added callout lines split a
+hyphenated word across source lines, which renders with a stray space
+("non-negative- balance"). Join each compound onto one line, change no
+wording, then re-run the gates:
+
+- `distributed.replication/04-multi-leader.md`: "non-negative-" / "balance"
+- `distributed.rpc/04-contracts-and-versioning.md`: "longest-" / "period"
+- `distributed.rpc/06-client-design.md`: "in-" / "flight"
+- `distributed.time/01-why-physical-clocks-lie.md`: "real-" / "time"
+
+The same slip exists in about 17 older chapters on `main`. That's a
+separate cleanup task with a content gate, not part of this batch.
+
+**Reader follow-ups, for `curriculum-reader-tweaks`:**
+
+5. **Chart labels clip on the left.** "In-process stock reservation" on
+   `distributed.fundamentals/01-why-distribute` renders as
+   "ı-process stock reservation": the label column is a fixed 220 units.
+   Size it to the longest label, within a cap. Past the cap, truncate with an
+   ellipsis and keep the full label in the row's aria-label and tooltip.
+6. **Redundant axis titles.** A lone "ms" sits under ticks that already read
+   "0 ms … 2 ms". Show the axis title only when the tick labels don't already
+   carry the unit, which in practice means only `$…` units.
 
 ## Candidate widgets
 

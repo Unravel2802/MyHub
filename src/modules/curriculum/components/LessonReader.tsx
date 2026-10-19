@@ -188,7 +188,7 @@ export function LessonReader({
         completedKeys={new Set(Object.keys(completed))}
       />
       <div className="row-start-3 min-w-0 min-[1060px]:col-start-1 min-[1060px]:row-start-2">
-        <div className="max-w-[68ch] [font-family:var(--font-reading),Georgia,serif] text-[18px] leading-[1.65] text-body [&_h2]:font-sans [&_h2]:text-[27px] [&_h2]:font-[650] [&_h2]:leading-tight [&_h2]:text-foreground [&>.curriculum-main>p:first-child]:text-[19px] [&>.curriculum-main>p:first-child]:first-letter:float-left [&>.curriculum-main>p:first-child]:first-letter:mr-2 [&>.curriculum-main>p:first-child]:first-letter:text-[3.4em] [&>.curriculum-main>p:first-child]:first-letter:font-sans [&>.curriculum-main>p:first-child]:first-letter:font-semibold [&>.curriculum-main>p:first-child]:first-letter:text-[var(--track)]">
+        <div className="max-w-[68ch] [font-family:var(--font-reading),Georgia,serif] text-[18px] leading-[1.65] text-body [&_h2]:font-sans [&_h2]:text-[27px] [&_h2]:font-[650] [&_h2]:leading-tight [&_h2]:text-foreground [&>.curriculum-main>p:first-child]:text-[19px]">
           <Markdown
             className="curriculum-main !text-[18px] [&_p]:leading-[1.65] [&_li]:leading-[1.65]"
             components={components}

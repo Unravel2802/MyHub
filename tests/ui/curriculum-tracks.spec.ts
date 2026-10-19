@@ -7,33 +7,51 @@ import {
 } from "./supabaseCurriculumMock";
 
 const contentRoot = path.join(process.cwd(), "content/curriculum");
-const chapters = readdirSync(contentRoot)
-  .filter((topic) => topic.startsWith("systems-design."))
-  .sort()
-  .flatMap((topic) =>
-    readdirSync(path.join(contentRoot, topic))
-      .filter((file) => file.endsWith(".md"))
-      .sort()
-      .map((file) => ({
-        topic,
-        lesson: file.replace(/\.md$/, ""),
-        diagrams: (
-          readFileSync(path.join(contentRoot, topic, file), "utf8").match(
-            /^```mermaid\s*$/gm,
-          ) ?? []
-        ).length,
-      })),
-  );
+// Extend the distributed allowlist as later batches are augmented.
+const tracks = [
+  { prefix: "systems-design", expectedChapters: 18 },
+  {
+    prefix: "distributed",
+    topics: ["fundamentals", "rpc", "time", "replication"],
+    expectedChapters: 22,
+  },
+];
+const chapters = tracks.flatMap((track) => {
+  const chapters = readdirSync(contentRoot)
+    .filter(
+      (topic) =>
+        topic.startsWith(`${track.prefix}.`) &&
+        (!track.topics ||
+          track.topics.some((id) => topic === `${track.prefix}.${id}`)),
+    )
+    .sort()
+    .flatMap((topic) =>
+      readdirSync(path.join(contentRoot, topic))
+        .filter((file) => /^\d{2}-.+\.md$/.test(file))
+        .sort()
+        .map((file) => ({
+          topic,
+          lesson: file.replace(/\.md$/, ""),
+          diagrams: (
+            readFileSync(path.join(contentRoot, topic, file), "utf8").match(
+              /^```mermaid\s*$/gm,
+            ) ?? []
+          ).length,
+        })),
+    );
 
-// Keep the finished estimation example in the same rendering gate as the
-// seventeen augmented chapters. Counts come from the files, not a second list.
-test("Systems Design gate covers all 18 chapters", () => {
-  expect(chapters).toHaveLength(18);
-  for (const chapter of chapters) expect(chapter.diagrams).toBeGreaterThan(0);
+  test(`${track.prefix} gate covers all ${track.expectedChapters} chapters`, () => {
+    expect(chapters).toHaveLength(track.expectedChapters);
+    if (track.prefix === "systems-design") {
+      for (const chapter of chapters)
+        expect(chapter.diagrams).toBeGreaterThan(0);
+    }
+  });
+  return chapters;
 });
 
 for (const chapter of chapters) {
-  test(`${chapter.topic}: visuals render and stay within the page`, async ({
+  test(`${chapter.topic}/${chapter.lesson}: visuals render and stay within the page`, async ({
     page,
   }) => {
     await mockSupabaseCurriculum(page, new FakeCurriculumDb());

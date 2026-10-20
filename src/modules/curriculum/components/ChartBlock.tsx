@@ -1,13 +1,18 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   formatChartRange,
   formatChartValue,
   parseChartBlock,
   type ChartSpec,
 } from "../chartBlock";
-import { CHART_DIMENSIONS, chartAxisTitle, chartLayout } from "../chartLayout";
+import {
+  CHART_DIMENSIONS,
+  chartAxisTitle,
+  chartLabelColumn,
+  chartLayout,
+} from "../chartLayout";
 import { Figure } from "./Figure";
 import { VisualBlockFrame } from "./VisualBlockFrame";
 
@@ -25,16 +30,36 @@ function BarChart({ spec }: { spec: ChartSpec }) {
   const tooltipId = useId();
   const active = focused ?? hovered;
   const layout = chartLayout(spec);
+  const svg = useRef<SVGSVGElement>(null);
+  const [measureLabel, setMeasureLabel] = useState<
+    ((label: string) => number) | undefined
+  >();
+  useEffect(() => {
+    let disposed = false;
+    void document.fonts.ready.then(() => {
+      if (disposed || !svg.current) return;
+      const context = document.createElement("canvas").getContext("2d");
+      if (!context) return;
+      const style = getComputedStyle(svg.current);
+      context.font = `${style.fontWeight} ${CHART_DIMENSIONS.fontSize}px ${style.fontFamily}`;
+      setMeasureLabel(
+        () => (label: string) => context.measureText(label).width,
+      );
+    });
+    return () => {
+      disposed = true;
+    };
+  }, []);
   const {
     left,
     plotWidth: width,
-    top,
-    rowHeight,
-    viewBoxWidth,
-    fontSize,
-    minWidth,
-    barHeight,
-  } = CHART_DIMENSIONS;
+    displayLabels,
+  } = chartLabelColumn(
+    spec.rows.map((row) => row.label),
+    measureLabel,
+  );
+  const { top, rowHeight, viewBoxWidth, fontSize, minWidth, barHeight } =
+    CHART_DIMENSIONS;
   const bottom = top + spec.rows.length * rowHeight;
   const height = bottom + 62;
   const x = (value: number) => left + layout.ratio(value) * width;
@@ -44,9 +69,10 @@ function BarChart({ spec }: { spec: ChartSpec }) {
   const row = active === null ? null : spec.rows[active];
   const axisTitle = chartAxisTitle(spec.unit);
   return (
-    <>
+    <div className="relative">
       <div className="overflow-x-auto p-3">
         <svg
+          ref={svg}
           viewBox={`0 0 ${viewBoxWidth} ${height}`}
           className="w-full font-mono"
           style={{ minWidth, fontSize }}
@@ -114,12 +140,13 @@ function BarChart({ spec }: { spec: ChartSpec }) {
                   stroke={focused === index ? "var(--track)" : "transparent"}
                 />
                 <text
-                  x={left - 12}
+                  data-chart-label
+                  x={left - CHART_DIMENSIONS.labelGap}
                   y={y + 19}
                   textAnchor="end"
                   fill="var(--body)"
                 >
-                  {entry.label}
+                  {displayLabels[index]}
                 </text>
                 {entry.low === entry.high ? (
                   <path d={barPath(baseline, end, y + 4)} fill={color} />
@@ -180,7 +207,7 @@ function BarChart({ spec }: { spec: ChartSpec }) {
           ))}
         </tbody>
       </table>
-    </>
+    </div>
   );
 }
 

@@ -592,7 +592,7 @@ for a later PR, not into the content.
 - This file's status line below updated, and `docs/handoff/curriculum.md`'s
   "Adding material" section points here.
 
-**Status:** DS1 approved 2026-10-19, pending a 4-line content fix (see "DS1 review"). Reader follow-ups 5–6 go on `curriculum-reader-tweaks`.
+**Status:** DS1 approved and merged 2026-10-19, with reader fixes 5–6. Next: DS2 (partitioning, consistency, consensus, transactions).
 
 ---
 

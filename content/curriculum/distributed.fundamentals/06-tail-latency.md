@@ -34,9 +34,9 @@ For a distribution with this shape, the mean sits somewhere in the empty space
 between the bulk and the tail, describing neither. It is dragged upward by
 outliers while remaining far below them — the worst of both.
 
-**Use percentiles.** p50 is the typical experience, p99 is the bad experience,
-p99.9 is the experience of your most active users (see below), and max tells you
-what the system is capable of doing to someone.
+> [!KEY] **Use percentiles.** p50 is the typical experience, p99 is the bad experience,
+> p99.9 is the experience of your most active users (see below), and max tells you
+> what the system is capable of doing to someone.
 
 ## The tail is not rare
 
@@ -108,6 +108,32 @@ The defences:
 - **Reduce the fan-out.** Fewer, larger shards have a better tail than many
   small ones, because there are fewer chances to draw from the tail.
 
+```mermaid
+sequenceDiagram
+  participant P as Parent
+  participant A as First replica
+  participant B as Second replica
+  P->>A: Idempotent read
+  Note over P,A: No answer by p95
+  P->>B: Hedge the same read
+  B-->>P: First result wins
+  Note over P,A: Parent need not wait for slow replica
+```
+
+```chart
+type: bar
+scale: linear
+unit: %
+title: Chance of hitting p99 during a session
+caption: The chapter's rounded probabilities by request count.
+---
+1 request: 1
+10 requests: 10
+20 requests: 18
+100 requests: 63
+500 requests: 99
+```
+
 ## Where the tail comes from
 
 The slow requests are usually not slow *code*. The usual causes, roughly in
@@ -178,6 +204,24 @@ Guidance worth holding:
 - **Track the error budget, not just the number.** "We may exceed 300 ms for
   1% of requests" is a budget you can spend deliberately — on a risky deploy, a
   migration — rather than a line you must never cross.
+
+> [!PITFALL] Averaging percentiles: a mean of per-minute p99 values is
+> not the hour's p99. Merge the underlying latency distributions before
+> computing the percentile.
+
+> [!CHECK] Why does a page with 20 calls encounter a backend p99 request about
+> 18% of the time?
+>
+> Using the chapter's probability model, all calls avoid the slow case
+> with probability 0.99^20. Its complement, 1 - 0.99^20 ≈ 18%, is the
+> chance at least one call hits it. The page waits for its slowest call.
+
+> [!CHECK] Why does a response-driven load generator understate stalls?
+>
+> It stops sending while waiting for a stalled response. Requests that
+> should have arrived during the stall never enter the measurements.
+> Send at a fixed rate and measure from the scheduled send time to
+> include that waiting.
 
 ## What to take away
 

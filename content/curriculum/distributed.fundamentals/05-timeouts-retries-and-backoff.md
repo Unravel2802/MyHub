@@ -216,6 +216,15 @@ return a degraded response, or fail with a clear error. A circuit breaker that
 opens and then throws an unhandled exception has converted a slow dependency
 into a broken feature, which may not be an improvement.
 
+```mermaid
+stateDiagram-v2
+  direction TB
+  Closed --> Open: Failures exceed threshold
+  Open --> HalfOpen: Cooldown expires
+  HalfOpen --> Closed: Single probe succeeds
+  HalfOpen --> Open: Single probe fails
+```
+
 ## Load shedding: the server's side of the same problem
 
 Retries and circuit breakers are client-side. The server needs its own defence,
@@ -263,6 +272,24 @@ tuned with real measurements:
 The most common real-world configuration failures, in order: no jitter, retries
 at every layer, timeouts with no measurement behind them, and retrying
 non-idempotent operations.
+
+> [!PITFALL] Retry amplification: independent retries at every layer
+> multiply load on the dependency that is already failing. Backoff alone
+> does not bound that load; choose one retry layer and enforce a budget.
+
+> [!CHECK] How do four layers with three attempts each produce 81 requests at the
+> dependency?
+>
+> Each outer attempt triggers up to three attempts at the next layer.
+> Multiplication gives 3 × 3 × 3 × 3 = 81. Retry at one layer and impose
+> a traffic-level retry budget to bound the amplified load.
+
+> [!CHECK] Why must half-open admit only one probe?
+>
+> Opening removes load while the dependency recovers. A single
+> successful probe closes the circuit; a failed probe reopens it.
+> Releasing all waiting traffic during the probe can overload the
+> recovering service again.
 
 ## What to take away
 

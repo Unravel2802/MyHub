@@ -14,10 +14,10 @@ rather than returning a 503.
 
 Three reasons, and they are different:
 
-**Unbounded results.** An endpoint returning "all orders for this account" has no
-upper bound on response size. Unary means the server materialises the whole set
-in memory, then the client does too. One large customer turns a working endpoint
-into an OOM.
+> [!KEY] **Unbounded results.** An endpoint returning "all orders for this account" has no
+> upper bound on response size. Unary means the server materialises the whole set
+> in memory, then the client does too. One large customer turns a working endpoint
+> into an OOM.
 
 **Time to first byte.** A search that takes 3 seconds to complete can return its
 first results in 50 ms. Streaming lets the user see something immediately, which
@@ -93,6 +93,14 @@ That is the property to aim for. A pipeline where every stage exerts
 backpressure has a stable memory profile at any load; one where a single stage
 buffers without bound has a memory profile that depends on the worst mismatch
 that ever occurs.
+
+```mermaid
+flowchart TB
+  C[Slow consumer] -->|stops draining| B[Bounded queue fills]
+  B -->|put waits for room| P[Producer blocks]
+  P -->|upstream buffer fills| S[Source stops reading]
+  S -->|TCP receive window closes| R[Remote sender pauses]
+```
 
 ## Flow control in the protocols you already use
 
@@ -216,6 +224,26 @@ SSE is consistently underrated. For "server pushes updates to a browser" — whi
 is most real-time needs — it is plain HTTP, works through every proxy, reconnects
 automatically, and carries its own resumption mechanism. WebSocket is the right
 answer only when the client genuinely needs to push at high frequency too.
+
+> [!PITFALL] Defeating transport backpressure: eagerly draining a socket
+> into an unbounded application queue keeps TCP accepting data while RAM
+> fills. Bound the queue and deliberately block, drop or reject at capacity.
+
+> [!CHECK] How many messages accumulate after 10 seconds in the chapter's speed
+> mismatch?
+>
+> The producer supplies 10,000 msg/s and the consumer drains 1,000
+> msg/s. The backlog grows by 9,000 msg/s, so after 10 seconds it holds
+> 90,000 messages. An unbounded queue keeps growing until memory is
+> exhausted.
+
+> [!CHECK] Why persist the last processed event ID rather than the last received
+> one?
+>
+> Receiving an event does not mean its effect has completed.
+> Reconnecting after a receive but before processing would skip
+> unfinished work if the cursor had advanced. Persisting the processed
+> position resumes after completed effects.
 
 ## What to take away
 

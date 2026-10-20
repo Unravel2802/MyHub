@@ -177,6 +177,30 @@ structure and use timestamps only for relative durations *within* a service. If
 your tracing UI is drawing purely from timestamps, it will show impossible
 pictures, and the answer is to trust the causal structure over the numbers.
 
+```mermaid
+flowchart TB
+  A[Writer reads version 3] -->|update with version 3| B{Version is 3?}
+  B -->|yes: conditional update| C[Write status and increment version]
+  B -->|no: zero rows updated| D[Report conflict]
+  D -->|read current state| E[Reconsider operation]
+  E -->|retry with current version| B
+```
+
+```chart
+type: bar
+scale: linear
+unit: B
+title: Identifier sizes from the comparison table
+caption: Size alone does not determine ordering or coordination needs.
+---
+Auto-increment: 8
+UUIDv4: 16
+UUIDv7: 16
+ULID: 16
+Snowflake: 8
+Content hash: 32
+```
+
 ## Idempotency keys and time
 
 A detail that bites in production: idempotency keys need an expiry, and the
@@ -218,6 +242,25 @@ restart.
   Measure a duration                    monotonic clock, always
   Show a time to a human                wall clock, UTC, with offset
 ```
+
+> [!PITFALL] Hot partition key: one large customer's events can saturate
+> its partition while others sit idle. Splitting the key can restore
+> throughput, but gives up the ordering previously guaranteed for that user.
+
+> [!CHECK] Why can partitioning by region break ordering for one entity?
+>
+> Events for that entity can span regions and therefore different
+> independent partitions. Each partition preserves its own order but
+> supplies no order across the others. Partition by the entity ID when
+> its events must stay ordered.
+
+> [!CHECK] Why is a deduplication window based only on three 20-second backoffs
+> insufficient?
+>
+> Three capped backoffs suggest about a minute, but the chapter also
+> describes a crashed client resuming from a durable queue an hour
+> later. If the marker expires earlier, that retry executes again.
+> Derive retention from the longest possible retry path.
 
 ## What to take away
 

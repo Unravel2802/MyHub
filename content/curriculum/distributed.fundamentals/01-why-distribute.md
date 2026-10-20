@@ -134,6 +134,19 @@ choosing it, and it is a real bill:
 - **Debugging changes shape.** A stack trace becomes a trace ID and eight log
   streams whose timestamps do not agree.
 
+```chart
+type: bar
+scale: linear
+unit: ms
+title: Inventory calls before and after distribution
+caption: The same operations acquire a network round trip.
+---
+In-process inventory check: 0.001
+Remote inventory check: 2
+In-process stock reservation: 0.001
+Remote stock reservation: 2
+```
+
 ## The availability arithmetic
 
 Worth internalising, because it is counter-intuitive in both directions.
@@ -159,6 +172,16 @@ what this arithmetic assumes away.
 This is why real designs spread replicas across failure domains — different
 racks, zones, regions — and why staged rollouts exist: a deploy is a correlated
 failure waiting to happen, so you expose it to 1% of traffic first.
+
+```mermaid
+flowchart TB
+  A[Request] -->|requires service 1| B[Service 1]
+  B -->|requires service 2| C[Service 2]
+  C -->|requires service 3| D[Service 3]
+  D -->|requires service 4| E[Service 4]
+  E -->|requires service 5| F[Service 5]
+  F -->|all succeed: 0.999 to the fifth power| G[Request succeeds]
+```
 
 ## The eight-fallacy preview
 
@@ -199,6 +222,23 @@ often they turn out to be the actual answer:
 Then measure again. The right time to distribute is when you have evidence that
 one machine cannot do it — and when you have decided which of the four reasons
 above applies, because the reason determines the design.
+
+> [!INTERVIEW] State which measured constraint requires distribution:
+> capacity, availability, geography or isolation. Then name the latency,
+> partial-failure and operational costs that the design must pay.
+
+> [!CHECK] Why do five required services at 99.9% availability yield about 99.5%?
+>
+> Every service must work, so multiply: 0.999^5 ≈ 0.995. Adding required
+> dependencies lowers end-to-end availability unless redundancy buys it
+> back.
+
+> [!CHECK] Why is the three-replica availability calculation unsafe for replicas
+> in one rack?
+>
+> The formula multiplies independent failure probabilities. A shared
+> power supply or switch can fail all replicas together, so their
+> failures are correlated and the independence assumption does not hold.
 
 ## What to take away
 

@@ -62,11 +62,11 @@ Adding "email must be lowercase" or "quantity must be ≤ 100" is a breaking cha
 for any client currently sending values you just outlawed — and it will not show
 up in a schema diff.
 
-**Adding an enum value** is the most common accidental break. A client with an
-exhaustive `switch` over `status` throws when it receives `PARTIALLY_REFUNDED`
-for the first time. The defence has to be built in from the start: every consumer
-of an enum needs a default branch, and every producer should treat "add an enum
-value" as requiring a check that consumers tolerate unknowns.
+> [!KEY] **Adding an enum value** is the most common accidental break. A client with an
+> exhaustive `switch` over `status` throws when it receives `PARTIALLY_REFUNDED`
+> for the first time. The defence has to be built in from the start: every consumer
+> of an enum needs a default branch, and every producer should treat "add an enum
+> value" as requiring a check that consumers tolerate unknowns.
 
 ## Expand and contract
 
@@ -99,6 +99,15 @@ zero for longer than your longest-period consumer.
 
 The same four steps apply to database columns, event schemas, config keys and
 API fields. It is one pattern, not four.
+
+```mermaid
+flowchart TB
+  E[Expand] -->|write both fields and accept either| B[Backfill]
+  B -->|populate full_name| R[Migrate readers]
+  R -->|read full_name| W[Migrate writers]
+  W -->|write full_name; still accept name| T[Observe old-field usage]
+  T -->|unused beyond longest consumer period| C[Contract]
+```
 
 ## Schema formats and what they enforce
 
@@ -211,6 +220,23 @@ prose. Three rules:
   code, and guessing wrong causes either lost work or retry storms.
 - **Never leak internals.** A stack trace or a SQL error in an error body is an
   information disclosure and couples callers to your schema.
+
+> [!PITFALL] Premature contract: a successful reader rollout does not
+> prove an old field is unused. A rarely run batch consumer can still need
+> it; gate removal on instrumented reads and writes over its full period.
+
+> [!CHECK] Why is adding an enum value potentially breaking even when no field is
+> removed?
+>
+> An old consumer may use an exhaustive switch and throw on the new
+> value. It needs an unknown-value fallback before the producer emits
+> that value; an additive schema change alone does not prove behavioural
+> compatibility.
+
+> [!CHECK] What evidence makes removing name safe after migrating to full_name?
+>
+> Instrument reads and writes of the old field. Keep accepting it while
+> clients migrate, then require zero usage for longer than the longest-period consumer. Otherwise a monthly batch job can still depend on it.
 
 ## What to take away
 

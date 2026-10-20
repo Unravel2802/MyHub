@@ -50,6 +50,17 @@ and no retry that distinguishes them, because the information the client would
 need never reached it. This is not an engineering limitation to be worked
 around; it is a property of asynchronous networks.
 
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant S as Server
+  C->>S: Charge with client-generated key
+  S->>S: Commit effect and saved response together
+  S--xC: Response lost
+  C->>S: Retry with the same key
+  S-->>C: Replay saved response
+```
+
 ## The two generals problem
 
 The formal version, and the reason the above cannot be fixed.
@@ -70,10 +81,10 @@ only communicate by messengers who cross enemy territory and may be captured.
      │                                            │  ...
 ```
 
-**Theorem: there is no protocol that guarantees agreement.** Whatever finite
-sequence of messages you design, the last message might be lost, and its sender
-cannot know whether it arrived. Adding more acknowledgements moves the
-uncertainty; it never eliminates it.
+> [!KEY] **Theorem: there is no protocol that guarantees agreement.** Whatever finite
+> sequence of messages you design, the last message might be lost, and its sender
+> cannot know whether it arrived. Adding more acknowledgements moves the
+> uncertainty; it never eliminates it.
 
 This is a proof, not a difficulty. It means that "both sides definitely agree on
 whether this happened" is unachievable over a lossy link, and any design that
@@ -250,6 +261,19 @@ Design review questions that catch most of this:
 
 The most important of these is the fifth. A design that can half-succeed and has
 nothing that notices is a design that will accumulate silent corruption.
+
+> [!CHECK] A charge times out. Why is retrying with a newly generated key unsafe?
+>
+> The first charge may have committed and only its response was lost. A
+> new key identifies a new operation and bypasses deduplication. Reusing
+> the original key lets the server replay the committed response.
+
+> [!CHECK] Why does swapping the database update and queue publish not repair the
+> dual-write crash?
+>
+> Update then crash loses the event; publish then crash can announce an
+> uncommitted payment. Put the update and outbox row in one database
+> transaction, then let a retryable relay publish the row.
 
 ## What to take away
 

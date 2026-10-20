@@ -46,6 +46,27 @@ This is genuinely useful. Hand-writing the marshalling for every call would be
 tedious and error-prone, and generated stubs from a shared schema eliminate a
 whole class of mismatch bugs. The machinery is not the problem.
 
+```mermaid
+flowchart TB
+  C[Caller] -->|reserve sku and quantity| T[Client stub]
+  T -->|marshal and send bytes| S[Server skeleton]
+  S -->|unmarshal arguments| F[Reserve function]
+  F -->|result| S
+  S -->|serialise and reply| T
+  T -->|deserialised result or error| C
+```
+
+```chart
+type: bar
+scale: linear
+unit: round trips
+title: The order detail API boundary
+caption: Both paths serve the same order-detail use case.
+---
+Chatty API: 43
+Chunky API: 1
+```
+
 ## Why transparency failed
 
 In 1994, Waldo, Wyant, Wollrath and Kendall published *A Note on Distributed
@@ -193,6 +214,18 @@ Serialisation is ~7% here and grows fast with payload size — at 1 MB payloads 
 dominates everything else, which is the argument for binary formats. Connection
 setup is absent only because the pool was warm; a cold connection with TLS adds
 two round trips and would double the total.
+
+> [!CHECK] Why does remote.add_tag(o) leave the caller's object unchanged?
+>
+> A local call can mutate an object through its reference. A remote call
+> serialises and copies the object into the callee's address space.
+> Mutating that copy does not mutate the caller's original.
+
+> [!CHECK] How does getOrderDetail reduce the chapter's chatty order API?
+>
+> The chatty path has one order call, one items call, 40 product calls
+> and one customer call: 43 round trips. A use-case-shaped
+> getOrderDetail returns the needed aggregate in one call.
 
 ## What to take away
 

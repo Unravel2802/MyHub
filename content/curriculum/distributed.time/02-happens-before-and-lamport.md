@@ -58,11 +58,11 @@ agree about anything.
   → x and b are CONCURRENT, written x ‖ b
 ```
 
-**Concurrent does not mean simultaneous.** `x` may have occurred hours before
-`b` in real time. It means *neither could have influenced the other*, because no
-chain of messages connects them. That is the useful property: two concurrent
-events can be reordered without changing any outcome, because neither had
-knowledge of the other.
+> [!KEY] **Concurrent does not mean simultaneous.** `x` may have occurred hours before
+> `b` in real time. It means *neither could have influenced the other*, because no
+> chain of messages connects them. That is the useful property: two concurrent
+> events can be reordered without changing any outcome, because neither had
+> knowledge of the other.
 
 This is why happens-before is called a **partial** order. Some pairs are ordered;
 some are genuinely incomparable, and forcing an order on them would be inventing
@@ -157,6 +157,19 @@ The reverse fails because concurrent events also get different numbers. In the
 diagram above, P2's event with timestamp 1 and P1's event with timestamp 2 are
 concurrent, yet 1 < 2. The ordering the numbers suggest is not real.
 
+```mermaid
+sequenceDiagram
+  participant A as P1
+  participant B as P2
+  Note over A: Local counter 2
+  Note over B: Local counter 1
+  A->>B: Message with t=2
+  Note over B: max(1,2)+1 = 3
+  Note over B: Next event gets 4
+  B->>A: Message with t=4
+  Note over A: max(2,4)+1 = 5
+```
+
 ## Making it a total order
 
 Lamport timestamps can be ties (two processes both at 4). Break ties with a
@@ -222,6 +235,24 @@ So the decision rule:
 
 Systems that pick last-write-wins have implicitly chosen the second, and have
 accepted that concurrent writes are silently resolved rather than surfaced.
+
+> [!INTERVIEW] State the direction of Lamport's guarantee explicitly:
+> happens-before implies a smaller timestamp; a smaller timestamp does not
+> prove happens-before. Use vector clocks when conflict detection matters.
+
+> [!CHECK] What counter does P2 assign when its local counter is 1 and it
+> receives timestamp 2?
+>
+> Apply the receive rule: max(local, received) + 1 = max(1, 2) + 1 = 3.
+> The receive timestamp is strictly larger than the send timestamp,
+> preserving happens-before.
+
+> [!CHECK] Does L(a) < L(b) prove that a caused b?
+>
+> No. Happens-before implies increasing Lamport timestamps, but
+> concurrent events can also receive different integers. Adding a node
+> ID breaks ties consistently; it does not reveal which events were
+> concurrent.
 
 ## What to take away
 

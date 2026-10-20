@@ -107,6 +107,36 @@ This is why every one of these exists:
 - **CDNs** — terminate the connection close to the user, so the handshakes cross
   a short distance and only cache misses cross the ocean.
 
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant D as DNS
+  participant S as Server
+  C->>D: Lookup
+  D-->>C: Address (1 RTT)
+  C->>S: TCP handshake (1 RTT)
+  S-->>C: Connection established
+  C->>S: TLS 1.3 handshake (1 RTT)
+  S-->>C: Secure connection
+  C->>S: HTTP request
+  S-->>C: Response (1 RTT)
+```
+
+```chart
+type: bar
+scale: log
+unit: ns
+title: Latency orders of magnitude
+caption: Values from the chapter's operation table.
+---
+L1 cache: 1
+Main memory: 80
+NVMe random read: 20000
+Same data centre RTT: 300000
+Cross-AZ RTT: 1000000
+Cross-continent RTT: 70000000-200000000
+```
+
 ## Bandwidth versus latency
 
 They are different resources and improve independently. Bandwidth has grown
@@ -220,6 +250,18 @@ faster is almost always aimed at the wrong row.
 Distributed tracing exists to produce exactly this breakdown across services.
 Without it you are guessing, and the guess will be wrong in the same direction
 every time.
+
+> [!CHECK] Why does the cold HTTPS example cost 280 ms before content?
+>
+> DNS, TCP, TLS and HTTP each cost one round trip. At the stated 70 ms
+> RTT, 4 × 70 ms = 280 ms. Connection reuse removes repeated setup round
+> trips.
+
+> [!CHECK] Why can a small buffer waste a fast cross-continent link?
+>
+> The link needs bandwidth × RTT bytes in flight. At 1 Gbps and 100 ms,
+> that is 12.5 MB. A 64 KB window stalls on acknowledgements and caps
+> throughput at about 5 Mbps, despite the gigabit link.
 
 ## What to take away
 

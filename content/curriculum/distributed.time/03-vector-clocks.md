@@ -106,6 +106,20 @@ Note that this conclusion is drawn with **no clocks and no communication at
 comparison time**. Two nodes handed these two vectors reach the same answer
 independently.
 
+```mermaid
+sequenceDiagram
+  participant A as Node A
+  participant B as Node B
+  participant C as Node C
+  Note over A: a1 = (1,0,0)
+  A->>B: Vector (1,0,0)
+  Note over B: b1 = (1,1,0)
+  B->>C: Vector (1,1,0)
+  Note over C: c1 = (1,1,1)
+  Note over A: a2 = (2,0,0)
+  Note over A,C: a2 and c1 each lead in different entries
+```
+
 ## Where this is used: siblings in Dynamo-style stores
 
 Amazon's Dynamo paper made vector clocks famous. A key can have several
@@ -209,6 +223,19 @@ caches, for sensor readings where newest genuinely wins, for user preferences.
 It is not legitimate to choose it *without noticing* that it discards writes,
 which is what happens when a team picks a store with LWW defaults and never asks
 the question.
+
+> [!CHECK] Are V={A:2,B:1,C:0} and W={A:1,B:3,C:0} ordered?
+>
+> V is ahead on A because 2 > 1, while W is ahead on B because 3 > 1.
+> Neither is at least as large in every component. Neither dominates, so
+> they are concurrent.
+
+> [!CHECK] Why can union-merging cart siblings resurrect a deleted item?
+>
+> One sibling can still contain an item that the other removed. Union
+> keeps every item present in either sibling, so absence in one sibling
+> does not remove presence in the other. Conflict detection surfaces the
+> versions; the application's merge semantics decide the result.
 
 ## What to take away
 

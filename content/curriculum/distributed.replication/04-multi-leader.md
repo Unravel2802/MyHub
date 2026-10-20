@@ -108,6 +108,17 @@ converge regardless of order — covered later in the track. This is the stronge
 option where your data fits the available types, and it is why collaborative
 editors use them.
 
+```mermaid
+sequenceDiagram
+  participant U as US leader
+  participant E as EU leader
+  Note over U: Accept title Q3 Report locally
+  Note over E: Accept title Q3 Results locally
+  U->>E: Replicate Q3 Report after 200 ms
+  E->>U: Replicate Q3 Results after 200 ms
+  Note over U,E: Both accepted writes now require conflict resolution
+```
+
 ## What is genuinely hard: constraints
 
 Convergence handles a field with two values. It does not handle **invariants
@@ -191,6 +202,26 @@ The honest picture of what you take on:
   cheaply.
 - **Debugging is genuinely harder.** "Which region wrote this, and what did the
   other one know at the time?" needs the metadata to have been recorded.
+
+> [!PITFALL] Convergence is not constraint enforcement. Two regions can
+> each accept a locally valid withdrawal or username while violating the
+> global invariant. Centralise that decision, pre-divide the resource, or
+> explicitly accept and compensate for the violation.
+
+> [!CHECK] Why can two locally valid $80 withdrawals violate the non-negative-balance invariant?
+>
+> Both regions start from $100 and independently see enough funds,
+> leaving $20 locally. Applying both withdrawals gives $100 - $80 - $80
+> = -$60. Merging values cannot retroactively supply the global
+> invariant check.
+
+> [!CHECK] How does a home region avoid concurrent writes for one entity, and
+> what is its cost?
+>
+> Route every write for that entity to its designated region. That
+> region serialises its writes as a single leader, avoiding cross-region
+> conflicts for the entity. Travelling users pay cross-region latency,
+> and relocation requires migrating the home region.
 
 ## What to take away
 

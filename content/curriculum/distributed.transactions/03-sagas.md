@@ -36,10 +36,10 @@ visible; the compensation is a *new* transaction that counteracts it.
 
 ## Compensations are harder than they look
 
-**Some actions cannot be undone.** An email is sent. A message was posted. A
-physical package shipped. The compensation is either a *counter-action* ("we're
-sorry, your order was cancelled") or the step must be moved to a position in the
-saga where it can no longer be followed by a failure.
+> [!KEY] **Some actions cannot be undone.** An email is sent. A message was posted. A
+> physical package shipped. The compensation is either a *counter-action* ("we're
+> sorry, your order was cancelled") or the step must be moved to a position in the
+> saga where it can no longer be followed by a failure.
 
 That second technique is the important one. Sagas are usually designed in three
 phases:
@@ -54,6 +54,19 @@ phases:
   RETRIABLE          steps that MUST eventually succeed, and are
                     retried forever rather than compensated
                     (send email, update analytics, ship)
+```
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  [*] --> Compensatable
+  Compensatable --> Pivot: Capture payment
+  Compensatable --> Compensating: Failure before pivot
+  Compensating --> Compensating: Retry or escalate
+  Pivot --> Retriable: Pivot succeeds
+  Retriable --> Retriable: Retry failed step
+  Retriable --> Complete: Remaining steps succeed
+  note right of Compensatable: Reserve 3 units, authorise payment
 ```
 
 Once you pass the pivot, the saga only goes forward. Everything irreversible goes
@@ -230,6 +243,26 @@ That last one matters in practice. Most "we need a saga" situations are actually
 "we need to write a row and reliably do one other thing", which is the outbox
 pattern with far less machinery. Reach for a saga at three or more steps with
 real compensation requirements.
+
+> [!PITFALL] A compensation is another committed operation and can itself fail or be
+> delivered again. Make it idempotent, retry with backoff and provide
+> dead-letter escalation; there is no automatic rollback that makes this
+> responsibility disappear.
+
+> [!CHECK] Why does failure after the capture-payment pivot not trigger the same
+> compensation path as an earlier failure?
+>
+> Before the pivot, completed steps have compensations such as releasing
+> inventory and voiding authorisation. After the point of no return, the
+> remaining steps must eventually succeed, so the saga retries forward and
+> escalates persistent failure instead of undoing the committed process.
+
+> [!CHECK] How does the saga keep a retry from reserving inventory twice?
+>
+> The key is derived from saga_id and saga.step, so retrying the same step
+> sends the same idempotency key. The callee deduplicates that repeated
+> operation; durable saga state retains the result needed for later steps
+> and compensation.
 
 ## What to take away
 

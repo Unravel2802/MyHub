@@ -27,12 +27,25 @@ consensus, which is why modern systems that offer 2PC have consensus underneath.
      │  ◀── ACK ────────────────────── │
 ```
 
+```mermaid
+sequenceDiagram
+  participant C as Coordinator
+  participant P as Participants
+  C->>P: PREPARE
+  P->>P: Log work, hold locks, fsync
+  P-->>C: Durable YES or NO
+  C->>C: Log COMMIT if all YES, else ABORT
+  C->>P: Durable decision
+  P->>P: Apply decision, release locks
+  P-->>C: ACK
+```
+
 Two things make this work, and both are commonly misunderstood:
 
-**A YES vote is a promise.** Once a participant votes yes, it *must* be able to
-commit — even if it crashes and restarts. So it must durably write everything
-needed to commit before voting, and it may not unilaterally abort afterwards. It
-has surrendered its autonomy.
+> [!KEY] **A YES vote is a promise.** Once a participant votes yes, it *must* be able to
+> commit — even if it crashes and restarts. So it must durably write everything
+> needed to commit before voting, and it may not unilaterally abort afterwards. It
+> has surrendered its autonomy.
 
 **The coordinator's log entry is the decision.** The moment the coordinator
 durably records "commit", the transaction is committed, regardless of whether any
@@ -54,6 +67,18 @@ The window that defines 2PC's reputation:
   Can it abort?   NO — the coordinator may have decided commit.
 
   → it must WAIT. holding locks. indefinitely.
+```
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  Working --> Prepared: Durable YES vote
+  Prepared --> InDoubt: Coordinator lost
+  Prepared --> Committed: COMMIT decision
+  Prepared --> Aborted: ABORT decision
+  InDoubt --> Committed: Learn COMMIT
+  InDoubt --> Aborted: Learn ABORT
+  note right of InDoubt: Timeout alone cannot decide
 ```
 
 This is not a bug in an implementation. It is a proven property: **no atomic
@@ -159,6 +184,17 @@ arithmetic:
   → 50× the lock hold time means 50× the contention on hot rows
 ```
 
+```chart
+type: bar
+scale: linear
+unit: ms
+title: Lock-hold time in one data centre
+caption: Approximate lock-hold durations stated in the chapter.
+---
+Local transaction: 1
+Two-phase commit: 10-50
+```
+
 For a hot row — an inventory count, a sequence, a popular product — this is the
 difference between a working system and a queue of blocked transactions. It is
 the reason 2PC is rationed to the operations that genuinely need it rather than
@@ -185,6 +221,26 @@ The distinction that matters most is the first line of each column. **Within one
 system that you operate and that has consensus underneath, 2PC is fine and you
 should use the database's transactions without agonising.** Across services, it
 is the wrong tool, and reaching for it is usually a sign the boundary is wrong.
+
+> [!PITFALL] A YES voter cannot use timeout as permission to abort. The decision may
+> already be durable elsewhere; waiting in doubt holds live locks, which
+> is why the coordinator decision log needs durable, highly available
+> recovery.
+
+> [!CHECK] After voting YES, why may a participant not abort merely because the
+> coordinator times out?
+>
+> Its YES promised it could commit durably. The coordinator may already
+> have logged COMMIT even if the message was lost, so aborting locally
+> could contradict the durable decision. Without learning an outcome, it
+> remains in doubt and holds its locks.
+
+> [!CHECK] How much longer can same-DC 2PC hold a hot-row lock than the local
+> example?
+>
+> The chapter compares roughly 1 ms locally with 10–50 ms for same-DC 2PC.
+> Dividing by 1 ms gives about 10–50 times the hold duration, which
+> explains the stated 50× contention at the upper end.
 
 ## What to take away
 

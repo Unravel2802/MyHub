@@ -88,6 +88,17 @@ The smallest version of the problem, and the one you meet weekly:
   → the order exists and nothing downstream knows
 ```
 
+```mermaid
+sequenceDiagram
+  participant A as App
+  participant D as Database
+  participant B as Broker
+  A->>D: Save order
+  D-->>A: Committed
+  Note over A: Crash before publish
+  Note over B: No order.created event
+```
+
 Swapping the order does not help:
 
 ```text
@@ -154,10 +165,10 @@ transaction requirements are self-inflicted — a service boundary drawn between
 two things that must change together. If `Order` and `OrderLine` are in different
 services, someone drew the boundary wrong.
 
-**The design heuristic: a transaction boundary is a strong hint about a service
-boundary.** Things that must change atomically should live together. When you
-find yourself designing a distributed transaction, first check whether you are
-being told that two services should be one.
+> [!KEY] **The design heuristic: a transaction boundary is a strong hint about a service
+> boundary.** Things that must change atomically should live together. When you
+> find yourself designing a distributed transaction, first check whether you are
+> being told that two services should be one.
 
 ## Isolation, which quietly disappears
 
@@ -199,6 +210,26 @@ elaborated since):
 
 That last one is a genuinely good pattern and under-used: the correct isolation
 level can be a function of the *stakes*, not just of the operation.
+
+> [!INTERVIEW] First identify the boundary: shards of one operated database,
+> independently deployed services, or a database plus broker. Defend 2PC,
+> a saga or an outbox from that boundary before paying for a distributed
+> transaction.
+
+> [!CHECK] Why does publishing before saving fail to make the two writes atomic?
+>
+> A crash after publish but before save leaves downstream processing an
+> order that never committed. Saving first reverses the failure: the row
+> exists but the event is missing. Neither ordering removes the gap
+> between independent systems.
+
+> [!CHECK] Why does a saga expose intermediate inventory state that a single-node
+> transaction would hide?
+>
+> Each saga step commits locally and becomes visible before later steps
+> finish. Another transaction can therefore act on reserved inventory even
+> if the saga later compensates it; a pending semantic state or re-read
+> can guard that provisional decision.
 
 ## What to take away
 

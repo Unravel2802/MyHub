@@ -50,7 +50,7 @@ that produced it.
 
 ## Two ways to build the relay
 
-**Polling.** Query for unsent rows on an interval.
+> [!KEY] **Polling.** Query for unsent rows on an interval.
 
 ```sql
 UPDATE outbox
@@ -202,6 +202,23 @@ services with no distributed transaction anywhere:
   at-least-once in the middle, exactly-once at each end
 ```
 
+```mermaid
+sequenceDiagram
+  participant D as Producer DB
+  participant R as Relay
+  participant C as Consumer
+  Note over D: One txn: state + outbox
+  R->>D: Read unsent row
+  D-->>R: Durable event with ID
+  R->>C: Publish via broker
+  Note over C: Unique ID plus effect
+  C->>C: Commit atomically
+  Note over R: Crash before sent mark
+  R->>C: Redeliver same event ID
+  C->>C: Duplicate: no effect
+  R->>D: Mark sent
+```
+
 That picture is the practical answer to "how do we get exactly-once between two
 services", and it is worth being able to draw from memory. Note the inbox needs
 the same housekeeping — old message IDs must be pruned, and the retention window
@@ -217,6 +234,22 @@ lost message is a defect.
 
 The test: **would anyone notice, or would data be wrong, if this message were
 silently dropped?** If yes, outbox. If no, publish directly.
+
+> [!CHECK] Why can the relay publish an outbox event twice without losing the
+> intent to deliver?
+>
+> It can publish successfully and crash before marking the row sent. The
+> durable unsent row is read again after restart, causing a duplicate; the
+> producer state and delivery intent still committed together, but
+> consumers must deduplicate.
+
+> [!CHECK] How does the inbox keep reserved inventory from increasing by three
+> again on redelivery?
+>
+> The first delivery inserts the unique message ID and applies reserved +=
+> 3 in one transaction. A duplicate violates that unique constraint, so
+> its transaction aborts before another increment can commit. Prune IDs
+> only after the longest possible redelivery window.
 
 ## What to take away
 

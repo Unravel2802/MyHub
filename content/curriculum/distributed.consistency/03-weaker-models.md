@@ -56,6 +56,18 @@ happens-before relation from the clocks topic, turned into a storage guarantee.
   either order is fine, and no coordination is needed to decide.
 ```
 
+```mermaid
+sequenceDiagram
+  participant S as Source
+  participant R as Replica
+  participant U as Reader
+  S->>R: Reply with parent dependency
+  R->>R: Buffer until parent arrives
+  S->>R: Parent question
+  U->>R: Read thread
+  R-->>U: Parent before reply
+```
+
 The reason this matters so much: **causal consistency is the strongest model that
 can be achieved while remaining available under a network partition.** That is a
 theorem (Mahajan, Alvisi and Dahlin), and it makes causal consistency the natural
@@ -185,6 +197,26 @@ or under-delivers on the linearizable ones. The good ones let you ask per
 request — DynamoDB's `ConsistentRead`, Cassandra's per-query consistency level,
 Cosmos DB's five named levels — and the discipline is to use that expressiveness
 rather than setting a global default and forgetting.
+
+> [!PITFALL] A consistent snapshot is not protection against write skew. Transactions
+> can read the same valid state and change different rows into an invalid
+> combined state; make the invariant a serialization conflict.
+
+> [!CHECK] How can both doctors leave call duty under snapshot isolation?
+>
+> Both transactions read the same valid snapshot with Alice and Bob on
+> call. Each removes a different row's on-call state, so no write conflict
+> is detected; the combined result leaves nobody on call. Serializable
+> isolation or a common conflict row makes the competing decisions
+> conflict.
+
+> [!CHECK] What must a causal replica do if it receives Bob's reply before Alice's
+> question?
+>
+> The reply depends on the question because Bob read it first. Keep the
+> reply hidden until its parent dependency arrives, then expose the parent
+> before the reply. This preserves the causal order without imposing an
+> order on unrelated concurrent messages.
 
 ## What to take away
 

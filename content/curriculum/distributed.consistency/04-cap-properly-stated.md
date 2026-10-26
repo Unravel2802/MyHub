@@ -39,10 +39,10 @@ least one side (giving up availability).**
 
 ## Why "pick two" is wrong
 
-**Partitions are not a choice.** They are a property of networks. Cables are cut,
-switches reboot, a security group is misconfigured, a data centre loses
-connectivity. You do not get to decide whether partitions happen; you only decide
-what your system does when one does.
+> [!KEY] **Partitions are not a choice.** They are a property of networks. Cables are cut,
+> switches reboot, a security group is misconfigured, a data centre loses
+> connectivity. You do not get to decide whether partitions happen; you only decide
+> what your system does when one does.
 
 So "CA" — consistent and available, not partition tolerant — is not a system
 design. It is a bet that the network never fails, and that bet loses.
@@ -93,6 +93,14 @@ exception.
     └──────────────┘     └───────────────────┘
 
     Cassandra, Riak, DynamoDB, CouchDB, DNS, most CDNs
+```
+
+```mermaid
+flowchart TB
+  P[CP cluster: 5 nodes split] --> A[Majority: 3 nodes]
+  P --> B[Minority: 2 nodes]
+  A --> S[Continue serving]
+  B --> R[Refuse unsafe operations]
 ```
 
 The right choice follows from the domain, and both choices are correct
@@ -176,6 +184,21 @@ That is far better than whatever the database happens to do.
 The last line is the one that matters most. Most systems' partition behaviour is
 undocumented and unexercised, and the first time anyone learns what it does is
 during an incident.
+
+> [!CHECK] In the five-node CP example with a 3-2 split, why is CAP availability
+> lost even though three nodes serve?
+>
+> The majority of three continues serving, but the minority of two refuses
+> requests it cannot make linearizable. CAP availability requires a
+> non-error response for every request to every non-failing node, so that
+> refusal violates the formal availability property.
+
+> [!CHECK] Why is a prompt error different from a stale balance under CAP?
+>
+> A prompt error deliberately gives up CAP availability while preserving
+> the linearizable contract. A non-error stale balance keeps answering but
+> gives up that contract. The domain decides which failure is acceptable;
+> speed of the response is a separate issue.
 
 ## What to take away
 

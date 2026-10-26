@@ -95,6 +95,17 @@ region:
   every single write. forever. by the speed of light.
 ```
 
+```chart
+type: bar
+scale: linear
+unit: ms
+title: Regional round-trip floors
+caption: Approximate round-trip times stated here.
+---
+Virginia to Frankfurt: 90
+Virginia to Singapore: 230
+```
+
 For a global system, strong consistency means every write costs a fraction of a
 second. Sometimes that is correct and worth it. For a "like" counter, a presence
 indicator, or a view count, it is absurd — and the weaker models exist so you can
@@ -147,6 +158,21 @@ without giving up what many machines bought you.
 This is worth saying because it reframes the effort. Distributed consistency is
 not an advanced feature you add. It is compensation for something you gave up,
 and the right question is always "how much of it do I need to buy back here?"
+
+> [!CHECK] Does enforcing ACID constraints imply that a read from a replica is
+> linearizable?
+>
+> No. ACID consistency preserves declared invariants such as foreign keys
+> and uniqueness. Linearizability constrains the recency and ordering of
+> operations on replicated data; one property does not supply the other.
+
+> [!CHECK] Why does the Virginia quorum example wait about 90 ms rather than 230
+> ms?
+>
+> With replicas in Virginia, Frankfurt and Singapore, the quorum reaches
+> its second member through Frankfurt at about 90 ms round trip. It need
+> not wait for Singapore's roughly 230 ms, but it cannot acknowledge that
+> quorum write before the required distant reply.
 
 ## What to take away
 

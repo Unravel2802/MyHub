@@ -56,8 +56,8 @@ produces observable nonsense.
 
 The list is shorter than instinct suggests, and each item has a reason.
 
-**Uniqueness constraints.** Two concurrent registrations of the same username
-must not both succeed. That requires a single point that sees both.
+> [!KEY] **Uniqueness constraints.** Two concurrent registrations of the same username
+> must not both succeed. That requires a single point that sees both.
 
 **Locks and leader election.** The entire purpose is that exactly one holder
 exists. A non-linearizable lock is not a lock.
@@ -76,6 +76,18 @@ does not have it yet.
                                   ▼
                             worker ──▶ read image 42 from a replica
                                         ✗ not there yet → job fails
+```
+
+```mermaid
+sequenceDiagram
+  participant A as App
+  participant S as Storage
+  participant W as Worker
+  A->>S: Store image 42 on leader
+  S-->>A: Acknowledged
+  A->>W: Enqueue resize image 42
+  W->>S: Read image 42 from replica
+  S-->>W: Not replicated yet
 ```
 
 The queue is a communication channel outside the storage system, and it moved
@@ -194,6 +206,26 @@ The question that cuts through it: **"if I write and then, after receiving the
 acknowledgement, read from a different connection, am I guaranteed to see my
 write?"** A yes means something close to linearizable for that operation. A
 qualified answer tells you exactly where the qualification is.
+
+> [!PITFALL] An acknowledged write can still be absent from a lagging replica when a
+> queue delivers the follow-up job. Specify which storage read the worker
+> uses instead of assuming the queue waits for replication.
+
+> [!CHECK] Why can the resize worker miss image 42 after the upload was
+> acknowledged?
+>
+> The queue is a second communication path and may deliver before storage
+> replication catches up. Reading the replica then misses the image;
+> reading the leader or including the image in the message avoids that
+> race.
+
+> [!CHECK] Why is T2-before-T1 serial order illegal for the chapter's 10:00 and
+> 10:01 example under a real-time guarantee?
+>
+> T1 completes at 10:00 and T2 begins at 10:01, so they do not overlap. A
+> serial execution may place T2 first if only serializability is promised,
+> but linearizability's real-time clause requires T1 before T2; strict
+> serializability adds that clause to transaction isolation.
 
 ## What to take away
 

@@ -459,6 +459,30 @@ export async function createReceivable(
   return fromReceivableRow(data);
 }
 
+// Insert several receivables in ONE statement — used by a bill split, so a
+// split is all-or-nothing (never Alex saved and Sam missing). Returns the rows
+// in input order.
+export async function createReceivables(
+  inputs: CreateReceivableInput[],
+): Promise<Receivable[]> {
+  if (inputs.length === 0) return [];
+  const { data, error } = await supabase
+    .from("finance_receivables")
+    .insert(
+      inputs.map((input) => ({
+        person: input.person,
+        amount_cents: input.amountCents,
+        reason: input.reason ?? null,
+        due_on: input.dueOn ?? null,
+        status: input.status ?? "not_requested",
+      })),
+    )
+    .select();
+
+  if (error) throw error;
+  return data.map(fromReceivableRow);
+}
+
 export async function updateReceivable(
   id: string,
   input: UpdateReceivableInput,

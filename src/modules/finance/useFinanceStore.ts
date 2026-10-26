@@ -15,6 +15,11 @@ import {
   totalOwedCents,
 } from "@/src/modules/finance/financeSelectors";
 import { computeRunway } from "@/src/modules/finance/runway";
+import {
+  planSplit,
+  type SplitError,
+  type SplitParticipant,
+} from "@/src/modules/finance/splitBill";
 import type {
   Budget,
   BudgetProgress,
@@ -30,6 +35,13 @@ import type {
 // store per module. Errors: console.error the real error, generic string to the
 // UI (CLAUDE.md rule 6). Update/delete are optimistic with rollback, matching
 // useNoteStore / useTaskStore.
+
+export interface SplitIntoReceivablesInput {
+  totalCents: number;
+  participants: SplitParticipant[];
+  reason?: string | null;
+  dueOn?: string | null;
+}
 
 export interface FinanceStore {
   transactions: FinanceTransaction[];
@@ -70,6 +82,13 @@ export interface FinanceStore {
   createReceivable: (input: CreateReceivableInput) => Promise<void>;
   updateReceivable: (id: string, input: UpdateReceivableInput) => Promise<void>;
   deleteReceivable: (id: string) => Promise<void>;
+  // Split `totalCents` evenly across `participants` (see splitBill.ts) and save
+  // one receivable per person who isn't you, all sharing `reason` / `dueOn`.
+  // Returns the planning error (nothing saved) so the form can show it; a
+  // persistence failure sets `error` like every other action and returns null.
+  splitIntoReceivables: (
+    input: SplitIntoReceivablesInput,
+  ) => Promise<SplitError | null>;
   // Convert a receivable to a settled income transaction and mark it paid. The
   // new transaction lands in `transactions` so the ledger + summary update.
   markReceivablePaid: (id: string) => Promise<void>;
@@ -345,6 +364,26 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
     } catch (error) {
       set({ error: toUserMessage(error) });
     }
+  },
+
+  splitIntoReceivables: async ({ totalCents, participants, reason, dueOn }) => {
+    const result = planSplit(totalCents, participants);
+    if (!result.ok) return result.error;
+    try {
+      const created = await FinanceRepository.createReceivables(
+        result.plan.shares.map((share) => ({
+          person: share.name,
+          amountCents: share.amountCents,
+          reason: reason ?? null,
+          dueOn: dueOn ?? null,
+          status: "not_requested",
+        })),
+      );
+      set({ receivables: [...created, ...get().receivables] });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+    return null;
   },
 
   updateReceivable: async (id, input) => {

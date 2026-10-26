@@ -25,6 +25,7 @@ vi.mock("@/src/modules/finance/FinanceRepository", () => ({
   updateSavings: vi.fn(),
   getReceivables: vi.fn(),
   createReceivable: vi.fn(),
+  createReceivables: vi.fn(),
   updateReceivable: vi.fn(),
   deleteReceivable: vi.fn(),
   markReceivablePaid: vi.fn(),
@@ -409,6 +410,77 @@ describe("useFinanceStore", () => {
       .getState()
       .updateReceivable(sam.id, { status: "requested" });
     expect(useFinanceStore.getState().receivables).toEqual([requested, alex]);
+  });
+
+  it("splits a bill into receivables for everyone except me", async () => {
+    const existing = receivable({ id: "existing" });
+    useFinanceStore.setState({ receivables: [existing] });
+    const alex = receivable({ id: "alex", person: "Alex", amountCents: 400 });
+    const sam = receivable({ id: "sam", person: "Sam", amountCents: 400 });
+    repository.createReceivables.mockResolvedValueOnce([alex, sam]);
+
+    const error = await useFinanceStore.getState().splitIntoReceivables({
+      totalCents: 1200,
+      participants: [
+        { name: "Hoang", isMe: true },
+        { name: "Alex", isMe: false },
+        { name: "Sam", isMe: false },
+      ],
+      reason: "Pizza",
+      dueOn: null,
+    });
+
+    expect(error).toBeNull();
+    expect(repository.createReceivables).toHaveBeenCalledWith([
+      {
+        person: "Alex",
+        amountCents: 400,
+        reason: "Pizza",
+        dueOn: null,
+        status: "not_requested",
+      },
+      {
+        person: "Sam",
+        amountCents: 400,
+        reason: "Pizza",
+        dueOn: null,
+        status: "not_requested",
+      },
+    ]);
+    expect(useFinanceStore.getState().receivables).toEqual([
+      alex,
+      sam,
+      existing,
+    ]);
+  });
+
+  it("returns the planning error and saves nothing for an invalid split", async () => {
+    const error = await useFinanceStore.getState().splitIntoReceivables({
+      totalCents: 1200,
+      participants: [{ name: "Hoang", isMe: true }],
+    });
+    expect(error).toBe("no_one_else");
+    expect(repository.createReceivables).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a generic error when saving a split fails", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    repository.createReceivables.mockRejectedValueOnce(new Error("db down"));
+    const error = await useFinanceStore.getState().splitIntoReceivables({
+      totalCents: 1200,
+      participants: [
+        { name: "Alex", isMe: false },
+        { name: "Sam", isMe: false },
+      ],
+    });
+    expect(error).toBeNull();
+    expect(useFinanceStore.getState().receivables).toEqual([]);
+    expect(useFinanceStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
+    consoleError.mockRestore();
   });
 
   it("optimistically deletes a receivable and rolls back on failure", async () => {

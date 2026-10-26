@@ -138,9 +138,9 @@ introduces backpressure and fan-out as real engineering problems.
 
 ## What to take away
 
-1. Choose the mechanism by direction of data flow: SSE for server-to-client-
-   only (simpler, rides on plain HTTP), a WebSocket only when the client also
-   needs to push.
+1. Choose the mechanism by direction of data flow: SSE for server-to-client-only
+   (simpler, rides on plain HTTP), a WebSocket only when the client also needs
+   to push.
 2. Fan-out across multiple app servers needs a pub/sub layer between them, or
    an event only reaches clients connected to the server that received it.
 3. An unbounded per-connection send buffer to a slow client is a real memory

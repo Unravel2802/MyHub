@@ -145,8 +145,8 @@ to solve them.
 
 ## What to take away
 
-1. A hand-rolled fetch effect is missing caching, deduplication, and race-
-   condition protection by default — a data-fetching library exists
+1. A hand-rolled fetch effect is missing caching, deduplication, and
+   race-condition protection by default — a data-fetching library exists
    specifically for this recurring list of failure modes, not because
    calling fetch is hard.
 2. A query key identifies which data a result is — two components with the

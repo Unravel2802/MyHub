@@ -159,8 +159,8 @@ that behaves like a real, transactional table.
    finer grain than the warehouse chapter's file/partition-level pruning —
    the same skip-without-reading idea, one level deeper.
 2. Arrow is optimized for memory rather than disk, letting different
-   systems share data with zero serialization cost — the same intermediate-
-   representation idea from compilers, applied to data interchange.
+   systems share data with zero serialization cost — the same
+   intermediate-representation idea from compilers, applied to data interchange.
 3. A folder of plain Parquet files has no transactional guarantees at all —
    a crashed writer or a concurrent reader can see an inconsistent, partial
    state, the exact dirty-read anomaly transactions already named for

@@ -157,8 +157,8 @@ genuine difficulty in this chapter comes from.
    guaranteed to catch every late event.
 4. A stream processor's state must survive across individual events and
    across its own restarts via durable, checkpointed storage — a genuinely
-   different shape from batch processing's stateless, recompute-fresh-every-
-   run transformations.
+   different shape from batch processing's stateless,
+   recompute-fresh-every-run transformations.
 5. Exactly-once sinks achieve the outcome, not the delivery mechanism (which
    stays fundamentally at-least-once) — via the same idempotent-upsert
    pattern that recurs throughout this curriculum, or via a transactional

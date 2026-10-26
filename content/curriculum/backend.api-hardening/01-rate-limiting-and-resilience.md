@@ -155,8 +155,8 @@ specific, named failure mode.
 ## What to take away
 
 1. Token bucket is the standard rate-limiting choice because it allows a
-   burst while still capping sustained rate — fixed windows have a boundary-
-   burst flaw sliding windows fix.
+   burst while still capping sustained rate — fixed windows have a
+   boundary-burst flaw sliding windows fix.
 2. Every outbound call needs an explicit timeout, or a hung dependency
    exhausts your own resources and turns their outage into yours.
 3. Only retry idempotent operations — retrying a non-idempotent POST blindly

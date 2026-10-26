@@ -128,8 +128,9 @@ equally solved is where most of the real risk in this workflow lives.
 2. Fluent, well-formatted output reads as more trustworthy than it deserves
    to — polish is not evidence of correctness.
 3. Review AI-generated code against the same bar as human code, plus
-   specifically checking for hallucinated APIs, silently-solved-a-different-
-   problem, and silently-skipped security edge cases.
+   specifically checking for hallucinated APIs,
+   silently-solved-a-different-problem, and silently-skipped security edge
+   cases.
 4. Autonomy should scale with reversibility and blast radius, the same
    criteria that govern any automated action — this project's own delegation
    split (full implementation for most code, human ownership of migrations

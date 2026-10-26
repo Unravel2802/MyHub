@@ -157,8 +157,8 @@ the system to themselves.
    isolation strength traded against operational cost — default to shared
    schema, and move up the spectrum only for a specific requirement.
 2. Every query touching tenant data must filter by tenant_id from the
-   authenticated session, with no exceptions and never from a client-
-   supplied field.
+   authenticated session, with no exceptions and never from a
+   client-supplied field.
 3. Row-level security turns the tenant_id discipline from an application
    convention one missed WHERE clause can violate into a guarantee enforced
    at the database layer.

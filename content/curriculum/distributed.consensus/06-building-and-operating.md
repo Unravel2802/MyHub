@@ -82,7 +82,8 @@ sequenceDiagram
 ```python
 lease = etcd.lease(ttl=10)
 etcd.put("/locks/report", node_id, lease=lease)
-token = lease.id                 # monotonically increasing; use as the fence
+token = lease.id                 # monotonically increasing;
+                                 # use as the fence
 
 # every protected write carries the token, and the STORAGE compares it
 storage.write(data, fencing_token=token)

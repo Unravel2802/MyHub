@@ -172,7 +172,8 @@ SAGA = [
 ]
 
 def advance(saga_id):
-    saga = db.lock_and_load(saga_id)          # row lock: one worker at a time
+    saga = db.lock_and_load(saga_id)          # row lock:
+                                              # one worker at a time
     step = SAGA[saga.step]
 
     try:
@@ -180,7 +181,8 @@ def advance(saga_id):
         result = call(step.name, saga.payload, idempotency_key=key)
         with db.transaction():
             saga.payload.update(result)
-            saga.step += 1                    # progress and the next trigger
+            saga.step += 1                    # progress and
+                                              # the next trigger
             outbox.enqueue("saga.advance", saga_id)   # commit together
             db.save(saga)
     except PermanentFailure:

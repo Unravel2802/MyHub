@@ -149,7 +149,8 @@ Every request must reach the node holding its key. There are exactly three
 places to put that knowledge.
 
 ```text
-  1. ROUTING TIER              2. CLIENT-SIDE            3. ANY NODE FORWARDS
+  1. ROUTING TIER              2. CLIENT-SIDE            3. ANY NODE
+                                                         FORWARDS
 
   client                       client                     client
     │                            │ (knows the map)          │

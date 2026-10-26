@@ -36,7 +36,8 @@ so a new leader that reads from a majority cannot miss a committed decision.
   term 2: new leader reads from a majority {C, D, E}
                                             ▲
                                    C knows about X.
-                                   the new leader learns X and must honour it.
+                                   the new leader learns X
+                                   and must honour it.
 ```
 
 ```mermaid

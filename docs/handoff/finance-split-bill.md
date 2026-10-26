@@ -61,3 +61,65 @@ No migration — it writes ordinary `finance_receivables` rows.
 - Money is integer cents; `parseAmount` in, `formatCents` out.
 - Don't re-implement the split math or the rounding in the component — call
   `planSplit`.
+
+---
+
+# Rent split (household)
+
+Monthly rent where each room costs a different amount but utilities
+(electricity, gas, wifi, ...) are shared evenly by everyone, you included. The
+household is saved once; each month you only type the utility totals. Result:
+ONE receivable per other person — room rent + their utility shares — with an
+itemized reason, e.g. `Rent Oct 2026: room $600.00, Electricity $30.00,
+Wifi $20.00`.
+
+**Migration `0047_finance_household_members.sql` must be applied to Supabase
+first.**
+
+## What's published (mine — don't change the interface)
+
+- **migration 0047** — `finance_household_members` (name, rent_cents, is_me,
+  sort_order, soft delete, RLS). Unique live names (case-insensitive); at most
+  one live `is_me`.
+- **types.ts** — `HouseholdMember`.
+- **`rentSplit.ts`** (unit-tested) — `planRentSplit(members, utilities)`
+  returns `{ ok: true, shares }` (every member incl. you, input order, each
+  with `rentCents`, `utilityCents[]` per utility, `totalCents`) or
+  `{ ok: false, error: RentSplitError }`. `rentShareReason(...)` builds the
+  reason line. Leftover utility cents go to the others,
+  rotating, never to you.
+- **FinanceRepository** — `getHouseholdMembers`, `createHouseholdMember`,
+  `updateHouseholdMember` (no `isMe` field on purpose), `deleteHouseholdMember`,
+  `setHouseholdMe(id | null)`.
+- **useFinanceStore** — `household`, `fetchHousehold`,
+  `createHouseholdMember`, `updateHouseholdMember`, `deleteHouseholdMember`,
+  `setHouseholdMe`, and `splitRent({ title, utilities, dueOn? })` returning
+  `Promise<RentSplitError | null>` (same contract as `splitIntoReceivables`;
+  people whose total is $0 get no receivable).
+
+## What's yours
+
+1. **"Split rent" button** in `ReceivablesPanel` beside "Split a bill",
+   opening `RentSplitDialog.tsx`. Call `store.fetchHousehold()` when it opens.
+2. **Household section** in the dialog: rows of name + room rent (`parseAmount`)
+   with add / edit / remove, and a "This is me" radio per row (→
+   `setHouseholdMe`). Edits persist immediately — it's the saved setup.
+3. **This month section:** a Title field defaulting to
+   `Rent ${format(today, "MMM yyyy")}`, utility rows (label + amount) pre-filled
+   with Electricity / Gas / Wifi at blank amounts, add/remove rows, optional due
+   date. Blank amounts count as 0. Not saved between months.
+4. **Live preview** from `planRentSplit(store.household, utilities)`: per other
+   person, room + each utility + bold total; a muted "Your share" row. Map each
+   `RentSplitError` to plain English and disable submit on error.
+5. **Submit** → `store.splitRent(...)`; close on `null`.
+6. **Tests** — component test (preview totals for a 3-person household; me
+   excluded from submit) and an E2E: set up Hoang (me, $700), Alex ($600),
+   Sam ($500), enter Electricity $90 / Gas $30 / Wifi $60 → Alex $660.00 and
+   Sam $560.00 appear under "Owed to me" with itemized reasons; none for Hoang.
+   Add `finance_household_members` to the E2E mock harness if it needs one.
+
+## Notes
+
+- Don't re-implement the split or the reason text in the component.
+- Members' `sortOrder` exists for ordering; set it on create (e.g. current
+  length) — no drag-reorder needed.

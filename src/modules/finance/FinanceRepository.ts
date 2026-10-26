@@ -8,6 +8,7 @@ import type {
   Budget,
   FinanceSettings,
   FinanceTransaction,
+  HouseholdMember,
   Receivable,
   RecurringBill,
   TransactionKind,
@@ -561,4 +562,118 @@ export async function markReceivablePaid(
   if (updateError) throw updateError;
 
   return { receivable: fromReceivableRow(updated), transaction };
+}
+
+// --- Household (rent split, migration 0047) --------------------------------
+
+interface HouseholdMemberRow {
+  id: string;
+  name: string;
+  rent_cents: number;
+  is_me: boolean;
+  sort_order: number;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function fromHouseholdMemberRow(row: HouseholdMemberRow): HouseholdMember {
+  return {
+    id: row.id,
+    name: row.name,
+    rentCents: row.rent_cents,
+    isMe: row.is_me,
+    sortOrder: row.sort_order,
+    deletedAt: row.deleted_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface CreateHouseholdMemberInput {
+  name: string;
+  rentCents: number;
+  sortOrder?: number;
+}
+
+// `isMe` is deliberately absent: "which one is me" changes go through
+// setHouseholdMe so the one-me unique index is never violated mid-swap.
+export type UpdateHouseholdMemberInput = Partial<CreateHouseholdMemberInput>;
+
+export async function getHouseholdMembers(): Promise<HouseholdMember[]> {
+  const { data, error } = await supabase
+    .from("finance_household_members")
+    .select("*")
+    .is("deleted_at", null)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return data.map(fromHouseholdMemberRow);
+}
+
+export async function createHouseholdMember(
+  input: CreateHouseholdMemberInput,
+): Promise<HouseholdMember> {
+  const { data, error } = await supabase
+    .from("finance_household_members")
+    .insert({
+      name: input.name.trim(),
+      rent_cents: input.rentCents,
+      sort_order: input.sortOrder ?? 0,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return fromHouseholdMemberRow(data);
+}
+
+export async function updateHouseholdMember(
+  id: string,
+  input: UpdateHouseholdMemberInput,
+): Promise<HouseholdMember> {
+  const patch: Record<string, unknown> = {};
+  if (input.name !== undefined) patch.name = input.name.trim();
+  if (input.rentCents !== undefined) patch.rent_cents = input.rentCents;
+  if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder;
+
+  const { data, error } = await supabase
+    .from("finance_household_members")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return fromHouseholdMemberRow(data);
+}
+
+// Soft delete. Also clears is_me so a removed "me" can't block a new one (the
+// unique index ignores deleted rows anyway; this keeps the row honest).
+export async function deleteHouseholdMember(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("finance_household_members")
+    .update({ deleted_at: new Date().toISOString(), is_me: false })
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+// Mark `id` as you (or nobody, with null). Clears the current "me" FIRST, then
+// sets the new one — the reverse order would trip the one-me unique index.
+export async function setHouseholdMe(id: string | null): Promise<void> {
+  const { error: clearError } = await supabase
+    .from("finance_household_members")
+    .update({ is_me: false })
+    .eq("is_me", true)
+    .is("deleted_at", null);
+  if (clearError) throw clearError;
+  if (id === null) return;
+
+  const { error } = await supabase
+    .from("finance_household_members")
+    .update({ is_me: true })
+    .eq("id", id);
+  if (error) throw error;
 }

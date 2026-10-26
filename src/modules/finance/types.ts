@@ -105,3 +105,17 @@ export interface Receivable {
   createdAt: string;
   updatedAt: string;
 }
+
+// One person in the saved household a monthly rent split runs over (migration
+// 0047). `rentCents` is their room's rent; utilities are split evenly at split
+// time. At most one live member is you (`isMe`).
+export interface HouseholdMember {
+  id: string;
+  name: string;
+  rentCents: number;
+  isMe: boolean;
+  sortOrder: number;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

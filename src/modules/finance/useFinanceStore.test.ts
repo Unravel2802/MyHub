@@ -3,6 +3,7 @@ import type {
   Budget,
   FinanceSettings,
   FinanceTransaction,
+  HouseholdMember,
   Receivable,
   RecurringBill,
 } from "@/src/modules/finance/types";
@@ -26,6 +27,11 @@ vi.mock("@/src/modules/finance/FinanceRepository", () => ({
   getReceivables: vi.fn(),
   createReceivable: vi.fn(),
   createReceivables: vi.fn(),
+  getHouseholdMembers: vi.fn(),
+  createHouseholdMember: vi.fn(),
+  updateHouseholdMember: vi.fn(),
+  deleteHouseholdMember: vi.fn(),
+  setHouseholdMe: vi.fn(),
   updateReceivable: vi.fn(),
   deleteReceivable: vi.fn(),
   markReceivablePaid: vi.fn(),
@@ -98,6 +104,20 @@ function receivable(
   };
 }
 
+function member(
+  overrides: Partial<HouseholdMember> & { id: string; name: string },
+): HouseholdMember {
+  return {
+    rentCents: 0,
+    isMe: false,
+    sortOrder: 0,
+    deletedAt: null,
+    createdAt: "2026-10-01T00:00:00.000Z",
+    updatedAt: "2026-10-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
@@ -113,6 +133,7 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   repository.regenerateMonthlyBillInstances.mockResolvedValue([]);
   useFinanceStore.setState({
+    household: [],
     transactions: [],
     bills: [],
     budgets: [],
@@ -481,6 +502,77 @@ describe("useFinanceStore", () => {
       "Something went wrong, please try again later.",
     );
     consoleError.mockRestore();
+  });
+
+  it("splits rent over the household: room rent + utility share, me excluded", async () => {
+    useFinanceStore.setState({
+      household: [
+        member({ id: "h", name: "Hoang", rentCents: 70000, isMe: true }),
+        member({ id: "a", name: "Alex", rentCents: 60000 }),
+        member({ id: "s", name: "Sam", rentCents: 0 }),
+      ],
+    });
+    const created = [receivable({ id: "ra" }), receivable({ id: "rs" })];
+    repository.createReceivables.mockResolvedValueOnce(created);
+
+    const error = await useFinanceStore.getState().splitRent({
+      title: "Rent Oct 2026",
+      utilities: [
+        { label: "Electricity", totalCents: 9000 },
+        { label: "Wifi", totalCents: 6000 },
+      ],
+      dueOn: "2026-11-01",
+    });
+
+    expect(error).toBeNull();
+    expect(repository.createReceivables).toHaveBeenCalledWith([
+      {
+        person: "Alex",
+        amountCents: 65000,
+        reason: "Rent Oct 2026: room $600.00, Electricity $30.00, Wifi $20.00",
+        dueOn: "2026-11-01",
+        status: "not_requested",
+      },
+      {
+        person: "Sam",
+        amountCents: 5000,
+        reason: "Rent Oct 2026: Electricity $30.00, Wifi $20.00",
+        dueOn: "2026-11-01",
+        status: "not_requested",
+      },
+    ]);
+    expect(useFinanceStore.getState().receivables).toEqual(created);
+  });
+
+  it("returns the rent planning error and saves nothing", async () => {
+    useFinanceStore.setState({
+      household: [member({ id: "h", name: "Hoang", isMe: true })],
+    });
+    const error = await useFinanceStore
+      .getState()
+      .splitRent({ title: "Rent", utilities: [] });
+    expect(error).toBe("no_one_else");
+    expect(repository.createReceivables).not.toHaveBeenCalled();
+  });
+
+  it("optimistically moves 'me' and rolls back on failure", async () => {
+    const hoang = member({ id: "h", name: "Hoang", isMe: true });
+    const alex = member({ id: "a", name: "Alex" });
+    useFinanceStore.setState({ household: [hoang, alex] });
+    const pending = deferred<void>();
+    repository.setHouseholdMe.mockReturnValueOnce(pending.promise);
+
+    const action = useFinanceStore.getState().setHouseholdMe("a");
+    expect(useFinanceStore.getState().household.map((m) => m.isMe)).toEqual([
+      false,
+      true,
+    ]);
+    pending.reject(new Error("unique violation"));
+    await action;
+    expect(useFinanceStore.getState().household).toEqual([hoang, alex]);
+    expect(useFinanceStore.getState().error).toBe(
+      "Something went wrong, please try again later.",
+    );
   });
 
   it("optimistically deletes a receivable and rolls back on failure", async () => {

@@ -2,9 +2,11 @@ import { create } from "zustand";
 import * as FinanceRepository from "@/src/modules/finance/FinanceRepository";
 import type {
   CreateBillInput,
+  CreateHouseholdMemberInput,
   CreateReceivableInput,
   CreateTransactionInput,
   UpdateBillInput,
+  UpdateHouseholdMemberInput,
   UpdateReceivableInput,
   UpdateTransactionInput,
 } from "@/src/modules/finance/FinanceRepository";
@@ -16,6 +18,12 @@ import {
 } from "@/src/modules/finance/financeSelectors";
 import { computeRunway } from "@/src/modules/finance/runway";
 import {
+  planRentSplit,
+  rentShareReason,
+  type RentSplitError,
+  type UtilityItem,
+} from "@/src/modules/finance/rentSplit";
+import {
   planSplit,
   type SplitError,
   type SplitParticipant,
@@ -25,6 +33,7 @@ import type {
   BudgetProgress,
   FinanceSettings,
   FinanceTransaction,
+  HouseholdMember,
   MonthlySummary,
   Receivable,
   RecurringBill,
@@ -43,11 +52,19 @@ export interface SplitIntoReceivablesInput {
   dueOn?: string | null;
 }
 
+export interface SplitRentInput {
+  // Heads every receivable's reason, e.g. "Rent Oct 2026".
+  title: string;
+  utilities: UtilityItem[];
+  dueOn?: string | null;
+}
+
 export interface FinanceStore {
   transactions: FinanceTransaction[];
   bills: RecurringBill[];
   budgets: Budget[];
   receivables: Receivable[];
+  household: HouseholdMember[];
   settings: FinanceSettings | null;
   isLoading: boolean;
   isCreating: boolean;
@@ -92,6 +109,20 @@ export interface FinanceStore {
   // Convert a receivable to a settled income transaction and mark it paid. The
   // new transaction lands in `transactions` so the ledger + summary update.
   markReceivablePaid: (id: string) => Promise<void>;
+
+  fetchHousehold: () => Promise<void>;
+  createHouseholdMember: (input: CreateHouseholdMemberInput) => Promise<void>;
+  updateHouseholdMember: (
+    id: string,
+    input: UpdateHouseholdMemberInput,
+  ) => Promise<void>;
+  deleteHouseholdMember: (id: string) => Promise<void>;
+  // Mark which member is you (null = nobody). Optimistic with rollback.
+  setHouseholdMe: (id: string | null) => Promise<void>;
+  // Split this month's rent over `household` (see rentSplit.ts): one
+  // receivable per OTHER member for room rent + their utility shares, reason
+  // itemized. Same return contract as splitIntoReceivables.
+  splitRent: (input: SplitRentInput) => Promise<RentSplitError | null>;
 
   // The in / out / net for the month containing `date`, derived from state.
   summaryForMonth: (date: Date) => MonthlySummary;
@@ -143,6 +174,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   bills: [],
   budgets: [],
   receivables: [],
+  household: [],
   settings: null,
   isLoading: false,
   isCreating: false,
@@ -378,6 +410,85 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
           dueOn: dueOn ?? null,
           status: "not_requested",
         })),
+      );
+      set({ receivables: [...created, ...get().receivables] });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+    return null;
+  },
+
+  fetchHousehold: async () => {
+    try {
+      const household = await FinanceRepository.getHouseholdMembers();
+      set({ household });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+  },
+
+  createHouseholdMember: async (input) => {
+    try {
+      const created = await FinanceRepository.createHouseholdMember(input);
+      set({ household: [...get().household, created] });
+    } catch (error) {
+      set({ error: toUserMessage(error) });
+    }
+  },
+
+  updateHouseholdMember: async (id, input) => {
+    const previous = get().household;
+    try {
+      const updated = await FinanceRepository.updateHouseholdMember(id, input);
+      set({
+        household: get().household.map((member) =>
+          member.id === id ? updated : member,
+        ),
+      });
+    } catch (error) {
+      set({ household: previous, error: toUserMessage(error) });
+    }
+  },
+
+  deleteHouseholdMember: async (id) => {
+    const previous = get().household;
+    set({ household: previous.filter((member) => member.id !== id) });
+    try {
+      await FinanceRepository.deleteHouseholdMember(id);
+    } catch (error) {
+      set({ household: previous, error: toUserMessage(error) });
+    }
+  },
+
+  setHouseholdMe: async (id) => {
+    const previous = get().household;
+    set({
+      household: previous.map((member) => ({
+        ...member,
+        isMe: member.id === id,
+      })),
+    });
+    try {
+      await FinanceRepository.setHouseholdMe(id);
+    } catch (error) {
+      set({ household: previous, error: toUserMessage(error) });
+    }
+  },
+
+  splitRent: async ({ title, utilities, dueOn }) => {
+    const result = planRentSplit(get().household, utilities);
+    if (!result.ok) return result.error;
+    try {
+      const created = await FinanceRepository.createReceivables(
+        result.shares
+          .filter((share) => !share.isMe && share.totalCents > 0)
+          .map((share) => ({
+            person: share.name,
+            amountCents: share.totalCents,
+            reason: rentShareReason(title.trim(), share, utilities),
+            dueOn: dueOn ?? null,
+            status: "not_requested",
+          })),
       );
       set({ receivables: [...created, ...get().receivables] });
     } catch (error) {

@@ -39,6 +39,18 @@ so a new leader that reads from a majority cannot miss a committed decision.
                                    the new leader learns X and must honour it.
 ```
 
+```mermaid
+sequenceDiagram
+  participant O as Old quorum
+  participant C as Shared node C
+  participant N as New leader
+  O->>C: Accept X: A,B,C
+  Note over O: A and B crash
+  N->>C: Read: C,D,E
+  C-->>N: Accepted X
+  Note over N: Keep X
+```
+
 Without the intersection, a new leader could read from {D, E, ...} and see
 nothing, then decide a different value — and two different values would have been
 "agreed", which is exactly the agreement violation the protocol exists to
@@ -211,6 +223,20 @@ Two mitigations worth knowing:
 
 And the structural answer, again: partition, and run a separate small group per
 partition with its leader placed near that partition's users.
+
+> [!CHECK] Why must the two quorums {A,B,C} and {C,D,E} overlap in five nodes?
+>
+> Each contains three nodes, so their sizes sum to 3 + 3 = 6, exceeding
+> the five available nodes. At least one member must be shared; C carries
+> knowledge of the earlier accepted value into the new quorum.
+
+> [!CHECK] What does the fourth voter buy compared with three voters in the
+> chapter's table?
+>
+> Three voters require two acknowledgements and tolerate one failure. Four
+> require three and still tolerate only one: after two failures, only two
+> remain, below the quorum of three. The extra voter adds acknowledgement
+> cost without increasing the tolerated failure count.
 
 ## What to take away
 

@@ -47,6 +47,14 @@ under many labels:
                       ← this one is the most useful framing
 ```
 
+```mermaid
+flowchart TB
+  L[Deterministic log replay] --> A[Replica A: y=5]
+  L --> B[Replica B: y=5]
+  L --> C[Replica C: y=5]
+
+```
+
 The last is the important reframing. **Agreeing on an ordered log gives you
 everything else**: to elect a leader, append "node A is leader for term 5" and
 whoever's entry commits first wins; to acquire a lock, append "A holds L until
@@ -181,11 +189,11 @@ versus Raft's O(n) — which is why it is confined to settings where participant
 genuinely do not trust each other: blockchains, and some financial
 infrastructure.
 
-**Inside your own data centre, crash-fault tolerance is the right model.** Your
-nodes are not adversaries. The failure to worry about is a node crashing,
-pausing, or being partitioned — not one lying about what it saw. Choosing
-Byzantine tolerance for an internal system buys you a large cost against a threat
-you do not have.
+> [!KEY] **Inside your own data centre, crash-fault tolerance is the right model.** Your
+> nodes are not adversaries. The failure to worry about is a node crashing,
+> pausing, or being partitioned — not one lying about what it saw. Choosing
+> Byzantine tolerance for an internal system buys you a large cost against a threat
+> you do not have.
 
 One caveat worth knowing: crash-fault protocols assume **stable storage survives
 a crash**. A node that loses its persistent state and rejoins with amnesia can
@@ -223,6 +231,21 @@ also why systems that need to scale put consensus underneath a *partitioned*
 layer — each partition runs its own small Raft group — rather than running one
 enormous consensus group. CockroachDB, Spanner and TiKV all do this: thousands
 of independent 3-node or 5-node Raft groups, not one 1,000-node group.
+
+> [!CHECK] What may a production consensus protocol give up during an unbounded
+> network delay?
+>
+> It may stop making progress, sacrificing termination for that period.
+> Agreement and validity remain safety obligations; partial synchrony
+> restores liveness once communication becomes sufficiently well behaved,
+> rather than allowing conflicting decisions.
+
+> [!CHECK] How many nodes does the chapter require to tolerate two failures under
+> its two fault models?
+>
+> Crash faults use 2f + 1 = 2 × 2 + 1 = 5 nodes. Byzantine faults use 3f +
+> 1 = 3 × 2 + 1 = 7 nodes, with the additional signing and messaging costs
+> described here.
 
 ## What to take away
 

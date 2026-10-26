@@ -65,6 +65,20 @@ make the *storage* reject the stale writer:
   A resumes, writes with token 33   → REJECTED (33 < 34)
 ```
 
+```mermaid
+sequenceDiagram
+  participant A as Holder A
+  participant B as Holder B
+  participant S as Storage
+  Note over A: Token 33, lease 10 s
+  Note over A: Pause 15 s, lease expires
+  Note over B: Acquire token 34
+  B->>S: Write with token 34
+  S-->>B: Accept, highest is 34
+  A->>S: Resume, write token 33
+  S-->>A: Reject: 33 is below 34
+```
+
 ```python
 lease = etcd.lease(ttl=10)
 etcd.put("/locks/report", node_id, lease=lease)
@@ -99,10 +113,10 @@ else:
 
 Three rules that make the difference between this working and causing an outage:
 
-**Never assume you are still the leader.** Leadership can be lost silently — a
-network blip drops your keep-alive, the lease expires, someone else takes over,
-and your process has not noticed. Check the lease before every consequential
-action, and fence every write.
+> [!KEY] **Never assume you are still the leader.** Leadership can be lost silently — a
+> network blip drops your keep-alive, the lease expires, someone else takes over,
+> and your process has not noticed. Check the lease before every consequential
+> action, and fence every write.
 
 **Stop work immediately on losing leadership.** The keep-alive failing must
 trigger an orderly stop, not a retry loop. A demoted leader that keeps working is
@@ -226,6 +240,30 @@ The design consequence, one more time: **use consensus for the small amount of
 state that genuinely needs agreement, and keep everything else out of it.** The
 systems that scale run thousands of small consensus groups underneath a
 partitioned data layer, and put almost no traffic through any one of them.
+
+> [!PITFALL] A consensus-backed lease does not fence a stale writer by itself. Put
+> the monotonic-token check in the protected resource; the paused client
+> is precisely the component that cannot be trusted to notice lease loss.
+
+> [!INTERVIEW] Separate voter count from failure-domain placement. Explain the majority
+> left after each site loss, then connect commit latency to fsync and
+> network delay; adding voters buys tolerance rather than write
+> throughput.
+
+> [!CHECK] Why does a ten-second lease not stop the holder paused for fifteen
+> seconds from corrupting data?
+>
+> The lease expires while A is paused, allowing B to acquire token 34 and
+> write. A resumes still holding token 33 in memory; storage must reject
+> 33 after seeing 34. The lease alone cannot stop a client that does not
+> know it expired.
+
+> [!CHECK] Does a three-node layout with two nodes in DC-A and one in DC-B survive
+> either data-centre loss?
+>
+> No. Losing DC-B leaves two nodes, enough for a majority of three. Losing
+> DC-A leaves only one, below that quorum. The layout survives only one of
+> the two possible data-centre failures, despite having three nodes.
 
 ## What to take away
 

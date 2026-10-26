@@ -129,11 +129,11 @@ it needs are gone. The leader sends the whole snapshot instead — the
 transfer. This is why "how long does a node take to rejoin" is a real
 operational number, and why systems support incremental or streamed snapshots.
 
-**Snapshotting must not stall the leader.** A naive implementation blocks while
-serialising gigabytes. Real ones use copy-on-write or fork so the state machine
-keeps serving. A blocking snapshot on a leader looks exactly like a leader
-failure to the rest of the cluster, and triggers an election — a self-inflicted
-outage that recurs on a schedule.
+> [!KEY] **Snapshotting must not stall the leader.** A naive implementation blocks while
+> serialising gigabytes. Real ones use copy-on-write or fork so the state machine
+> keeps serving. A blocking snapshot on a leader looks exactly like a leader
+> failure to the rest of the cluster, and triggers an election — a self-inflicted
+> outage that recurs on a schedule.
 
 ## Membership changes: the genuinely hard part
 
@@ -165,6 +165,16 @@ Raft offers two correct solutions.
        decisions need a majority of C_old
        AND a majority of C_new
        → no single-configuration majority can act alone
+```
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  Old: Old config: 3 voters
+  Joint: Old and new majorities required
+  New: New config: 5 voters
+  Old --> Joint: Enter joint configuration
+  Joint --> New: Commit new configuration
 ```
 
 Correct and general, and complex enough that most implementations avoid it.
@@ -217,6 +227,25 @@ per-follower lag, not just cluster health.
 runs slow may believe its lease is still valid after a new leader was elected.
 Lease reads require the clock bound the clocks topic described, and monitoring of
 it.
+
+> [!PITFALL] A blocking snapshot can look like a failed leader and trigger an
+> election. Keep snapshot serialisation off the blocking path, and measure
+> follower catch-up as well as whether the cluster reports healthy.
+
+> [!CHECK] Would a voter ending at (term 3, index 4) accept a candidate ending at
+> (term 2, index 5)?
+>
+> No. Compare lastLogTerm first: 2 is less than 3, so the candidate is
+> less up-to-date despite index 5 being longer than index 4. Log length
+> breaks a tie only after the last terms match.
+
+> [!CHECK] Why may the term-4 leader not commit the old term-2 entry merely after
+> copying it to three of five nodes?
+>
+> The chapter's term-3 alternative can still win a later election and
+> overwrite that old entry. The term-4 leader must commit an entry from
+> its own current term first; that commits the preceding prefix indirectly
+> and prevents the unsafe later election.
 
 ## What to take away
 

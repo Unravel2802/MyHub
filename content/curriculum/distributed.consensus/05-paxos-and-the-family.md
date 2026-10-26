@@ -57,11 +57,22 @@ proposals.
   a majority accepting means v is CHOSEN.
 ```
 
-**That single "must propose the highest reported value" rule is the entire safety
-argument.** If a value was already chosen, it was accepted by a majority; any
-later Phase 1 talks to a majority; the two majorities intersect; so the proposer
-learns about it and is forced to re-propose it. Once a value is chosen, no
-different value can ever be chosen.
+```mermaid
+sequenceDiagram
+  participant P as Proposer
+  participant A as Acceptors
+  P->>A: PREPARE 9
+  A-->>P: Promises with highest 5,x
+  P->>P: Must choose reported x
+  P->>A: ACCEPT 9,x
+  A-->>P: Majority accepts x
+```
+
+> [!KEY] **That single "must propose the highest reported value" rule is the entire safety
+> argument.** If a value was already chosen, it was accepted by a majority; any
+> later Phase 1 talks to a majority; the two majorities intersect; so the proposer
+> learns about it and is forced to re-propose it. Once a value is chosen, no
+> different value can ever be chosen.
 
 ```text
   proposer A         acceptors 1  2  3         proposer B
@@ -124,6 +135,17 @@ observes that Phase 1 is about *leadership*, not about the value:
   ACCEPT   → 1 round trip             ACCEPT → 1 round trip per entry
 
   2 RTT per decision                  1 RTT per decision, steady state
+```
+
+```chart
+type: bar
+scale: linear
+unit: RTT
+title: Round trips per log decision
+caption: Multi-Paxos pays Phase 1 again on a leadership change.
+---
+Single-decree Paxos: 2
+Stable Multi-Paxos: 1
 ```
 
 Run Phase 1 once for a whole *range* of future log positions, and then a stable
@@ -225,6 +247,22 @@ first real incident.
 If you do implement one, the minimum bar: model-check the protocol (TLA+ is what
 the Raft and Paxos authors used), and run a Jepsen-style history checker under
 injected partitions, clock skew and SIGSTOP pauses.
+
+> [!CHECK] After PREPARE 9 learns accepted proposal (5,x), may the proposer choose
+> its own different value?
+>
+> If (5,x) is the highest-numbered accepted proposal reported by the
+> Phase-1 majority, it must propose x. The intersecting majority may carry
+> a previously chosen value; retaining the highest reported value is the
+> safety rule that prevents choosing a different one.
+
+> [!CHECK] How does Multi-Paxos reduce two round trips per decision to one in
+> steady state?
+>
+> Single-decree Paxos runs PREPARE and ACCEPT for each decision, one round
+> trip each. A stable Multi-Paxos leader runs Phase 1 for future log
+> positions once, then uses only ACCEPT per entry; leadership change
+> incurs Phase 1 again.
 
 ## What to take away
 

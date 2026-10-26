@@ -45,6 +45,16 @@ real systems do both.
   so read and write load is spread, and no node is idle
 ```
 
+```mermaid
+flowchart TB
+  K[Route by partition key] --> A[P1 leader]
+  K --> B[P2 leader]
+  K --> C[P3 leader]
+  A --> D[P1 follower]
+  B --> E[P2 follower]
+  C --> F[P3 follower]
+```
+
 Note that leadership is spread deliberately. A naive layout that puts all leaders
 on one node gives you the write bottleneck back.
 
@@ -74,8 +84,8 @@ of these are reversible; sharding is not, in practice.
 
 The costs are specific and worth knowing before committing.
 
-**Cross-partition queries become fan-out.** A query that cannot be answered by
-one partition must ask all of them and merge:
+> [!KEY] **Cross-partition queries become fan-out.** A query that cannot be answered by
+> one partition must ask all of them and merge:
 
 ```text
   SELECT * FROM orders WHERE user_id = 7        ← partitioned by user_id
@@ -180,6 +190,19 @@ unavoidable. But it ends much later than most teams assume, and the year you buy
 by scaling up is a year you spend on the product instead. The engineering
 judgement is knowing where you actually are on that curve — which requires
 measuring, not estimating.
+
+> [!CHECK] Why do ten replicas not provide ten times the write throughput?
+>
+> Every replica applies every write, so ten replicas perform ten copies of
+> the same write work. Partitioning instead assigns disjoint writes to
+> different owners; replicating each partition then adds fault tolerance.
+
+> [!CHECK] Which query is local when orders are partitioned by user_id, and why is
+> a status query different?
+>
+> The user_id = 7 predicate identifies one partition directly. A status =
+> pending predicate does not identify the partition key, so it must query
+> all partitions and merge; its latency includes the slowest response.
 
 ## What to take away
 

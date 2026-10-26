@@ -74,9 +74,9 @@ Hash the key and take the result modulo the partition count.
   adjacent keys land in unrelated partitions — deliberately
 ```
 
-**What it buys: even distribution.** A good hash function spreads any input
-distribution uniformly, so sequential keys, skewed keys and clustered keys all
-scatter evenly. The monotonic-write hotspot disappears entirely.
+> [!KEY] **What it buys: even distribution.** A good hash function spreads any input
+> distribution uniformly, so sequential keys, skewed keys and clustered keys all
+> scatter evenly. The monotonic-write hotspot disappears entirely.
 
 **What it costs: range queries become fan-out.**
 
@@ -117,6 +117,13 @@ The best of both, and what most modern systems actually offer.
 
   "tenant_A's events last week" → one partition, one range scan ✓
   "all events last week"        → fan-out ✗ (and that is fine, if rare)
+```
+
+```mermaid
+flowchart TB
+  T[tenant_A and time range] --> H[Hash tenant_id]
+  H -->|One partition| P[Locate tenant_A rows]
+  P --> R[Scan sorted created_at range]
 ```
 
 Cassandra's partition key plus clustering columns, DynamoDB's partition key plus
@@ -188,6 +195,21 @@ That is usually a good trade, and it is bounded — 8 partitions to query, not N
 Cheap and effective for spreading writes; destroys range queries entirely, so it
 is really a hash scheme in disguise. Twitter's Snowflake IDs and similar schemes
 sometimes apply it deliberately.
+
+> [!CHECK] What does salting a timestamp across eight buckets buy and cost?
+>
+> Writes spread across eight buckets rather than one moving hotspot,
+> giving the stated 8× write throughput. A time-range read must scan all
+> eight buckets and merge, replacing the hotspot with a bounded eight-way
+> read fan-out.
+
+> [!CHECK] Why does hashing tenant_id not make an all-tenant time-range query
+> local?
+>
+> Hashing selects a partition for one tenant, while created_at orders only
+> the rows inside that partition. Without a tenant_id, the query cannot
+> choose one hash partition, so it must read all partitions despite the
+> local sort key.
 
 ## What to take away
 

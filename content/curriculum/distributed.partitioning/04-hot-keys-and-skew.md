@@ -19,6 +19,19 @@ while the rest of the cluster idles.
   └──────────┴──────────┴──────────┴──────────┘
 ```
 
+```chart
+type: bar
+scale: linear
+unit: %
+title: Even data does not mean even traffic
+caption: Traffic shares from the four-partition example.
+---
+Partition 1: 2
+Partition 2: 1
+Partition 3: 95
+Partition 4: 2
+```
+
 No hash function fixes this, because all the requests are for **the same key**.
 This is the limit of the partitioning ideas so far, and it needs different tools.
 
@@ -76,6 +89,13 @@ the traffic.
                   │ miss
                   ▼
               partition
+```
+
+```mermaid
+flowchart TB
+  R[Hot-key reads] --> L[Local in-process cache]
+  L -->|Miss| S[Shared cache]
+  S -->|Miss| P[Owning partition]
 ```
 
 A small **in-process** cache in front of the shared cache is especially effective
@@ -207,6 +227,25 @@ The design that works:
 Step 5 is the one that separates systems that handle growth from systems that
 have an incident every time a customer succeeds. Tenant migration should be a
 button, exercised regularly, not a heroic manual project.
+
+> [!PITFALL] A hot-key cache expiry can release the full concentrated load at once.
+> Protect refill with single-flight or stale-while-revalidate, rather than
+> turning a successful cache into a stampede.
+
+> [!CHECK] What does splitting a like counter into sixteen shards change?
+>
+> Writes choose among sixteen physical keys, spreading the hot-key load.
+> Reading the total now sums sixteen shard values instead of fetching one;
+> that is bounded scatter-gather, and it works because counts are
+> aggregatable.
+
+> [!CHECK] Why does an even 25% data share per partition fail to protect the
+> example cluster?
+>
+> The traffic shares are 2%, 1%, 95% and 2%. Requests for the celebrity's
+> single key still reach its owner, so one partition carries 95% even
+> though each stores 25% of the data. Rehashing cannot split requests for
+> that same key.
 
 ## What to take away
 

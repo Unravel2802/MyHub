@@ -4,11 +4,8 @@ import { useEffect, useMemo } from "react";
 import { Briefcase } from "lucide-react";
 import { RefreshButton } from "@/src/components/ui/RefreshButton";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
-import { ApplicationForm } from "@/src/modules/jobApplications/components/ApplicationForm";
-import {
-  ApplicationPipeline,
-  REJECTION_TAKEAWAY_PREFIX,
-} from "@/src/modules/jobApplications/components/ApplicationPipeline";
+import { QuickAddApplication } from "@/src/modules/jobApplications/components/QuickAddApplication";
+import { ApplicationTable } from "@/src/modules/jobApplications/components/ApplicationTable";
 import { FunnelPanel } from "@/src/modules/jobApplications/components/FunnelPanel";
 import { CompanyPanel } from "@/src/modules/jobApplications/components/CompanyPanel";
 import { InterviewPanel } from "@/src/modules/jobApplications/components/InterviewPanel";
@@ -33,9 +30,7 @@ export function JobApplicationCrm() {
         label: "New application",
         keywords: ["application", "job", "company", "pipeline"],
         action: () => {
-          document
-            .getElementById("new-application-heading")
-            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          document.getElementById("new-application-company")?.focus();
         },
       },
       {
@@ -81,15 +76,30 @@ export function JobApplicationCrm() {
   function changeStage(id: string, stage: ApplicationStage) {
     void store.updateApplicationStage(id, stage);
   }
-  function saveRejectionTakeaway(id: string, takeaway: string) {
-    const application = store.applications.find((item) => item.id === id);
-    if (!application) return;
-    const notes = application.notes?.trim();
-    void store.updateApplication(id, {
-      notes: notes
-        ? `${notes}\n${REJECTION_TAKEAWAY_PREFIX} ${takeaway}`
-        : `${REJECTION_TAKEAWAY_PREFIX} ${takeaway}`,
+  async function quickCreate(companyName: string, roleTitle: string) {
+    let company = useApplicationStore
+      .getState()
+      .companies.find(
+        (item) =>
+          item.name.toLocaleLowerCase() === companyName.toLocaleLowerCase(),
+      );
+    if (!company) {
+      await store.createCompany({ name: companyName, tier: "match" });
+      const state = useApplicationStore.getState();
+      if (state.error) return false;
+      company = state.companies.find(
+        (item) =>
+          item.name.toLocaleLowerCase() === companyName.toLocaleLowerCase(),
+      );
+    }
+    if (!company || company.id.startsWith("optimistic-")) return false;
+    await store.createApplication({
+      companyId: company.id,
+      roleTitle,
+      resumeVariant: "swe_backend",
+      stage: "researching",
     });
+    return !useApplicationStore.getState().error;
   }
 
   return (
@@ -102,64 +112,73 @@ export function JobApplicationCrm() {
         />
       }
       error={store.error}
-      eyebrow="Job search funnel"
+      eyebrow="Job search"
       hero={null}
       href="/applications"
       icon={Briefcase}
       navTitle="Job CRM"
-      title="Applications and interviews"
-      compose={
-        /* `open` by default. Collapsing the form outright doesn't just fail the
-           specs — it hides the primary action from anyone tabbing through, and
-           a disclosure you must find before you can do anything is worse than a
-           form you can scroll past. The template keeps this composer after the
-           pipeline data without hiding it. */
-        <details className="rounded-lg border border-border bg-surface" open>
-          <summary className="cursor-pointer px-5 py-4 text-lg font-semibold text-foreground">
-            Add to your pipeline
-          </summary>
-          <div className="grid gap-6 border-t border-border p-5 lg:grid-cols-2 xl:grid-cols-3">
-            <CompanyPanel
-              applications={store.applications}
-              companies={store.companies}
-              disabled={store.isCreating}
-              onCreate={store.createCompany}
-              onDelete={deleteCompany}
-              pendingIds={pending}
-            />
-            <ApplicationForm
-              companies={store.companies}
-              disabled={store.isCreating}
-              onCreate={store.createApplication}
-            />
-            <InterviewPanel
-              applications={store.applications}
-              companies={store.companies}
-              disabled={store.isCreating}
-              interviews={store.interviews}
-              onComplete={store.markInterviewCompleted}
-              onCreate={store.createInterview}
-              onDelete={deleteInterview}
-              onSavePostMortem={(id, notes) =>
-                store.updateInterview(id, { postMortemNotes: notes })
-              }
-              pendingIds={pending}
-            />
-          </div>
-        </details>
-      }
+      title="Applications"
+      description="A simple place to keep your job search moving."
     >
-      <FunnelPanel funnel={store.funnel()} />
-      <div className="overflow-x-auto">
-        <ApplicationPipeline
+      <div className="grid min-w-0 gap-4">
+        <ApplicationTable
           applications={store.applications}
           companies={store.companies}
+          isLoading={store.isLoading}
           onDelete={deleteApplication}
           onStageChange={changeStage}
+          onUpdate={store.updateApplication}
           pendingIds={pending}
-          onSaveRejectionTakeaway={saveRejectionTakeaway}
+        />
+        <QuickAddApplication
+          companies={store.companies}
+          disabled={store.isCreating || store.isLoading}
+          onCreate={quickCreate}
         />
       </div>
+      <details className="rounded-lg border border-border bg-surface">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-body">
+          Interviews · {store.interviews.length}
+        </summary>
+        <div className="border-t border-border p-4">
+          <InterviewPanel
+            applications={store.applications}
+            companies={store.companies}
+            disabled={store.isCreating}
+            interviews={store.interviews}
+            onComplete={store.markInterviewCompleted}
+            onCreate={store.createInterview}
+            onDelete={deleteInterview}
+            onSavePostMortem={(id, notes) =>
+              store.updateInterview(id, { postMortemNotes: notes })
+            }
+            pendingIds={pending}
+          />
+        </div>
+      </details>
+      <details className="rounded-lg border border-border bg-surface">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-body">
+          Funnel statistics
+        </summary>
+        <div className="border-t border-border p-4">
+          <FunnelPanel funnel={store.funnel()} />
+        </div>
+      </details>
+      <details className="rounded-lg border border-border bg-surface">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-body">
+          Manage companies
+        </summary>
+        <div className="border-t border-border p-4">
+          <CompanyPanel
+            applications={store.applications}
+            companies={store.companies}
+            disabled={store.isCreating}
+            onCreate={store.createCompany}
+            onDelete={deleteCompany}
+            pendingIds={pending}
+          />
+        </div>
+      </details>
     </PageTemplate>
   );
 }

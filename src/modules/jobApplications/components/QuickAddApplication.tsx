@@ -1,13 +1,10 @@
 import { type FormEvent, useState } from "react";
 import { Plus } from "lucide-react";
-import type { Company } from "@/src/modules/jobApplications/types";
 
 export function QuickAddApplication({
-  companies,
   disabled,
   onCreate,
 }: {
-  companies: Company[];
   disabled: boolean;
   onCreate: (companyName: string, roleTitle: string) => Promise<boolean>;
 }) {
@@ -43,17 +40,11 @@ export function QuickAddApplication({
           autoComplete="off"
           className={field}
           disabled={disabled || submitting}
-          list="application-companies"
           onChange={(event) => setCompanyName(event.target.value)}
           placeholder="Company name"
           required
           value={companyName}
         />
-        <datalist id="application-companies">
-          {companies.map((company) => (
-            <option key={company.id} value={company.name} />
-          ))}
-        </datalist>
       </label>
       <label className="grid gap-1.5 text-xs text-muted">
         Role title

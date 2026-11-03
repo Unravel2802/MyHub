@@ -131,7 +131,6 @@ export function JobApplicationCrm() {
           pendingIds={pending}
         />
         <QuickAddApplication
-          companies={store.companies}
           disabled={store.isCreating || store.isLoading}
           onCreate={quickCreate}
         />

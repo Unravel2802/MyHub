@@ -1,12 +1,13 @@
-import { Fragment, useState } from "react";
-import { Table2 } from "lucide-react";
+import { Fragment, useId, useState } from "react";
+import { ExternalLink, Pencil, Table2 } from "lucide-react";
 import type { UpdateApplicationInput } from "@/src/modules/jobApplications/ApplicationRepository";
 import type {
   Application,
   ApplicationStage,
   Company,
 } from "@/src/modules/jobApplications/types";
-import { REJECTION_TAKEAWAY_PREFIX } from "@/src/modules/jobApplications/components/ApplicationPipeline";
+import { REJECTION_TAKEAWAY_PREFIX } from "@/src/modules/jobApplications/rejectionTakeaway";
+import { normalizePostingUrl } from "@/src/modules/jobApplications/postingUrl";
 
 const stages: { value: ApplicationStage; label: string }[] = [
   { value: "researching", label: "Researching" },
@@ -106,6 +107,108 @@ function EditableCell({
   );
 }
 
+function PostingUrlCell({
+  value,
+  label,
+  disabled,
+  onSave,
+}: {
+  value: string | null;
+  label: string;
+  disabled: boolean;
+  onSave: (value: string | null) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState(value ?? "");
+  const [editing, setEditing] = useState(false);
+  const [invalid, setInvalid] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const errorId = useId();
+  const current = normalizePostingUrl(value ?? "");
+
+  async function save() {
+    const result = normalizePostingUrl(draft);
+    if (!result.ok) {
+      setInvalid(true);
+      return;
+    }
+    setInvalid(false);
+    if (result.value !== value) {
+      setSaving(true);
+      try {
+        await onSave(result.value);
+      } finally {
+        setSaving(false);
+      }
+    }
+    setEditing(false);
+  }
+
+  if (!editing && current.ok && current.value) {
+    return (
+      <div className="flex min-w-0 items-center gap-1">
+        <a
+          className="flex min-w-0 items-center gap-1 rounded py-2 text-sm text-accent hover:underline"
+          href={current.value}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <ExternalLink aria-hidden size={14} className="shrink-0" />
+          <span className="truncate">{new URL(current.value).hostname}</span>
+        </a>
+        <button
+          aria-label={`Edit ${label.replace(/^Link/, "link")}`}
+          className="shrink-0 rounded p-2 text-muted hover:text-foreground disabled:opacity-60"
+          disabled={disabled || saving}
+          onClick={() => setEditing(true)}
+          type="button"
+        >
+          <Pencil aria-hidden size={13} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-w-0 py-1">
+      <input
+        aria-label={label}
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? errorId : undefined}
+        autoFocus={editing}
+        className="h-10 w-full min-w-0 rounded border border-transparent bg-transparent px-2 text-sm text-foreground placeholder:text-subtle hover:border-border focus:border-accent focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:opacity-60"
+        disabled={disabled || saving}
+        onBlur={() => void save()}
+        onChange={(event) => {
+          setDraft(event.target.value);
+          setInvalid(false);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.currentTarget.blur();
+          }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            setDraft(value ?? "");
+            setInvalid(false);
+            setEditing(false);
+          }
+        }}
+        placeholder="Add link…"
+        type="text"
+        inputMode="url"
+        autoComplete="off"
+        value={draft}
+      />
+      {invalid ? (
+        <p id={errorId} className="px-2 pb-1 text-xs text-danger" role="alert">
+          Enter a web address, e.g. https://…
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function ApplicationTable({
   applications,
   companies,
@@ -137,19 +240,20 @@ export function ApplicationTable({
         ) : null}
       </div>
       <div className="relative overflow-x-auto">
-        <table className="w-full min-w-[820px] table-fixed text-left text-sm">
+        <table className="w-full min-w-[980px] table-fixed text-left text-sm">
           <caption className="sr-only">
             Job applications. Edit a cell and tab away to save.
           </caption>
           <thead className="text-xs font-normal text-muted">
             <tr>
               {[
-                ["Company", "w-[15%]"],
-                ["Role", "w-[21%]"],
-                ["Status", "w-[16%]"],
-                ["Applied", "w-[18%]"],
-                ["Notes", "w-[22%]"],
-                ["", "w-[8%]"],
+                ["Company", "w-[14%]"],
+                ["Role", "w-[18%]"],
+                ["Status", "w-[14%]"],
+                ["Applied", "w-[16%]"],
+                ["Link", "w-[15%]"],
+                ["Notes", "w-[16%]"],
+                ["", "w-[7%]"],
               ].map(([label, width]) => (
                 <th
                   className={`border-b border-border px-2 py-3 font-normal ${width}`}
@@ -168,6 +272,7 @@ export function ApplicationTable({
               const company = companies.find(
                 (item) => item.id === application.companyId,
               );
+              const applicationLabel = `${application.roleTitle} at ${company?.name ?? "Unknown company"}`;
               const disabled =
                 isLoading ||
                 pendingIds.has(application.id) ||
@@ -175,7 +280,7 @@ export function ApplicationTable({
               return (
                 <Fragment key={application.id}>
                   <tr
-                    aria-label={`Application: ${application.roleTitle} at ${company?.name ?? "Unknown company"}`}
+                    aria-label={`Application: ${applicationLabel}`}
                     className="border-b border-border hover:bg-surface-subtle/50"
                   >
                     <th
@@ -200,7 +305,7 @@ export function ApplicationTable({
                     </td>
                     <td className="px-2 py-2">
                       <select
-                        aria-label="Application stage"
+                        aria-label={`Application stage for ${applicationLabel}`}
                         className={`max-w-full rounded-md border-0 px-2 py-1.5 text-xs disabled:opacity-60 ${application.stage === "offer" ? "bg-success-surface text-success" : application.stage === "rejected" ? "bg-danger-surface text-danger" : "bg-surface-subtle text-body"}`}
                         disabled={disabled}
                         value={application.stage}
@@ -221,7 +326,7 @@ export function ApplicationTable({
                     <td className="py-1 pr-2">
                       <EditableCell
                         key={application.appliedDate ?? "empty"}
-                        label={`Applied date for ${application.roleTitle}`}
+                        label={`Applied date for ${applicationLabel}`}
                         value={application.appliedDate ?? ""}
                         type="date"
                         disabled={disabled}
@@ -233,10 +338,21 @@ export function ApplicationTable({
                       />
                     </td>
                     <td className="py-1 pr-2">
+                      <PostingUrlCell
+                        key={application.postingUrl ?? "empty"}
+                        value={application.postingUrl}
+                        label={`Link for ${applicationLabel}`}
+                        disabled={disabled}
+                        onSave={(postingUrl) =>
+                          onUpdate(application.id, { postingUrl })
+                        }
+                      />
+                    </td>
+                    <td className="py-1 pr-2">
                       <EditableCell
                         key={application.notes ?? "empty"}
                         multiline
-                        label={`Notes for ${application.roleTitle}`}
+                        label={`Notes for ${applicationLabel}`}
                         value={application.notes ?? ""}
                         disabled={disabled}
                         onSave={(notes) =>
@@ -265,12 +381,12 @@ export function ApplicationTable({
                       id={`application-details-${application.id}`}
                       className="border-b border-border bg-surface-subtle/50"
                     >
-                      <td colSpan={6} className="p-4">
+                      <td colSpan={7} className="p-4">
                         <div className="grid gap-4 text-xs text-muted sm:grid-cols-2">
                           <label className="grid gap-1">
                             Resume
                             <select
-                              aria-label={`Resume for ${application.roleTitle}`}
+                              aria-label={`Resume for ${applicationLabel}`}
                               className="h-9 rounded border border-input bg-surface px-2 text-sm text-foreground"
                               disabled={disabled}
                               value={application.resumeVariant}
@@ -291,7 +407,7 @@ export function ApplicationTable({
                             Referral source
                             <EditableCell
                               key={application.referralSource ?? "empty"}
-                              label={`Referral source for ${application.roleTitle}`}
+                              label={`Referral source for ${applicationLabel}`}
                               value={application.referralSource ?? ""}
                               disabled={disabled}
                               onSave={(referralSource) =>

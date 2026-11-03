@@ -33,6 +33,27 @@ function render(item = application, pendingIds = new Set<string>()) {
 }
 
 describe("ApplicationTable", () => {
+  it("renders a safe external posting link with its hostname and edit control", () => {
+    const html = render({
+      ...application,
+      postingUrl: "https://linkedin.com/jobs/view/42",
+    });
+    expect(html).toContain('href="https://linkedin.com/jobs/view/42"');
+    expect(html).toContain('target="_blank" rel="noopener noreferrer"');
+    expect(html).toContain(">linkedin.com</span>");
+    expect(html).toContain(
+      'aria-label="Edit link for Backend Engineer at Unknown company"',
+    );
+  });
+  it("renders an editable empty cell and never links an unsafe stored value", () => {
+    for (const postingUrl of [null, "javascript:alert(1)"]) {
+      const html = render({ ...application, postingUrl });
+      expect(html).toContain(
+        'aria-label="Link for Backend Engineer at Unknown company"',
+      );
+      expect(html).not.toContain("<a ");
+    }
+  });
   it("keeps historical applications visible when their company was deleted", () => {
     const html = render();
     expect(html).toContain(
@@ -43,6 +64,11 @@ describe("ApplicationTable", () => {
   });
   it("preserves multiline notes in a textarea and nullable dates as empty cells", () => {
     const html = render();
+    for (const field of ["Application stage", "Applied date", "Notes"]) {
+      expect(html).toContain(
+        `aria-label="${field} for Backend Engineer at Unknown company"`,
+      );
+    }
     expect(html).toContain("First line\nSecond line</textarea>");
     expect(html).toMatch(/type="date" value=""/);
   });
@@ -54,7 +80,9 @@ describe("ApplicationTable", () => {
       expect(html).toMatch(
         /aria-label="Role at Unknown company"[^>]*disabled=""/,
       );
-      expect(html).toMatch(/aria-label="Application stage"[^>]*disabled=""/);
+      expect(html).toMatch(
+        /aria-label="Application stage for Backend Engineer at Unknown company"[^>]*disabled=""/,
+      );
     }
   });
 });

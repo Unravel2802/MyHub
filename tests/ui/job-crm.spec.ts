@@ -67,26 +67,65 @@ test("edits a table row and persists role, status, date and multiline notes", as
   await expect
     .poll(() => db.applications[0].role_title)
     .toBe("Platform Engineer");
-  await page.getByLabel("Application stage").selectOption("applied");
+  await page
+    .getByLabel("Application stage for Platform Engineer at Acme")
+    .selectOption("applied");
   await expect.poll(() => db.applications[0].stage).toBe("applied");
   await page
-    .getByLabel("Applied date for Platform Engineer")
+    .getByLabel("Applied date for Platform Engineer at Acme")
     .fill("2026-11-02");
-  await page.getByLabel("Applied date for Platform Engineer").press("Enter");
+  await page
+    .getByLabel("Applied date for Platform Engineer at Acme")
+    .press("Enter");
   await expect.poll(() => db.applications[0].applied_date).toBe("2026-11-02");
   await page
-    .getByLabel("Notes for Platform Engineer", { exact: true })
+    .getByLabel("Notes for Platform Engineer at Acme", { exact: true })
     .fill("Referral from Alex\nFollow up Friday");
   await page
-    .getByLabel("Notes for Platform Engineer", { exact: true })
+    .getByLabel("Notes for Platform Engineer at Acme", { exact: true })
     .press("Tab");
   await expect
     .poll(() => db.applications[0].notes)
     .toBe("Referral from Alex\nFollow up Friday");
   await page.reload();
   await expect(
-    page.getByLabel("Notes for Platform Engineer", { exact: true }),
+    page.getByLabel("Notes for Platform Engineer at Acme", { exact: true }),
   ).toHaveValue("Referral from Alex\nFollow up Friday");
+});
+
+test("distinguishes fields for the same role at different companies", async ({
+  page,
+}) => {
+  await load(
+    page,
+    new FakeJobDb(
+      [companyRow(), companyRow({ id: "other-company", name: "Other Co" })],
+      [
+        applicationRow(),
+        applicationRow({
+          id: "other-application",
+          company_id: "other-company",
+        }),
+      ],
+    ),
+  );
+  for (const company of ["Acme", "Other Co"]) {
+    const application = `Backend Engineer at ${company}`;
+    for (const field of ["Application stage", "Applied date", "Notes"]) {
+      await expect(
+        page.getByLabel(`${field} for ${application}`, { exact: true }),
+      ).toHaveCount(1);
+    }
+    await page
+      .getByRole("row", { name: `Application: ${application}`, exact: true })
+      .getByRole("button", { name: "Details", exact: true })
+      .click();
+    for (const field of ["Resume", "Referral source"]) {
+      await expect(
+        page.getByLabel(`${field} for ${application}`, { exact: true }),
+      ).toBeVisible();
+    }
+  }
 });
 
 test("restores a failed inline save and lets Escape cancel a draft", async ({
@@ -191,7 +230,9 @@ test("saves a rejection takeaway from row details while preserving existing note
       [applicationRow({ stage: "applied", notes: "Existing note" })],
     ),
   );
-  await page.getByLabel("Application stage").selectOption("rejected");
+  await page
+    .getByLabel("Application stage for Backend Engineer at Acme")
+    .selectOption("rejected");
   await expect.poll(() => db.applications[0].stage).toBe("rejected");
   await page.getByRole("button", { name: "Details", exact: true }).click();
   await page
@@ -229,7 +270,18 @@ test("keeps a populated table and expanded details within the mobile page", asyn
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await load(page, new FakeJobDb([companyRow()], [applicationRow()]));
+  await load(
+    page,
+    new FakeJobDb(
+      [companyRow()],
+      [
+        applicationRow({
+          posting_url:
+            "https://careers.a-long-company-name.example.com/jobs/view/42",
+        }),
+      ],
+    ),
+  );
   await expect
     .poll(() => page.evaluate(() => document.body.scrollWidth))
     .toBeLessThanOrEqual(390);
@@ -243,4 +295,121 @@ test("keeps a populated table and expanded details within the mobile page", asyn
     path: testInfo.outputPath("applications-table.png"),
     fullPage: true,
   });
+});
+
+test("normalizes a pasted posting link, renders its hostname, and clears it", async ({
+  page,
+}) => {
+  const db = await load(
+    page,
+    new FakeJobDb([companyRow()], [applicationRow()]),
+  );
+  const url = "https://linkedin.com/jobs/view/42";
+  const cell = page.getByLabel("Link for Backend Engineer at Acme", {
+    exact: true,
+  });
+  await cell.fill("linkedin.com/jobs/view/42");
+  await cell.press("Tab");
+  await expect.poll(() => db.applications[0].posting_url).toBe(url);
+  const link = page.getByRole("link", { name: "linkedin.com", exact: true });
+  await expect(link).toHaveAttribute("href", url);
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  await page.reload();
+  await expect(link).toHaveAttribute("href", url);
+  await page
+    .getByRole("button", { name: /Edit link for Backend Engineer at Acme/i })
+    .click();
+  await expect(cell).toHaveValue(url);
+  await cell.fill("");
+  await cell.press("Enter");
+  await expect.poll(() => db.applications[0].posting_url).toBeNull();
+  await expect(link).toHaveCount(0);
+  await expect(cell).toHaveValue("");
+});
+
+test("rejects unsafe posting links locally and preserves the draft for correction", async ({
+  page,
+}) => {
+  const db = await load(
+    page,
+    new FakeJobDb([companyRow()], [applicationRow()]),
+  );
+  const writes: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "PATCH" &&
+      new URL(request.url()).pathname.endsWith("/applications")
+    )
+      writes.push(request.postData() ?? "");
+  });
+  const cell = page.getByLabel("Link for Backend Engineer at Acme", {
+    exact: true,
+  });
+  await cell.fill("javascript:alert(1)");
+  await cell.press("Tab");
+  const error = page.getByText("Enter a web address, e.g. https://…", {
+    exact: true,
+  });
+  await expect(error).toBeVisible();
+  await expect(cell).toHaveValue("javascript:alert(1)");
+  await expect(cell).toHaveAttribute("aria-invalid", "true");
+  await expect(cell).toHaveAttribute(
+    "aria-describedby",
+    (await error.getAttribute("id"))!,
+  );
+  expect(db.applications[0].posting_url).toBeNull();
+  expect(writes).toHaveLength(0);
+  await expect(page.locator('a[href^="javascript:"]')).toHaveCount(0);
+  await cell.fill("linkedin.com/jobs/view/42");
+  await cell.press("Enter");
+  await expect
+    .poll(() => db.applications[0].posting_url)
+    .toBe("https://linkedin.com/jobs/view/42");
+  await expect(error).toHaveCount(0);
+  expect(writes.map((body) => JSON.parse(body).posting_url)).toEqual([
+    "https://linkedin.com/jobs/view/42",
+  ]);
+});
+
+test("does not resave an unchanged posting link and restores a failed edit", async ({
+  page,
+}) => {
+  const url = "https://linkedin.com/jobs/view/42";
+  const db = await load(
+    page,
+    new FakeJobDb([companyRow()], [applicationRow({ posting_url: url })]),
+  );
+  const writes: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "PATCH" &&
+      new URL(request.url()).pathname.endsWith("/applications")
+    )
+      writes.push(request.postData() ?? "");
+  });
+  const edit = page.getByRole("button", {
+    name: /Edit link for Backend Engineer at Acme/i,
+  });
+  const cell = page.getByLabel("Link for Backend Engineer at Acme", {
+    exact: true,
+  });
+  await edit.click();
+  await cell.fill("linkedin.com/jobs/view/42");
+  await cell.press("Enter");
+  await expect(
+    page.getByRole("link", { name: "linkedin.com", exact: true }),
+  ).toBeVisible();
+  expect(writes).toHaveLength(0);
+  db.failNext("applications", "PATCH");
+  await edit.click();
+  await cell.fill("https://jobs.example.com/other");
+  await cell.press("Enter");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Something went wrong" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "linkedin.com", exact: true }),
+  ).toHaveAttribute("href", url);
+  expect(db.applications[0].posting_url).toBe(url);
 });

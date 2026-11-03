@@ -65,6 +65,10 @@ const BY_LABEL = new Map(
   BACKTEST_STRATEGIES.map((strategy) => [strategy.label, strategy]),
 );
 
+const BY_KEY = new Map(
+  BACKTEST_STRATEGIES.map((strategy) => [strategy.key, strategy]),
+);
+
 // Resolves a comparison-CSV label to its registry entry. Undefined means the
 // lab produced a strategy this catalog doesn't know about — the seed treats
 // that as a hard error rather than importing a keyless row.
@@ -72,4 +76,13 @@ export function strategyByLabel(
   label: string,
 ): BacktestStrategyDefinition | undefined {
   return BY_LABEL.get(label.trim());
+}
+
+// Resolves a stored strategy row's key to its registry entry, for the
+// backtest viewer's description panel. Removed in the 2026-08-11 dead-code
+// sweep while the viewer was still unmerged; restored with it.
+export function strategyByKey(
+  key: string,
+): BacktestStrategyDefinition | undefined {
+  return BY_KEY.get(key);
 }

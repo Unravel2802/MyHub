@@ -3,6 +3,7 @@
 import {
   CandlestickChart,
   ClipboardCheck,
+  FlaskConical,
   Library,
   ScrollText,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import { hueFor } from "@/src/components/moduleHues";
 import { HUE_BADGE, HUE_TEXT } from "@/src/components/ui/hueClasses";
 import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { Panel } from "@/src/components/ui/Panel";
+import { TradingBacktestViewer } from "@/src/modules/trading/components/TradingBacktestViewer";
 import { TradingChecklistPanel } from "@/src/modules/trading/components/TradingChecklistPanel";
 import { TradingEntryForm } from "@/src/modules/trading/components/TradingEntryForm";
 import { TradingEquityCurve } from "@/src/modules/trading/components/TradingEquityCurve";
@@ -32,7 +34,7 @@ import {
 } from "@/src/modules/trading/components/TradingStatsGrid";
 import { useTradingStore } from "@/src/modules/trading/useTradingStore";
 
-type TradingTab = "journal" | "checklist" | "references";
+type TradingTab = "journal" | "checklist" | "backtests" | "references";
 
 const tabs: {
   id: TradingTab;
@@ -41,6 +43,7 @@ const tabs: {
 }[] = [
   { id: "journal", label: "Journal", icon: ScrollText },
   { id: "checklist", label: "Pre-trade", icon: ClipboardCheck },
+  { id: "backtests", label: "Backtests", icon: FlaskConical },
   { id: "references", label: "References", icon: Library },
 ];
 
@@ -66,6 +69,8 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
     stats,
     equityCurve,
     fetchChecklistRuns,
+    isLoadingBacktests,
+    fetchBacktestStrategies,
   } = useTradingStore();
   const [activeTab, setActiveTab] = useState<TradingTab>("journal");
   const tabId = useId();
@@ -82,6 +87,10 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
     if (activeTab === "references") return;
     if (activeTab === "checklist") {
       void fetchChecklistRuns();
+      return;
+    }
+    if (activeTab === "backtests") {
+      void fetchBacktestStrategies();
       return;
     }
     void Promise.all([fetchTrades(), fetchEntries()]);
@@ -120,9 +129,14 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
             ariaLabel={`Refresh ${
               activeTab === "checklist"
                 ? "pre-trade checklist"
-                : "trading journal"
+                : activeTab === "backtests"
+                  ? "backtests"
+                  : "trading journal"
             }`}
-            isRefreshing={activeTab === "journal" && isLoading}
+            isRefreshing={
+              (activeTab === "journal" && isLoading) ||
+              (activeTab === "backtests" && isLoadingBacktests)
+            }
             onClick={refresh}
           />
         )
@@ -172,7 +186,7 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
               <button
                 aria-controls={`${tabId}-${tab.id}-panel`}
                 aria-selected={selected}
-                className={`-mb-px flex items-center gap-1.5 rounded-t-md border-x border-t px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ${
+                className={`-mb-px flex shrink-0 items-center gap-1.5 rounded-t-md border-x border-t px-2.5 py-2 text-sm sm:px-3 font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas ${
                   selected
                     ? HUE_BADGE[moduleHue]
                     : "border-transparent text-muted hover:bg-surface/60 hover:text-body"
@@ -188,7 +202,7 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
                 tabIndex={selected ? 0 : -1}
                 type="button"
               >
-                <Icon aria-hidden="true" className="size-4" />
+                <Icon aria-hidden="true" className="hidden size-4 sm:block" />
                 {tab.label}
               </button>
             );
@@ -197,6 +211,9 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
 
         <div
           aria-labelledby={`${tabId}-${activeTab}-tab`}
+          // min-w-0: this is a grid item, and without it the Backtests tab's
+          // 1,100px+ tables size the whole page instead of scrolling in place.
+          className="min-w-0"
           id={`${tabId}-${activeTab}-panel`}
           role="tabpanel"
           tabIndex={0}
@@ -221,6 +238,8 @@ export function TradingJournal({ referenceContent }: TradingJournalProps) {
             </div>
           ) : activeTab === "checklist" ? (
             <TradingChecklistPanel />
+          ) : activeTab === "backtests" ? (
+            <TradingBacktestViewer />
           ) : (
             referenceContent
           )}

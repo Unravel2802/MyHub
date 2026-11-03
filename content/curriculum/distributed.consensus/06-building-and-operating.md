@@ -6,7 +6,7 @@ summary: The primitives consensus gives you, the ones people misuse, and what a 
 
 Consensus is rarely something you interact with directly. It is the layer beneath
 a handful of primitives — locks, leader election, configuration, coordination —
-and most of the mistakes in this area are made *above* it, by using those
+and most of the mistakes in this area are made _above_ it, by using those
 primitives as if they were the local versions. This chapter is the correct usage
 patterns and the operational realities.
 
@@ -55,7 +55,7 @@ prevent:
 ```
 
 No lease duration fixes this, because a pause can always exceed it. The fix is to
-make the *storage* reject the stale writer:
+make the _storage_ reject the stale writer:
 
 ```text
   A acquires lock → token 33
@@ -65,10 +65,25 @@ make the *storage* reject the stale writer:
   A resumes, writes with token 33   → REJECTED (33 < 34)
 ```
 
+```mermaid
+sequenceDiagram
+  participant A as Holder A
+  participant B as Holder B
+  participant S as Storage
+  Note over A: Token 33, lease 10 s
+  Note over A: Pause 15 s, lease expires
+  Note over B: Acquire token 34
+  B->>S: Write with token 34
+  S-->>B: Accept, highest is 34
+  A->>S: Resume, write token 33
+  S-->>A: Reject: 33 is below 34
+```
+
 ```python
 lease = etcd.lease(ttl=10)
 etcd.put("/locks/report", node_id, lease=lease)
-token = lease.id                 # monotonically increasing; use as the fence
+token = lease.id                 # monotonically increasing;
+                                 # use as the fence
 
 # every protected write carries the token, and the STORAGE compares it
 storage.write(data, fencing_token=token)
@@ -99,10 +114,10 @@ else:
 
 Three rules that make the difference between this working and causing an outage:
 
-**Never assume you are still the leader.** Leadership can be lost silently — a
-network blip drops your keep-alive, the lease expires, someone else takes over,
-and your process has not noticed. Check the lease before every consequential
-action, and fence every write.
+> [!KEY] **Never assume you are still the leader.** Leadership can be lost silently — a
+> network blip drops your keep-alive, the lease expires, someone else takes over,
+> and your process has not noticed. Check the lease before every consequential
+> action, and fence every write.
 
 **Stop work immediately on losing leadership.** The keep-alive failing must
 trigger an orderly stop, not a retry loop. A demoted leader that keeps working is
@@ -130,7 +145,7 @@ The line is about **write rate and size**. etcd's practical limits are on the
 order of 10k writes/second and a 1.5 MB value cap, with a total database size
 meant to be measured in gigabytes at most. It is a coordination store, not a
 database, and treating it as one is a common and painful mistake — a team puts
-per-request state in etcd, the write rate saturates the Raft group, and *every*
+per-request state in etcd, the write rate saturates the Raft group, and _every_
 system depending on it for leader election starts flapping.
 
 **Watches are the right way to consume changes**, not polling:
@@ -151,7 +166,7 @@ updates.
 
 **Sizing.** Three nodes tolerate one failure; five tolerate two and are the right
 choice when the cluster is critical enough that you want to survive a failure
-*during* a planned maintenance. Seven is almost always wrong — the latency cost is
+_during_ a planned maintenance. Seven is almost always wrong — the latency cost is
 real and the marginal tolerance rarely matters. Never an even number.
 
 **Placement.** Spread across failure domains, and understand what a
@@ -170,7 +185,7 @@ majority means geographically:
 Three failure domains is the minimum for real DC-level tolerance, and a witness
 node in a third location is the cheap way to get it.
 
-**Disk.** Consensus `fsync`s on every write. Disk latency *is* write latency, and
+**Disk.** Consensus `fsync`s on every write. Disk latency _is_ write latency, and
 `fsync` latency (not throughput) is the metric that matters. Local NVMe; never
 network storage for a consensus group if you can avoid it, because a storage blip
 becomes a cluster-wide stall.
@@ -227,9 +242,33 @@ state that genuinely needs agreement, and keep everything else out of it.** The
 systems that scale run thousands of small consensus groups underneath a
 partitioned data layer, and put almost no traffic through any one of them.
 
+> [!PITFALL] A consensus-backed lease does not fence a stale writer by itself. Put
+> the monotonic-token check in the protected resource; the paused client
+> is precisely the component that cannot be trusted to notice lease loss.
+
+> [!INTERVIEW] Separate voter count from failure-domain placement. Explain the majority
+> left after each site loss, then connect commit latency to fsync and
+> network delay; adding voters buys tolerance rather than write
+> throughput.
+
+> [!CHECK] Why does a ten-second lease not stop the holder paused for fifteen
+> seconds from corrupting data?
+>
+> The lease expires while A is paused, allowing B to acquire token 34 and
+> write. A resumes still holding token 33 in memory; storage must reject
+> 33 after seeing 34. The lease alone cannot stop a client that does not
+> know it expired.
+
+> [!CHECK] Does a three-node layout with two nodes in DC-A and one in DC-B survive
+> either data-centre loss?
+>
+> No. Losing DC-B leaves two nodes, enough for a majority of three. Losing
+> DC-A leaves only one, below that quorum. The layout survives only one of
+> the two possible data-centre failures, despite having three nodes.
+
 ## What to take away
 
-1. A distributed lock needs mutual exclusion, a lease, *and* a fencing token
+1. A distributed lock needs mutual exclusion, a lease, _and_ a fencing token
    checked by the protected resource — a pause longer than the lease is always
    possible.
 2. Prefer avoiding the lock: partitioned ownership, conditional writes, or

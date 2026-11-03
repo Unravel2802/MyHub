@@ -36,7 +36,20 @@ so a new leader that reads from a majority cannot miss a committed decision.
   term 2: new leader reads from a majority {C, D, E}
                                             ▲
                                    C knows about X.
-                                   the new leader learns X and must honour it.
+                                   the new leader learns X
+                                   and must honour it.
+```
+
+```mermaid
+sequenceDiagram
+  participant O as Old quorum
+  participant C as Shared node C
+  participant N as New leader
+  O->>C: Accept X: A,B,C
+  Note over O: A and B crash
+  N->>C: Read: C,D,E
+  C-->>N: Accepted X
+  Note over N: Keep X
 ```
 
 Without the intersection, a new leader could read from {D, E, ...} and see
@@ -59,15 +72,15 @@ To tolerate `f` failures you need `2f + 1` nodes:
      (f+1) + (f+1) = 2f + 2 > 2f + 1   ✓
 ```
 
-| Nodes | Quorum | Tolerates | Notes |
-| --- | --- | --- | --- |
-| 1 | 1 | 0 | Not fault tolerant |
-| 2 | 2 | **0** | Worse than 1 — see below |
-| 3 | 2 | 1 | Minimum useful cluster |
-| 4 | 3 | **1** | Same tolerance as 3, more latency |
-| 5 | 3 | 2 | The other common choice |
-| 6 | 4 | **2** | Same tolerance as 5 |
-| 7 | 4 | 3 | Rare; latency cost is real |
+| Nodes | Quorum | Tolerates | Notes                             |
+| ----- | ------ | --------- | --------------------------------- |
+| 1     | 1      | 0         | Not fault tolerant                |
+| 2     | 2      | **0**     | Worse than 1 — see below          |
+| 3     | 2      | 1         | Minimum useful cluster            |
+| 4     | 3      | **1**     | Same tolerance as 3, more latency |
+| 5     | 3      | 2         | The other common choice           |
+| 6     | 4      | **2**     | Same tolerance as 5               |
+| 7     | 4      | 3         | Rare; latency cost is real        |
 
 ## Even numbers are strictly worse
 
@@ -87,7 +100,7 @@ Adding the fourth node made the system **slower with no gain in fault
 tolerance**, and gave it one more machine that can fail. Always use an odd
 number.
 
-The two-node case is worse still. With 2 nodes and a quorum of 2, *either*
+The two-node case is worse still. With 2 nodes and a quorum of 2, _either_
 failure stalls the cluster — so a two-node cluster is less available than a
 single node, because it has twice the surface area for the failure that stops it.
 This is why "let's add a standby for safety" without changing the quorum rule
@@ -162,7 +175,7 @@ the log, then promote to voter once current.
 ## Quorum variations
 
 **Flexible Paxos** is a genuinely useful result (Howard et al., 2016): the
-protocol only requires that the *leader election* quorum and the *replication*
+protocol only requires that the _leader election_ quorum and the _replication_
 quorum intersect — not that each is a majority.
 
 ```text
@@ -211,6 +224,20 @@ Two mitigations worth knowing:
 
 And the structural answer, again: partition, and run a separate small group per
 partition with its leader placed near that partition's users.
+
+> [!CHECK] Why must the two quorums {A,B,C} and {C,D,E} overlap in five nodes?
+>
+> Each contains three nodes, so their sizes sum to 3 + 3 = 6, exceeding
+> the five available nodes. At least one member must be shared; C carries
+> knowledge of the earlier accepted value into the new quorum.
+
+> [!CHECK] What does the fourth voter buy compared with three voters in the
+> chapter's table?
+>
+> Three voters require two acknowledgements and tolerate one failure. Four
+> require three and still tolerate only one: after two failures, only two
+> remain, below the quorum of three. The extra voter adds acknowledgement
+> cost without increasing the tolerated failure count.
 
 ## What to take away
 

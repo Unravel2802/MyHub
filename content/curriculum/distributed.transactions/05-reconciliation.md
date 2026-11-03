@@ -32,8 +32,8 @@ wrong, and no protocol prevents them. Reconciliation is the layer that **detects
 divergence regardless of cause**, which is a fundamentally different kind of
 guarantee from "this mechanism is correct".
 
-The mental model worth adopting: the outbox and the saga are the *design*;
-reconciliation is the *audit*. You would not run a business with a well-designed
+The mental model worth adopting: the outbox and the saga are the _design_;
+reconciliation is the _audit_. You would not run a business with a well-designed
 accounting process and no audit.
 
 ## The shape
@@ -65,11 +65,22 @@ accounting process and no audit.
                              to human   (known/timing)
 ```
 
+```mermaid
+flowchart TB
+  A[Source view] --> C[Compare settled window]
+  B[Derived or partner view] --> C
+  C --> D{Discrepancies found?}
+  D -->|No| M[Matched]
+  D -->|Yes| V{Volume and repair safe?}
+  V -->|Routine and unambiguous| R[Repair and audit]
+  V -->|Anomalous or ambiguous| E[Stop and escalate]
+```
+
 Two decisions define a reconciliation, and both must be explicit:
 
 **Which side is authoritative?** If A and B disagree, which one is right? A
 reconciliation without a designated source of truth cannot repair anything — it
-can only report that something is wrong. Usually the system that *owns* the write
+can only report that something is wrong. Usually the system that _owns_ the write
 is authoritative and the derived system is repaired.
 
 **What is a real discrepancy versus timing?** Systems are eventually consistent,
@@ -108,7 +119,7 @@ noisy signal into a reliable one at the cost of latency.
 Comparing two million-row datasets by transferring both is wasteful. Three
 techniques, in increasing sophistication:
 
-**Aggregate first.** Compare totals before individual records:
+> [!KEY] **Aggregate first.** Compare totals before individual records:
 
 ```sql
 -- if these match, the detail almost certainly matches
@@ -159,7 +170,7 @@ def reconcile(a_sorted, b_sorted):
 
 The third row is the important guard. A reconciliation that auto-repairs
 thousands of records instead of its usual dozen is not fixing a problem — it is
-*amplifying* one, and the correct behaviour is to stop and alert.
+_amplifying_ one, and the correct behaviour is to stop and alert.
 
 ```python
 discrepancies = compare(source, target)
@@ -232,6 +243,26 @@ system, the ticket tracker — not into an email nobody opens.
 mechanisms above. The reconciliation repairs the symptom; someone must
 investigate the cause. A team that repairs the same class of discrepancy every
 week and never asks why has turned a detection system into a permanent workaround.
+
+> [!PITFALL] An anomalous repair count is a stop condition, not a reason to repair
+> faster. Automatic repair is safe only when authority, direction and
+> routine volume are clear; preserve an audit trail and investigate the
+> underlying bug.
+
+> [!CHECK] Why does the example compare T-24h through T-1h instead of through now?
+>
+> It leaves the most recent hour in flight rather than reporting expected
+> propagation delays as corruption. The settling window must cover the
+> actual retry and outage path; older persistent differences are then
+> actionable instead of timing noise.
+
+> [!CHECK] What should happen if a reconciliation normally finds a dozen
+> discrepancies but suddenly finds thousands?
+>
+> Stop automatic repair and alert. The anomalous volume suggests an
+> upstream defect; applying the usual fix at that scale can amplify it.
+> Investigate the source of truth and log every eventual repair rather
+> than silently erasing evidence.
 
 ## What to take away
 

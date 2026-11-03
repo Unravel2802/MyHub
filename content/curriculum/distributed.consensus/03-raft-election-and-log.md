@@ -28,6 +28,16 @@ Every node is in exactly one of three states:
              discovers a higher term └────────┘
 ```
 
+```mermaid
+stateDiagram-v2
+  direction TB
+  Follower --> Candidate: Timeout: 150-300 ms
+  Candidate --> Leader: Win majority
+  Candidate --> Candidate: Timeout; increment term
+  Candidate --> Follower: Discover current leader
+  Leader --> Follower: Discover higher term
+```
+
 **Terms** are a logical clock — an integer that increases with each election
 attempt.
 
@@ -92,6 +102,21 @@ Once elected, the leader is the sole entry point for writes.
                         (piggybacked on the next AppendEntries)
 ```
 
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant L as Leader
+  participant F as Followers
+  C->>L: Command + client serial
+  L->>L: Append this-term entry
+  L->>F: AppendEntries(prev)
+  F-->>L: Durable match ACK
+  Note over L,F: Majority, counting leader
+  L->>L: Commit and apply
+  L-->>C: Saved response
+  L->>F: Updated commit index
+```
+
 A log entry holds a command and the term in which it was created:
 
 ```text
@@ -148,8 +173,8 @@ to match. That asymmetry ("strong leader") is a deliberate simplification versus
 Paxos, where any node may propose and logs can have gaps.
 
 Naive backwards walking is O(n) round trips for a badly divergent follower, so
-real implementations have the follower return the *first index of the conflicting
-term*, letting the leader skip a whole term per round trip.
+real implementations have the follower return the _first index of the conflicting
+term_, letting the leader skip a whole term per round trip.
 
 ## Where the client fits
 
@@ -159,8 +184,8 @@ Two details that matter for correctness of the system as a whole:
 is (or told to retry), so clients discover leadership changes without external
 coordination.
 
-**Commands must be idempotent, or deduplicated.** A client that times out and
-retries may have had its first attempt committed:
+> [!KEY] **Commands must be idempotent, or deduplicated.** A client that times out and
+> retries may have had its first attempt committed:
 
 ```text
   client sends "transfer $50"
@@ -179,7 +204,7 @@ system, not an optional extra.
 ## Read handling
 
 Reads are the part most naive implementations get wrong. Serving a read from the
-leader's local state is *not* safe:
+leader's local state is _not_ safe:
 
 ```text
   leader is partitioned but does not know it yet.
@@ -233,6 +258,25 @@ why consensus systems batch aggressively. A leader that receives 1,000 concurren
 writes appends them all and issues one `fsync` and one round of `AppendEntries`,
 amortising both. This is also why consensus throughput improves dramatically
 under load — batching gets better — while latency does not.
+
+> [!PITFALL] An unflushed vote is a safety bug, not just lost metadata. Persist the
+> term and votedFor before replying, so a crash cannot let one node vote
+> for two candidates in the same term.
+
+> [!CHECK] Why must a node persist votedFor before replying to RequestVote?
+>
+> Without the durable vote, it can vote, crash and restart with no memory
+> of that choice. It could then vote for a second candidate in the same
+> term, undermining the one-vote-per-term condition that prevents two
+> winners.
+
+> [!CHECK] Why does a retry of transfer $50 need a client serial even though the
+> log is replicated?
+>
+> The first attempt may commit and the leader may crash before replying.
+> Retrying without deduplication appends a second transfer; the state
+> machine's remembered client serial instead identifies the repeated
+> command and returns its cached response.
 
 ## What to take away
 

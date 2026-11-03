@@ -25,7 +25,7 @@ shape across services.
 
 Each `Ti` has a compensating `Ci` that semantically undoes it. Note "semantically"
 — a compensation is not a rollback. The original transaction committed and was
-visible; the compensation is a *new* transaction that counteracts it.
+visible; the compensation is a _new_ transaction that counteracts it.
 
 ```text
   T: reserve 3 units of SKU-88      C: release 3 units of SKU-88
@@ -36,10 +36,10 @@ visible; the compensation is a *new* transaction that counteracts it.
 
 ## Compensations are harder than they look
 
-**Some actions cannot be undone.** An email is sent. A message was posted. A
-physical package shipped. The compensation is either a *counter-action* ("we're
-sorry, your order was cancelled") or the step must be moved to a position in the
-saga where it can no longer be followed by a failure.
+> [!KEY] **Some actions cannot be undone.** An email is sent. A message was posted. A
+> physical package shipped. The compensation is either a _counter-action_ ("we're
+> sorry, your order was cancelled") or the step must be moved to a position in the
+> saga where it can no longer be followed by a failure.
 
 That second technique is the important one. Sagas are usually designed in three
 phases:
@@ -54,6 +54,19 @@ phases:
   RETRIABLE          steps that MUST eventually succeed, and are
                     retried forever rather than compensated
                     (send email, update analytics, ship)
+```
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  [*] --> Compensatable
+  Compensatable --> Pivot: Capture payment
+  Compensatable --> Compensating: Failure before pivot
+  Compensating --> Compensating: Retry or escalate
+  Pivot --> Retriable: Pivot succeeds
+  Retriable --> Retriable: Retry failed step
+  Retriable --> Complete: Remaining steps succeed
+  note right of Compensatable: Reserve 3 units, authorise payment
 ```
 
 Once you pass the pivot, the saga only goes forward. Everything irreversible goes
@@ -93,25 +106,25 @@ Two ways to drive the sequence, and the choice is consequential.
   each service in turn                 the overall flow
 ```
 
-| | Orchestration | Choreography |
-| --- | --- | --- |
-| Flow is visible | ✅ in one place | ❌ spread across services |
-| Coupling | services coupled to the orchestrator | services coupled to event schemas |
-| Adding a step | change the orchestrator | add a subscriber |
-| Debugging | one state machine to inspect | trace across N services |
-| Cyclic dependencies | impossible | easy to create accidentally |
-| Single point of failure | the orchestrator | none |
+|                         | Orchestration                        | Choreography                      |
+| ----------------------- | ------------------------------------ | --------------------------------- |
+| Flow is visible         | ✅ in one place                      | ❌ spread across services         |
+| Coupling                | services coupled to the orchestrator | services coupled to event schemas |
+| Adding a step           | change the orchestrator              | add a subscriber                  |
+| Debugging               | one state machine to inspect         | trace across N services           |
+| Cyclic dependencies     | impossible                           | easy to create accidentally       |
+| Single point of failure | the orchestrator                     | none                              |
 
 **Prefer orchestration for anything with more than about three steps.** The
-decisive argument is not coupling — it is that with choreography, *nobody knows
-what the process is*. The business flow exists only as an emergent property of
+decisive argument is not coupling — it is that with choreography, _nobody knows
+what the process is_. The business flow exists only as an emergent property of
 which services happen to subscribe to which events, and answering "what happens
 when an order is placed?" requires reading every service. Six months later,
 nobody can answer it.
 
 Choreography is a good fit for genuinely independent reactions to an event —
 update the search index, record analytics, send a notification — where there is
-no *process*, just several unrelated consumers.
+no _process_, just several unrelated consumers.
 
 An orchestrator does not have to be a separate service, incidentally. It can be a
 state machine inside the service that owns the business process, which removes
@@ -159,7 +172,8 @@ SAGA = [
 ]
 
 def advance(saga_id):
-    saga = db.lock_and_load(saga_id)          # row lock: one worker at a time
+    saga = db.lock_and_load(saga_id)          # row lock:
+                                              # one worker at a time
     step = SAGA[saga.step]
 
     try:
@@ -167,7 +181,8 @@ def advance(saga_id):
         result = call(step.name, saga.payload, idempotency_key=key)
         with db.transaction():
             saga.payload.update(result)
-            saga.step += 1                    # progress and the next trigger
+            saga.step += 1                    # progress and
+                                              # the next trigger
             outbox.enqueue("saga.advance", saga_id)   # commit together
             db.save(saga)
     except PermanentFailure:
@@ -230,6 +245,26 @@ That last one matters in practice. Most "we need a saga" situations are actually
 "we need to write a row and reliably do one other thing", which is the outbox
 pattern with far less machinery. Reach for a saga at three or more steps with
 real compensation requirements.
+
+> [!PITFALL] A compensation is another committed operation and can itself fail or be
+> delivered again. Make it idempotent, retry with backoff and provide
+> dead-letter escalation; there is no automatic rollback that makes this
+> responsibility disappear.
+
+> [!CHECK] Why does failure after the capture-payment pivot not trigger the same
+> compensation path as an earlier failure?
+>
+> Before the pivot, completed steps have compensations such as releasing
+> inventory and voiding authorisation. After the point of no return, the
+> remaining steps must eventually succeed, so the saga retries forward and
+> escalates persistent failure instead of undoing the committed process.
+
+> [!CHECK] How does the saga keep a retry from reserving inventory twice?
+>
+> The key is derived from saga_id and saga.step, so retrying the same step
+> sends the same idempotency key. The callee deduplicates that repeated
+> operation; durable saga state retains the result needed for later steps
+> and compensation.
 
 ## What to take away
 

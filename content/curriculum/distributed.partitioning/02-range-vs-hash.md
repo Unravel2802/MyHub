@@ -74,9 +74,9 @@ Hash the key and take the result modulo the partition count.
   adjacent keys land in unrelated partitions — deliberately
 ```
 
-**What it buys: even distribution.** A good hash function spreads any input
-distribution uniformly, so sequential keys, skewed keys and clustered keys all
-scatter evenly. The monotonic-write hotspot disappears entirely.
+> [!KEY] **What it buys: even distribution.** A good hash function spreads any input
+> distribution uniformly, so sequential keys, skewed keys and clustered keys all
+> scatter evenly. The monotonic-write hotspot disappears entirely.
 
 **What it costs: range queries become fan-out.**
 
@@ -119,6 +119,13 @@ The best of both, and what most modern systems actually offer.
   "all events last week"        → fan-out ✗ (and that is fine, if rare)
 ```
 
+```mermaid
+flowchart TB
+  T[tenant_A and time range] --> H[Hash tenant_id]
+  H -->|One partition| P[Locate tenant_A rows]
+  P --> R[Scan sorted created_at range]
+```
+
 Cassandra's partition key plus clustering columns, DynamoDB's partition key plus
 sort key, and MongoDB's compound shard keys are all this design. If your access
 pattern is "range within an entity", which is extremely common, this is the
@@ -126,15 +133,15 @@ answer.
 
 ## Comparison
 
-| | Range | Hash | Hash + sort key |
-| --- | --- | --- | --- |
-| Range queries | ✅ optimal | ❌ fan-out | ✅ within a partition |
-| Even distribution | ❌ needs care | ✅ | ✅ |
-| Sequential-write hotspot | ❌ severe | ✅ avoided | ✅ avoided |
-| Point lookup | ✅ | ✅ | ✅ |
-| Boundary management | needed | not needed | not needed |
-| Adding partitions | split a range | rehash (see next chapter) | rehash |
-| Used by | HBase, Bigtable, CockroachDB | Cassandra, DynamoDB, Riak | Cassandra, DynamoDB |
+|                          | Range                        | Hash                      | Hash + sort key       |
+| ------------------------ | ---------------------------- | ------------------------- | --------------------- |
+| Range queries            | ✅ optimal                   | ❌ fan-out                | ✅ within a partition |
+| Even distribution        | ❌ needs care                | ✅                        | ✅                    |
+| Sequential-write hotspot | ❌ severe                    | ✅ avoided                | ✅ avoided            |
+| Point lookup             | ✅                           | ✅                        | ✅                    |
+| Boundary management      | needed                       | not needed                | not needed            |
+| Adding partitions        | split a range                | rehash (see next chapter) | rehash                |
+| Used by                  | HBase, Bigtable, CockroachDB | Cassandra, DynamoDB, Riak | Cassandra, DynamoDB   |
 
 ## Directory-based partitioning
 
@@ -161,7 +168,7 @@ tail, this is frequently the right design.
 
 ## Fixing the sequential-write hotspot without giving up ranges
 
-Two techniques worth knowing when you need range queries *and* even writes.
+Two techniques worth knowing when you need range queries _and_ even writes.
 
 **Salting.** Prefix the key with a small random or hashed bucket:
 
@@ -188,6 +195,21 @@ That is usually a good trade, and it is bounded — 8 partitions to query, not N
 Cheap and effective for spreading writes; destroys range queries entirely, so it
 is really a hash scheme in disguise. Twitter's Snowflake IDs and similar schemes
 sometimes apply it deliberately.
+
+> [!CHECK] What does salting a timestamp across eight buckets buy and cost?
+>
+> Writes spread across eight buckets rather than one moving hotspot,
+> giving the stated 8× write throughput. A time-range read must scan all
+> eight buckets and merge, replacing the hotspot with a bounded eight-way
+> read fan-out.
+
+> [!CHECK] Why does hashing tenant_id not make an all-tenant time-range query
+> local?
+>
+> Hashing selects a partition for one tenant, while created_at orders only
+> the rows inside that partition. Without a tenant_id, the query cannot
+> choose one hash partition, so it must read all partitions despite the
+> local sort key.
 
 ## What to take away
 

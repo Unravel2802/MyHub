@@ -57,11 +57,22 @@ proposals.
   a majority accepting means v is CHOSEN.
 ```
 
-**That single "must propose the highest reported value" rule is the entire safety
-argument.** If a value was already chosen, it was accepted by a majority; any
-later Phase 1 talks to a majority; the two majorities intersect; so the proposer
-learns about it and is forced to re-propose it. Once a value is chosen, no
-different value can ever be chosen.
+```mermaid
+sequenceDiagram
+  participant P as Proposer
+  participant A as Acceptors
+  P->>A: PREPARE 9
+  A-->>P: Promises with highest 5,x
+  P->>P: Must choose reported x
+  P->>A: ACCEPT 9,x
+  A-->>P: Majority accepts x
+```
+
+> [!KEY] **That single "must propose the highest reported value" rule is the entire safety
+> argument.** If a value was already chosen, it was accepted by a majority; any
+> later Phase 1 talks to a majority; the two majorities intersect; so the proposer
+> learns about it and is forced to re-propose it. Once a value is chosen, no
+> different value can ever be chosen.
 
 ```text
   proposer A         acceptors 1  2  3         proposer B
@@ -79,7 +90,7 @@ different value can ever be chosen.
      │                     ◀──── ACCEPT 9,"x" ─────┤
 ```
 
-Note what Paxos does *not* do: it never overwrites, and it has no leader in the
+Note what Paxos does _not_ do: it never overwrites, and it has no leader in the
 base algorithm. Any proposer may act at any time, and safety holds regardless.
 
 ## Why it has its reputation
@@ -101,10 +112,10 @@ This is FLP in concrete form. The fix is to elect a distinguished proposer — a
 which point you have a leader, and you have arrived at Multi-Paxos.
 
 **The gap between paper and system is enormous.** The paper describes agreement
-on one value. A real system needs a *sequence* of decisions, leader election, log
+on one value. A real system needs a _sequence_ of decisions, leader election, log
 compaction, membership changes, batching, pipelining and recovery. None of that
 is specified, and Google's engineers wrote a famous paper about it —
-*Paxos Made Live* — reporting that turning the algorithm into working code
+_Paxos Made Live_ — reporting that turning the algorithm into working code
 required substantial invention, and that their implementation contained bugs
 found only by aggressive fault injection.
 
@@ -115,7 +126,7 @@ so two independent implementations behave the same way.
 ## Multi-Paxos
 
 Running full Paxos per log entry means two round trips per decision. Multi-Paxos
-observes that Phase 1 is about *leadership*, not about the value:
+observes that Phase 1 is about _leadership_, not about the value:
 
 ```text
   SINGLE-DECREE, per entry            MULTI-PAXOS
@@ -126,7 +137,18 @@ observes that Phase 1 is about *leadership*, not about the value:
   2 RTT per decision                  1 RTT per decision, steady state
 ```
 
-Run Phase 1 once for a whole *range* of future log positions, and then a stable
+```chart
+type: bar
+scale: linear
+unit: RTT
+title: Round trips per log decision
+caption: Multi-Paxos pays Phase 1 again on a leadership change.
+---
+Single-decree Paxos: 2
+Stable Multi-Paxos: 1
+```
+
+Run Phase 1 once for a whole _range_ of future log positions, and then a stable
 leader only runs Phase 2 per entry. Phase 1 recurs only when leadership changes.
 
 At this point Multi-Paxos and Raft are structurally the same thing: a stable
@@ -135,14 +157,14 @@ are in specification and in the constraints Raft adds — Raft forbids log gaps 
 requires the leader's log to be authoritative, where Paxos permits gaps and any
 node to fill them.
 
-| | Multi-Paxos | Raft |
-| --- | --- | --- |
-| Steady-state round trips | 1 | 1 |
-| Log gaps | permitted | forbidden |
-| Leader's log | not necessarily authoritative | always authoritative |
-| Any node may propose | yes | no, leader only |
-| Fully specified in the paper | no | yes |
-| Understandability | poor | the explicit design goal |
+|                              | Multi-Paxos                   | Raft                     |
+| ---------------------------- | ----------------------------- | ------------------------ |
+| Steady-state round trips     | 1                             | 1                        |
+| Log gaps                     | permitted                     | forbidden                |
+| Leader's log                 | not necessarily authoritative | always authoritative     |
+| Any node may propose         | yes                           | no, leader only          |
+| Fully specified in the paper | no                            | yes                      |
+| Understandability            | poor                          | the explicit design goal |
 
 ## The variants worth knowing
 
@@ -151,7 +173,7 @@ one round trip instead of two in the best case. The cost is a larger quorum
 (roughly 3n/4) and a slower recovery path when two clients collide. Good when
 conflicts are rare.
 
-**EPaxos (Egalitarian Paxos).** No leader at all. Commands that do not *interfere*
+**EPaxos (Egalitarian Paxos).** No leader at all. Commands that do not _interfere_
 — they touch different keys — commit in one round trip, in parallel, at whichever
 replica the client contacted. Interfering commands need dependency tracking and a
 second round.
@@ -225,6 +247,22 @@ first real incident.
 If you do implement one, the minimum bar: model-check the protocol (TLA+ is what
 the Raft and Paxos authors used), and run a Jepsen-style history checker under
 injected partitions, clock skew and SIGSTOP pauses.
+
+> [!CHECK] After PREPARE 9 learns accepted proposal (5,x), may the proposer choose
+> its own different value?
+>
+> If (5,x) is the highest-numbered accepted proposal reported by the
+> Phase-1 majority, it must propose x. The intersecting majority may carry
+> a previously chosen value; retaining the highest reported value is the
+> safety rule that prevents choosing a different one.
+
+> [!CHECK] How does Multi-Paxos reduce two round trips per decision to one in
+> steady state?
+>
+> Single-decree Paxos runs PREPARE and ACCEPT for each decision, one round
+> trip each. A stable Multi-Paxos leader runs Phase 1 for future log
+> positions once, then uses only ACCEPT per entry; leadership change
+> incurs Phase 1 again.
 
 ## What to take away
 

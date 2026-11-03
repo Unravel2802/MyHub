@@ -111,6 +111,20 @@ The mechanics, and every system does approximately this:
                   ↑ the delay is your rollback window
 ```
 
+```mermaid
+sequenceDiagram
+  participant O as Old owner
+  participant N as New owner
+  participant M as Map
+  O->>N: Snapshot and changes
+  Note over O: Still serves requests
+  N-->>O: Caught up
+  Note over O: Brief write pause
+  O->>M: Switch ownership
+  M-->>N: Serve new requests
+  Note over O: Delayed cleanup
+```
+
 The properties that matter operationally:
 
 - **Throttle it.** Rebalancing competes with production traffic for disk and
@@ -135,7 +149,8 @@ Every request must reach the node holding its key. There are exactly three
 places to put that knowledge.
 
 ```text
-  1. ROUTING TIER              2. CLIENT-SIDE            3. ANY NODE FORWARDS
+  1. ROUTING TIER              2. CLIENT-SIDE            3. ANY NODE
+                                                         FORWARDS
 
   client                       client                     client
     │                            │ (knows the map)          │
@@ -185,7 +200,7 @@ which are themselves consensus systems (the subject of a later topic).
      router     client     node
 ```
 
-Consumers *watch* for changes rather than polling, so a rebalance propagates in
+Consumers _watch_ for changes rather than polling, so a rebalance propagates in
 milliseconds. Some systems avoid the external dependency by embedding consensus —
 Kafka's KRaft replaced its ZooKeeper dependency with an internal Raft quorum, and
 CockroachDB stores its own range metadata in itself.
@@ -212,6 +227,29 @@ Three requirements for this to be correct:
 3. **In-flight requests drain.** The old owner should finish requests it has
    already accepted before dropping the partition — otherwise the handover
    window produces a burst of errors rather than a brief pause.
+
+> [!PITFALL] Rebalancing on every suspected failure can create a rebalance storm:
+> data movement slows healthy nodes, which then appear dead and trigger
+> more movement. Throttle transfers and bound concurrency; keep a
+> deliberate trigger or a long confirmation window.
+
+> [!INTERVIEW] Trace stream, catch up, handover and cleanup, then explain where routing
+> knowledge lives. Include how stale clients learn the new owner and why
+> an unthrottled capacity addition can itself cause an outage.
+
+> [!CHECK] How are 1,000 fixed partitions redistributed when four nodes become
+> five?
+>
+> Initially 1,000 / 4 = 250 partitions per node. Each old node gives up
+> 50, leaving 200 each; the new node receives 4 × 50 = 200. Keys retain
+> their partition IDs while those partitions change owners.
+
+> [!CHECK] What should happen when a stale client asks the old owner for a key?
+>
+> The old owner rejects or redirects instead of serving its stale copy.
+> The client updates its map and retries at the new owner; cap redirects
+> and refresh from the authoritative map if nodes disagree, rather than
+> looping forever.
 
 ## What to take away
 

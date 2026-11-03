@@ -56,8 +56,8 @@ produces observable nonsense.
 
 The list is shorter than instinct suggests, and each item has a reason.
 
-**Uniqueness constraints.** Two concurrent registrations of the same username
-must not both succeed. That requires a single point that sees both.
+> [!KEY] **Uniqueness constraints.** Two concurrent registrations of the same username
+> must not both succeed. That requires a single point that sees both.
 
 **Locks and leader election.** The entire purpose is that exactly one holder
 exists. A non-linearizable lock is not a lock.
@@ -78,10 +78,22 @@ does not have it yet.
                                         ✗ not there yet → job fails
 ```
 
+```mermaid
+sequenceDiagram
+  participant A as App
+  participant S as Storage
+  participant W as Worker
+  A->>S: Store image 42 on leader
+  S-->>A: Acknowledged
+  A->>W: Enqueue resize image 42
+  W->>S: Read image 42 from replica
+  S-->>W: Not replicated yet
+```
+
 The queue is a communication channel outside the storage system, and it moved
 faster than replication did. Any time information can travel by two paths, the
 faster path can arrive first — and linearizability of the slower one is what
-prevents it. (The cheaper alternative here is to put the image *in* the message,
+prevents it. (The cheaper alternative here is to put the image _in_ the message,
 or to have the worker read from the leader.)
 
 **Ledgers and balances**, where an invariant like "never negative" must hold
@@ -106,7 +118,7 @@ properties.
 ```
 
 Serializability says a set of concurrent transactions produces the same result as
-*some* serial execution. It does not say which one, and in particular it does not
+_some_ serial execution. It does not say which one, and in particular it does not
 require that order to match real time — a transaction that committed an hour ago
 may be ordered after one that started now.
 
@@ -125,7 +137,7 @@ Snapshot isolation is the case people meet in practice: it is not serializable
 Postgres's `REPEATABLE READ` is snapshot isolation, and a long-running read
 transaction sees a consistent view that is minutes old.
 
-**Strict serializability** is both together — serializable *and* respecting real
+**Strict serializability** is both together — serializable _and_ respecting real
 time. Spanner offers it, and it is the strongest practical guarantee available;
 this is what its commit-wait is buying.
 
@@ -180,20 +192,40 @@ worth taking from it:
 
 Practical translation, because the marketing vocabulary is inconsistent:
 
-| Claim | Usually means |
-| --- | --- |
-| "Strong consistency" | Linearizable, *for single-key operations* |
-| "Strongly consistent reads" | This read goes to the leader or a quorum |
-| "Serializable" | Transaction isolation; says nothing about recency |
-| "Strict serializability" | Both — the strongest |
-| "Read committed" | Weak isolation; not a recency guarantee at all |
-| "Eventual consistency" | No recency guarantee whatsoever |
-| "Causal consistency" | Causally related operations are ordered; concurrent ones are not |
+| Claim                       | Usually means                                                    |
+| --------------------------- | ---------------------------------------------------------------- |
+| "Strong consistency"        | Linearizable, _for single-key operations_                        |
+| "Strongly consistent reads" | This read goes to the leader or a quorum                         |
+| "Serializable"              | Transaction isolation; says nothing about recency                |
+| "Strict serializability"    | Both — the strongest                                             |
+| "Read committed"            | Weak isolation; not a recency guarantee at all                   |
+| "Eventual consistency"      | No recency guarantee whatsoever                                  |
+| "Causal consistency"        | Causally related operations are ordered; concurrent ones are not |
 
 The question that cuts through it: **"if I write and then, after receiving the
 acknowledgement, read from a different connection, am I guaranteed to see my
 write?"** A yes means something close to linearizable for that operation. A
 qualified answer tells you exactly where the qualification is.
+
+> [!PITFALL] An acknowledged write can still be absent from a lagging replica when a
+> queue delivers the follow-up job. Specify which storage read the worker
+> uses instead of assuming the queue waits for replication.
+
+> [!CHECK] Why can the resize worker miss image 42 after the upload was
+> acknowledged?
+>
+> The queue is a second communication path and may deliver before storage
+> replication catches up. Reading the replica then misses the image;
+> reading the leader or including the image in the message avoids that
+> race.
+
+> [!CHECK] Why is T2-before-T1 serial order illegal for the chapter's 10:00 and
+> 10:01 example under a real-time guarantee?
+>
+> T1 completes at 10:00 and T2 begins at 10:01, so they do not overlap. A
+> serial execution may place T2 first if only serializability is promised,
+> but linearizability's real-time clause requires T1 before T2; strict
+> serializability adds that clause to transaction isolation.
 
 ## What to take away
 

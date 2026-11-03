@@ -44,13 +44,13 @@ A separate **relay** then delivers the outbox rows:
 ```
 
 The relay can crash, retry, and duplicate — none of which loses data, because the
-outbox row is durable until delivery is confirmed. What it *cannot* do is fail to
+outbox row is durable until delivery is confirmed. What it _cannot_ do is fail to
 notice a message, because the message is in the same database as the state change
 that produced it.
 
 ## Two ways to build the relay
 
-**Polling.** Query for unsent rows on an interval.
+> [!KEY] **Polling.** Query for unsent rows on an interval.
 
 ```sql
 UPDATE outbox
@@ -152,7 +152,7 @@ dead-letter table and continue.
 
 ## Ordering, and how much you actually have
 
-The outbox gives you ordering *if you preserve it*, and preserving it costs
+The outbox gives you ordering _if you preserve it_, and preserving it costs
 parallelism:
 
 ```text
@@ -170,7 +170,7 @@ parallelism:
 ```
 
 Per-key is almost always what is wanted, for the reason established in the
-delivery-semantics chapter: you need events for *one order* in order, and no
+delivery-semantics chapter: you need events for _one order_ in order, and no
 constraint between different orders. Adding an `ordering_key` column and hashing
 it to a worker gives that.
 
@@ -202,6 +202,23 @@ services with no distributed transaction anywhere:
   at-least-once in the middle, exactly-once at each end
 ```
 
+```mermaid
+sequenceDiagram
+  participant D as Producer DB
+  participant R as Relay
+  participant C as Consumer
+  Note over D: One txn: state + outbox
+  R->>D: Read unsent row
+  D-->>R: Durable event with ID
+  R->>C: Publish via broker
+  Note over C: Unique ID plus effect
+  C->>C: Commit atomically
+  Note over R: Crash before sent mark
+  R->>C: Redeliver same event ID
+  C->>C: Duplicate: no effect
+  R->>D: Mark sent
+```
+
 That picture is the practical answer to "how do we get exactly-once between two
 services", and it is worth being able to draw from memory. Note the inbox needs
 the same housekeeping — old message IDs must be pruned, and the retention window
@@ -218,6 +235,22 @@ lost message is a defect.
 The test: **would anyone notice, or would data be wrong, if this message were
 silently dropped?** If yes, outbox. If no, publish directly.
 
+> [!CHECK] Why can the relay publish an outbox event twice without losing the
+> intent to deliver?
+>
+> It can publish successfully and crash before marking the row sent. The
+> durable unsent row is read again after restart, causing a duplicate; the
+> producer state and delivery intent still committed together, but
+> consumers must deduplicate.
+
+> [!CHECK] How does the inbox keep reserved inventory from increasing by three
+> again on redelivery?
+>
+> The first delivery inserts the unique message ID and applies reserved +=
+> 3 in one transaction. A duplicate violates that unique constraint, so
+> its transaction aborts before another increment can commit. Prune IDs
+> only after the longest possible redelivery window.
+
 ## What to take away
 
 1. The outbox turns two writes into one transaction plus a retryable delivery
@@ -228,7 +261,7 @@ silently dropped?** If yes, outbox. If no, publish directly.
    the inbox pattern with a unique constraint is how.
 4. The housekeeping decides whether it works: prune sent rows, index unsent rows
    partially, dead-letter poison messages.
-5. Alert on the *age* of the oldest unsent row, not just the count — age means
+5. Alert on the _age_ of the oldest unsent row, not just the count — age means
    delivery has stopped.
 6. Outbox plus inbox gives effectively-once processing between two services with
    no distributed transaction anywhere.

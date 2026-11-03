@@ -47,11 +47,19 @@ under many labels:
                       ← this one is the most useful framing
 ```
 
+```mermaid
+flowchart TB
+  L[Deterministic log replay] --> A[Replica A: y=5]
+  L --> B[Replica B: y=5]
+  L --> C[Replica C: y=5]
+
+```
+
 The last is the important reframing. **Agreeing on an ordered log gives you
 everything else**: to elect a leader, append "node A is leader for term 5" and
 whoever's entry commits first wins; to acquire a lock, append "A holds L until
 T"; to change configuration, append the new configuration. This is why real
-systems (Raft, Multi-Paxos, ZooKeeper's Zab) implement *replicated log*
+systems (Raft, Multi-Paxos, ZooKeeper's Zab) implement _replicated log_
 consensus rather than one-shot agreement — one mechanism, all the use cases.
 
 And it connects back to earlier topics: a replicated log that every node applies
@@ -101,10 +109,10 @@ breaks it.
 **Solves consensus** — meaning all three properties, always. In particular
 termination is the one that fails.
 
-The intuition for the proof: there must exist a *bivalent* configuration — one
+The intuition for the proof: there must exist a _bivalent_ configuration — one
 from which both outcomes are still reachable. The proof shows an adversarial
 scheduler can always delay exactly the right message to keep the system in a
-bivalent state, forever. It never *violates* agreement; it just prevents
+bivalent state, forever. It never _violates_ agreement; it just prevents
 deciding.
 
 ```text
@@ -127,7 +135,7 @@ FLP does not say consensus is impossible in practice. It says no protocol
 guarantees termination in a fully asynchronous model. Four escapes, and real
 systems use the first:
 
-**1. Partial synchrony (the practical one).** Assume the network is *eventually*
+**1. Partial synchrony (the practical one).** Assume the network is _eventually_
 well-behaved: after some unknown point, message delays are bounded. Then:
 
 ```text
@@ -170,22 +178,22 @@ Two failure models, with very different costs:
     → tolerate f failures with 3f + 1 nodes, and message signing
 ```
 
-| Tolerate | Crash-fault nodes | Byzantine nodes |
-| --- | --- | --- |
-| 1 failure | 3 | 4 |
-| 2 failures | 5 | 7 |
-| 3 failures | 7 | 10 |
+| Tolerate   | Crash-fault nodes | Byzantine nodes |
+| ---------- | ----------------- | --------------- |
+| 1 failure  | 3                 | 4               |
+| 2 failures | 5                 | 7               |
+| 3 failures | 7                 | 10              |
 
 Byzantine tolerance also costs far more messages — PBFT is O(n²) per decision
 versus Raft's O(n) — which is why it is confined to settings where participants
 genuinely do not trust each other: blockchains, and some financial
 infrastructure.
 
-**Inside your own data centre, crash-fault tolerance is the right model.** Your
-nodes are not adversaries. The failure to worry about is a node crashing,
-pausing, or being partitioned — not one lying about what it saw. Choosing
-Byzantine tolerance for an internal system buys you a large cost against a threat
-you do not have.
+> [!KEY] **Inside your own data centre, crash-fault tolerance is the right model.** Your
+> nodes are not adversaries. The failure to worry about is a node crashing,
+> pausing, or being partitioned — not one lying about what it saw. Choosing
+> Byzantine tolerance for an internal system buys you a large cost against a threat
+> you do not have.
 
 One caveat worth knowing: crash-fault protocols assume **stable storage survives
 a crash**. A node that loses its persistent state and rejoins with amnesia can
@@ -219,10 +227,25 @@ buys fault tolerance, not throughput or speed.
 ```
 
 This is why the standard advice is **3 or 5 nodes**, and why 7 is unusual. It is
-also why systems that need to scale put consensus underneath a *partitioned*
+also why systems that need to scale put consensus underneath a _partitioned_
 layer — each partition runs its own small Raft group — rather than running one
 enormous consensus group. CockroachDB, Spanner and TiKV all do this: thousands
 of independent 3-node or 5-node Raft groups, not one 1,000-node group.
+
+> [!CHECK] What may a production consensus protocol give up during an unbounded
+> network delay?
+>
+> It may stop making progress, sacrificing termination for that period.
+> Agreement and validity remain safety obligations; partial synchrony
+> restores liveness once communication becomes sufficiently well behaved,
+> rather than allowing conflicting decisions.
+
+> [!CHECK] How many nodes does the chapter require to tolerate two failures under
+> its two fault models?
+>
+> Crash faults use 2f + 1 = 2 × 2 + 1 = 5 nodes. Byzantine faults use 3f +
+> 1 = 3 × 2 + 1 = 7 nodes, with the additional signing and messaging costs
+> described here.
 
 ## What to take away
 
@@ -233,7 +256,7 @@ of independent 3-node or 5-node Raft groups, not one 1,000-node group.
    or `random()` inside it diverges replicas that agreed perfectly.
 3. FLP proves no deterministic protocol guarantees consensus in a fully
    asynchronous system with even one crash failure.
-4. Real systems escape via partial synchrony and give up *liveness*, never
+4. Real systems escape via partial synchrony and give up _liveness_, never
    safety: a Raft cluster in a bad partition stalls rather than corrupts.
 5. Crash faults need 2f+1 nodes, Byzantine faults 3f+1 plus O(n²) messages —
    inside your own data centre, crash-fault tolerance is the right model.

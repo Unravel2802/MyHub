@@ -12,8 +12,17 @@ const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
   {
     prefix: "distributed",
-    topics: ["fundamentals", "rpc", "time", "replication"],
-    expectedChapters: 22,
+    topics: [
+      "fundamentals",
+      "rpc",
+      "time",
+      "replication",
+      "partitioning",
+      "consistency",
+      "consensus",
+      "transactions",
+    ],
+    expectedChapters: 44,
   },
 ];
 const chapters = tracks.flatMap((track) => {

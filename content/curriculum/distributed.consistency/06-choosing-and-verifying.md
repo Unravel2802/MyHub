@@ -41,7 +41,7 @@ For each operation, in order. Stop at the first "yes".
 
 Two observations from applying this to real systems. Almost everything ends at
 step 6 — which is why replication and caching work at all. And the operations
-that stop at step 1 are usually a *short, enumerable list* — a dozen or so in a
+that stop at step 1 are usually a _short, enumerable list_ — a dozen or so in a
 large product. Writing that list down is most of the work.
 
 ## Write it down where it cannot rot
@@ -50,7 +50,7 @@ A consistency decision that lives only in someone's head is a decision that will
 be violated by the next person to touch the code. Three places to record it, in
 increasing order of durability:
 
-**In the type or the API.** The strongest, because it cannot be ignored:
+> [!KEY] **In the type or the API.** The strongest, because it cannot be ignored:
 
 ```python
 # the level is a required argument — no default to forget
@@ -119,6 +119,16 @@ def test_username_uniqueness_under_concurrency():
     assert sum(1 for r in results if r.ok) == 1     # EXACTLY one
 ```
 
+```mermaid
+sequenceDiagram
+  participant C as 50 clients
+  participant D as Database
+  Note over C: Barrier releases concurrent attempts
+  C->>D: Register alice
+  D->>D: Atomic unique-index decision
+  D-->>C: 1 success, others rejected
+```
+
 The barrier matters: without it the threads start at slightly different times and
 the race window is missed. Tests written without one pass on broken code.
 
@@ -163,7 +173,7 @@ a conditional write. Never a check followed by an act.
 logical operation goes to a replica, and sees pre-write state.
 
 **Cache invalidation racing the write.** Invalidate, write, and a concurrent
-reader repopulates the cache from the old value in between. Invalidating *after*
+reader repopulates the cache from the old value in between. Invalidating _after_
 the write, and again a moment later, is the usual mitigation.
 
 **Two sources of truth.** The same fact in the database and in a cache, a search
@@ -176,15 +186,39 @@ in the datastore.
 
 ## The summary table
 
-| If you need | Use | Cost |
-| --- | --- | --- |
-| Uniqueness | Single leader + unique index | Write goes to one place |
-| One lock holder | Consensus store + fencing token | A round trip |
-| Non-negative balance | Serializable transaction | Contention, retries |
-| See your own writes | Position token or leader read | Leader load |
-| No time travel | Sticky routing | Reduced replica flexibility |
-| Replies after parents | Same partition | Partition key constraint |
-| Everything else | Eventual, with a stated bound | Almost nothing |
+| If you need           | Use                             | Cost                        |
+| --------------------- | ------------------------------- | --------------------------- |
+| Uniqueness            | Single leader + unique index    | Write goes to one place     |
+| One lock holder       | Consensus store + fencing token | A round trip                |
+| Non-negative balance  | Serializable transaction        | Contention, retries         |
+| See your own writes   | Position token or leader read   | Leader load                 |
+| No time travel        | Sticky routing                  | Reduced replica flexibility |
+| Replies after parents | Same partition                  | Partition key constraint    |
+| Everything else       | Eventual, with a stated bound   | Almost nothing              |
+
+> [!PITFALL] A network check followed by a write is not an atomic decision. Another
+> request can insert in the gap; put uniqueness in a database constraint
+> or conditional write rather than an application-side existence check.
+
+> [!INTERVIEW] Name the invariant, the mechanism enforcing it and the documented
+> default you verified. Then describe the concurrency barrier and injected
+> pause or partition that could falsify the guarantee; a vendor label
+> alone is not evidence.
+
+> [!CHECK] What does the barrier in the fifty-client username test accomplish?
+>
+> It releases all fifty contenders together so their register attempts
+> collide. The expected success count is exactly one; without the barrier,
+> staggered requests can miss the race window and let broken
+> check-then-act code appear correct.
+
+> [!CHECK] Why pause a process longer than its failure-detector timeout during
+> verification?
+>
+> A SIGSTOP pause simulates a long GC pause: the lease can expire and
+> another holder can take over while the old process remembers its
+> previous role. Resuming it tests whether stale actions are rejected, a
+> failure that ordinary healthy traffic does not exercise.
 
 ## What to take away
 

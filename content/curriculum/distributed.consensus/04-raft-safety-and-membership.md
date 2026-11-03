@@ -5,7 +5,7 @@ summary: The election restriction, the commit rule that looks wrong, and why rec
 ---
 
 The previous chapter described how Raft normally works. This one covers the
-parts that exist purely to make it *correct under failure* — and they are the
+parts that exist purely to make it _correct under failure_ — and they are the
 parts that homegrown implementations get wrong, because they only matter in
 sequences of events you will not think to test.
 
@@ -52,7 +52,7 @@ Raft has a rule that seems unnecessarily conservative:
 > **A leader may only mark an entry committed by counting replicas if the entry
 > is from its own current term.**
 
-Entries from earlier terms become committed only *indirectly* — when a later
+Entries from earlier terms become committed only _indirectly_ — when a later
 entry from the current term commits, everything before it commits with it.
 
 The reason is a real scenario in which the naive rule loses committed data:
@@ -95,7 +95,7 @@ The reason is a real scenario in which the naive rule loses committed data:
 ```
 
 The fix is exactly the rule above: in step (c), S1 is in term 4 and the entry is
-from term 2, so it may not commit it by counting. It must first append a *new*
+from term 2, so it may not commit it by counting. It must first append a _new_
 entry in term 4 and commit that; doing so commits index 2 as a side effect, and
 after that S5 can no longer win an election.
 
@@ -129,11 +129,11 @@ it needs are gone. The leader sends the whole snapshot instead — the
 transfer. This is why "how long does a node take to rejoin" is a real
 operational number, and why systems support incremental or streamed snapshots.
 
-**Snapshotting must not stall the leader.** A naive implementation blocks while
-serialising gigabytes. Real ones use copy-on-write or fork so the state machine
-keeps serving. A blocking snapshot on a leader looks exactly like a leader
-failure to the rest of the cluster, and triggers an election — a self-inflicted
-outage that recurs on a schedule.
+> [!KEY] **Snapshotting must not stall the leader.** A naive implementation blocks while
+> serialising gigabytes. Real ones use copy-on-write or fork so the state machine
+> keeps serving. A blocking snapshot on a leader looks exactly like a leader
+> failure to the rest of the cluster, and triggers an election — a self-inflicted
+> outage that recurs on a schedule.
 
 ## Membership changes: the genuinely hard part
 
@@ -157,7 +157,7 @@ different definitions at the same instant, two leaders can be elected.
 Raft offers two correct solutions.
 
 **Joint consensus** — a transitional configuration requiring majorities of
-*both* old and new:
+_both_ old and new:
 
 ```text
   C_old  ──▶  C_old,new  ──▶  C_new
@@ -165,6 +165,16 @@ Raft offers two correct solutions.
        decisions need a majority of C_old
        AND a majority of C_new
        → no single-configuration majority can act alone
+```
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  Old: Old config: 3 voters
+  Joint: Old and new majorities required
+  New: New config: 5 voters
+  Old --> Joint: Enter joint configuration
+  Joint --> New: Commit new configuration
 ```
 
 Correct and general, and complex enough that most implementations avoid it.
@@ -207,7 +217,7 @@ real election if a majority says yes. Enable pre-vote if your implementation
 offers it.
 
 **Disk failure with amnesia.** A node whose persistent state is lost must rejoin
-as a *new member*, not restart as the old one, or it may vote twice in a term.
+as a _new member_, not restart as the old one, or it may vote twice in a term.
 
 **A slow follower silently degrades tolerance.** A cluster of 5 with one node
 persistently behind is really a cluster of 4 for commit purposes. Monitor
@@ -218,12 +228,31 @@ runs slow may believe its lease is still valid after a new leader was elected.
 Lease reads require the clock bound the clocks topic described, and monitoring of
 it.
 
+> [!PITFALL] A blocking snapshot can look like a failed leader and trigger an
+> election. Keep snapshot serialisation off the blocking path, and measure
+> follower catch-up as well as whether the cluster reports healthy.
+
+> [!CHECK] Would a voter ending at (term 3, index 4) accept a candidate ending at
+> (term 2, index 5)?
+>
+> No. Compare lastLogTerm first: 2 is less than 3, so the candidate is
+> less up-to-date despite index 5 being longer than index 4. Log length
+> breaks a tie only after the last terms match.
+
+> [!CHECK] Why may the term-4 leader not commit the old term-2 entry merely after
+> copying it to three of five nodes?
+>
+> The chapter's term-3 alternative can still win a later election and
+> overwrite that old entry. The term-4 leader must commit an entry from
+> its own current term first; that commits the preceding prefix indirectly
+> and prevents the unsafe later election.
+
 ## What to take away
 
 1. The election restriction — a voter refuses a candidate whose log is less
    up-to-date, comparing term first and index second — combined with quorum
    intersection gives Leader Completeness.
-2. A leader may only commit by counting replicas for entries from its *own*
+2. A leader may only commit by counting replicas for entries from its _own_
    term; earlier entries commit indirectly. Without this, a specific two-crash
    interleaving overwrites a committed entry.
 3. Snapshots truncate the log and must not block the leader — a blocking snapshot

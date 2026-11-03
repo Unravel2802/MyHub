@@ -56,6 +56,18 @@ happens-before relation from the clocks topic, turned into a storage guarantee.
   either order is fine, and no coordination is needed to decide.
 ```
 
+```mermaid
+sequenceDiagram
+  participant S as Source
+  participant R as Replica
+  participant U as Reader
+  S->>R: Reply with parent dependency
+  R->>R: Buffer until parent arrives
+  S->>R: Parent question
+  U->>R: Read thread
+  R-->>U: Parent before reply
+```
+
 The reason this matters so much: **causal consistency is the strongest model that
 can be achieved while remaining available under a network partition.** That is a
 theorem (Mahajan, Alvisi and Dahlin), and it makes causal consistency the natural
@@ -68,7 +80,7 @@ and it is why fully causal stores are rarer in production than the theory
 suggests: the bookkeeping grows with the number of participants and must be
 garbage collected.
 
-What it does *not* give you: any recency guarantee at all. A causally consistent
+What it does _not_ give you: any recency guarantee at all. A causally consistent
 read may return arbitrarily old data, as long as it does not violate causality.
 And it does not help with the constraint problems — two concurrent writes that
 together break an invariant are still concurrent.
@@ -113,7 +125,7 @@ Note what is absent: any statement about what you may read before convergence,
 and any bound on how long convergence takes. As established in the first chapter,
 this is a liveness promise with no safety content.
 
-That does not make it useless — it makes it *insufficient on its own*. Eventual
+That does not make it useless — it makes it _insufficient on its own_. Eventual
 consistency plus a defined conflict-resolution rule plus the session guarantees
 is a real, usable contract. Eventual consistency alone is closer to a disclaimer.
 
@@ -123,10 +135,10 @@ being briefly wrong costs nothing anyone can measure.
 
 ## Two models worth knowing by name
 
-**Read-committed and snapshot isolation** are *transaction isolation* levels
+**Read-committed and snapshot isolation** are _transaction isolation_ levels
 rather than consistency models, but they show up in the same conversations and
 mixing them up causes real errors. The key point from the previous chapter
-applies: snapshot isolation gives you a consistent *view*, but a stale one, and
+applies: snapshot isolation gives you a consistent _view_, but a stale one, and
 it permits write skew:
 
 ```text
@@ -150,15 +162,15 @@ can reason about and put in an SLA, which is often exactly what a product needs.
 
 ## The full spectrum, with costs
 
-| Model | Guarantees | Available under partition | Typical cost |
-| --- | --- | --- | --- |
-| Strict serializable | Real-time + multi-object | ❌ | Highest |
-| Linearizable | Real-time, single object | ❌ | Quorum per operation |
-| Sequential | Agreed total order | ❌ | Total order |
-| **Causal** | Happens-before respected | ✅ | Dependency metadata |
-| **Session guarantees** | Per-client sanity | ✅ | Routing discipline |
-| Bounded staleness | Lag ≤ a stated bound | ⚠️ partial | Monitoring + fallback |
-| Eventual | Convergence, someday | ✅ | Cheapest |
+| Model                  | Guarantees               | Available under partition | Typical cost          |
+| ---------------------- | ------------------------ | ------------------------- | --------------------- |
+| Strict serializable    | Real-time + multi-object | ❌                        | Highest               |
+| Linearizable           | Real-time, single object | ❌                        | Quorum per operation  |
+| Sequential             | Agreed total order       | ❌                        | Total order           |
+| **Causal**             | Happens-before respected | ✅                        | Dependency metadata   |
+| **Session guarantees** | Per-client sanity        | ✅                        | Routing discipline    |
+| Bounded staleness      | Lag ≤ a stated bound     | ⚠️ partial                | Monitoring + fallback |
+| Eventual               | Convergence, someday     | ✅                        | Cheapest              |
 
 The two bolded rows are where most well-designed systems should be, and the
 combination of the two — causal where relationships matter, session guarantees
@@ -186,6 +198,26 @@ request — DynamoDB's `ConsistentRead`, Cassandra's per-query consistency level
 Cosmos DB's five named levels — and the discipline is to use that expressiveness
 rather than setting a global default and forgetting.
 
+> [!PITFALL] A consistent snapshot is not protection against write skew. Transactions
+> can read the same valid state and change different rows into an invalid
+> combined state; make the invariant a serialization conflict.
+
+> [!CHECK] How can both doctors leave call duty under snapshot isolation?
+>
+> Both transactions read the same valid snapshot with Alice and Bob on
+> call. Each removes a different row's on-call state, so no write conflict
+> is detected; the combined result leaves nobody on call. Serializable
+> isolation or a common conflict row makes the competing decisions
+> conflict.
+
+> [!CHECK] What must a causal replica do if it receives Bob's reply before Alice's
+> question?
+>
+> The reply depends on the question because Bob read it first. Keep the
+> reply hidden until its parent dependency arrives, then expose the parent
+> before the reply. This preserves the causal order without imposing an
+> order on unrelated concurrent messages.
+
 ## What to take away
 
 1. Sequential consistency drops linearizability's real-time clause: everyone
@@ -194,7 +226,7 @@ rather than setting a global default and forgetting.
    model that stays available under a partition — that is a theorem, and it makes
    it the natural target for partition-tolerant designs.
 3. The four session guarantees — read-your-writes, monotonic reads, monotonic
-   writes, writes-follow-reads — make a system *feel* strongly consistent to each
+   writes, writes-follow-reads — make a system _feel_ strongly consistent to each
    user at a fraction of the cost.
 4. Eventual consistency alone promises convergence with no bound and no statement
    about what you may read meanwhile; it needs a conflict rule and session

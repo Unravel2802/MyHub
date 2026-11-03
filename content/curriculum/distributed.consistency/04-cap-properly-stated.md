@@ -39,10 +39,10 @@ least one side (giving up availability).**
 
 ## Why "pick two" is wrong
 
-**Partitions are not a choice.** They are a property of networks. Cables are cut,
-switches reboot, a security group is misconfigured, a data centre loses
-connectivity. You do not get to decide whether partitions happen; you only decide
-what your system does when one does.
+> [!KEY] **Partitions are not a choice.** They are a property of networks. Cables are cut,
+> switches reboot, a security group is misconfigured, a data centre loses
+> connectivity. You do not get to decide whether partitions happen; you only decide
+> what your system does when one does.
 
 So "CA" — consistent and available, not partition tolerant — is not a system
 design. It is a bet that the network never fails, and that bet loses.
@@ -95,6 +95,14 @@ exception.
     Cassandra, Riak, DynamoDB, CouchDB, DNS, most CDNs
 ```
 
+```mermaid
+flowchart TB
+  P[CP cluster: 5 nodes split] --> A[Majority: 3 nodes]
+  P --> B[Minority: 2 nodes]
+  A --> S[Continue serving]
+  B --> R[Refuse unsafe operations]
+```
+
 The right choice follows from the domain, and both choices are correct
 somewhere:
 
@@ -108,12 +116,12 @@ somewhere:
 
 ## The subtlety: CP systems are still available, mostly
 
-A common misreading is that CP means "unavailable". It means the *minority* side
+A common misreading is that CP means "unavailable". It means the _minority_ side
 is unavailable. With five nodes and a 3–2 split, three-fifths of the cluster
 keeps serving normally.
 
 And "unavailable" in CAP's formal sense includes returning an error promptly,
-which is often the *better* user experience than silently serving stale data.
+which is often the _better_ user experience than silently serving stale data.
 A clear "temporarily unavailable, retry" is something a client can handle; a
 plausible-looking wrong balance is not.
 
@@ -177,13 +185,28 @@ The last line is the one that matters most. Most systems' partition behaviour is
 undocumented and unexercised, and the first time anyone learns what it does is
 during an incident.
 
+> [!CHECK] In the five-node CP example with a 3-2 split, why is CAP availability
+> lost even though three nodes serve?
+>
+> The majority of three continues serving, but the minority of two refuses
+> requests it cannot make linearizable. CAP availability requires a
+> non-error response for every request to every non-failing node, so that
+> refusal violates the formal availability property.
+
+> [!CHECK] Why is a prompt error different from a stale balance under CAP?
+>
+> A prompt error deliberately gives up CAP availability while preserving
+> the linearizable contract. A non-error stale balance keeps answering but
+> gives up that contract. The domain decides which failure is acceptable;
+> speed of the response is a separate issue.
+
 ## What to take away
 
 1. CAP says: in an asynchronous network with message loss, you cannot have both
-   availability and *linearizability*. C means linearizability specifically, and A
+   availability and _linearizability_. C means linearizability specifically, and A
    means every non-failing node answers.
 2. "Pick two" is wrong — partitions are not a choice. The real choice is what to
-   do *when* one occurs: CP (minority refuses) or AP (both sides serve and
+   do _when_ one occurs: CP (minority refuses) or AP (both sides serve and
    diverge).
 3. CAP applies only during a partition. Both properties are available in normal
    operation, which is nearly all the time.

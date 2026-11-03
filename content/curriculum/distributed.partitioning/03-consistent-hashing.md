@@ -96,6 +96,18 @@ variance is large:
   A holds 55% of the data and takes 55% of the traffic.
 ```
 
+```chart
+type: bar
+scale: linear
+unit: %
+title: Uneven ownership on a naive ring
+caption: The three ownership shares in the chapter.
+---
+Node A: 55
+Node B: 8
+Node C: 37
+```
+
 With N randomly placed points, the largest arc is on average about `ln(N)/N` of
 the circle rather than `1/N` — so at small N one node routinely owns two or three
 times its fair share. And when a node fails, its **entire** load lands on one
@@ -117,14 +129,22 @@ The fix: give each physical node many positions on the ring.
   each physical node owns MANY small arcs, so the totals even out
 ```
 
+```mermaid
+flowchart TB
+  K[Key] --> H[Hash into ring space]
+  H --> V[Next clockwise virtual position]
+  V --> P[Physical owner]
+  P --> R[Replicas on distinct physical nodes]
+```
+
 The improvement is dramatic. Load imbalance falls roughly as `1/√V`:
 
 | Virtual nodes per physical node | Typical worst-node overload |
-| --- | --- |
-| 1 | 100%+ |
-| 10 | ~30% |
-| 100 | ~10% |
-| 500 | ~5% |
+| ------------------------------- | --------------------------- |
+| 1                               | 100%+                       |
+| 10                              | ~30%                        |
+| 100                             | ~10%                        |
+| 500                             | ~5%                         |
 
 And the second benefit is at least as important: when a node fails, its many
 small arcs are inherited by **many different successors**, so the failed node's
@@ -202,11 +222,11 @@ class ConsistentHashRing:
 
 Lookup is O(log(N × V)) — a binary search over the positions array.
 
-**The `get_nodes` detail is where implementations get it wrong.** Replicas must
-be distinct *physical* nodes; walking to the next three *virtual* nodes may land
-on the same machine three times, giving you a replication factor of one while the
-config says three. Worse, a correct implementation should also skip nodes in the
-same rack or availability zone, or all three replicas can share a power supply.
+> [!KEY] **The `get_nodes` detail is where implementations get it wrong.** Replicas must
+> be distinct _physical_ nodes; walking to the next three _virtual_ nodes may land
+> on the same machine three times, giving you a replication factor of one while the
+> config says three. Worse, a correct implementation should also skip nodes in the
+> same rack or availability zone, or all three replicas can share a power supply.
 
 ## Rendezvous hashing: the simpler alternative
 
@@ -241,9 +261,27 @@ It deserves to be better known than it is.
 
 Redis Cluster's fixed-slot approach is worth noting as a design: rather than a
 continuous ring, it defines 16,384 slots, maps keys to slots by CRC16, and maps
-slots to nodes explicitly. This makes rebalancing a matter of *moving slots*,
+slots to nodes explicitly. This makes rebalancing a matter of _moving slots_,
 which is easier to reason about, monitor and control than moving ring arcs — and
 it is the same idea as the "fixed partitions" scheme in the next chapter.
+
+> [!PITFALL] Replica count can lie: the next virtual positions may all belong to one
+> machine. Select distinct physical nodes, and account for racks or zones,
+> before claiming redundant copies.
+
+> [!CHECK] When four partitions become five, how much movement does the chapter
+> compare?
+>
+> Modulo hashing moves roughly N/(N+1) = 4/5, or the stated 80% of keys.
+> The consistent-hashing target is only 1/(N+1) = 1/5, the new node's fair
+> share; other owners keep their keys.
+
+> [!CHECK] Why can selecting the next three virtual nodes leave only one real copy?
+>
+> Several virtual positions can belong to the same physical machine. Three
+> such positions therefore share one failure domain; walk until three
+> distinct physical nodes are found, and avoid shared racks or zones as
+> well.
 
 ## What to take away
 
@@ -253,7 +291,7 @@ it is the same idea as the "fixed partitions" scheme in the next chapter.
    node's entire load on one successor.
 3. Virtual nodes (100–500 per physical node) cut imbalance to a few percent and
    spread a failure's load across the whole cluster.
-4. Replica selection must walk to distinct *physical* nodes — and ideally
+4. Replica selection must walk to distinct _physical_ nodes — and ideally
    distinct racks or zones — or the replication factor is a lie.
 5. Rendezvous hashing gives the same properties with no ring to maintain, and is
    simpler for small N.

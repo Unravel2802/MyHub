@@ -45,6 +45,16 @@ real systems do both.
   so read and write load is spread, and no node is idle
 ```
 
+```mermaid
+flowchart TB
+  K[Route by partition key] --> A[P1 leader]
+  K --> B[P2 leader]
+  K --> C[P3 leader]
+  A --> D[P1 follower]
+  B --> E[P2 follower]
+  C --> F[P3 follower]
+```
+
 Note that leadership is spread deliberately. A naive layout that puts all leaders
 on one node gives you the write bottleneck back.
 
@@ -55,7 +65,7 @@ triggers:
 
 **1. Data exceeds one machine's storage.** The clearest signal.
 
-**2. Write throughput exceeds one leader.** Note *write* — read pressure is
+**2. Write throughput exceeds one leader.** Note _write_ — read pressure is
 solved by replicas, and often by a cache before that.
 
 **3. Working set exceeds memory.** Once the hot data does not fit in RAM, every
@@ -74,8 +84,8 @@ of these are reversible; sharding is not, in practice.
 
 The costs are specific and worth knowing before committing.
 
-**Cross-partition queries become fan-out.** A query that cannot be answered by
-one partition must ask all of them and merge:
+> [!KEY] **Cross-partition queries become fan-out.** A query that cannot be answered by
+> one partition must ask all of them and merge:
 
 ```text
   SELECT * FROM orders WHERE user_id = 7        ← partitioned by user_id
@@ -105,7 +115,7 @@ while serving traffic.
 ## Choosing the partition key
 
 This is the single most consequential decision, it is very expensive to change,
-and it should be made from the *access patterns*, not from the data model.
+and it should be made from the _access patterns_, not from the data model.
 
 The criteria, in order:
 
@@ -114,7 +124,7 @@ across partitions. Partitioning by `country` when 60% of users are in one countr
 guarantees skew.
 
 **2. Even distribution.** Both of data volume and of request rate — and these can
-differ. A key that distributes rows evenly may still concentrate *traffic* on one
+differ. A key that distributes rows evenly may still concentrate _traffic_ on one
 value.
 
 **3. Present in the common queries.** If the hot query does not include the
@@ -154,7 +164,7 @@ When one key does not satisfy every criterion, combine two:
 
 This is DynamoDB's model made explicit, and Cassandra's partition key plus
 clustering columns are the same idea. It is worth reaching for because it gives
-you locality *and* range queries, which single-column partitioning cannot.
+you locality _and_ range queries, which single-column partitioning cannot.
 
 ## An honest look at the alternative
 
@@ -181,6 +191,19 @@ by scaling up is a year you spend on the product instead. The engineering
 judgement is knowing where you actually are on that curve — which requires
 measuring, not estimating.
 
+> [!CHECK] Why do ten replicas not provide ten times the write throughput?
+>
+> Every replica applies every write, so ten replicas perform ten copies of
+> the same write work. Partitioning instead assigns disjoint writes to
+> different owners; replicating each partition then adds fault tolerance.
+
+> [!CHECK] Which query is local when orders are partitioned by user_id, and why is
+> a status query different?
+>
+> The user_id = 7 predicate identifies one partition directly. A status =
+> pending predicate does not identify the partition key, so it must query
+> all partitions and merge; its latency includes the slowest response.
+
 ## What to take away
 
 1. Replication copies and scales reads; partitioning splits and scales writes and
@@ -192,7 +215,7 @@ measuring, not estimating.
    indexes, caches, replicas and a bigger machine.
 4. You give up cheap cross-partition queries, single-node transactions, joins
    across differing keys, and global constraints.
-5. Choose the key for cardinality, even distribution of *both* data and traffic,
+5. Choose the key for cardinality, even distribution of _both_ data and traffic,
    presence in hot queries, and alignment with transaction boundaries.
 6. A composite partition-plus-sort key gives locality and range queries together;
    date-based partition keys create a moving hotspot on today.

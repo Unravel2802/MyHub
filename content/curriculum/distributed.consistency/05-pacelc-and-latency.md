@@ -64,16 +64,16 @@ cluster's tail latency becomes every operation's tail latency.
 
 PACELC gives each system a two-part label:
 
-| System | P → | E → | Notes |
-| --- | --- | --- | --- |
-| Cassandra | A | L | Tunable per query; defaults favour A and L |
-| DynamoDB | A | L | Strongly-consistent reads available, at 2× cost |
-| Riak | A | L | The Dynamo lineage |
-| MongoDB | C | C | Since 4.x defaults; tunable read/write concerns |
-| Spanner | C | C | Pays commit-wait latency to keep C always |
-| CockroachDB | C | C | Same philosophy |
-| VoltDB | C | C | Single-partition transactions, in memory |
-| PostgreSQL (single node) | n/a | C | No partition to tolerate |
+| System                   | P → | E → | Notes                                           |
+| ------------------------ | --- | --- | ----------------------------------------------- |
+| Cassandra                | A   | L   | Tunable per query; defaults favour A and L      |
+| DynamoDB                 | A   | L   | Strongly-consistent reads available, at 2× cost |
+| Riak                     | A   | L   | The Dynamo lineage                              |
+| MongoDB                  | C   | C   | Since 4.x defaults; tunable read/write concerns |
+| Spanner                  | C   | C   | Pays commit-wait latency to keep C always       |
+| CockroachDB              | C   | C   | Same philosophy                                 |
+| VoltDB                   | C   | C   | Single-partition transactions, in memory        |
+| PostgreSQL (single node) | n/a | C   | No partition to tolerate                        |
 
 The **PA/EL** systems (Cassandra, Dynamo, Riak) are consistent about their
 philosophy: prioritise responsiveness always. The **PC/EC** systems (Spanner,
@@ -138,10 +138,10 @@ expressed in money.
 Three patterns that get most of the benefit of strong consistency without paying
 for it everywhere.
 
-**Write strongly, read weakly.** Writes go through a linearizable path so the
-system's state is always correct; the overwhelming majority of reads come from
-replicas or caches. Correctness lives in the write path where it is cheap to
-enforce, and reads get local latency.
+> [!KEY] **Write strongly, read weakly.** Writes go through a linearizable path so the
+> system's state is always correct; the overwhelming majority of reads come from
+> replicas or caches. Correctness lives in the write path where it is cheap to
+> enforce, and reads get local latency.
 
 **Strong only where the invariant lives.** Reserve linearizable operations for
 the specific fields that carry an invariant — a balance, a seat, a username — and
@@ -163,8 +163,43 @@ whenever the user's next action does not depend on the coordinated result.
                                                   └─▶ quorum, async
 ```
 
+```mermaid
+sequenceDiagram
+  participant C as Client
+  participant L as Local store
+  participant Q as Quorum
+  C->>L: Durable local write
+  L-->>C: Ack: 2 ms
+  L->>Q: Coordinate asynchronously
+  Q-->>L: Agreement: 90 ms
+```
+
+```chart
+type: bar
+scale: linear
+unit: ms
+title: When the user receives acknowledgement
+caption: Deferred acknowledgement is not global agreement.
+---
+Synchronous quorum: 90
+Deferred coordination: 2
+```
+
 The judgement is whether "acknowledged but not yet globally ordered" is a state
 the product can tolerate. For a comment, yes. For a seat booking, no.
+
+> [!CHECK] Why are the 2 ms and 90 ms acknowledgements different guarantees?
+>
+> It returns after the local write while global coordination is still
+> pending; it does not promise the quorum has agreed. The synchronous path
+> waits about 90 ms for that agreement. Deferring is valid only when the
+> user's next action need not depend on the globally ordered result.
+
+> [!CHECK] What question does PACELC add when the network is healthy?
+>
+> CAP describes the partition case. PACELC also asks whether an ordinary
+> request favours lower latency or stronger consistency: contacting a
+> quorum adds coordination delay even when no machine or link has failed.
 
 ## What to take away
 

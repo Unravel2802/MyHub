@@ -134,8 +134,11 @@ export function DrillList({
             value={category}
           >
             <option value="all">All categories</option>
-            <option value="system_design">System design</option>
-            <option value="ml_system_design">ML system design</option>
+            {Object.entries(categoryLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </label>
         <label className="grid gap-1 text-xs font-medium text-muted">

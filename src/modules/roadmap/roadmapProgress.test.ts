@@ -50,6 +50,7 @@ function application(
     appliedDate: null,
     lastUpdateDate: "2026-09-10",
     referralSource: null,
+    postingUrl: null,
     notes: null,
     deletedAt: null,
     createdAt: "2026-09-10T12:00:00.000Z",

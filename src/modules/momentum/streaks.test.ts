@@ -75,6 +75,7 @@ function application(
     appliedDate: null,
     lastUpdateDate: "2026-07-13",
     referralSource: null,
+    postingUrl: null,
     notes: null,
     deletedAt: null,
     createdAt: "2026-07-13T00:00:00.000Z",

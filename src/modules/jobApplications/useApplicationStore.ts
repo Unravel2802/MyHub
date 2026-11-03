@@ -235,6 +235,7 @@ export const useApplicationStore = create<ApplicationStore>((set, get) => {
         appliedDate: input.appliedDate ?? null,
         lastUpdateDate: format(new Date(), "yyyy-MM-dd"),
         referralSource: input.referralSource ?? null,
+        postingUrl: input.postingUrl ?? null,
         notes: input.notes ?? null,
         deletedAt: null,
         createdAt: now,

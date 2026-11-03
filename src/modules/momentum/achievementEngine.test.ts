@@ -62,6 +62,7 @@ function applications(count: number, createdAt = "2026-07-08"): Application[] {
     appliedDate: null,
     lastUpdateDate: createdAt,
     referralSource: null,
+    postingUrl: null,
     notes: null,
     deletedAt: null,
     createdAt: `${createdAt}T12:00:00.000Z`,

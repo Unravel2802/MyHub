@@ -111,6 +111,7 @@ function applicationRow(overrides: Record<string, unknown> = {}) {
     applied_date: null,
     last_update_date: "2026-07-01",
     referral_source: null,
+    posting_url: null,
     deleted_at: null,
     created_at: stamp,
     updated_at: stamp,
@@ -163,6 +164,21 @@ describe("application repository", () => {
       referralSource: "Alex",
       lastUpdateDate: format(new Date(), "yyyy-MM-dd"),
     });
+  });
+  it("round-trips the posting URL and clears it with null", async () => {
+    h.seed("applications", [applicationRow()]);
+    const set = await ApplicationRepository.updateApplication("application", {
+      postingUrl: "https://jobs.example.com/123",
+    });
+    expect(set.postingUrl).toBe("https://jobs.example.com/123");
+    expect(h.rows("applications")[0].posting_url).toBe(
+      "https://jobs.example.com/123",
+    );
+    const cleared = await ApplicationRepository.updateApplication(
+      "application",
+      { postingUrl: null },
+    );
+    expect(cleared.postingUrl).toBeNull();
   });
   it("soft-deletes applications", async () => {
     h.seed("applications", [applicationRow()]);

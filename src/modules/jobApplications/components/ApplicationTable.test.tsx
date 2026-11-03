@@ -12,6 +12,7 @@ const application: Application = {
   appliedDate: null,
   lastUpdateDate: "2026-11-02",
   referralSource: null,
+  postingUrl: null,
   notes: "First line\nSecond line",
   deletedAt: null,
   createdAt: "2026-11-02",

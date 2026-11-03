@@ -36,6 +36,9 @@ export interface Application {
   // typed nullable since a partial update payload could theoretically omit it.
   lastUpdateDate: string;
   referralSource: string | null;
+  // The job posting's URL. Always http(s) when set (migration 0048's check
+  // constraint) — run user input through `normalizePostingUrl` first.
+  postingUrl: string | null;
   // Free-form. Also where §11.2's rejection takeaway lands — the UI nudges for
   // one when an application moves to `rejected` and this is still empty.
   notes: string | null;

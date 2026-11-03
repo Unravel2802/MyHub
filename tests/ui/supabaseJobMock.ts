@@ -26,6 +26,7 @@ export function applicationRow(overrides: Row = {}): Row {
     applied_date: null,
     last_update_date: "2026-07-12",
     referral_source: null,
+    posting_url: null,
     notes: null,
     deleted_at: null,
     created_at: STAMP,

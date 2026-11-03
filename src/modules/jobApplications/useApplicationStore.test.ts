@@ -59,6 +59,7 @@ function application(overrides: Partial<Application> = {}): Application {
     appliedDate: null,
     lastUpdateDate: "2026-07-12",
     referralSource: null,
+    postingUrl: null,
     notes: null,
     deletedAt: null,
     createdAt: stamp,

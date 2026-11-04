@@ -7,7 +7,6 @@ import { PageTemplate } from "@/src/components/ui/PageTemplate";
 import { QuickAddApplication } from "@/src/modules/jobApplications/components/QuickAddApplication";
 import { ApplicationTable } from "@/src/modules/jobApplications/components/ApplicationTable";
 import { FunnelPanel } from "@/src/modules/jobApplications/components/FunnelPanel";
-import { CompanyPanel } from "@/src/modules/jobApplications/components/CompanyPanel";
 import { InterviewPanel } from "@/src/modules/jobApplications/components/InterviewPanel";
 import type { ApplicationStage } from "@/src/modules/jobApplications/types";
 import { useApplicationStore } from "@/src/modules/jobApplications/useApplicationStore";
@@ -58,13 +57,6 @@ export function JobApplicationCrm() {
     };
   }, []);
 
-  function deleteCompany(id: string, name: string, hasApplications: boolean) {
-    const warning = hasApplications
-      ? " Existing applications will remain as historical records."
-      : "";
-    if (window.confirm(`Delete company "${name}"?${warning}`))
-      void store.deleteCompany(id);
-  }
   function deleteApplication(id: string, role: string) {
     if (window.confirm(`Delete application "${role}"?`))
       void store.deleteApplication(id);
@@ -161,21 +153,6 @@ export function JobApplicationCrm() {
         </summary>
         <div className="border-t border-border p-4">
           <FunnelPanel funnel={store.funnel()} />
-        </div>
-      </details>
-      <details className="rounded-lg border border-border bg-surface">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-body">
-          Manage companies
-        </summary>
-        <div className="border-t border-border p-4">
-          <CompanyPanel
-            applications={store.applications}
-            companies={store.companies}
-            disabled={store.isCreating}
-            onCreate={store.createCompany}
-            onDelete={deleteCompany}
-            pendingIds={pending}
-          />
         </div>
       </details>
     </PageTemplate>

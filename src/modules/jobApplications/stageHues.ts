@@ -7,9 +7,9 @@ export const STAGE_HUES: Record<ApplicationStage, StageHue> = {
   researching: "muted",
   applied: "blue",
   oa: "cyan",
-  phone_screen: "teal",
+  interview: "teal",
   onsite: "violet",
+  awaiting_result: "amber",
   offer: "emerald",
   rejected: "danger",
-  withdrawn: "muted",
 };

@@ -6,11 +6,11 @@ export type ApplicationStage =
   | "researching"
   | "applied"
   | "oa"
-  | "phone_screen"
+  | "interview"
   | "onsite"
+  | "awaiting_result"
   | "offer"
-  | "rejected"
-  | "withdrawn";
+  | "rejected";
 
 export type InterviewRoundType =
   "coding" | "system_design" | "ml_system_design" | "behavioral" | "other";

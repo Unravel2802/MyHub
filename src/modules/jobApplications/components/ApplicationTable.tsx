@@ -13,11 +13,11 @@ const stages: { value: ApplicationStage; label: string }[] = [
   { value: "researching", label: "Researching" },
   { value: "applied", label: "Applied" },
   { value: "oa", label: "OA" },
-  { value: "phone_screen", label: "Phone screen" },
+  { value: "interview", label: "Interview" },
   { value: "onsite", label: "Onsite" },
+  { value: "awaiting_result", label: "Waiting for result" },
   { value: "offer", label: "Offer" },
   { value: "rejected", label: "Rejected" },
-  { value: "withdrawn", label: "Withdrawn" },
 ];
 
 type Props = {

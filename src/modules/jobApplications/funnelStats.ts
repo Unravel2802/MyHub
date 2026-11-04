@@ -14,11 +14,11 @@ const EMPTY_STAGE_COUNTS: StageCounts = {
   researching: 0,
   applied: 0,
   oa: 0,
-  phone_screen: 0,
+  interview: 0,
   onsite: 0,
+  awaiting_result: 0,
   offer: 0,
   rejected: 0,
-  withdrawn: 0,
 };
 
 // Stages that mean a human on the other side actually engaged with you. Note
@@ -26,8 +26,9 @@ const EMPTY_STAGE_COUNTS: StageCounts = {
 // ever responded to. That's what `hasResponded` below is for.
 const RESPONDED_STAGES = new Set<ApplicationStage>([
   "oa",
-  "phone_screen",
+  "interview",
   "onsite",
+  "awaiting_result",
   "offer",
 ]);
 

@@ -18,11 +18,11 @@ type ApplicationStage =
   | "researching"
   | "applied"
   | "oa"
-  | "phone_screen"
+  | "interview"
   | "onsite"
+  | "awaiting_result"
   | "offer"
-  | "rejected"
-  | "withdrawn";
+  | "rejected";
 
 export type AppEvent =
   | { type: "task.created"; payload: { taskId: string }; timestamp: number }

@@ -51,13 +51,13 @@ export function thisWeeksScheduleBlocks(tasks: Task[], today: Date): Task[] {
 
 // --- Panel 2: applications needing follow-up ---------------------------------
 
-// A stage the application can no longer act on. A rejected/withdrawn/offered
+// A stage the application can no longer act on. A rejected or offered
 // application isn't "needing follow-up" just because nobody touched it in a
 // week — there's no next action left to take. Excluding these is the one
 // deliberate extension beyond the plan's literal wording: without it, the
 // panel fills with false positives the moment a pipeline has any history,
 // which would make the panel something a user learns to ignore.
-const TERMINAL_STAGES = new Set(["offer", "rejected", "withdrawn"]);
+const TERMINAL_STAGES = new Set(["offer", "rejected"]);
 
 export function applicationsNeedingFollowUp(
   applications: Application[],

@@ -202,11 +202,6 @@ describe("applicationsNeedingFollowUp", () => {
         lastUpdateDate: "2026-06-01",
       }),
       application({
-        id: "withdrawn",
-        stage: "withdrawn",
-        lastUpdateDate: "2026-06-01",
-      }),
-      application({
         id: "offer",
         stage: "offer",
         lastUpdateDate: "2026-06-01",
@@ -216,10 +211,18 @@ describe("applicationsNeedingFollowUp", () => {
         stage: "onsite",
         lastUpdateDate: "2026-06-01",
       }),
+      // Waiting on a decision is still open: a week of silence is exactly
+      // when to chase the recruiter.
+      application({
+        id: "awaiting",
+        stage: "awaiting_result",
+        lastUpdateDate: "2026-06-01",
+      }),
     ];
 
     expect(applicationsNeedingFollowUp(apps, today).map((a) => a.id)).toEqual([
       "still-open",
+      "awaiting",
     ]);
   });
 

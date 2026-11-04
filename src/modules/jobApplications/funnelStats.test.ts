@@ -101,12 +101,13 @@ describe("funnelStats response definition", () => {
     expect(stats.interviewRate).toBe(0.5);
   });
 
-  it("counts a current OA/phone_screen/onsite/offer stage as a response", () => {
+  it("counts a current OA/interview/onsite/awaiting-result/offer stage as a response", () => {
     const stats = funnelStats(
       [
         application({ id: "oa", stage: "oa" }),
-        application({ id: "phone", stage: "phone_screen" }),
+        application({ id: "interview", stage: "interview" }),
         application({ id: "onsite", stage: "onsite" }),
+        application({ id: "awaiting", stage: "awaiting_result" }),
         application({ id: "offer", stage: "offer" }),
       ],
       [],
@@ -147,7 +148,7 @@ describe("funnelStats counts and soft deletes", () => {
     expect(stats.byStage.researching).toBe(1);
     expect(stats.byStage.applied).toBe(2);
     expect(stats.byStage.offer).toBe(1);
-    expect(stats.byStage.withdrawn).toBe(0);
+    expect(stats.byStage.awaiting_result).toBe(0);
     expect(stats.offerRate).toBe(1 / 3);
   });
 

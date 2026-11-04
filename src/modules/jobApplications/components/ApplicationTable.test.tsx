@@ -8,7 +8,7 @@ const application: Application = {
   companyId: "deleted-company",
   roleTitle: "Backend Engineer",
   resumeVariant: "swe_backend",
-  stage: "phone_screen",
+  stage: "interview",
   appliedDate: null,
   lastUpdateDate: "2026-11-02",
   referralSource: null,
@@ -59,8 +59,9 @@ describe("ApplicationTable", () => {
     expect(html).toContain(
       'aria-label="Application: Backend Engineer at Unknown company"',
     );
-    expect(html).toContain('value="phone_screen" selected=""');
-    expect(html).toContain("Phone screen");
+    expect(html).toContain('value="interview" selected=""');
+    expect(html).toContain("Waiting for result");
+    expect(html).not.toContain("withdrawn");
   });
   it("preserves multiline notes in a textarea and nullable dates as empty cells", () => {
     const html = render();

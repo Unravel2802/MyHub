@@ -13,11 +13,11 @@ const STAGE_LABELS: Record<ApplicationStage, string> = {
   researching: "Researching",
   applied: "Applied",
   oa: "OA",
-  phone_screen: "Phone screen",
+  interview: "Interview",
   onsite: "Onsite",
+  awaiting_result: "Waiting for result",
   offer: "Offer",
   rejected: "Rejected",
-  withdrawn: "Withdrawn",
 };
 
 function rate(value: number | null) {

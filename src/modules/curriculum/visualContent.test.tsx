@@ -50,12 +50,28 @@ function violations(source: string, requireOpeners = false) {
     kinds: [] as string[],
     openers: [] as string[],
     goals: [] as string[],
+    exercises: [] as string[],
   };
+  const headings: { text: string; line: number }[] = [];
+  const exerciseBlocks: {
+    level?: string;
+    heading?: string;
+    prompt: string;
+    solution: string;
+  }[] = [];
+  const quotes: { heading?: string }[] = [];
   // Use the production Markdown parser: fences containing > [!KIND] are code,
   // and an answer paragraph has exactly the same meaning here as in the reader.
   renderToStaticMarkup(
     <Markdown
       components={{
+        h2: ({ node, children }) => {
+          headings.push({
+            text: hastText(node ?? {}),
+            line: node?.position?.start.line ?? 0,
+          });
+          return <>{children}</>;
+        },
         pre: ({ node }) => {
           const code = node?.children.find((child) => child.type === "element");
           const classes =
@@ -75,6 +91,11 @@ function violations(source: string, requireOpeners = false) {
           return null;
         },
         blockquote: ({ node, children }) => {
+          const line = node?.position?.start.line;
+          const activeHeading = [...headings]
+            .reverse()
+            .find((heading) => heading.line < (line ?? 0))?.text;
+          quotes.push({ heading: activeHeading });
           const elements =
             node?.children.filter((child) => child.type === "element") ?? [];
           const first = elements[0];
@@ -83,10 +104,10 @@ function violations(source: string, requireOpeners = false) {
           const text = hastText(first);
           const marker = /^\[!([^\]]+)\]/.exec(text);
           if (!marker) return <>{children}</>;
-          const line = node?.position?.start.line;
-          if (marker[1] === "WHY" || marker[1] === "GOALS") {
-            openerMarkers.push({ kind: marker[1], line: line ?? 0 });
-            if (marker[1] === "GOALS") {
+          const kind = marker[1].split(/\s/, 1)[0];
+          if (kind === "WHY" || kind === "GOALS") {
+            openerMarkers.push({ kind, line: line ?? 0 });
+            if (kind === "GOALS") {
               const sourceLines = source.split(/\r?\n/);
               const blankQuoteLine = sourceLines[line ?? 0] ?? "";
               const firstGoalLine = sourceLines[(line ?? 0) + 1] ?? "";
@@ -125,10 +146,57 @@ function violations(source: string, requireOpeners = false) {
                 errors.goals.push(`${line}: expected one list with 3–4 goals`);
             }
           }
-          if (!(CALLOUT_KINDS as readonly string[]).includes(marker[1]))
-            errors.kinds.push(`${line}: ${marker[1]}`);
+          if (kind === "EXERCISE") {
+            const level = /^\[!EXERCISE\s+([^\]\s]+)\]/.exec(text)?.[1];
+            const content = elements.slice(1);
+            const labelIndex = (label: string) =>
+              content.findIndex(
+                (element) =>
+                  element.type === "element" &&
+                  element.tagName === "p" &&
+                  element.children[0]?.type === "element" &&
+                  element.children[0].tagName === "strong" &&
+                  hastText(element.children[0]).trim() === `${label}:`,
+              );
+            const solutionAt = labelIndex("Solution");
+            const hintAt = labelIndex("Hint");
+            const promptEnd =
+              hintAt >= 0
+                ? hintAt
+                : solutionAt >= 0
+                  ? solutionAt
+                  : content.length;
+            const prompt =
+              `${text.slice(marker[0].length)}${content.slice(0, promptEnd).map(hastText).join("")}`.trim();
+            const solution =
+              solutionAt < 0
+                ? ""
+                : content
+                    .slice(solutionAt)
+                    .map(hastText)
+                    .join("")
+                    .replace(/^Solution:/, "")
+                    .trim();
+            exerciseBlocks.push({
+              level,
+              heading: activeHeading,
+              prompt,
+              solution,
+            });
+            if (
+              !level ||
+              !["recall", "apply", "stretch"].includes(level) ||
+              !prompt ||
+              !solution
+            )
+              errors.exercises.push(
+                `${line}: invalid level or missing prompt/solution`,
+              );
+          }
+          if (!(CALLOUT_KINDS as readonly string[]).includes(kind))
+            errors.kinds.push(`${line}: ${kind}`);
           if (
-            marker[1] === "CHECK" &&
+            kind === "CHECK" &&
             (!text.slice(marker[0].length).trim() ||
               !elements
                 .slice(1)
@@ -162,6 +230,44 @@ function violations(source: string, requireOpeners = false) {
     if (!why) errors.openers.push("missing WHY");
     if (!goals) errors.openers.push("missing GOALS");
   }
+  const exerciseAt = headings.findIndex(
+    (heading) => heading.text.toLowerCase() === "exercises",
+  );
+  if (exerciseAt >= 0) {
+    if (
+      exerciseAt !== headings.length - 1 ||
+      headings[exerciseAt - 1]?.text.toLowerCase() !== "what to take away"
+    )
+      errors.exercises.push(
+        "## Exercises must be last and follow ## What to take away",
+      );
+    const inSection = exerciseBlocks.filter(
+      (block) => block.heading?.toLowerCase() === "exercises",
+    );
+    const sectionQuotes = quotes.filter(
+      (quote) => quote.heading?.toLowerCase() === "exercises",
+    );
+    if (
+      inSection.length !== 3 ||
+      sectionQuotes.length !== 3 ||
+      inSection.map((block) => block.level).join(",") !== "recall,apply,stretch"
+    )
+      errors.exercises.push(
+        "## Exercises must contain exactly recall, apply, stretch",
+      );
+    if (exerciseBlocks.length !== inSection.length)
+      errors.exercises.push("EXERCISE callout outside ## Exercises");
+    const sourceLines = source.split(/\r?\n/);
+    if (
+      sourceLines
+        .slice(headings[exerciseAt].line)
+        .some((line) => line.trim() && !/^\s*>/.test(line))
+    )
+      errors.exercises.push(
+        "## Exercises may contain only blockquotes and blank lines",
+      );
+  } else if (exerciseBlocks.length)
+    errors.exercises.push("EXERCISE callout outside ## Exercises");
   return errors;
 }
 
@@ -173,7 +279,7 @@ describe("curriculum visual content gates", () => {
       "```chart\nbad\n```\n\n```widget\nunknown\n```\n\n> [!CHECK] Missing answer?\n\n> [!UNKNOWN] no\n\n```text\n> [!IGNORE] just code\n```",
     );
     expect(Object.values(errors).map((entries) => entries.length)).toEqual([
-      1, 1, 1, 1, 0, 0,
+      1, 1, 1, 1, 0, 0, 0,
     ]);
   });
   it("rejects misplaced, repeated and reversed chapter openers", () => {
@@ -198,6 +304,44 @@ describe("curriculum visual content gates", () => {
       violations("> [!GOALS]\n> - A\n> - B\n> - C\n\n## Section").goals,
     ).toHaveLength(1);
   });
+  it("rejects malformed exercise sections", () => {
+    const exercise = (level: string, solution = "**Solution:** Answer") =>
+      `> [!EXERCISE ${level}] Prompt\n>\n> ${solution}`;
+    const section = (...blocks: string[]) =>
+      `## What to take away\nRecap\n\n## Exercises\n\n${blocks.join("\n\n")}`;
+    expect(
+      violations(
+        section(exercise("stretch"), exercise("recall"), exercise("apply")),
+      ).exercises,
+    ).not.toHaveLength(0);
+    expect(
+      violations(section(exercise("recall"), exercise("apply"))).exercises,
+    ).not.toHaveLength(0);
+    expect(
+      violations(
+        `${exercise("recall")}\n\n${section(exercise("recall"), exercise("apply"), exercise("stretch"))}`,
+      ).exercises,
+    ).not.toHaveLength(0);
+    expect(
+      violations(
+        section(
+          exercise("recall"),
+          exercise("apply"),
+          exercise("stretch", "No solution label"),
+        ),
+      ).exercises,
+    ).not.toHaveLength(0);
+    expect(
+      violations(
+        `${section(exercise("recall"), exercise("apply"), exercise("stretch"))}\n\n## Later\nMore`,
+      ).exercises,
+    ).not.toHaveLength(0);
+    expect(
+      violations(
+        `${section(exercise("recall"), exercise("apply"), exercise("stretch"))}\nStray prose`,
+      ).exercises,
+    ).not.toHaveLength(0);
+  });
   it("checks nested quotes and fences inside a quote too", () => {
     const errors = violations(
       "> [!KEY] Outer quote.\n>\n> > [!UNKNOWN] Nested.\n>\n> ```chart\n> invalid chart\n> ```",
@@ -216,6 +360,7 @@ describe("curriculum visual content gates", () => {
     "kinds",
     "openers",
     "goals",
+    "exercises",
   ] as const)("has no invalid %s blocks", (kind) => {
     expect(
       results.flatMap((result) =>
@@ -235,6 +380,9 @@ describe("curriculum visual content gates", () => {
         return [
           ...result.openers.map((error) => `${relative(ROOT, file)}:${error}`),
           ...result.goals.map((error) => `${relative(ROOT, file)}:${error}`),
+          ...result.exercises.map(
+            (error) => `${relative(ROOT, file)}:${error}`,
+          ),
         ];
       }),
     ).toEqual([]);

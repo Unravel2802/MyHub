@@ -228,6 +228,48 @@ async function openEstimation(
   ).toBeVisible();
 }
 
+test("estimation WHY and GOALS openers render before the first section and stay out of the TOC", async ({
+  page,
+}) => {
+  await openEstimation(page);
+  const why = page.getByRole("complementary", { name: "Why this matters" });
+  const goals = page.getByRole("complementary", {
+    name: "By the end you'll be able to",
+  });
+  const firstSection = page.locator(".curriculum-main h2").first();
+  await expect(why).toBeVisible();
+  await expect(goals).toBeVisible();
+  await expect(firstSection).toHaveText("The numbers to memorise");
+  expect(
+    await page.evaluate(() => {
+      const whyBox = document.querySelector('[aria-label="Why this matters"]');
+      const goalsBox = Array.from(document.querySelectorAll("aside")).find(
+        (element) =>
+          element.getAttribute("aria-label") === "By the end you'll be able to",
+      );
+      const section = document.querySelector(".curriculum-main h2");
+      return Boolean(
+        whyBox &&
+        goalsBox &&
+        section &&
+        whyBox.compareDocumentPosition(goalsBox) &
+          Node.DOCUMENT_POSITION_FOLLOWING &&
+        goalsBox.compareDocumentPosition(section) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    }),
+  ).toBe(true);
+  const toc = page
+    .locator("aside")
+    .getByRole("navigation", { name: "Chapter contents" });
+  await expect(toc.getByRole("link", { name: "Why this matters" })).toHaveCount(
+    0,
+  );
+  await expect(
+    toc.getByRole("link", { name: "By the end you'll be able to" }),
+  ).toHaveCount(0);
+});
+
 test("estimation renders every text fence as a numbered figure with its section caption", async ({
   page,
 }) => {

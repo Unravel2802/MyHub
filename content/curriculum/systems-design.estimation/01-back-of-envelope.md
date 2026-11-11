@@ -8,6 +8,21 @@ Estimation is how you find out, in two minutes, whether a design is plausible. I
 is not about precision — being within an order of magnitude is enough to rule
 options in and out, which is all the decision needs.
 
+> [!WHY] Ten minutes into a design review, someone proposes sharding the
+> database. Whether that is essential or premature comes down to one number you
+> can work out on a napkin: peak writes per second against what one primary
+> handles. This chapter is how you get that number before anyone draws a box.
+
+> [!GOALS]
+>
+> - Compute peak QPS, storage, bandwidth and cache size from a few stated
+>   assumptions
+> - Recall the latency, size and capacity numbers well enough to round with
+>   confidence
+> - Turn each number into a verdict — partition, cache, CDN — rather than
+>   leaving it as arithmetic
+> - Spot the two costs most estimates forget: media storage and egress
+
 ## The numbers to memorise
 
 ```text

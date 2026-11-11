@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 reviewed 2026-11-10 (see the review at the end): X3 and X2 approved, X1 needs changes.
+**Status:** X1–X3 merged to main 2026-11-11 (see the reviews at the end). X4 (the enrichment batches) is next.
 
 ---
 
@@ -566,3 +566,23 @@ hold nothing unmerged, then drop them and remove the worktree.
 
 **Status:** X3 and X2 approved; X1 needs fixes 1–4 and the conflict
 resolution. X4 batches can start once X1 merges.
+
+### X1 re-review — 2026-11-11 (Claude): approved, merged
+
+All four fixes landed and the rebase kept X2's `calloutMarker` unchanged.
+Hint and Solution now take every block up to the next label or the end of
+the quote, and the seed's Apply solution exercises that with two paragraphs
+and a list. Exercise numbers come from each blockquote's source line, not a
+render-time counter. The gate rejects every malformed case listed in fix 4.
+Lint, typecheck, 1,661 unit tests and 254 E2E tests pass.
+
+Two non-blocking notes for whoever touches this next:
+
+- `exerciseBlockquoteStartLines` only matches a `>` in column 0, so an
+  indented exercise would read "Exercise 0". The gate's format makes this
+  unreachable today; tighten the gate or the matcher if that changes.
+- The negative gate tests assert that some exercise error is raised, not
+  which one.
+
+The leftover worktrees, the duplicate review branch and the X1/X3 stashes
+were removed after the merge. X4 batches can start.

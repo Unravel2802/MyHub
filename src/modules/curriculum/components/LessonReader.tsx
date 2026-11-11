@@ -53,8 +53,8 @@ interface LessonReaderProps {
 
 function curriculumComponents(
   outline: ReturnType<typeof chapterOutline>,
+  exerciseStartLines: readonly number[] = [],
 ): Components {
-  let exerciseNumber = 0;
   return {
     h2: ({ children, node, ...props }) => {
       const line = node?.position?.start?.line;
@@ -110,7 +110,8 @@ function curriculumComponents(
     blockquote: ({ children, node }) => {
       const marker = calloutMarker(node);
       if (marker?.kind === "EXERCISE") {
-        exerciseNumber += 1;
+        const exerciseNumber =
+          exerciseStartLines.indexOf(node?.position?.start.line ?? -1) + 1;
         let remaining = marker.prefix.length;
         const stripPrefix = (child: ReactNode): ReactNode => {
           if (!remaining) return child;
@@ -166,16 +167,26 @@ function curriculumComponents(
             </>,
           );
         };
-        const level = marker.level;
+        const level = marker.level!;
         const tone =
           level === "apply"
             ? "bg-[var(--hue-amber-surface)] text-[var(--hue-amber)]"
             : level === "stretch"
               ? "bg-[var(--hue-violet-surface)] text-[var(--hue-violet)]"
               : "bg-[var(--track-surface)] text-[var(--track)]";
-        const label = level
-          ? `${level[0].toUpperCase()}${level.slice(1)}`
-          : "Unknown";
+        const label = `${level[0].toUpperCase()}${level.slice(1)}`;
+        const hintBlocks =
+          hintAt < 0
+            ? []
+            : blocks.slice(
+                hintAt,
+                solutionAt >= 0 ? solutionAt : blocks.length,
+              );
+        const solutionBlocks = solutionAt < 0 ? [] : blocks.slice(solutionAt);
+        const stripLabelFromBlocks = (sectionBlocks: ReactNode[]) =>
+          sectionBlocks.map((block, index) =>
+            index === 0 ? stripLabel(block) : block,
+          );
         return (
           <section
             className="my-5 rounded-[14px] border border-border bg-surface p-5"
@@ -192,20 +203,22 @@ function curriculumComponents(
               </span>
             </header>
             <div>{prompt}</div>
-            {hintAt >= 0 && blocks[hintAt] && (
+            {hintBlocks.length > 0 && (
               <details className="mt-4 border-t border-border pt-3">
                 <summary className="cursor-pointer font-mono text-xs text-muted">
                   Hint
                 </summary>
-                <div className="mt-3">{stripLabel(blocks[hintAt])}</div>
+                <div className="mt-3">{stripLabelFromBlocks(hintBlocks)}</div>
               </details>
             )}
-            {solutionAt >= 0 && blocks[solutionAt] && (
+            {solutionBlocks.length > 0 && (
               <details className="mt-3 border-t border-border pt-3">
                 <summary className="cursor-pointer font-mono text-xs text-muted">
                   Show solution
                 </summary>
-                <div className="mt-3">{stripLabel(blocks[solutionAt])}</div>
+                <div className="mt-3">
+                  {stripLabelFromBlocks(solutionBlocks)}
+                </div>
               </details>
             )}
           </section>
@@ -243,6 +256,20 @@ function curriculumComponents(
   };
 }
 
+function exerciseBlockquoteStartLines(markdown: string): number[] {
+  let inFence = false;
+  return markdown.split(/\r?\n/).flatMap((line, index) => {
+    const quoted = line.replace(/^\s*>\s?/, "");
+    if (/^\s*```/.test(quoted)) {
+      inFence = !inFence;
+      return [];
+    }
+    return !inFence && /^>\s*\[!EXERCISE\s+(recall|apply|stretch)\]/.test(line)
+      ? [index + 1]
+      : [];
+  });
+}
+
 export function LessonReader({
   topic,
   lesson,
@@ -257,6 +284,15 @@ export function LessonReader({
   }, [fetchProgress]);
   const track = trackById(topic.trackId);
   const { main: withoutExercises, exercises } = splitExercises(lesson.body);
+  const exerciseMarkdown =
+    exercises === null ? null : `## Exercises\n\n${exercises}`;
+  const exerciseLines = useMemo(
+    () =>
+      exerciseMarkdown === null
+        ? []
+        : exerciseBlockquoteStartLines(exerciseMarkdown),
+    [exerciseMarkdown],
+  );
   const { main, takeaways } = splitTakeaways(withoutExercises);
   const outline = useMemo(() => chapterOutline(main), [main]);
   const recapOutline = useMemo(
@@ -302,6 +338,10 @@ export function LessonReader({
     () => curriculumComponents(recapOutline),
     [recapOutline],
   );
+  const exerciseComponents = useMemo(
+    () => curriculumComponents(exercisesOutline, exerciseLines),
+    [exercisesOutline, exerciseLines],
+  );
   const cssVars = {
     "--track": hueVar(track?.hue ?? "accent"),
     "--track-surface": hueSurfaceVar(track?.hue ?? "accent"),
@@ -338,12 +378,14 @@ export function LessonReader({
               >{`## What to take away\n\n${takeaways}`}</Markdown>
             </section>
           ) : null}
-          {exercises !== null ? (
+          {exerciseMarkdown !== null ? (
             <section className="curriculum-exercises mt-10">
               <Markdown
-                components={curriculumComponents(exercisesOutline)}
+                components={exerciseComponents}
                 className="!text-[18px] [&_p]:leading-[1.65] [&_li]:leading-[1.65]"
-              >{`## Exercises\n\n${exercises}`}</Markdown>
+              >
+                {exerciseMarkdown}
+              </Markdown>
             </section>
           ) : null}
         </div>

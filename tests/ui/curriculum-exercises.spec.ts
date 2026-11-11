@@ -15,8 +15,17 @@ test("estimation exercises render disclosures, enter the TOC, and fit mobile", a
 
   const cards = page.locator("[data-exercise-card]");
   await expect(cards).toHaveCount(3);
+  await expect(
+    cards.nth(0).getByText("Exercise 1", { exact: true }),
+  ).toBeVisible();
   await expect(cards.nth(0)).toContainText("Recall");
+  await expect(
+    cards.nth(1).getByText("Exercise 2", { exact: true }),
+  ).toBeVisible();
   await expect(cards.nth(1)).toContainText("Apply");
+  await expect(
+    cards.nth(2).getByText("Exercise 3", { exact: true }),
+  ).toBeVisible();
   await expect(cards.nth(2)).toContainText("Stretch");
   await expect(
     page.getByRole("link", { name: "Exercises", exact: true }),
@@ -37,6 +46,11 @@ test("estimation exercises render disclosures, enter the TOC, and fit mobile", a
     .filter({ has: page.getByText(/Writes: 10M a day/) });
   await solutionDisclosure.locator("summary").click();
   await expect(solution).toBeVisible();
+  await expect(
+    solutionDisclosure.getByText("Verify DAU before sizing the storage bill.", {
+      exact: true,
+    }),
+  ).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect

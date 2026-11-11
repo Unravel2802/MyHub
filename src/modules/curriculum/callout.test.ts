@@ -38,13 +38,8 @@ it.each(["recall", "apply", "stretch"] as const)(
   },
 );
 it.each(["[!EXERCISE] Prompt", "[!EXERCISE unknown] Prompt"])(
-  "returns a null level for %s",
-  (source) =>
-    expect(calloutMarker(quote(source))).toEqual({
-      kind: "EXERCISE",
-      prefix: source.slice(0, source.indexOf("]") + 1) + " ",
-      level: null,
-    }),
+  "rejects an exercise marker without a recognized level: %s",
+  (source) => expect(calloutMarker(quote(source))).toBeNull(),
 );
 it("leaves unknown kinds and markers later in the paragraph as plain quotes", () => {
   expect(calloutMarker(quote("[!UNKNOWN] content"))).toBeNull();
@@ -53,4 +48,5 @@ it("leaves unknown kinds and markers later in the paragraph as plain quotes", ()
     kind: "KEY",
     prefix: "[!KEY]",
   });
+  expect(calloutMarker(quote("[!WHY extra] content"))).toBeNull();
 });

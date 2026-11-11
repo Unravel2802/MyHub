@@ -315,6 +315,12 @@ Next: choosing where the data lives.
 > × 1.3 ≈ **35 TB**, about 12 TB per replica. That fits comfortably in one
 > NVMe server's 10–100 TB, so storage doesn't force partitioning either. The
 > design is one primary, replicas and a cache, and you've shown why.
+>
+> This estimate also separates the risks:
+>
+> - Peak reads affect service capacity.
+> - Replication multiplies stored bytes.
+> - Verify DAU before sizing the storage bill.
 
 > [!EXERCISE stretch] A colleague's estimate says a video-upload service
 > needs 3 PB of storage a year. Without redoing their whole model, how would

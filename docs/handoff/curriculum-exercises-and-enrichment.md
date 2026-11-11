@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged to main 2026-11-11 (see the reviews at the end). X4 (the enrichment batches) is next.
+**Status:** X1–X3 merged to main 2026-11-11. X4 batch E0 reviewed 2026-11-11: changes requested (see the E0 review at the end).
 
 ---
 
@@ -586,3 +586,53 @@ Two non-blocking notes for whoever touches this next:
 
 The leftover worktrees, the duplicate review branch and the X1/X3 stashes
 were removed after the merge. X4 batches can start.
+
+### E0 review — 2026-11-11 (Claude): changes requested
+
+Branch `curriculum-e0` (0be6361, 3609697). 17 chapters gained an opener and
+three exercises; `systems-design.estimation` already had them, so all 18
+Systems Design chapters are covered. No chapter prose changed, which matches
+E0's "opener + exercises only" row. `EXERCISE_TRACKS` now includes
+`"systems-design"` and `curriculum-tracks.spec.ts` asserts the opener and
+three cards on every Systems Design chapter. Lint, typecheck and 1,661 unit
+tests pass. E2E: 254/254 against the production build.
+
+I re-derived every Apply calculation and checked each Stretch against its
+chapter. 15 of 17 chapters are correct; every GOALS bullet is taught in its
+chapter body. Fix these three before merge:
+
+1. **`systems-design.case-collab`, Apply: the arithmetic contradicts the
+   prompt.** The prompt says 240 editors, "each producing 40 document
+   updates per second", but the solution computes 40 × 239 = 9,560, which
+   treats 40 as the document's total rate. With 40 per editor the answer is
+   240 × 40 × 239 = 2,294,400 deliveries/s. 40 per editor also contradicts
+   the chapter's own figure ("~10 edits/second per active editor"). Change
+   the prompt to 10 updates/s per editor, and the solution to: 240 × 10 =
+   2,400 updates/s, × 239 peers = **573,600 deliveries/s**. That number is
+   the reason the chapter batches and coalesces updates; say so in one
+   sentence.
+
+2. **`systems-design.tradeoffs`, Apply: the creator is below the chapter's
+   own threshold.** The chapter's worked threshold is 10,000 followers
+   (its KEY and CHECK), but the exercise's creator has 7,500 and the
+   solution moves them to read-time assembly anyway. Make the creator
+   7.5 million followers: one post is then **7,500,000 writes**, about 26
+   seconds of the whole ordinary fan-out (7,500,000 ÷ 288,000 ≈ 26), which
+   is why it goes to fan-out on read above the 10,000 threshold. Replace
+   "Depending on the write-capacity threshold" with the stated threshold;
+   the GOALS bullet promises "from a stated threshold".
+
+3. **`systems-design.case-search`, Apply: hedging at the deadline is too
+   late.** "At 160 ms it can hedge the slow shard request to a replica"
+   sends the hedge when the budget is already spent. A hedge goes out
+   early, once the shard passes its usual latency (for example its p95,
+   well before 160 ms); partial results are what you return AT 160 ms.
+   Reword the solution to give each strategy its own trigger.
+
+Non-blocking: the added prose is one line per paragraph, while chapter
+bodies wrap at ~80 columns. It renders identically and can't trip the
+hyphen-wrap gate, so leave it; just keep later batches consistent with
+whichever style E0 merges with.
+
+**Status:** E0 needs fixes 1–3 (content only, no code). E1 can start from
+main once E0 merges.

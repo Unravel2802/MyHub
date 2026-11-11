@@ -293,7 +293,7 @@ Next: payments and ledgers.
 >
 > **Hint:** Multiply shard count by local top-k; compare the slow shard to the deadline.
 >
-> **Solution:** The coordinator receives at most 32 × 12 = **384 candidates** to merge into the global ranking. At 160 ms it can hedge the slow shard request to a replica, or return deadline-bounded partial results from completed shards. The response should carry an explicit partial/incomplete indicator so the client does not present it as a complete ranking. Waiting 190 ms violates the deadline.
+> **Solution:** The coordinator receives at most 32 × 12 = **384 candidates** to merge into the global ranking. Once a shard exceeds its usual latency, such as its p95, send a hedged request to a replica while enough deadline remains. At 160 ms, return the completed shards' partial results with an explicit partial/incomplete indicator so the client does not present them as a complete ranking; do not wait for the shard that would finish at 190 ms.
 
 > [!EXERCISE stretch] A team indexes text with Unicode normalization and stemming but searches raw tokens with a different analyzer. Adding more shards does not improve result quality. Propose the fix and explain what a weaker answer misses.
 >

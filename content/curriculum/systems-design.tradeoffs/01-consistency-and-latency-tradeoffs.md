@@ -248,11 +248,11 @@ Next: the first case study.
 >
 > **Solution:** Operations have different failure costs. A social timeline may tolerate a bounded stale read if read-your-writes repairs the posting user's experience, while a balance check or compare-and-set may require coordination to protect correctness. A global choice either pays coordination on operations that do not need it or permits stale results where the product cannot tolerate them.
 
-> [!EXERCISE apply] A social product publishes 3,200 posts/s. Ordinary posts reach 90 followers, but one creator has 7,500 followers. Calculate ordinary timeline fan-out writes/s and writes for one creator post. Recommend where to put the creator's post and state an acceptable freshness repair for its author.
+> [!EXERCISE apply] A social product publishes 3,200 posts/s. Ordinary posts reach 90 followers, but one creator has 7.5 million followers. Calculate ordinary timeline fan-out writes/s and writes for one creator post. Recommend where to put the creator's post and state an acceptable freshness repair for its author.
 >
 > **Hint:** Multiply post rate by ordinary followers; fan-out for one creator post is its follower count.
 >
-> **Solution:** Ordinary fan-out is 3,200 × 90 = **288,000 writes/s**. One creator post creates **7,500 writes** if pushed to every follower. Depending on the write-capacity threshold, keep ordinary posts on fan-out-on-write and assemble the larger creator's post at read time or with a hybrid path. The author can receive read-your-writes or a direct post overlay so a short bounded timeline delay does not hide their own post.
+> **Solution:** Ordinary fan-out is 3,200 × 90 = **288,000 writes/s**. One creator post creates **7,500,000 writes**, equal to 7,500,000 ÷ 288,000 ≈ **26 seconds** of ordinary fan-out. Since 7.5 million is above the chapter's 10,000-follower threshold, keep ordinary posts on fan-out-on-write and assemble this creator's post at read time. The author can receive read-your-writes or a direct post overlay so a short bounded timeline delay does not hide their own post.
 
 > [!EXERCISE stretch] A portfolio screen can tolerate a 2-second stale market quote but must never display an uncommitted trade balance. Propose separate read paths and explain what a weaker global consistency answer misses.
 >

@@ -294,11 +294,11 @@ Systems** for its mechanisms, **Backend Engineering** for its interfaces, and
 >
 > **Solution:** A CRDT gives compatible replicas a deterministic way to converge after receiving the same updates, allowing local edits without a round trip per keystroke. It does not decide whether a surprising merge is acceptable to the user, how to present history, or whether an editor is authorised. The sync service still validates permissions before it relays or persists updates.
 
-> [!EXERCISE apply] One hot document has 240 connected editors, each producing 40 document updates per second. Estimate update deliveries per second if every update is relayed to all other editors. Then explain where cursor presence belongs and give a way to expire it.
+> [!EXERCISE apply] One hot document has 240 connected editors, each producing 10 document updates per second. Estimate update deliveries per second if every update is relayed to all other editors. Then explain where cursor presence belongs and give a way to expire it.
 >
 > **Hint:** Each update goes to all editors except its sender.
 >
-> **Solution:** Each update reaches 240 − 1 = **239 peers**. At 40 updates/s, the relay handles 40 × 239 = **9,560 deliveries/s** for that document. Keep cursors in a separate awareness channel rather than persisting them as document operations; publish the latest cursor state with a short TTL so inactive editors disappear without adding permanent history.
+> **Solution:** The document receives 240 × 10 = **2,400 updates/s**. Each update reaches 240 − 1 = **239 peers**, so the relay handles 2,400 × 239 = **573,600 deliveries/s**. That fan-out is why the chapter batches and coalesces updates. Keep cursors in a separate awareness channel rather than persisting them as document operations; publish the latest cursor state with a short TTL so inactive editors disappear without adding permanent history.
 
 > [!EXERCISE stretch] An offline user returns after two weeks and sees their paragraph moved by a teammate while they were away. Design the technical merge and the user-facing recovery experience. Name what a weaker answer misses.
 >

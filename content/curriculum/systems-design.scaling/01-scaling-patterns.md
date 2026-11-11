@@ -8,6 +8,15 @@ Scaling is a sequence of moves, each with a cost, and the discipline is taking
 them in order. Most systems that are painful to operate took an expensive move
 early when a cheap one would have sufficed for years.
 
+> [!WHY] A team plans a partitioned database after one slow dashboard query, while the same query still lacks an index and the cache is cold. The order of scaling moves determines whether the design buys time or creates years of rebalancing work.
+
+> [!GOALS]
+>
+> - Order reversible scaling moves before partitioning
+> - Calculate the database load remaining after cache hits
+> - Distinguish read scaling from write scaling
+> - Explain when offloading bytes or specialising a component is justified
+
 ## The ladder
 
 ```text
@@ -274,3 +283,19 @@ information than any amount of anticipation.
 6. Make servers stateless early, and design for 10× rather than 1000×.
 
 Next: the API contracts that hold as all this changes underneath.
+
+## Exercises
+
+> [!EXERCISE recall] Name four moves to try before partitioning and explain why adding read replicas does not divide the write stream.
+>
+> **Solution:** Index the actual query, cache repeated reads, add read replicas, then scale vertically before partitioning. These moves are comparatively reversible. Every replica still applies each primary write, so replicas spread read work but do not divide write ownership; partitioning is the move that splits that stream and adds routing and rebalancing costs.
+
+> [!EXERCISE apply] A service handles 15,000 reads/s and 2,000 writes/s. A cache hits on 85% of reads. Calculate database reads/s, total database operations/s, and the reduction from the uncached 17,000 operations/s. Does this workload alone justify partitioning?
+>
+> **Hint:** Only the 15% cache misses reach the database.
+>
+> **Solution:** Database reads are 15,000 × 0.15 = **2,250/s**. Add 2,000 writes/s for **4,250 database operations/s**. The reduction is 17,000 ÷ 4,250 = **4×**. The resulting write rate is only 2,000/s, below the chapter's 20k–50k simple-query range, so this workload alone does not justify partitioning; validate query cost and growth before choosing a less reversible move.
+
+> [!EXERCISE stretch] A cold start after cache loss overloads the database. Propose two protections and explain why simply increasing cache size does not fix the underlying problem.
+>
+> **Solution:** Fix the underlying query with the right index, then protect refill with single-flight request coalescing, stale-while-revalidate or a bounded warm-up; a load shedder can cap database concurrency during recovery. A larger cache may improve steady-state hit rate but does not prevent a cold cache from sending a stampede to an unindexed query. A weaker answer sizes for the warm case only and misses the failure mode created by losing the cache.

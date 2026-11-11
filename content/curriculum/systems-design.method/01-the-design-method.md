@@ -9,6 +9,15 @@ easy to do badly. What distinguishes a strong design conversation from a weak on
 is not knowing more components — it is following a procedure that surfaces
 constraints before committing to a shape.
 
+> [!WHY] An interview candidate starts drawing Kafka, Redis and three databases before asking how many users or writes the product has. Ten minutes later, none of the boxes has a defensible reason to exist.
+
+> [!GOALS]
+>
+> - Order requirements, scale, API, data model and architecture decisions
+> - Convert read/write ratios into candidate components
+> - Compute storage and throughput before proposing partitioning
+> - Revise the design when an interviewer changes an assumption
+
 ## The procedure
 
 ```text
@@ -295,3 +304,19 @@ one reasoned through aloud with a wrong turn corrected.
    deliverable, not the diagram.
 
 Next: the arithmetic itself.
+
+## Exercises
+
+> [!EXERCISE recall] State the design interview sequence from requirements through trade-offs, and explain why scale must come before the high-level design.
+>
+> **Solution:** Clarify requirements, estimate scale, define the API and data model, draw the high-level design, deep dive on the pressured component, then state trade-offs. Scale supplies the load that justifies components; without it, a cache, partition or queue is a remembered pattern rather than a consequence of the workload.
+
+> [!EXERCISE apply] A service expects 1,200 writes/s, a 25:1 read-to-write ratio, 600-byte records retained for one year, 3× replication and 1.3× index overhead. Calculate reads/s and approximate replicated indexed storage. Using a single primary capacity of 20k–50k simple queries/s, say which component the numbers suggest and which they do not yet force.
+>
+> **Hint:** Reads are writes × 25. Storage is writes/s × seconds/year × record size × replication × overhead.
+>
+> **Solution:** Reads are 1,200 × 25 = **30,000 reads/s**. One year has about 31.5 million seconds, so writes create 1,200 × 31,500,000 = 37,800,000,000 records/year. Raw bytes are 37,800,000,000 × 600 = 22,680,000,000,000 bytes = 22.68 TB. Applying replication gives 22.68 × 3 = 68.04 TB; index overhead gives 68.04 × 1.3 = **88.45 TB total**, about 88.45 ÷ 3 = **29.48 TB per replica**. The read load suggests a cache and read replicas; 1,200 writes/s alone does not exceed the stated primary range, so partitioning is not yet justified by write rate.
+
+> [!EXERCISE stretch] An interviewer changes the read:write ratio from 25:1 to 1:4 but leaves write rate unchanged. Explain which part of your design loses its original justification, what you would recalculate, and what a weaker answer misses.
+>
+> **Solution:** Reads become 1,200 ÷ 4 = 300/s, so the cache and read-replica plan no longer follows from read volume. Recalculate read QPS and revisit cache hit rate, replica count and freshness requirements; keep the write path and retention estimate unless those assumptions also change. A weaker answer defends the original architecture unchanged; it misses that each component must remain tied to a stated constraint.

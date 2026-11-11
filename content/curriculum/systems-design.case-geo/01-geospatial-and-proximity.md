@@ -9,6 +9,15 @@ address, friends near a location. The core operation — "nearest to a point" �
 a small number of good data structures, and the interesting variation is whether
 the objects move.
 
+> [!WHY] A courier is 300 metres away but on the other side of a river with no nearby bridge, while a farther courier can arrive sooner. A proximity service needs spatial indexing to shortlist candidates and a second step that reflects the real route.
+
+> [!GOALS]
+>
+> - Compare position-update load with proximity-query load
+> - Search neighbouring cells and refine candidates with exact distance
+> - Adapt cell size to object density and movement
+> - Distinguish straight-line distance from travel time
+
 ## Requirements and scale
 
 ```text
@@ -243,3 +252,19 @@ and the answer is the same: split the hot key, and accept a bounded fan-out.
    straight-line answer is the wrong one for the decision.
 
 Next: video streaming.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a geohash or grid-cell lookup need neighbouring cells and an exact-distance step before it can answer “within this radius”?
+>
+> **Solution:** A radius can cross a cell boundary, so checking only the cell containing the query point misses nearby objects in adjacent cells. Search the containing cell and its neighbours, then calculate exact distances and filter by radius; the cell index is a shortlist, not the final circular predicate.
+
+> [!EXERCISE apply] A service tracks 2 million drivers and each driver sends a position every 8 seconds. It receives 360,000 ride requests per hour. Calculate position writes/s and ride queries/s, then their ratio. For a request near a cell boundary, state the search and ranking steps.
+>
+> **Hint:** Convert the hour to 3,600 seconds before dividing.
+>
+> **Solution:** Position writes are 2,000,000 ÷ 8 = **250,000 writes/s**. Ride queries are 360,000 ÷ 3,600 = **100 queries/s**. The write-to-query ratio is 250,000 ÷ 100 = **2,500:1**. Search the containing cell plus its eight neighbours, compute exact distances for the candidates, and use road distance or ETA—not straight-line distance alone—to rank the few best drivers.
+
+> [!EXERCISE stretch] A fixed geohash precision gives hundreds of candidates in a dense city block and no candidates in a rural 1 km cell. Design an adaptive search that avoids both extremes, and name what a weaker answer misses.
+>
+> **Solution:** Begin with a small cell or radius in dense areas and widen only until enough candidates are found; subdivide hot cells to bound candidate fan-out. In sparse areas, expand through larger neighbouring cells until the limit or maximum radius is reached. A weaker answer chooses one universal cell size; it misses that density varies by orders of magnitude and moving objects make candidate freshness part of the cost.

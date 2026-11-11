@@ -9,6 +9,15 @@ simultaneously, with cursors, offline support, history and permissions. The
 convergence problem has a known answer; the system around it is where the design
 work is.
 
+> [!WHY] Two editors revise the same paragraph from a train with no connection, then reconnect after one has deleted the passage the other kept editing. The system must converge while still making permissions and history understandable to people.
+
+> [!GOALS]
+>
+> - Explain why local-first edits require a convergent merge
+> - Estimate relay fan-out for a hot document
+> - Separate ephemeral awareness from persisted document state
+> - Enforce permissions before relaying or storing updates
+
 ## Requirements and scale
 
 ```text
@@ -278,3 +287,19 @@ flowchart TB
 That completes the Systems Design track. Every case here draws on **Distributed
 Systems** for its mechanisms, **Backend Engineering** for its interfaces, and
 **ML Systems** where a model is involved.
+
+## Exercises
+
+> [!EXERCISE recall] What does a CRDT guarantee about replicas, and what product or security decisions does it leave to the application?
+>
+> **Solution:** A CRDT gives compatible replicas a deterministic way to converge after receiving the same updates, allowing local edits without a round trip per keystroke. It does not decide whether a surprising merge is acceptable to the user, how to present history, or whether an editor is authorised. The sync service still validates permissions before it relays or persists updates.
+
+> [!EXERCISE apply] One hot document has 240 connected editors, each producing 10 document updates per second. Estimate update deliveries per second if every update is relayed to all other editors. Then explain where cursor presence belongs and give a way to expire it.
+>
+> **Hint:** Each update goes to all editors except its sender.
+>
+> **Solution:** The document receives 240 × 10 = **2,400 updates/s**. Each update reaches 240 − 1 = **239 peers**, so the relay handles 2,400 × 239 = **573,600 deliveries/s**. That load lands on the one server that owns the document, which is why the chapter caps concurrent editors or shards the relay through a pub/sub layer. Keep cursors in a separate awareness channel rather than persisting them as document operations; publish the latest cursor state with a short TTL so inactive editors disappear without adding permanent history.
+
+> [!EXERCISE stretch] An offline user returns after two weeks and sees their paragraph moved by a teammate while they were away. Design the technical merge and the user-facing recovery experience. Name what a weaker answer misses.
+>
+> **Solution:** Apply the retained CRDT operations so replicas converge, and preserve the operation history so the user can inspect or undo the result. Present a focused change summary or conflict review for surprising edits, and keep permission checks in the sync path. A weaker answer says “the CRDT merges it” as if convergence answers whether the user understands or accepts the result; it misses history, recoverability and access control.

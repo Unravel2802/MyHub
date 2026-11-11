@@ -8,6 +8,15 @@ Design a monitoring system: ingest metrics from thousands of services, store the
 and serve dashboards and alerts. The write volume is enormous and predictable; the
 thing that actually kills these systems is cardinality.
 
+> [!WHY] A dashboard adds `user_id` as a convenient label, and a metric store that was healthy yesterday starts creating series faster than it can compact them. The labels chosen by one team can determine whether every team's alerts keep working.
+
+> [!GOALS]
+>
+> - Calculate series cardinality from label dimensions
+> - Estimate ingest bytes and daily storage from a point rate
+> - Choose rollups and mergeable sketches for long-range queries
+> - Keep unbounded identifiers in logs or traces instead of metric labels
+
 ## Requirements and scale
 
 ```text
@@ -262,3 +271,19 @@ flowchart TB
 6. Limit the series a query may touch, and alert on symptoms rather than causes.
 
 Next: collaborative editing.
+
+## Exercises
+
+> [!EXERCISE recall] Why are labels useful for querying but dangerous when their values are unbounded? Name one kind of detail that belongs in a log or trace instead.
+>
+> **Solution:** Every unique combination of label values creates a time series. A bounded label such as status has a limited number of values; a user, request or session identifier can create a new series for every event and overwhelm storage and query planning. Keep those high-cardinality details in logs or traces and link them to bounded aggregate metrics.
+
+> [!EXERCISE apply] A fleet has 2,400 hosts, each reporting 600 metrics every 30 seconds. Estimate points/s, raw bytes/s at 16 bytes per point, and raw bytes/day. Then explain what happens to series count if each point also carries a `session_id` with 50,000 possible values.
+>
+> **Hint:** Divide hosts × metrics by the reporting interval; multiply bytes/s by 86,400 for a day.
+>
+> **Solution:** The point rate is 2,400 × 600 ÷ 30 = **48,000 points/s**. At 16 bytes each, raw ingest is 48,000 × 16 = **768,000 bytes/s**, or 768 KB/s. Per day that is 768,000 × 86,400 = 66,355,200,000 bytes, about **66.4 GB/day** before compression. If 50,000 session values multiply each series, cardinality can grow by up to 50,000×; do not use that unbounded dimension as a label.
+
+> [!EXERCISE stretch] An operations team wants to retain raw 10-second samples for a year and calculate a daily p99 by averaging each hourly p99. Propose a retention and aggregation plan, and state what a weaker answer misses.
+>
+> **Solution:** Keep high-resolution samples for the short alerting window, then downsample into hourly or daily rollups with count, sum, min, max and a mergeable quantile sketch. A daily p99 must be merged from distribution sketches, not computed by averaging hourly p99 values, because percentiles discard the underlying distribution. A weaker answer changes only the retention duration; it misses that the aggregate representation determines which later queries remain valid.

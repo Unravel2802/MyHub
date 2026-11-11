@@ -9,6 +9,15 @@ problem is small enough to reason about completely, and it exercises the
 coordination trade-off precisely: exact enforcement needs coordination on every
 request, which is exactly what a rate limiter cannot afford.
 
+> [!WHY] One client sends a burst just as traffic shifts between API servers, and every server makes its own decision about the same quota. The limiter must control aggregate load without adding a coordination round trip to every request.
+
+> [!GOALS]
+>
+> - Compare fixed-window, sliding-window and token-bucket behavior
+> - Calculate burst allowance and refill over time
+> - Explain the throughput/read-cost trade-off of sharded counters
+> - Choose fail-open, fail-closed or local fallback behavior by endpoint
+
 ## Requirements
 
 ```text
@@ -263,3 +272,19 @@ The same problem without the limit:
    from how exact the count must be.
 
 Next: search and autocomplete.
+
+## Exercises
+
+> [!EXERCISE recall] What does a token bucket control, and how does its burst capacity differ from its sustained refill rate?
+>
+> **Solution:** The bucket holds a bounded number of tokens that requests consume, so it allows a burst up to the bucket capacity. Tokens refill at a configured rate, which sets the long-run sustained request rate; a depleted bucket rejects or delays requests until tokens return.
+
+> [!EXERCISE apply] An API key has a token bucket with capacity 24 and refill rate 6 tokens/s. Thirty-one requests arrive simultaneously when the bucket is full. Calculate how many pass immediately and how many are rejected. If two seconds pass with no traffic, how many tokens are available for the next burst?
+>
+> **Hint:** The initial burst cannot exceed capacity; refill is limited by both elapsed time and capacity.
+>
+> **Solution:** The full bucket contains 24 tokens, so **24 requests pass** and **7 are rejected** immediately. Two quiet seconds refill 2 × 6 = 12 tokens. Since the bucket was emptied by the first burst, the next burst has **12 tokens** available, not 24; the capacity is a ceiling, not an automatic reset.
+
+> [!EXERCISE stretch] Your shared Redis limiter becomes unavailable. Compare what you would do for a public product feed and for a password-reset endpoint, and explain what a weaker answer misses.
+>
+> **Solution:** For a read-heavy feed, a tested per-process local limit or bounded fail-open mode may preserve availability while containing abuse approximately. For password reset, a fail-closed or strict local fallback may be safer because an unrestricted burst can enable account abuse. Alert on fallback activation and restore shared coordination carefully. A weaker answer picks one global failure mode; it misses that the cost of false rejection and the cost of excess requests differ by operation.

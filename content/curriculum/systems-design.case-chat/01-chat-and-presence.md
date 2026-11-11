@@ -8,6 +8,15 @@ Design a messaging system: one-to-one and group conversations, real-time deliver
 message history, delivery receipts and presence. The interesting parts are not the
 messages — they are connection management, ordering, and the counters.
 
+> [!WHY] A gateway deploy drops thousands of live sockets, and clients reconnect together while users are still sending messages. Whether the system recovers depends on durable ordering and a reconnect path that does not mistake push delivery for history.
+
+> [!GOALS]
+>
+> - Estimate gateway count and connection memory from concurrency
+> - Order messages with a per-conversation sequence
+> - Recover an offline client's gap from durable history
+> - Compute unread counts without scanning every message
+
 ## Requirements and scale
 
 ```text
@@ -296,3 +305,19 @@ staggered deliberately.
    only for what is on screen.
 
 Next: object storage and content delivery.
+
+## Exercises
+
+> [!EXERCISE recall] Explain why a chat service needs a durable message sequence even if it pushes each new message over a socket.
+>
+> **Solution:** A socket is a delivery path, not durable history: a client may disconnect and miss pushes. Persist the message and assign its order before acknowledging it; on reconnect, the client requests the ordered history after its last sequence. This also avoids relying on unsynchronised client clocks for conversation order.
+
+> [!EXERCISE apply] A service expects 8 million simultaneous connections and plans for 40,000 connections per gateway. Each connection uses about 2 KB of gateway memory. Calculate the gateway count and fleet connection memory. A client reconnects with last received sequence 317 while the conversation's latest sequence is 321; specify the gap it should request and how an unread badge can be computed if that user's last-read sequence is 300.
+>
+> **Hint:** Divide concurrency by per-gateway capacity, multiply connections by memory, and use sequence subtraction for the badge.
+>
+> **Solution:** 8,000,000 ÷ 40,000 = **200 gateways**. Connection memory is 8,000,000 × 2 KB = 16,000,000 KB, about **16 GB** across the fleet. The reconnect asks for sequences **318 through 321** from durable history. With latest sequence 321 and last-read sequence 300, the unread count is 321 − 300 = **21**; the client can sum this per conversation without querying every message.
+
+> [!EXERCISE stretch] A product wants a group conversation with 2 million members and delivery receipts for every member. Propose a design that keeps message acceptance fast, bounds fan-out, and still lets a member recover after an outage. Explain what a weaker answer misses.
+>
+> **Solution:** Persist one ordered conversation event and acknowledge it, then expand delivery asynchronously through partitioned recipient queues with rate limits and checkpoints. Store per-member delivery/read cursors compactly or aggregate receipts when the product only needs counts; do not make the send transaction wait for 2 million socket writes. On reconnect, serve the missing ordered range from history. A weaker answer broadcasts synchronously and treats a successful socket write as durable delivery; it misses backpressure, retries and offline recovery.

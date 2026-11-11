@@ -9,6 +9,15 @@ conditions. It is the case where bandwidth economics dominate every other
 consideration, and where the CDN is not an optimisation but the product's
 foundation.
 
+> [!WHY] A viewer starts on a slow mobile connection, while a popular live event sends a sudden surge through the origin. Startup quality and delivery cost depend on encoding choices, segment adaptation and a CDN path that absorbs repeated reads.
+
+> [!GOALS]
+>
+> - Convert watch time and bitrate into delivered data volume
+> - Explain how adaptive bitrate responds to throughput and buffer level
+> - Design upload, transcode and immutable segment delivery paths
+> - Compare encoding cost with bandwidth savings by content popularity
+
 ## Requirements and scale
 
 ```text
@@ -244,3 +253,19 @@ rendition and warm edge caches — all cheap.
 6. Optimise startup time first — it is the strongest predictor of abandonment.
 
 Next: metrics and time-series at scale.
+
+## Exercises
+
+> [!EXERCISE recall] What does adaptive bitrate streaming measure at the client, and why should the server serve immutable segments rather than choose a rendition for every viewer request?
+>
+> **Solution:** The client measures recent throughput and buffer level, then selects a suitable rendition for the next segment. Immutable segments can be cached globally by a CDN, while the client adapts to its own changing network; server-side per-viewer selection would add state and keep repeated bytes closer to origin.
+
+> [!EXERCISE apply] A service has 1.5 million viewers watching 32 minutes per day at an average delivered bitrate of 2 Mbps. Estimate daily watch-hours, total delivered data using 8 bits per byte, and origin traffic if a CDN serves 95% of bytes from cache.
+>
+> **Hint:** Convert minutes to seconds, multiply by bits/s, then divide by 8 and by 10^12 for decimal TB.
+>
+> **Solution:** Watch time is 1,500,000 × 32 = 48,000,000 viewer-minutes, or 48,000,000 ÷ 60 = **800,000 viewer-hours/day**. Delivered bits are 1,500,000 × 32 × 60 × 2,000,000 = 5,760,000,000,000,000 bits (5.76 × 10^15), or ÷ 8 = 720,000,000,000,000 bytes = **720 TB/day** using decimal units. A 95% hit rate leaves 5% at origin: 720 × 0.05 = **36 TB/day**. This makes cache hit rate an architecture and cost variable, not a minor tuning detail.
+
+> [!EXERCISE stretch] The encoding team proposes AV1 for every upload because it saves bandwidth, including videos with few views. Recommend an encoding policy and explain what a weaker answer misses.
+>
+> **Solution:** Encode popular content into the more efficient codec and multiple useful renditions because the one-time compute cost is repaid across many views. Keep long-tail content on a cheaper baseline until demand justifies more encodes, and measure delivered bytes, startup and rebuffering by cohort. A weaker answer chooses the smallest file for every video; it misses encoder cost, device compatibility and the fact that rarely watched content may never recover that cost.

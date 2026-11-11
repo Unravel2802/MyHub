@@ -9,6 +9,15 @@ to millions of devices, respecting preferences and quiet hours. The hard parts a
 not delivery — they are deduplication, preference evaluation and not becoming the
 reason people uninstall the app.
 
+> [!WHY] A marketing campaign is queued for millions of people, then a user changes their preference while the queue is draining. The send-time decision, provider quotas and deduplication behavior determine whether the system respects that choice.
+
+> [!GOALS]
+>
+> - Trace event ingestion through preference checks and channel delivery
+> - Calculate delivery duration under a provider rate limit
+> - Choose a deduplication key and retention window for retries
+> - Distinguish hard bounces, soft bounces and opt-outs
+
 ## Requirements
 
 ```text
@@ -233,3 +242,19 @@ notification is a request to 50M people to open your app at the same second.
    immediately.
 
 Next: geospatial queries.
+
+## Exercises
+
+> [!EXERCISE recall] Why should a notification service check user preferences near send time, and why must deduplication be atomic with delivery scheduling?
+>
+> **Solution:** A user can opt out after an event is triggered but before it is sent, so the send path must re-evaluate current preferences. Deduplication must be checked atomically with scheduling so concurrent retries cannot both enqueue the same `(user, event, channel)` delivery; retain the key longer than the longest retry path.
+
+> [!EXERCISE apply] A campaign has 2.4 million recipients, and the email provider permits 400 sends/s. Calculate the minimum drain time in seconds and minutes. A retry may arrive up to 90 minutes after the first attempt; choose a minimum deduplication retention period and state how opt-outs are handled during the drain.
+>
+> **Hint:** Divide recipients by the provider quota; make the retention exceed the retry horizon.
+>
+> **Solution:** 2,400,000 ÷ 400 = **6,000 seconds**, which is 6,000 ÷ 60 = **100 minutes** at the maximum quota. Keep the deduplication record for **more than 90 minutes** (with a safety margin, for example two hours) so a late retry cannot outlive it. Re-check preferences at send time and skip anyone who opted out while the campaign was draining.
+
+> [!EXERCISE stretch] A notification is retried after a provider timeout, and the user has since opted out of marketing messages but still allows transactional receipts. Design the decision sequence and say what a weaker answer misses.
+>
+> **Solution:** Load the event category, current user preferences and deduplication state; reject marketing delivery after opt-out, while allowing a genuinely transactional receipt under its separate policy. For an eligible event, use the same atomic deduplication key before sending or scheduling a retry, then classify provider responses for backoff or suppression. A weaker answer treats all channels as one preference or retries every timeout blindly; it misses category policy, duplicate sends and hard-bounce/complaint suppression.

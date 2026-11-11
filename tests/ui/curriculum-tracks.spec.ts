@@ -70,6 +70,17 @@ for (const chapter of chapters) {
     );
     expect(response?.ok()).toBe(true);
     await expect(page.locator("article")).toBeVisible();
+    if (chapter.topic.startsWith("systems-design.")) {
+      await expect(
+        page.getByRole("complementary", { name: "Why this matters" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("complementary", {
+          name: "By the end you'll be able to",
+        }),
+      ).toBeVisible();
+      await expect(page.locator("[data-exercise-card]")).toHaveCount(3);
+    }
 
     const diagrams = page.locator("[data-mermaid-diagram]");
     await expect(diagrams).toHaveCount(chapter.diagrams);

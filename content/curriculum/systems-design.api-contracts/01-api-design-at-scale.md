@@ -8,6 +8,15 @@ An API is the most durable thing in a system — implementations get rewritten,
 databases get replaced, and the interface persists because other people depend on
 it. The decisions below are the ones that are cheap now and very expensive later.
 
+> [!WHY] A partner has shipped your offset-pagination API to thousands of clients when a large account starts timing out on deep pages. The API contract has become an operational limit that every client now depends on.
+
+> [!GOALS]
+>
+> - Choose a stable cursor for ordered collections
+> - Specify replay behavior for retried writes
+> - Compute pagination cost and explain when an API change is breaking
+> - Design errors and long-running operations clients can recover from
+
 ## Pagination
 
 ```text
@@ -237,3 +246,19 @@ response solves the common case for free.
    IDs as strings.
 
 Next: the trade-offs behind all of these choices.
+
+## Exercises
+
+> [!EXERCISE recall] Name three API decisions that become expensive to change after clients depend on them, and explain why each is part of the contract.
+>
+> **Solution:** Pagination shape is embedded in client traversal and deep offsets can become slow. Idempotency behavior determines whether retrying a write repeats its effect. Error shape and status semantics determine how clients classify and recover from failures. Once clients ship against any of these, changing behavior can break them even if the server implementation is better.
+
+> [!EXERCISE apply] An activity endpoint contains 30 million rows ordered by `(created_at, id)`. A client requests 250 rows at a time and may insert new activities while it pages. Work out the number of pages for a complete scan, then choose a pagination contract and state how a retried create request behaves if the client sends the same idempotency key 15 times.
+>
+> **Hint:** Divide the row count by the page size; then distinguish resuming after a stable key from skipping a count of rows.
+>
+> **Solution:** 30,000,000 ÷ 250 = **120,000 pages**. Return an opaque cursor containing the last `(created_at, id)` pair and query strictly after that pair, with the unique id breaking timestamp ties. Inserts before the cursor do not shift the next page boundary. For 15 POST attempts with the same key, commit one effect and its replayable response atomically; the other 14 attempts return that saved response and perform zero additional creates.
+
+> [!EXERCISE stretch] A team proposes changing a response field from a 64-bit numeric database id to a string everywhere, because JSON numbers cannot safely represent every 64-bit integer, while some clients also treat a `200` response containing `{ "error": ... }` as success. Give a migration plan that preserves old clients while making the new contract unambiguous, and name what a weaker plan misses.
+>
+> **Solution:** Add a new string id field first, document it, and have clients accept both forms during a transition; only remove the old field after measured client adoption and a versioning/deprecation window. Return errors with the appropriate non-success status and a stable machine-readable error body, while keeping human text separate. A weaker answer changes the response in place and assumes clients can be upgraded together; it misses that deployed clients and generated SDKs can outlive the server release.

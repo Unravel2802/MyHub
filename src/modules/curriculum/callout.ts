@@ -1,8 +1,18 @@
 import type { ExtraProps } from "react-markdown";
 
 type Element = NonNullable<ExtraProps["node"]>;
-export const CALLOUT_KINDS = ["KEY", "PITFALL", "INTERVIEW", "CHECK"] as const;
+export const CALLOUT_KINDS = [
+  "KEY",
+  "PITFALL",
+  "INTERVIEW",
+  "CHECK",
+  "EXERCISE",
+  "WHY",
+  "GOALS",
+] as const;
 export type CalloutKind = (typeof CALLOUT_KINDS)[number];
+export const EXERCISE_LEVELS = ["recall", "apply", "stretch"] as const;
+export type ExerciseLevel = (typeof EXERCISE_LEVELS)[number];
 
 export function hastText(node: {
   value?: string;
@@ -13,11 +23,18 @@ export function hastText(node: {
 
 export function calloutMarker(
   node: Element | undefined,
-): { kind: CalloutKind; prefix: string } | null {
+): { kind: CalloutKind; prefix: string; level?: ExerciseLevel } | null {
   const first = node?.children.find((child) => child.type === "element");
   if (first?.type !== "element" || first.tagName !== "p") return null;
-  const match = /^\[!(KEY|PITFALL|INTERVIEW|CHECK)\]\s*/.exec(hastText(first));
-  return match ? { kind: match[1] as CalloutKind, prefix: match[0] } : null;
+  const match =
+    /^\[!(KEY|PITFALL|INTERVIEW|CHECK|EXERCISE|WHY|GOALS)(?:\s+([^\]\s]+))?\]\s*/.exec(
+      hastText(first),
+    );
+  if (!match) return null;
+  const kind = match[1] as CalloutKind;
+  if (kind !== "EXERCISE") return match[2] ? null : { kind, prefix: match[0] };
+  const level = EXERCISE_LEVELS.find((candidate) => candidate === match[2]);
+  return level ? { kind, prefix: match[0], level } : null;
 }
 
 export function isKeyRule(node: Element | undefined): boolean {

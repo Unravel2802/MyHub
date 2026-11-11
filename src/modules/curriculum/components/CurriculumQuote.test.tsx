@@ -55,3 +55,26 @@ it("places the first paragraph in a native summary and the answer after it", () 
     html.indexOf("</summary>"),
   );
 });
+
+it("renders WHY as the prominent track callout and strips its marker", () => {
+  const html = render(
+    "> [!WHY] A concrete moment decides the outcome.\n> Another sentence.",
+  );
+  expect(html).toContain('aria-label="Why this matters"');
+  expect(html).toContain("Why this matters");
+  expect(html).toContain("text-base leading-relaxed");
+  expect(html).not.toContain("[!WHY]");
+  expect(html).toContain("A concrete moment decides the outcome.");
+});
+
+it("renders GOALS as a target-marked list without bullets or state", () => {
+  const html = render(
+    "> [!GOALS]\n>\n> - Compute a value\n> - Explain a trade-off\n> - Choose an option",
+  );
+  expect(html).toContain('aria-label="By the end you&#x27;ll be able to"');
+  expect(html).toContain("By the end you&#x27;ll be able to");
+  expect(html.match(/<svg/g) ?? []).toHaveLength(3);
+  expect(html).toContain("list-none");
+  expect(html).not.toContain("[!GOALS]");
+  expect(html).not.toContain("<input");
+});

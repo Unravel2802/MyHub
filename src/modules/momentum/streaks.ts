@@ -4,6 +4,7 @@ import type { Application } from "@/src/modules/jobApplications/types";
 import type { PrepEntry } from "@/src/modules/prep/types";
 import type { OutreachEntry } from "@/src/modules/outreach/types";
 import type { LeetCodeAttempt } from "@/src/modules/leetcode/types";
+import type { LessonProgress } from "@/src/modules/curriculum/types";
 
 // Streak date math (myhub_plan.md Part B, Phase 5). Pure — the store fetches
 // each module's data through that module's own Repository and hands it here.
@@ -14,6 +15,7 @@ export interface ActivitySnapshot {
   applications: Application[];
   outreachEntries: OutreachEntry[];
   leetcodeAttempts: LeetCodeAttempt[];
+  curriculumProgress: LessonProgress[];
 }
 
 export interface Streak {
@@ -34,9 +36,9 @@ function safeDayKey(timestamp: string | null | undefined): string | null {
   return Number.isNaN(date.getTime()) ? null : dayKey(date);
 }
 
-// A day counts as active if you did ANY of the five things that move the
+// A day counts as active if you did ANY of the six things that move the
 // roadmap forward: logged a prep rep, completed a task, logged an application,
-// had an outreach conversation, or logged a LeetCode attempt.
+// had an outreach conversation, logged a LeetCode attempt, or read a chapter.
 //
 // Timezone discipline, and the reason this isn't a one-liner: `date` columns
 // (prep, outreach) are already local wall-clock calendar dates and are used
@@ -76,11 +78,16 @@ export function activityDates(snapshot: ActivitySnapshot): Set<string> {
     if (day !== null) days.add(day);
   }
 
+  for (const entry of snapshot.curriculumProgress) {
+    const day = safeDayKey(entry.completedAt);
+    if (day !== null) days.add(day);
+  }
+
   return days;
 }
 
 // The per-day COUNT variant, for the activity heatmap. activityDates answers
-// "was this day active?"; this answers "how active?" — the five sources summed
+// "was this day active?"; this answers "how active?" — the six sources summed
 // per local wall-clock day. Same timezone discipline (safeDayKey, never
 // .slice), same soft-delete filtering, deliberately kept as a sibling rather
 // than folded in so activityDates stays a cheap Set for the streak math.
@@ -107,6 +114,9 @@ export function activityCounts(
   }
   for (const application of snapshot.applications) {
     if (!application.deletedAt) bump(safeDayKey(application.createdAt));
+  }
+  for (const entry of snapshot.curriculumProgress) {
+    bump(safeDayKey(entry.completedAt));
   }
 
   return counts;

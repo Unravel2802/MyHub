@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged to main 2026-11-11. X4 batch E0 approved 2026-11-11 (see the E0 reviews at the end); E1 is next.
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 reviewed 2026-11-11, changes requested (see the E1 review at the end).
 
 ---
 
@@ -649,3 +649,52 @@ teaches. 5ac003a (Claude) replaces it with the chapter's actual remedy, a
 cap on concurrent editors or a pub/sub-sharded relay. Lint, typecheck, 1,661
 unit tests and 254/254 E2E pass. Lesson for later reviews: check a
 requested sentence against the chapter, too.
+
+### E1 review — 2026-11-11 (Claude): changes requested
+
+Branch `curriculum-e1` (b482c61, f93a281), in Codex's own worktree and based
+on main. All 22 DS1 chapters (fundamentals, rpc, time, replication) gained an
+opener and three exercises; the batch table's "23" was a miscount (the
+directories hold 22 files). No original prose changed. Lint, typecheck and 1,661 unit tests pass. E2E: 253 passed and 1 flaky (`systems-design.case-video`, not an E1 file; the tracks spec then passed 64/64 on a re-run). Codex's worktree can't build for E2E: it has no `.env.local`, so prerender fails with "supabaseUrl is required"; copy it in, or run E2E from the main checkout.
+
+I re-derived every calculation: HLC send/receive ((103,0), (103,1)), the
+vector merge ({A:3,B:1,C:6}), the length-prefix reassembly, 50 ppm drift
+(4.32 s/day, 129.6 s/30 days), M/M/1 at ρ = 0.95 (20×, 80 ms), backoff
+ceilings, failover stages (28 s of 30), topology links (10/5/4), lag
+positions (176), ID storage (32 MB / 16 MB), the SLO budget (20,000), payload
+size (3.2 MB) and the pool round trips. All correct, and every figure and
+GOALS bullet I checked is taught in its chapter. Fix these before merge:
+
+1. **E2E gate is a no-op for every E1 chapter.**
+   `curriculum-tracks.spec.ts` checks
+   `chapter.topic.startsWith(`${prefix}.`)`. For Systems Design the prefix is
+   the track (`systems-design` → `systems-design.case-chat` matches), but the
+   E1 prefixes are whole topic ids: `distributed.fundamentals` never starts
+   with `distributed.fundamentals.`, so the opener and exercise-card
+   assertions are skipped on all 22 chapters while the suite stays green.
+   Match `chapter.topic === prefix || chapter.topic.startsWith(`${prefix}.`)`,
+   and check that the test still fails if one E1 chapter's `## Exercises` is
+   removed. (The unit gate is unaffected: it matches the file path,
+   `distributed.fundamentals/…`, without the dot.)
+
+2. **`distributed.replication/05-leaderless-and-quorums`: Apply duplicates
+   Stretch, and the quorum maths is untested.** Both ask how a rarely read,
+   deleted key's tombstone converges, and the Recall covers the same ground.
+   The first GOALS bullet promises "Calculate read/write quorum overlap from
+   R, W and N", which no exercise asks. Replace the Apply with one built on
+   the chapter's own N = 5 example, for instance: N = 5 and writes must
+   succeed with two replicas down; choose W, find the smallest R that
+   guarantees overlap, and say whether W = 2, R = 3 overlaps. Solution:
+   W ≤ 5 − 2 = **3**; R + 3 > 5 gives **R = 3** (6 > 5), which also lets reads
+   survive two replicas down; W = 2, R = 3 gives 5, not > 5, so **no
+   guaranteed overlap**. End with the chapter's caveat that overlap still
+   isn't linearizability. Keep the Stretch as it is.
+
+3. **`distributed.rpc/02-wire-protocols-and-framing`, Apply: the last
+   sentence is false.** "TCP read boundaries do not align with either frame
+   boundary": frame 2 ends exactly at the end of the fourth read (and frame
+   1 starts at the start of the first). Say instead that each length prefix
+   is split across two reads and frame 1's payload is split across reads 2
+   and 3, so the parser can't treat any single read as a message.
+
+**Status:** E1 needs fixes 1–3. E2 can start from main once E1 merges.

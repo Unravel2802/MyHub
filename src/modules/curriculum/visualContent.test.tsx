@@ -8,7 +8,10 @@ import { parseChartBlock } from "./chartBlock";
 import { widgetRegistry } from "./widgets/registry";
 
 const ROOT = join(process.cwd(), "content", "curriculum");
-export const EXERCISE_TRACKS: string[] = ["systems-design.estimation"];
+export const EXERCISE_TRACKS: string[] = [
+  "systems-design.estimation",
+  "systems-design",
+];
 function markdownFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const path = join(dir, entry);

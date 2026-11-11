@@ -282,3 +282,62 @@ through a CDN, 95% hits: 10000-20000
    number rules in or out.
 
 Next: choosing where the data lives.
+
+## Exercises
+
+> [!EXERCISE recall] Name the four calculations, and for each one say what
+> design decision it informs.
+>
+> **Solution:** QPS decides how many servers you need, and whether one
+> database primary can take the writes. Storage decides whether the data fits
+> on one machine or must be partitioned, and whether bulky data belongs in
+> object storage. Bandwidth decides network capacity and whether a CDN is
+> needed to keep egress affordable. Cache memory decides whether the hot
+> working set fits in RAM, which with the 80/20 rule usually means caching
+> the hottest 20% of the data.
+
+> [!EXERCISE apply] A URL shortener has 10M DAU. Each user creates 1 short
+> link and follows 20 links a day. Peak is 5× average. Each link record is
+> 500 B, kept for 5 years, with 3× replication and 1.3× index overhead. Work
+> out peak writes/s, peak reads/s and total storage, and say what each number
+> rules in or out.
+>
+> **Hint:** Use 86,400 ≈ 10⁵ seconds a day, and do reads and writes
+> separately. Storage is records/day × size × days × replication × overhead.
+>
+> **Solution:** Writes: 10M a day ÷ 10⁵ ≈ 100/s average, × 5 ≈ **500/s at
+> peak**. That is far below one Postgres primary's 20k–50k, so writes force
+> nothing. Reads: 200M a day ÷ 10⁵ ≈ 2,000/s average, × 5 ≈ **10,000/s at
+> peak**. One server could just about serve that, but at a 20:1 read:write
+> ratio the right move is a cache in front, and since popular links are
+> heavily skewed, a small hot set gives a high hit rate. Storage:
+> 10M × 500 B = 5 GB a day, × 365 × 5 ≈ 9 TB, × 3 replication ≈ 27 TB,
+> × 1.3 ≈ **35 TB**, about 12 TB per replica. That fits comfortably in one
+> NVMe server's 10–100 TB, so storage doesn't force partitioning either. The
+> design is one primary, replicas and a cache, and you've shown why.
+>
+> This estimate also separates the risks:
+>
+> - Peak reads affect service capacity.
+> - Replication multiplies stored bytes.
+> - Verify DAU before sizing the storage bill.
+
+> [!EXERCISE stretch] A colleague's estimate says a video-upload service
+> needs 3 PB of storage a year. Without redoing their whole model, how would
+> you sanity-check that figure, and which assumption would you challenge
+> first?
+>
+> **Hint:** Work backwards from 3 PB to minutes of video per day, once with
+> replication and overhead and once without.
+>
+> **Solution:** 3 PB a year ÷ 365 ≈ 8 TB a day. If that already includes 3×
+> replication and 1.3× overhead, the raw upload is about 8 ÷ 3.9 ≈ 2 TB a
+> day, or at 50 MB per 1080p minute, about 40,000 minutes (~700 hours) of
+> video a day. If it doesn't include them, it's about 160,000 minutes a day,
+> and the true storage bill is roughly 4× higher at about 12 PB. So the
+> first question is whether replication and overhead are in or out, because
+> that one assumption moves the answer 4×. The next is whether the uploads
+> per day match the product's real scale, judged against a known system. A
+> weaker answer redoes the multiplication with the same inputs. That checks
+> the arithmetic, not the assumptions, and the assumptions are where
+> estimates go wrong.

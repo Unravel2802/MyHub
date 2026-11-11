@@ -3,9 +3,22 @@ import {
   chapterOutline,
   slugifyHeading,
   splitTakeaways,
+  splitExercises,
 } from "@/src/modules/curriculum/chapterStructure";
 
 describe("chapter structure", () => {
+  it("splits Exercises case-insensitively and ignores fenced headings", () => {
+    const source =
+      "Intro\n\n```text\n## Exercises\n```\n\n## What to take away\nRecap\n\n## exercises\n> prompt\n\n## Later\nMore";
+    expect(splitExercises(source)).toEqual({
+      main: "Intro\n\n```text\n## Exercises\n```\n\n## What to take away\nRecap\n\n## Later\nMore",
+      exercises: "> prompt",
+    });
+    expect(splitExercises("No section")).toEqual({
+      main: "No section",
+      exercises: null,
+    });
+  });
   it("splits the recap but ignores headings in fences", () => {
     const body =
       "Intro\n\n```text\n## not a heading\n```\n\n## A section\nBody\n\n## What to take away\n- One\n- Two";

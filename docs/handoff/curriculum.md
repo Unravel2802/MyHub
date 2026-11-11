@@ -78,6 +78,14 @@ drawing them would collapse thirteen readable graphs into one hairball.
 figures, callouts, `chart`/`mermaid`/`widget` blocks, and the Systems Design
 content pass. Read it before touching `LessonReader.tsx` or chapter syntax.
 
+## Exercises, chapter openers and the enrichment pass (planned 2026-11-06)
+
+`docs/handoff/curriculum-exercises-and-enrichment.md` adds `## Exercises`
+(three graded problems per chapter), the `[!WHY]`/`[!GOALS]` opener, reading
+days in the Momentum streak, and the batch plan that brings the 276 plain
+chapters up to the Systems Design standard. Read it before adding chapter
+syntax or starting a content batch.
+
 ## Adding material
 
 See `docs/curriculum-authoring-prompt.md` for the generation prompt and

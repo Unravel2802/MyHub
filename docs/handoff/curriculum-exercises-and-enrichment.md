@@ -1,0 +1,484 @@
+# Curriculum exercises, chapter openers, and the enrichment pass — handoff (Codex)
+
+**Why.** Reading the curriculum feels flat. The reader can already show
+diagrams, charts, callouts, check-yourself questions and widgets
+(`curriculum-reader-redesign.md`), but only Systems Design and Distributed
+Systems DS1–DS2 use them: **276 of 338 chapters are still plain prose.** This
+brief adds three things and then applies them to every chapter:
+
+1. **Exercises** at the end of every chapter: three graded problems with
+   hint and solution reveals.
+2. **A chapter opener**: a "Why this matters" box and a "By the end you'll be
+   able to…" list before the first section.
+3. **Reading counts toward the Momentum streak**: marking a chapter read makes
+   that day an active day.
+
+Then **the enrichment pass** brings every remaining track up to the
+Systems Design standard and adds exercises and openers everywhere, so each
+chapter is edited and reviewed once.
+
+Read `docs/handoff/curriculum.md` (five traps) and
+`docs/handoff/curriculum-reader-redesign.md` (the callout machinery, the
+content gates, PR D's prompt) first. Everything there still applies.
+
+**Ownership.** Codex builds all of it: components, the pure helpers, their
+unit tests, E2E specs and the content batches. Claude owns this contract and
+reviews each PR, including re-deriving every exercise solution. If the
+contract looks wrong mid-build, flag it; don't patch around it.
+
+**Decided 2026-11-06 (Lead Architect):** exercise results are NOT stored.
+Hint and solution are reveal-only, with no table, no migration, no
+`localStorage` and no "Got it / Revisit" buttons. Self-graded tracking with a
+review queue may come later as its own decision; don't build toward it.
+
+**PRs, in order.** Each leaves `main` green.
+
+| PR  | What                                                 | Branch                       |
+| --- | ---------------------------------------------------- | ---------------------------- |
+| X1  | Exercises: syntax, helpers, rendering, gates, seed   | `curriculum-exercises`       |
+| X2  | Chapter opener: `[!WHY]` and `[!GOALS]`              | `curriculum-opener`          |
+| X3  | Momentum: reading days count toward the streak       | `momentum-curriculum-streak` |
+| X4+ | Enrichment pass, one batch per branch (table in §X4) | `curriculum-enrich-<batch>`  |
+
+X1–X3 are independent and can be built in any order. X4 batches need X1 and
+X2 merged.
+
+---
+
+## X1 — Exercises
+
+### X1.1 Syntax
+
+A chapter's **last** h2 is `## Exercises`, directly after
+`## What to take away` (and after that section's closing "Next: …" line, if
+it has one). It holds exactly three exercise blockquotes, in this order:
+
+```markdown
+## Exercises
+
+> [!EXERCISE recall] Name the four calculations, and say what design decision
+> each one informs.
+>
+> **Solution:** QPS decides how many servers …
+
+> [!EXERCISE apply] A URL shortener has 10M DAU …
+>
+> **Hint:** Use 86,400 ≈ 10⁵ …
+>
+> **Solution:** …
+
+> [!EXERCISE stretch] …
+>
+> **Hint:** …
+>
+> **Solution:** …
+```
+
+Inside one blockquote:
+
+- **Prompt:** every block before the first `**Hint:**` or `**Solution:**`
+  paragraph. It may span several paragraphs, a list, a table or a fenced
+  block.
+- **Hint:** optional. It starts at a paragraph whose first child is
+  `<strong>Hint:</strong>` and runs until the Solution paragraph.
+- **Solution:** required. It starts at a paragraph whose first child is
+  `<strong>Solution:</strong>` and runs to the end of the blockquote.
+
+The `Hint:`/`Solution:` labels are stripped when rendered, since the
+disclosure's summary already says it. Detect them on the hast node, not with
+a regex over the source, the same as the callout markers.
+
+The three levels:
+
+| Level     | Label   | What it asks                                                                                                                 |
+| --------- | ------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `recall`  | Recall  | Restate or explain a core idea in your own words. Answerable from the chapter's text alone.                                  |
+| `apply`   | Apply   | A worked problem with **new numbers or a new scenario**, solved the chapter's way. Solution shows working.                   |
+| `stretch` | Stretch | Open-ended: a design call, a trade-off, a sanity check. The solution is a model answer and says what a weaker answer misses. |
+
+### X1.2 Pure helpers
+
+In `src/modules/curriculum/chapterStructure.ts`, next to `splitTakeaways`
+and with the same shape and fenced-block awareness:
+
+```ts
+// `exercises` is the `## Exercises` section's body WITHOUT its heading, up to
+// the next "## " or EOF; `main` is everything else, unchanged. No heading →
+// exercises null. Matches the heading case-insensitively, like splitTakeaways.
+export function splitExercises(body: string): {
+  main: string;
+  exercises: string | null;
+};
+```
+
+`LessonReader` calls `splitExercises` **first** and then `splitTakeaways` on
+its `main`. Otherwise `splitTakeaways` returns the Exercises section as part
+of `main`, and it renders inside the body.
+
+In `src/modules/curriculum/callout.ts`:
+
+```ts
+export const CALLOUT_KINDS = [
+  "KEY",
+  "PITFALL",
+  "INTERVIEW",
+  "CHECK",
+  "EXERCISE",
+  "WHY",
+  "GOALS",
+] as const;
+export const EXERCISE_LEVELS = ["recall", "apply", "stretch"] as const;
+export type ExerciseLevel = (typeof EXERCISE_LEVELS)[number];
+
+// Extended: EXERCISE carries a level. `[!EXERCISE]` with no level, or an
+// unknown one, returns null, so it renders as a plain quotation (and the
+// content gate fails it).
+export function calloutMarker(
+  node: Element | undefined,
+): { kind: CalloutKind; prefix: string; level?: ExerciseLevel } | null;
+```
+
+`isKeyRule` already excludes any `[!…]` marker, so nothing changes there.
+
+### X1.3 Rendering
+
+On the page, in order: body → recap card ("What to take away") → **exercises
+section** → finish card.
+
+- The section's h2 is "Exercises". It appears in the TOC and is numbered like
+  the recap's h2. `ReadingProgress`'s time-left estimate includes it, since it
+  is body text.
+- Each exercise is a card with the same frame as the recap card (`--surface`,
+  `--border`, 14px radius). Its header is a mono label "Exercise 1/2/3" plus a
+  level pill:
+  - Recall: `--track-surface` / `--track`
+  - Apply: `--hue-amber-*`
+  - Stretch: `--hue-violet-*`
+
+  Use the same tokens as the PITFALL and INTERVIEW callouts. Add no new colour
+  tokens.
+
+- The prompt renders through the shared `Markdown` with the curriculum's
+  overrides, so charts, code and tables work inside a prompt.
+- **Hint** and **Solution** are two independent native `<details>`, with
+  summaries "Hint" and "Show solution", following B2's check-yourself
+  pattern. Opening the solution does not require opening the hint first. No
+  state persists: a reload closes them.
+- An `[!EXERCISE …]` blockquote **outside** `## Exercises` renders as a plain
+  quotation. The gate below keeps that from shipping.
+
+### X1.4 Content gates (extend `visualContent.test.tsx`)
+
+For every chapter that has `## Exercises`:
+
+- it is the last h2, and the h2 before it is "What to take away";
+- it contains exactly three `[!EXERCISE …]` blockquotes, in the order recall,
+  apply, stretch, and nothing else except blank lines;
+- each one has a non-empty prompt and a non-empty Solution;
+- no `[!EXERCISE …]` appears anywhere else in the file.
+
+Coverage gate: add `EXERCISE_TRACKS: string[]` (topic-id prefixes, e.g.
+`"systems-design."`), and assert that every chapter under those prefixes has
+`## Exercises`. It starts as `["systems-design.estimation"]` (the seed) and
+each X4 batch appends its prefixes, the same way the track-driven E2E gate
+grows.
+
+### X1.5 Seed
+
+Add the Appendix A content to
+`content/curriculum/systems-design.estimation/01-back-of-envelope.md`
+exactly as written, after "What to take away", changing nothing else.
+
+E2E (extend `curriculum-charts.spec.ts` or a new `curriculum-exercises.spec.ts`):
+
+- the chapter shows three exercise cards with labels Recall, Apply and
+  Stretch;
+- "Exercises" is in the TOC;
+- the solution is hidden by default (its text is not visible), and opening it
+  shows the text;
+- the hint opens independently of the solution;
+- at 390px there is no page-level horizontal scroll.
+
+---
+
+## X2 — Chapter opener
+
+### X2.1 Syntax
+
+Two new callout kinds. Both are optional, each may appear at most once, and
+both go **before the chapter's first `## ` heading**, WHY first. They usually
+come after the chapter's existing opening paragraph(s), which are never
+rewritten.
+
+```markdown
+> [!WHY] Two to four sentences: a concrete moment where this topic decides the
+> outcome. Name the situation, not the concept.
+
+> [!GOALS]
+>
+> - Compute …
+> - Explain …
+> - Choose …
+```
+
+The blank `>` line after `[!GOALS]` is **required**: without it the marker
+paragraph and the list merge in some edge cases, and `calloutMarker` needs a
+`<p>` first child. Goals are 3–4 items, each starting with an observable verb
+(compute, explain, choose, spot, design). Avoid "understand" and "learn".
+
+### X2.2 Rendering
+
+- `[!WHY]`: label "Why this matters", using the KEY callout's frame but with
+  the label in `--track` and body text one step larger than other callouts.
+  It is the chapter's hook, so make it the most prominent box above the fold.
+- `[!GOALS]`: label "By the end you'll be able to". The list items get a
+  small `lucide-react` `Target` (or `CircleCheck`) icon in `--track` instead
+  of bullets. Same frame tokens as above. No checkboxes, because these don't
+  track state.
+- Neither enters the TOC.
+
+### X2.3 Gates
+
+At most one of each per chapter, both before the first `## `, and WHY before
+GOALS when both are present. GOALS holds exactly one list of 3–4 items.
+Unknown-kind and marker-placement checks follow the existing pattern.
+Coverage uses the same `EXERCISE_TRACKS` list as X1.4, since the pass adds
+openers and exercises together: every covered chapter has both.
+
+Seed: Appendix A's WHY and GOALS, in the same estimation chapter, after its
+opening paragraph. E2E: both boxes render above the first section heading,
+and neither appears in the TOC.
+
+---
+
+## X3 — Momentum counts reading days
+
+The contract is already published: `src/lib/events.ts` has
+`curriculum.lesson_completed` and `curriculum.lesson_uncompleted`, with
+payload `{ lessonKey }`.
+
+- **Emit** in `useCurriculumStore.setCompleted`, inside the `try` and after
+  `await CurriculumRepository.setCompleted(...)` resolves: `completed` when
+  `next` is true, `uncompleted` when it is false. Never emit in the `catch`
+  (rollback) path.
+- **Momentum store:** `refresh()` also fetches
+  `CurriculumRepository.getProgress()`, following its existing pattern of
+  reading each module through that module's repository. `subscribeToUpdates`
+  adds both new event types to the refresh `case` list.
+- **`streaks.ts`:** `ActivitySnapshot` gains
+  `curriculumProgress: LessonProgress[]` (type imported from
+  `@/src/modules/curriculum/types`, like the other sources). `activityDates`
+  and `activityCounts` add `safeDayKey(entry.completedAt)` for each entry,
+  skipping null. A cleared mark has `completedAt: null`, so un-marking
+  removes the day with no special case.
+- **Unit tests** (`streaks.test.ts`): a completion counts its local day; a
+  null `completedAt` adds nothing; a completion and a task on the same day
+  count once in `activityDates` and twice in `activityCounts`; a malformed
+  timestamp is skipped, not thrown.
+- **E2E:** marking a chapter read with no other activity today turns the
+  streak's "active today" state on; un-marking turns it off.
+
+**Out of scope: achievements.** `achievementCatalog.ts` requires every
+threshold to trace to the roadmap (`source`). Curriculum achievements ("first
+track complete") need that justification from the Lead Architect first, so
+don't add any here.
+
+---
+
+## X4 — The enrichment pass
+
+### X4.1 Which prompt each chapter gets
+
+| Chapters                                               | Visuals                                               | Opener + exercises |
+| ------------------------------------------------------ | ----------------------------------------------------- | ------------------ |
+| Systems Design, DS1, DS2 (already enriched)            | none, already done                                    | add                |
+| DS3, DS4 (`curriculum-reader-redesign.md`'s DS plan)   | the DS quotas, unchanged                              | add                |
+| Every other track, topic with **one** chapter          | PR D's quotas (3 CHECKs)                              | add                |
+| Every other track, topic with **two or more** chapters | the DS quotas (2 CHECKs, per-topic PITFALL/INTERVIEW) | add                |
+
+PR D's prompt applies as written for visuals (TB flowcharts, a chart only for
+numbers the chapter states, KEY conversions keep wording, every fenced line ≤ 76
+columns, no `widget` blocks). Append the following to it:
+
+```text
+ALSO ADD, for every chapter:
+
+5. An opener, before the first "## " heading and after the chapter's existing
+   opening paragraph(s), which you must not change:
+     > [!WHY] 2–4 sentences. A concrete moment — an incident, a design review,
+     > an interview question, a bill — where this chapter's idea decides the
+     > outcome. Specific nouns and numbers; no "In this chapter we will".
+
+     > [!GOALS]
+     >
+     > - 3–4 items, each starting with an observable verb (compute, explain,
+     >   choose, spot, design, trace). Never "understand" or "learn".
+     >   Every goal must be something the chapter actually teaches.
+
+6. A final section, after "## What to take away" and its closing line:
+     ## Exercises
+   containing exactly three blockquotes, in this order:
+     > [!EXERCISE recall] — restate or explain a core idea. Answerable from the
+       chapter's text alone.
+     > [!EXERCISE apply] — a NEW worked problem (new numbers or a new scenario,
+       never the chapter's own example re-skinned), solved the chapter's way.
+     > [!EXERCISE stretch] — open-ended: a design call, a trade-off, or a sanity
+       check of someone else's claim.
+   Each: the prompt; then, after a blank ">" line, an optional paragraph
+   starting "**Hint:**"; then, after a blank ">" line, a paragraph starting
+   "**Solution:**". Apply solutions show every intermediate value. Stretch
+   solutions give a model answer AND name what a weaker answer misses.
+   No exercise may repeat a > [!CHECK] question in the same chapter.
+   Exercises may lean on prerequisite chapters but must be solvable without
+   any source outside this curriculum.
+```
+
+For already-enriched chapters, send only items 5–6, prefaced with the same
+"do not rewrite, reorder or delete" instruction.
+
+### X4.2 Batches
+
+One branch per batch, each reviewed by Claude before the next starts.
+Prerequisite order, so later chapters' exercises can lean on earlier ones.
+
+| Batch | Scope                                                     | Chapters |
+| ----- | --------------------------------------------------------- | -------- |
+| E0    | Systems Design (opener + exercises only)                  | 18       |
+| E1    | DS1 topics (opener + exercises only)                      | 23       |
+| E2    | DS2 topics (opener + exercises only)                      | 21       |
+| DS3   | As planned, plus opener + exercises                       | 21       |
+| DS4   | As planned, plus opener + exercises                       | 18       |
+| F1    | CS Foundations: programming fundamentals, data structures | 12       |
+| F2    | CS Foundations: the other 16 topics                       | 16       |
+| C     | Software Craft                                            | 20       |
+| B     | Backend Engineering                                       | 22       |
+| FE    | Frontend Engineering                                      | 20       |
+| I     | Infrastructure & Ops                                      | 15       |
+| S     | Security                                                  | 11       |
+| D     | Data Engineering                                          | 11       |
+| EP    | Engineering Practice                                      | 12       |
+| MF    | ML Foundations                                            | 17       |
+| DL    | Deep Learning                                             | 14       |
+| MS1   | ML Systems, first 8 topics in prerequisite order          | ~24      |
+| MS2   | ML Systems, last 8 topics                                 | ~24      |
+| L     | LLMs & Frontier AI                                        | 19       |
+
+Each batch:
+
+1. Append its topic prefixes to `EXERCISE_TRACKS` (X1.4) and to the
+   track-driven E2E gate.
+2. Run `npm run test:ui -- content` and the track E2E gate. Open every
+   chapter once in dev, because Mermaid syntax errors only show when a
+   diagram renders.
+3. Check that every original prose line survives (the DS1 review's diff
+   check).
+4. Make one commit per topic, with the message
+   `content(curriculum): enrich <topic id>`.
+
+**Claude's review per batch** (as in the DS1 review): quotas; that every
+chart value is stated in its chapter; **every CHECK answer and exercise
+solution re-derived**; that every goal is actually taught; and the hyphen-wrap
+gate.
+
+### X4.3 Done when
+
+- X1–X3 merged, with lint, typecheck, unit and E2E green.
+- `EXERCISE_TRACKS` covers all fourteen tracks: all 338 chapters have an
+  opener and three exercises, and every chapter passes the visual quotas for
+  its row in X4.1.
+- `docs/handoff/curriculum.md`'s "Adding material" and
+  `docs/curriculum-authoring-prompt.md` require openers and exercises in new
+  chapters (append X4.1's items 5–6 to the authoring prompt).
+- The status line below is current.
+
+**Status:** brief written 2026-11-06. Next: X1.
+
+---
+
+## Appendix A — seed content (exact)
+
+For `content/curriculum/systems-design.estimation/01-back-of-envelope.md`.
+
+**Opener**, inserted after the opening paragraph ("Estimation is how you find
+out…") and before `## The numbers to memorise`:
+
+```markdown
+> [!WHY] Ten minutes into a design review, someone proposes sharding the
+> database. Whether that is essential or premature comes down to one number you
+> can work out on a napkin: peak writes per second against what one primary
+> handles. This chapter is how you get that number before anyone draws a box.
+
+> [!GOALS]
+>
+> - Compute peak QPS, storage, bandwidth and cache size from a few stated
+>   assumptions
+> - Recall the latency, size and capacity numbers well enough to round with
+>   confidence
+> - Turn each number into a verdict — partition, cache, CDN — rather than
+>   leaving it as arithmetic
+> - Spot the two costs most estimates forget: media storage and egress
+```
+
+**Exercises**, appended after the final line ("Next: choosing where the data
+lives."):
+
+```markdown
+## Exercises
+
+> [!EXERCISE recall] Name the four calculations, and for each one say what
+> design decision it informs.
+>
+> **Solution:** QPS decides how many servers you need, and whether one
+> database primary can take the writes. Storage decides whether the data fits
+> on one machine or must be partitioned, and whether bulky data belongs in
+> object storage. Bandwidth decides network capacity and whether a CDN is
+> needed to keep egress affordable. Cache memory decides whether the hot
+> working set fits in RAM, which with the 80/20 rule usually means caching
+> the hottest 20% of the data.
+
+> [!EXERCISE apply] A URL shortener has 10M DAU. Each user creates 1 short
+> link and follows 20 links a day. Peak is 5× average. Each link record is
+> 500 B, kept for 5 years, with 3× replication and 1.3× index overhead. Work
+> out peak writes/s, peak reads/s and total storage, and say what each number
+> rules in or out.
+>
+> **Hint:** Use 86,400 ≈ 10⁵ seconds a day, and do reads and writes
+> separately. Storage is records/day × size × days × replication × overhead.
+>
+> **Solution:** Writes: 10M a day ÷ 10⁵ ≈ 100/s average, × 5 ≈ **500/s at
+> peak**. That is far below one Postgres primary's 20k–50k, so writes force
+> nothing. Reads: 200M a day ÷ 10⁵ ≈ 2,000/s average, × 5 ≈ **10,000/s at
+> peak**. One server could just about serve that, but at a 20:1 read:write
+> ratio the right move is a cache in front, and since popular links are
+> heavily skewed, a small hot set gives a high hit rate. Storage:
+> 10M × 500 B = 5 GB a day, × 365 × 5 ≈ 9 TB, × 3 replication ≈ 27 TB,
+> × 1.3 ≈ **35 TB**, about 12 TB per replica. That fits comfortably in one
+> NVMe server's 10–100 TB, so storage doesn't force partitioning either. The
+> design is one primary, replicas and a cache, and you've shown why.
+
+> [!EXERCISE stretch] A colleague's estimate says a video-upload service
+> needs 3 PB of storage a year. Without redoing their whole model, how would
+> you sanity-check that figure, and which assumption would you challenge
+> first?
+>
+> **Hint:** Work backwards from 3 PB to minutes of video per day, once with
+> replication and overhead and once without.
+>
+> **Solution:** 3 PB a year ÷ 365 ≈ 8 TB a day. If that already includes 3×
+> replication and 1.3× overhead, the raw upload is about 8 ÷ 3.9 ≈ 2 TB a
+> day, or at 50 MB per 1080p minute, about 40,000 minutes (~700 hours) of
+> video a day. If it doesn't include them, it's about 160,000 minutes a day,
+> and the true storage bill is roughly 4× higher at about 12 PB. So the
+> first question is whether replication and overhead are in or out, because
+> that one assumption moves the answer 4×. The next is whether the uploads
+> per day match the product's real scale, judged against a known system. A
+> weaker answer redoes the multiplication with the same inputs. That checks
+> the arithmetic, not the assumptions, and the assumptions are where
+> estimates go wrong.
+```
+
+Arithmetic check (for the reviewer): 10M ÷ 86,400 = 116 → ×5 = 579 writes/s;
+200M ÷ 86,400 = 2,315 → ×5 = 11,574 reads/s (rounded to "500" and "10,000"
+via 10⁵, as the chapter teaches). 5 GB × 1,825 = 9.1 TB → ×3 = 27.4 TB →
+×1.3 = 35.6 TB. 3 PB ÷ 365 = 8.2 TB/day; ÷ 3.9 = 2.1 TB/day ÷ 50 MB = 42,000
+min; 8.2 TB ÷ 50 MB = 164,000 min; 8.2 × 3.9 × 365 ≈ 11.7 PB.

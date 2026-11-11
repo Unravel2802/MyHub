@@ -120,6 +120,21 @@ export type AppEvent =
       type: "reader.annotation_added";
       payload: { annotationId: string; documentId: string };
       timestamp: number;
+    }
+  // Fired when a curriculum chapter is marked read, and when that mark is
+  // removed — after the write succeeds, never on an optimistic set that rolls
+  // back. A pair, for task.completed/task.uncompleted's reason: un-marking can
+  // REMOVE a day of activity, so Momentum must recompute on both. `lessonKey`
+  // is "<topicId>/<lessonId>", curriculum_progress.item_key.
+  | {
+      type: "curriculum.lesson_completed";
+      payload: { lessonKey: string };
+      timestamp: number;
+    }
+  | {
+      type: "curriculum.lesson_uncompleted";
+      payload: { lessonKey: string };
+      timestamp: number;
     };
 
 type Listener = (event: AppEvent) => void;

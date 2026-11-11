@@ -298,7 +298,7 @@ Systems** for its mechanisms, **Backend Engineering** for its interfaces, and
 >
 > **Hint:** Each update goes to all editors except its sender.
 >
-> **Solution:** The document receives 240 × 10 = **2,400 updates/s**. Each update reaches 240 − 1 = **239 peers**, so the relay handles 2,400 × 239 = **573,600 deliveries/s**. That fan-out is why the chapter batches and coalesces updates. Keep cursors in a separate awareness channel rather than persisting them as document operations; publish the latest cursor state with a short TTL so inactive editors disappear without adding permanent history.
+> **Solution:** The document receives 240 × 10 = **2,400 updates/s**. Each update reaches 240 − 1 = **239 peers**, so the relay handles 2,400 × 239 = **573,600 deliveries/s**. That load lands on the one server that owns the document, which is why the chapter caps concurrent editors or shards the relay through a pub/sub layer. Keep cursors in a separate awareness channel rather than persisting them as document operations; publish the latest cursor state with a short TTL so inactive editors disappear without adding permanent history.
 
 > [!EXERCISE stretch] An offline user returns after two weeks and sees their paragraph moved by a teammate while they were away. Design the technical merge and the user-facing recovery experience. Name what a weaker answer misses.
 >

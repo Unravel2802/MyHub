@@ -9,6 +9,15 @@ folklore attached. The decision follows from access patterns, consistency
 requirements and scale — and the honest default is more boring than most designs
 assume.
 
+> [!WHY] A design review adds a graph store, document store and search engine before anyone can say which query the existing database cannot serve. Every store adds a consistency boundary and an operational system that someone must back up.
+
+> [!GOALS]
+>
+> - Map access patterns and consistency needs to storage engines
+> - Compare a specialised engine with the Postgres default
+> - Explain the operational cost of polyglot persistence
+> - Order indexing, caching, replicas and vertical scaling before partitioning
+
 ## Start with Postgres
 
 ```text
@@ -249,3 +258,19 @@ bought — is what distinguishes a designed decision from a recited preference.
 6. Defend the choice by naming the alternative and what it would have bought.
 
 Next: the patterns for scaling whatever you chose.
+
+## Exercises
+
+> [!EXERCISE recall] Name four inputs to a datastore decision and explain why “this is a search feature” is not enough to justify a separate search engine.
+>
+> **Solution:** Start from access patterns, transactional/consistency requirements, scale and latency. A feature name does not identify the query that fails. Postgres already covers many moderate-scale search needs; a dedicated search engine is justified by a concrete need such as typo-tolerant relevance ranking across a corpus too large or demanding for the current path.
+
+> [!EXERCISE apply] A device-event service appends 70,000 events/s, queries recent events by device in time order, and does not need cross-device transactions. Compare the workload with the chapter's 20k–50k simple-query/s Postgres range, choose a suitable store and describe the key layout. Name one store that should remain the source of truth for customer billing.
+>
+> **Hint:** Match high-volume, time-ordered rows per key to the access pattern.
+>
+> **Solution:** 70,000 appends/s exceeds the stated single-instance range of 20k–50k simple queries/s, and the reads are time-ordered by device. A wide-column store such as Cassandra/Scylla can partition by device and cluster by event time, making recent per-device ranges local to a partition. Keep customer billing in a relational, transactional system of record; do not use the event store as a queue or billing ledger merely because it accepts writes quickly.
+
+> [!EXERCISE stretch] A product needs relational orders, typo-tolerant search over 80 million catalogue items, and analytical dashboards over event history. Propose a minimal store set, state the data flow, and explain what a weaker answer misses.
+>
+> **Solution:** Keep orders and catalogue source data in Postgres, add a derived search index only for the specific typo-tolerant ranking requirement, and send events to a columnar analytical store for large scans and dashboards. Use an outbox or CDC path from the source of truth and monitor freshness. A weaker answer selects one database per noun; it misses that each extra store adds synchronization, recovery and backup work, while Postgres can serve many needs until a concrete constraint breaks it.

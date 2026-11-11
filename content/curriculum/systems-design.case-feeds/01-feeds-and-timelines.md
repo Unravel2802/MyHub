@@ -9,6 +9,15 @@ from the people they follow. It is the most-asked design question because the
 naive solution is obviously correct and obviously infeasible, which forces the
 interesting reasoning.
 
+> [!WHY] A launch post from a creator with tens of millions of followers enters the same fan-out queue as ordinary posts, delaying every user's feed. The load depends on who posts and who is active, so the follower distribution decides the architecture.
+
+> [!GOALS]
+>
+> - Estimate fan-out writes from post rate and follower count
+> - Choose between fan-out on write and fan-out on read
+> - Bound materialised timeline storage
+> - Explain how ranking and cache loss affect the read path
+
 ## Requirements and scale
 
 ```text
@@ -275,3 +284,19 @@ weaker than the posts store's.
    durability requirements are weaker than the posts store's.
 
 Next: chat and presence.
+
+## Exercises
+
+> [!EXERCISE recall] Describe the hybrid fan-out design and explain why a single strategy is inefficient for both ordinary users and celebrity accounts.
+>
+> **Solution:** Fan-out on write precomputes timeline entries for ordinary accounts so feed reads are cheap. Fan-out on read assembles posts from very large accounts when a user opens the feed, avoiding a massive write burst for one post. A hybrid threshold uses the follower distribution and activity pattern to choose the path; inactive users also need not receive eagerly filled timelines.
+
+> [!EXERCISE apply] A service publishes 4,000 posts/s, and an ordinary post has 300 followers on average. Estimate timeline writes/s under fan-out on write. If it stores 500 eight-byte post IDs for each of 60 million users, estimate raw timeline storage. State which part of the design should use a read-time path.
+>
+> **Hint:** Multiply the post rate by followers; compute storage as users × IDs × bytes.
+>
+> **Solution:** Fan-out writes are 4,000 × 300 = **1,200,000 timeline writes/s**. Raw storage is 60,000,000 × 500 × 8 = 240,000,000,000 bytes, about **240 GB** before metadata and replication. An account with tens of millions of followers should use fan-out on read (or a hybrid path); eagerly writing each post to every follower would create a burst vastly larger than the ordinary 300-follower case.
+
+> [!EXERCISE stretch] One creator has 80 million followers but posts only once a day; most of those followers open the app weekly. Propose how the feed should serve the creator's posts and explain what a weaker answer misses.
+>
+> **Solution:** Keep the creator's posts in the source feed and merge them at read time for followers who actually open the app, then rank a bounded candidate set and cache short-lived results. Do not prefill every inactive follower's timeline for a post they may not see. A weaker answer picks fan-out on read solely because the account is large; it misses active-user filtering, ranking cost and the product's actual read frequency.

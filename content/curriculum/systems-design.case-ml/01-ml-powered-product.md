@@ -9,6 +9,15 @@ fraud check, a content classifier. The interesting design questions are almost
 entirely about the system around the model: where it sits relative to the request,
 what happens when it is wrong, and how it improves.
 
+> [!WHY] A recommendation model answers in 12 milliseconds, but the feature still misses its 70 ms budget because online features take longer than inference. The system around the model, including its fallback and feedback path, decides whether the product works.
+
+> [!GOALS]
+>
+> - Add stage latencies to locate the largest part of an online path
+> - Choose batch, online or hybrid inference from information freshness
+> - Design a usable fallback for model and feature-store failures
+> - Preserve the served features and model version for training feedback
+
 ## The framing questions, first
 
 ```text
@@ -264,3 +273,19 @@ offline metrics into one whose contribution is measured continuously.
    propensity, and keep a permanent holdout so the model's value stays measurable.
 
 Next: notifications and fan-out.
+
+## Exercises
+
+> [!EXERCISE recall] Name two reasons an ML-powered feature needs systems design beyond selecting a model, and explain why logging the served feature vector matters.
+>
+> **Solution:** The request path must meet a latency budget and handle model or feature-store failures, and the product needs a feedback loop to learn from outcomes. Logging the actual served vector and model version preserves what the model saw; recomputing features later can produce different values and silently train on a different example.
+
+> [!EXERCISE apply] A checkout risk feature has a 60 ms p99 budget. Its path has 3 ms network overhead, 12 ms retrieval, 22 ms feature lookup, 18 ms inference and 5 ms business rules. Calculate total latency and remaining budget. If feature lookup grows by 9 ms, identify the budget impact and the first stage you would investigate.
+>
+> **Hint:** Add all five stages, then recompute with the slower lookup.
+>
+> **Solution:** The path is 3 + 12 + 22 + 18 + 5 = **60 ms**, leaving **0 ms** headroom at the target. If feature lookup grows by 9 ms, the total becomes 69 ms, exceeding the budget by **9 ms**. Investigate feature fetching first because it is already the largest stage at 22 ms and now dominates further; batching or precomputing stable features may reduce it before optimising inference.
+
+> [!EXERCISE stretch] A model outage causes checkout requests to fail because the model is included in the readiness probe. Propose a degradation design and a monitoring signal that tells operators whether customers are using the fallback. Name what a weaker answer misses.
+>
+> **Solution:** Remove an optional model dependency from application readiness, keep a tested rule-based or cached-prediction fallback on the request path, and bound any retry so it cannot amplify the outage. Emit fallback activation rate and outcome quality by model/version, alongside latency and error rate. A weaker answer says “retry the model”; it misses that retries can worsen overload and that a fallback needs a product-quality signal, not just service health.

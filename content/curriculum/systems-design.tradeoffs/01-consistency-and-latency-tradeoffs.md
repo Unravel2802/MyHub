@@ -8,6 +8,15 @@ Every interesting design decision is a trade. The skill is not knowing which
 option is better — usually neither is — but naming precisely what each one costs
 and matching that to what the product needs.
 
+> [!WHY] A timeline is a second behind in one region, while a balance screen must not show money that was never committed. “Make it strongly consistent” or “make it fast” is not a design decision until the product cost is stated per operation.
+
+> [!GOALS]
+>
+> - Choose consistency guarantees separately for each operation
+> - Calculate fan-out and read/write costs from a stated threshold
+> - Explain the cost of batching, freshness and coordination
+> - State a staleness bound and the user experience it permits
+
 ## The trade-offs that recur
 
 ```text
@@ -232,3 +241,19 @@ reasoned to it rather than recalled it.
    your mind — the last is what shows you reasoned rather than recalled.
 
 Next: the first case study.
+
+## Exercises
+
+> [!EXERCISE recall] Why should a design state its consistency guarantee per operation rather than choose one global setting for the whole system?
+>
+> **Solution:** Operations have different failure costs. A social timeline may tolerate a bounded stale read if read-your-writes repairs the posting user's experience, while a balance check or compare-and-set may require coordination to protect correctness. A global choice either pays coordination on operations that do not need it or permits stale results where the product cannot tolerate them.
+
+> [!EXERCISE apply] A social product publishes 3,200 posts/s. Ordinary posts reach 90 followers, but one creator has 7,500 followers. Calculate ordinary timeline fan-out writes/s and writes for one creator post. Recommend where to put the creator's post and state an acceptable freshness repair for its author.
+>
+> **Hint:** Multiply post rate by ordinary followers; fan-out for one creator post is its follower count.
+>
+> **Solution:** Ordinary fan-out is 3,200 × 90 = **288,000 writes/s**. One creator post creates **7,500 writes** if pushed to every follower. Depending on the write-capacity threshold, keep ordinary posts on fan-out-on-write and assemble the larger creator's post at read time or with a hybrid path. The author can receive read-your-writes or a direct post overlay so a short bounded timeline delay does not hide their own post.
+
+> [!EXERCISE stretch] A portfolio screen can tolerate a 2-second stale market quote but must never display an uncommitted trade balance. Propose separate read paths and explain what a weaker global consistency answer misses.
+>
+> **Solution:** Serve market quotes from a cache or replicated feed with an explicit freshness timestamp and a 2-second staleness bound. Read the trade balance from the committed ledger/materialised balance under the guarantee required by that transaction. A weaker answer forces strong coordination for both paths or eventual consistency for both; it misses that users value latency differently for a quote and correctness differently for money.

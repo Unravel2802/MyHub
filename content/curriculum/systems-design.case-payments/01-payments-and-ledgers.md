@@ -9,6 +9,15 @@ balances, handle refunds. It is the case where the distributed-systems material
 stops being about performance and starts being about correctness, and where the
 answer to almost every question is "record it immutably and reconcile".
 
+> [!WHY] A card provider times out after accepting a charge, and the client retries because it cannot tell whether money moved. The ledger and idempotency protocol must preserve the financial invariant even when the network cannot say what happened.
+
+> [!GOALS]
+>
+> - Represent transfers as balanced double-entry postings
+> - Explain why the ledger is append-only and balances are derived
+> - Design an idempotent state machine for provider timeouts
+> - Use reconciliation to detect divergence from settlement
+
 ## Requirements
 
 ```text
@@ -297,3 +306,19 @@ stateDiagram-v2
    provider, and reconcile daily against their settlement file.
 
 Next: designing a product around a model.
+
+## Exercises
+
+> [!EXERCISE recall] What invariant does double-entry bookkeeping preserve, and why should a correction be a new ledger entry rather than an edit to history?
+>
+> **Solution:** For each transfer, postings sum to zero across the ledger: one account is debited by the amount another receives. Keeping entries append-only preserves the audit trail and makes reconciliation possible; a correction is recorded as a compensating entry instead of erasing what happened.
+
+> [!EXERCISE apply] Alice transfers $81.25 to Bob, then Bob receives a partial refund of $25.00 back to Alice. Write the four signed postings in dollars and cents and verify the net total for each transaction and for the combined ledger.
+>
+> **Hint:** Convert each amount to cents and keep each transfer's postings balanced.
+>
+> **Solution:** The original transfer records Alice **−8,125 cents** and Bob **+8,125 cents**, summing to 0. The refund records Bob **−2,500 cents** and Alice **+2,500 cents**, also summing to 0. Across both transactions Alice is −8,125 + 2,500 = **−5,625 cents (−$56.25)** and Bob is +8,125 − 2,500 = **+5,625 cents ($56.25)**; the combined ledger still sums to zero.
+
+> [!EXERCISE stretch] A provider request times out after your service persisted the payment intent, but before it recorded a response. Design the next state transitions and explain what a weaker answer misses.
+>
+> **Solution:** Keep the payment in an explicit unknown/pending-provider state, retry or query the provider using the original idempotency key, and record the provider result before updating the materialised balance. Run reconciliation against settlement to find any unresolved mismatch. A weaker answer assumes timeout means failure and submits a new charge; it misses the possibility that the provider completed the first request and would charge twice.

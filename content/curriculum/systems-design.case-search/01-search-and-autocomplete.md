@@ -8,6 +8,15 @@ Design search over a large corpus, plus autocomplete. They look like one feature
 and are two systems with different latency budgets, different data structures and
 different freshness requirements.
 
+> [!WHY] A search query waits on the slowest of dozens of shards, while autocomplete must answer on every keystroke with a much smaller latency budget. Treating both as the same feature can make one path too slow and the other too stale.
+
+> [!GOALS]
+>
+> - Explain how an inverted index maps terms to documents
+> - Compute candidate fan-in when querying multiple shards
+> - Choose between waiting, hedging and partial results under a deadline
+> - Design autocomplete as a precomputed serving path
+
 ## Requirements and scale
 
 ```text
@@ -273,3 +282,19 @@ flowchart TB
    trie, rebuilt periodically from query logs.
 
 Next: payments and ledgers.
+
+## Exercises
+
+> [!EXERCISE recall] Why is autocomplete usually served from precomputed prefix results rather than by running a full search query for each keystroke?
+>
+> **Solution:** Autocomplete is called repeatedly as the user types and has a tighter latency budget than full search. Precomputing the top candidates per prefix turns serving into a bounded lookup; a full index query on every character would repeat analysis and ranking work under the stricter deadline.
+
+> [!EXERCISE apply] A corpus is split over 32 document shards, and each shard returns its local top 12 results for a query. Calculate the maximum number of candidates the coordinator must merge. If its deadline is 160 ms but one shard is still running at 190 ms, name two bounded response strategies and how the client should know the result is incomplete.
+>
+> **Hint:** Multiply shard count by local top-k; compare the slow shard to the deadline.
+>
+> **Solution:** The coordinator receives at most 32 × 12 = **384 candidates** to merge into the global ranking. At 160 ms it can hedge the slow shard request to a replica, or return deadline-bounded partial results from completed shards. The response should carry an explicit partial/incomplete indicator so the client does not present it as a complete ranking. Waiting 190 ms violates the deadline.
+
+> [!EXERCISE stretch] A team indexes text with Unicode normalization and stemming but searches raw tokens with a different analyzer. Adding more shards does not improve result quality. Propose the fix and explain what a weaker answer misses.
+>
+> **Solution:** Use the same analysis pipeline and version for indexing and query parsing, then rebuild or backfill the index when analyzer behavior changes. Sharding increases parallel capacity but cannot make mismatched terms match. A weaker answer adds replicas or shards; it misses that correctness of tokenization is upstream of distribution.

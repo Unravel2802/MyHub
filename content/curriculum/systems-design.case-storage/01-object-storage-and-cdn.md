@@ -8,6 +8,15 @@ Design a system for storing and serving user files: uploads, downloads,
 deduplication, and global delivery. The central insight is that your application
 servers should handle almost none of the bytes.
 
+> [!WHY] A launch uploads several terabytes of video per day, and every byte currently passes through the application fleet before reaching storage. The bill and latency both come from routing file contents through servers that only need to authorize the upload.
+
+> [!GOALS]
+>
+> - Calculate daily object volume from file count and size
+> - Design a signed direct-upload path with pending metadata
+> - Explain how content-addressed immutable keys simplify CDN caching
+> - Handle orphan cleanup, deduplication and recoverable deletion
+
 ## Requirements and scale
 
 ```text
@@ -264,3 +273,19 @@ retention window are what protect against the failure that actually happens.
    happens.
 
 Next: rate limiting and distributed counters.
+
+## Exercises
+
+> [!EXERCISE recall] Explain why a signed upload URL keeps application servers out of the byte path, and name one consistency problem that remains between object storage and metadata.
+>
+> **Solution:** The application authenticates the user and issues a short-lived signed URL; the client uploads bytes directly to object storage. Object storage and the database do not share one transaction, so an upload can exist without a complete metadata row (or vice versa). Use a pending-then-complete state and reconciliation to find orphans.
+
+> [!EXERCISE apply] A product receives 600,000 files per day averaging 4 MB. Calculate raw upload volume per day and per 30-day month. Propose the upload path and explain how content-addressed keys affect cache invalidation.
+>
+> **Hint:** Multiply count by size, then multiply the daily total by 30.
+>
+> **Solution:** Daily volume is 600,000 × 4 MB = **2,400,000 MB = 2.4 TB/day** using decimal units. Over 30 days that is 2.4 × 30 = **72 TB** of new data. Authorize and create a pending metadata record, issue a signed direct-upload URL, then mark metadata complete after object confirmation. A key derived from a content hash is immutable: changed bytes produce a different key, so the CDN can cache the old object without invalidating it.
+
+> [!EXERCISE stretch] Cross-account deduplication saves storage but lets one user infer whether another account uploaded a known private file. Propose two mitigations and explain what a weaker answer misses.
+>
+> **Solution:** Scope content hashes and deduplication to an account or security domain, or avoid exposing whether a hash already exists and use an upload flow whose timing and response do not reveal the result. Preserve reference counts so deletion removes an object only after the last authorized reference is gone. A weaker answer only randomizes the URL; it misses that the existence check itself can leak information and that shared objects need safe deletion semantics.

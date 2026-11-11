@@ -11,6 +11,7 @@ const EMPTY: ActivitySnapshot = {
   applications: [],
   outreachEntries: [],
   leetcodeAttempts: [],
+  curriculumProgress: [],
 };
 
 function prep(overrides: Partial<PrepEntry> & { id: string }): PrepEntry {

@@ -9,6 +9,7 @@ import type { Application } from "@/src/modules/jobApplications/types";
 import type { PrepEntry } from "@/src/modules/prep/types";
 import type { OutreachEntry } from "@/src/modules/outreach/types";
 import type { LeetCodeAttempt } from "@/src/modules/leetcode/types";
+import type { LessonProgress } from "@/src/modules/curriculum/types";
 
 function task(overrides: Partial<Task> & { id: string }): Task {
   return {
@@ -108,11 +109,62 @@ const EMPTY = {
   applications: [],
   outreachEntries: [],
   leetcodeAttempts: [],
+  curriculumProgress: [],
 };
 
+function lessonProgress(completedAt: string | null): LessonProgress {
+  return {
+    key: "systems-design.estimation/01-back-of-envelope",
+    completedAt,
+    starred: false,
+  };
+}
+
 describe("activityDates", () => {
+  it("counts the local day a curriculum lesson was completed", () => {
+    const completedAt = "2026-07-10T12:00:00.000Z";
+    const days = activityDates({
+      ...EMPTY,
+      curriculumProgress: [lessonProgress(completedAt)],
+    });
+    const expected = new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(completedAt));
+    expect([...days]).toEqual([expected]);
+  });
+
+  it("ignores an uncompleted curriculum lesson", () => {
+    expect(
+      activityDates({ ...EMPTY, curriculumProgress: [lessonProgress(null)] })
+        .size,
+    ).toBe(0);
+  });
+
+  it("counts a task and lesson as two activities but one active day", () => {
+    const snapshot = {
+      ...EMPTY,
+      tasks: [task({ id: "t", completedAt: "2026-07-10T12:00:00.000Z" })],
+      curriculumProgress: [lessonProgress("2026-07-10T14:00:00.000Z")],
+    };
+    expect(activityDates(snapshot).size).toBe(1);
+    expect([...activityCounts(snapshot).values()]).toEqual([2]);
+  });
+
+  it("skips a malformed curriculum timestamp", () => {
+    const snapshot = {
+      ...EMPTY,
+      curriculumProgress: [lessonProgress("not-a-date")],
+    };
+    expect(() => activityDates(snapshot)).not.toThrow();
+    expect(activityDates(snapshot).size).toBe(0);
+    expect(activityCounts(snapshot).size).toBe(0);
+  });
+
   it("counts a day active for any of the five activity kinds", () => {
     const days = activityDates({
+      ...EMPTY,
       tasks: [task({ id: "t", completedAt: "2026-07-10T12:00:00.000Z" })],
       prepEntries: [prepEntry({ id: "p", date: "2026-07-11" })],
       applications: [
@@ -161,6 +213,7 @@ describe("activityDates", () => {
   it("ignores soft-deleted rows of every kind", () => {
     const deleted = "2026-07-14T00:00:00.000Z";
     const days = activityDates({
+      ...EMPTY,
       tasks: [
         task({
           id: "t",

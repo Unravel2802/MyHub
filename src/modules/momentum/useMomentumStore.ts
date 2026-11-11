@@ -6,6 +6,7 @@ import * as ApplicationRepository from "@/src/modules/jobApplications/Applicatio
 import * as InterviewRepository from "@/src/modules/jobApplications/InterviewRepository";
 import * as OutreachRepository from "@/src/modules/outreach/OutreachRepository";
 import * as LeetCodeRepository from "@/src/modules/leetcode/LeetCodeRepository";
+import * as CurriculumRepository from "@/src/modules/curriculum/CurriculumRepository";
 import { on } from "@/src/lib/events";
 import {
   evaluateAchievements,
@@ -89,6 +90,7 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
         interviews,
         outreachEntries,
         leetcodeAttempts,
+        curriculumProgress,
         persistedUnlocks,
       ] = await Promise.all([
         TaskRepository.getTasks(),
@@ -98,6 +100,7 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
         InterviewRepository.getInterviews(),
         OutreachRepository.getEntries(),
         LeetCodeRepository.getAttempts(),
+        CurriculumRepository.getProgress(),
         MomentumRepository.getUnlocks(),
       ]);
 
@@ -108,6 +111,7 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
         applications,
         outreachEntries,
         leetcodeAttempts,
+        curriculumProgress,
       };
       const streak = computeStreak(activityDates(activityArgs), today);
       const activityGrid = buildActivityGrid(
@@ -189,6 +193,8 @@ export const useMomentumStore = create<MomentumStore>((set, get) => ({
         case "interview.completed":
         case "outreach.logged":
         case "leetcode.attempt_logged":
+        case "curriculum.lesson_completed":
+        case "curriculum.lesson_uncompleted":
           void get().refresh();
           break;
         default:

@@ -74,6 +74,7 @@ export function evaluateAchievements(
       // achievement streak inputs unchanged while activityDates also serves
       // Momentum's broader streak and heatmap aggregation.
       leetcodeAttempts: [],
+      curriculumProgress: [],
     }),
     snapshot.today,
   );

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import * as CurriculumRepository from "@/src/modules/curriculum/CurriculumRepository";
 import type { LessonKey } from "@/src/modules/curriculum/types";
+import { emit } from "@/src/lib/events";
 
 // Published store contract for the Curriculum.
 //
@@ -79,6 +80,13 @@ export const useCurriculumStore = create<CurriculumStore>((set, get) => {
 
       try {
         await CurriculumRepository.setCompleted(key, next);
+        emit({
+          type: next
+            ? "curriculum.lesson_completed"
+            : "curriculum.lesson_uncompleted",
+          payload: { lessonKey: key },
+          timestamp: Date.now(),
+        });
       } catch (error) {
         set({ completed: previous, error: toUserMessage(error) });
       } finally {

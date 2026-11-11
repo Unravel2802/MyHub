@@ -11,6 +11,10 @@ const ROOT = join(process.cwd(), "content", "curriculum");
 export const EXERCISE_TRACKS: string[] = [
   "systems-design.estimation",
   "systems-design",
+  "distributed.fundamentals",
+  "distributed.rpc",
+  "distributed.time",
+  "distributed.replication",
 ];
 function markdownFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {

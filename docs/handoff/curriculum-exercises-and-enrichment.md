@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** brief written 2026-11-06. Next: X1.
+**Status:** X1–X3 reviewed 2026-11-10 (see the review at the end): X3 and X2 approved, X1 needs changes.
 
 ---
 
@@ -482,3 +482,87 @@ Arithmetic check (for the reviewer): 10M ÷ 86,400 = 116 → ×5 = 579 writes/s;
 via 10⁵, as the chapter teaches). 5 GB × 1,825 = 9.1 TB → ×3 = 27.4 TB →
 ×1.3 = 35.6 TB. 3 PB ÷ 365 = 8.2 TB/day; ÷ 3.9 = 2.1 TB/day ÷ 50 MB = 42,000
 min; 8.2 TB ÷ 50 MB = 164,000 min; 8.2 × 3.9 × 365 ≈ 11.7 PB.
+
+---
+
+## X1–X3 review — 2026-11-10 (Claude)
+
+Read all three diffs against this brief. On each branch, lint, typecheck and
+the unit suite pass (1,645 / 1,651 / 1,647 tests). E2E: 252 of 252 pass on each branch, against the production build.
+
+### X3 `momentum-curriculum-streak` — approved, merge first
+
+Matches the contract. The emit happens only after the repository write
+resolves, never on rollback. The snapshot field, both `activityDates` and
+`activityCounts`, the refresh cases, the unit tests and the E2E are all as
+specified. Keeping `curriculumProgress: []` in `achievementEngine` is right:
+reading must not move achievement inputs (see X3's out-of-scope note). It
+touches no file that X1 or X2 touch.
+
+### X2 `curriculum-opener` — approved, merge second
+
+Matches X2.1–X2.3. Its `calloutMarker` follows X1.2 exactly (a missing or
+unknown EXERCISE level returns `null`; a level on a non-EXERCISE kind returns
+`null`). The gate has negative tests for misplaced, duplicated and reversed
+openers and for malformed GOALS lists.
+
+### X1 `curriculum-exercises` — changes requested, rebase onto main after X2
+
+1. **Bug: Hint and Solution render only their first block.**
+   `LessonReader.tsx` renders `stripLabel(blocks[hintAt])` and
+   `stripLabel(blocks[solutionAt])`, a single element each. X1.1 says the
+   hint runs up to the Solution paragraph and the solution runs to the end of
+   the blockquote. Any solution with a second paragraph, a list, a table or a
+   fenced block silently loses everything after its first paragraph. The seed
+   only has one-paragraph solutions, so no test catches it, but X4's Apply
+   solutions ("show every intermediate value") will routinely span several
+   blocks. Fix: hint = `blocks.slice(hintAt, solutionAt >= 0 ? solutionAt :
+blocks.length)`, solution = `blocks.slice(solutionAt)`, stripping the label
+   from the first block of each. Add a unit or E2E case where a solution has
+   two paragraphs and a list, and assert the last item is visible once the
+   solution is opened.
+
+2. **Bug: the "Exercise N" counter is a side effect in render.**
+   `let exerciseNumber = 0` lives in the `curriculumComponents` closure and the
+   `blockquote` override does `exerciseNumber += 1`. react-markdown 9 renders
+   overrides as React components (`hast-util-to-jsx-runtime` →
+   `jsx(type, props)`), and component renders must be pure. In `next dev`,
+   Strict Mode renders twice, so the cards read "Exercise 2/4/6". In
+   production, any re-render or retry of the same element tree can drift the
+   same way. E2E runs against a production build and doesn't assert the
+   number, so it can't see this. Fix: derive the number from the node, e.g.
+   pass the exercise blockquotes' start lines (from the
+   `## Exercises\n\n${exercises}` source) into the components factory, and
+   use `index of node.position.start.line + 1`. Add an assertion that the
+   three cards read "Exercise 1", "Exercise 2" and "Exercise 3".
+
+3. **Contract drift: `calloutMarker` returns `{ level: null }` for an unknown
+   level** instead of `null` (X1.2), so a typo such as `[!EXERCISE aply]`
+   renders as an exercise card labelled "Unknown" rather than a plain
+   quotation. Take X2's `calloutMarker` when resolving the conflict, and drop
+   the `"Unknown"` branch and the `| null` from the return type.
+
+4. **Gate has no negative tests.** X2 tests its gate against bad input; X1
+   doesn't. Since these gates are the review for 338 generated chapters, add
+   fixtures that must fail: levels out of order, only two exercises, an
+   EXERCISE outside `## Exercises`, a missing Solution, `## Exercises` not
+   last, and stray prose inside the section.
+
+**Conflicts.** X1 and X2 both edit `callout.ts`, `visualContent.test.tsx` and
+`CurriculumQuote.tsx`; a trial merge conflicts on the first two. Resolve on X1
+after rebasing onto `main` with X2 merged:
+
+- `callout.ts`: keep X2's version.
+- `CurriculumQuote.tsx`: drop X1's plain-quote fallback for WHY/GOALS. Keep
+  it for EXERCISE only, which is the outside-the-section case.
+- `visualContent.test.tsx`: keep both sets of checks, define
+  `EXERCISE_TRACKS` once, and union the error-key lists.
+
+**Housekeeping.** Three `git stash` entries from this build remain
+(`stash@{0..2}`, "preserve concurrent X1/X3 work"), along with a worktree at
+`/private/tmp/myhub-curriculum-exercises`. The shared checkout was left on
+`curriculum-opener`; it's back on `main`. Once X1 merges, check the stashes
+hold nothing unmerged, then drop them and remove the worktree.
+
+**Status:** X3 and X2 approved; X1 needs fixes 1–4 and the conflict
+resolution. X4 batches can start once X1 merges.

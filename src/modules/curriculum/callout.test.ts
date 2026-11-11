@@ -18,7 +18,7 @@ function quote(text: string): NonNullable<ExtraProps["node"]> {
     ],
   };
 }
-it.each(["KEY", "PITFALL", "INTERVIEW", "CHECK"])(
+it.each(["KEY", "PITFALL", "INTERVIEW", "CHECK", "WHY", "GOALS"])(
   "detects %s at the start of the first HAST paragraph",
   (kind) => {
     expect(calloutMarker(quote(`[!${kind}]\nContent`))).toEqual({
@@ -26,6 +26,25 @@ it.each(["KEY", "PITFALL", "INTERVIEW", "CHECK"])(
       prefix: `[!${kind}]\n`,
     });
   },
+);
+it.each(["recall", "apply", "stretch"] as const)(
+  "returns the %s exercise level",
+  (level) => {
+    expect(calloutMarker(quote(`[!EXERCISE ${level}] Prompt`))).toEqual({
+      kind: "EXERCISE",
+      prefix: `[!EXERCISE ${level}] `,
+      level,
+    });
+  },
+);
+it.each(["[!EXERCISE] Prompt", "[!EXERCISE unknown] Prompt"])(
+  "returns a null level for %s",
+  (source) =>
+    expect(calloutMarker(quote(source))).toEqual({
+      kind: "EXERCISE",
+      prefix: source.slice(0, source.indexOf("]") + 1) + " ",
+      level: null,
+    }),
 );
 it("leaves unknown kinds and markers later in the paragraph as plain quotes", () => {
   expect(calloutMarker(quote("[!UNKNOWN] content"))).toBeNull();

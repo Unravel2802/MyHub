@@ -105,6 +105,12 @@ export function CurriculumQuote({
         {children}
       </blockquote>
     );
+  if (marker.kind === "EXERCISE")
+    return (
+      <blockquote className="my-5 border-l-2 border-[var(--track-border)] pl-5 italic text-body">
+        {children}
+      </blockquote>
+    );
   const blocks = Children.toArray(children).filter(
     (child) => typeof child !== "string" || child.trim(),
   );

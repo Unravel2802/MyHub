@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useMemo,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { ChapterHeader } from "./ChapterHeader";
 import { FinishCard } from "./FinishCard";
@@ -22,6 +29,7 @@ import {
   chapterOutline,
   enclosingSection,
   slugifyHeading,
+  splitExercises,
   splitTakeaways,
 } from "@/src/modules/curriculum/chapterStructure";
 import { Figure } from "./Figure";
@@ -46,6 +54,7 @@ interface LessonReaderProps {
 function curriculumComponents(
   outline: ReturnType<typeof chapterOutline>,
 ): Components {
+  let exerciseNumber = 0;
   return {
     h2: ({ children, node, ...props }) => {
       const line = node?.position?.start?.line;
@@ -98,11 +107,116 @@ function curriculumComponents(
         </CodeBlock>
       );
     },
-    blockquote: ({ children, node }) => (
-      <CurriculumQuote marker={calloutMarker(node)} keyRule={isKeyRule(node)}>
-        {children}
-      </CurriculumQuote>
-    ),
+    blockquote: ({ children, node }) => {
+      const marker = calloutMarker(node);
+      if (marker?.kind === "EXERCISE") {
+        exerciseNumber += 1;
+        let remaining = marker.prefix.length;
+        const stripPrefix = (child: ReactNode): ReactNode => {
+          if (!remaining) return child;
+          if (typeof child === "string") {
+            const value = child.slice(remaining);
+            remaining = Math.max(0, remaining - child.length);
+            return value;
+          }
+          if (isValidElement<{ children?: ReactNode }>(child))
+            return cloneElement(
+              child,
+              {},
+              Children.map(child.props.children, stripPrefix),
+            );
+          return child;
+        };
+        const blocks = Children.toArray(children).filter(
+          (child) => typeof child !== "string" || child.trim(),
+        );
+        const hastBlocks =
+          node?.children.filter((child) => child.type === "element") ?? [];
+        const labelIndex = (label: "Hint:" | "Solution:") =>
+          hastBlocks.findIndex(
+            (block, index) =>
+              index > 0 &&
+              block.type === "element" &&
+              block.tagName === "p" &&
+              block.children[0]?.type === "element" &&
+              block.children[0].tagName === "strong" &&
+              hastText(block.children[0]).trim() === label,
+          );
+        const hintAt = labelIndex("Hint:");
+        const solutionAt = labelIndex("Solution:");
+        const promptEnd =
+          hintAt >= 0 ? hintAt : solutionAt >= 0 ? solutionAt : blocks.length;
+        const prompt: ReactNode[] = blocks.slice(0, promptEnd);
+        if (prompt.length) prompt[0] = stripPrefix(prompt[0] ?? null);
+        const stripLabel = (child: ReactNode) => {
+          if (!isValidElement<{ children?: ReactNode }>(child)) return child;
+          const parts = Children.toArray(child.props.children);
+          const first = parts[0];
+          if (!isValidElement<{ children?: ReactNode }>(first)) return child;
+          return cloneElement(
+            child,
+            {},
+            <>
+              {cloneElement(
+                first,
+                {},
+                Children.toArray(first.props.children).slice(1),
+              )}
+              {parts.slice(1)}
+            </>,
+          );
+        };
+        const level = marker.level;
+        const tone =
+          level === "apply"
+            ? "bg-[var(--hue-amber-surface)] text-[var(--hue-amber)]"
+            : level === "stretch"
+              ? "bg-[var(--hue-violet-surface)] text-[var(--hue-violet)]"
+              : "bg-[var(--track-surface)] text-[var(--track)]";
+        const label = level
+          ? `${level[0].toUpperCase()}${level.slice(1)}`
+          : "Unknown";
+        return (
+          <section
+            className="my-5 rounded-[14px] border border-border bg-surface p-5"
+            data-exercise-card
+          >
+            <header className="mb-3 flex items-center justify-between gap-3">
+              <span className="font-mono text-xs uppercase tracking-wider text-muted">
+                Exercise {exerciseNumber}
+              </span>
+              <span
+                className={`rounded-full px-2.5 py-1 font-mono text-[11px] uppercase tracking-wide ${tone}`}
+              >
+                {label}
+              </span>
+            </header>
+            <div>{prompt}</div>
+            {hintAt >= 0 && blocks[hintAt] && (
+              <details className="mt-4 border-t border-border pt-3">
+                <summary className="cursor-pointer font-mono text-xs text-muted">
+                  Hint
+                </summary>
+                <div className="mt-3">{stripLabel(blocks[hintAt])}</div>
+              </details>
+            )}
+            {solutionAt >= 0 && blocks[solutionAt] && (
+              <details className="mt-3 border-t border-border pt-3">
+                <summary className="cursor-pointer font-mono text-xs text-muted">
+                  Show solution
+                </summary>
+                <div className="mt-3">{stripLabel(blocks[solutionAt])}</div>
+              </details>
+            )}
+          </section>
+        );
+      }
+      return (
+        <CurriculumQuote marker={marker} keyRule={isKeyRule(node)}>
+          {children}
+        </CurriculumQuote>
+      );
+    },
     table: ({ children, ...props }) => (
       <div className="my-5 overflow-x-auto">
         <table
@@ -142,7 +256,8 @@ export function LessonReader({
     void fetchProgress();
   }, [fetchProgress]);
   const track = trackById(topic.trackId);
-  const { main, takeaways } = splitTakeaways(lesson.body);
+  const { main: withoutExercises, exercises } = splitExercises(lesson.body);
+  const { main, takeaways } = splitTakeaways(withoutExercises);
   const outline = useMemo(() => chapterOutline(main), [main]);
   const recapOutline = useMemo(
     () =>
@@ -161,9 +276,26 @@ export function LessonReader({
           ],
     [outline, takeaways],
   );
+  const exercisesOutline = useMemo(
+    () =>
+      exercises === null
+        ? []
+        : [
+            {
+              id: slugifyHeading(
+                "Exercises",
+                new Set([...outline, ...recapOutline].map((entry) => entry.id)),
+              ),
+              text: "Exercises",
+              number: outline.length + recapOutline.length + 1,
+              line: 1,
+            },
+          ],
+    [exercises, outline, recapOutline],
+  );
   const tocOutline = useMemo(
-    () => [...outline, ...recapOutline],
-    [outline, recapOutline],
+    () => [...outline, ...recapOutline, ...exercisesOutline],
+    [outline, recapOutline, exercisesOutline],
   );
   const components = useMemo(() => curriculumComponents(outline), [outline]);
   const recapComponents = useMemo(
@@ -204,6 +336,14 @@ export function LessonReader({
                 components={recapComponents}
                 className="!text-[18px] [&_p]:leading-[1.65] [&_li]:leading-[1.65]"
               >{`## What to take away\n\n${takeaways}`}</Markdown>
+            </section>
+          ) : null}
+          {exercises !== null ? (
+            <section className="curriculum-exercises mt-10">
+              <Markdown
+                components={curriculumComponents(exercisesOutline)}
+                className="!text-[18px] [&_p]:leading-[1.65] [&_li]:leading-[1.65]"
+              >{`## Exercises\n\n${exercises}`}</Markdown>
             </section>
           ) : null}
         </div>

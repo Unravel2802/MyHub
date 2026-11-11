@@ -48,6 +48,38 @@ export function splitTakeaways(body: string): {
   };
 }
 
+export function splitExercises(body: string): {
+  main: string;
+  exercises: string | null;
+} {
+  const lines = body.split(/\r?\n/);
+  const fenced = fencedLines(body);
+  let at = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!fenced[i] && /^##\s+Exercises\s*$/i.test(lines[i])) {
+      at = i;
+      break;
+    }
+  }
+  if (at === -1) return { main: body, exercises: null };
+  let end = lines.length;
+  for (let i = at + 1; i < lines.length; i += 1) {
+    if (!fenced[i] && /^##\s+/.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  const sourceLines = body.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+  const offset = (line: number) => sourceLines.slice(0, line).join("").length;
+  return {
+    main: body.slice(0, offset(at)) + body.slice(offset(end)),
+    exercises: lines
+      .slice(at + 1, end)
+      .join("\n")
+      .trim(),
+  };
+}
+
 export function slugifyHeading(text: string, taken: Set<string>): string {
   const plain =
     text

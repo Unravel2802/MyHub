@@ -10,6 +10,15 @@ once, and consistency comes from the *overlap* between those sets rather than
 from any node being in charge. It is the design behind Dynamo, Cassandra, Riak
 and S3, and its central idea is one inequality.
 
+> [!WHY] A regional partition leaves a coordinator unable to reach every replica, but a telemetry service still needs to accept writes. A leaderless quorum can keep the write path available while making the read/write overlap and its limits explicit.
+
+> [!GOALS]
+>
+> - Calculate read/write quorum overlap from R, W and N
+> - Choose read and write quorum sizes for availability and latency needs
+> - Explain why overlap does not guarantee linearizability
+> - Use read repair, anti-entropy and tombstones to keep replicas converged
+
 ## The mechanism
 
 ```text
@@ -272,3 +281,17 @@ failover problems from the previous chapter.
 
 That completes replication. Next in the track: **partitioning** — splitting data
 across nodes rather than copying it, and the two are almost always combined.
+
+## Exercises
+
+> [!EXERCISE recall] What are read repair and anti-entropy each responsible for, and how does a tombstone represent a deletion?
+>
+> **Solution:** Read repair updates stale replicas encountered during reads; anti-entropy compares replicas in the background so keys that are rarely read still converge. A tombstone is a replicated deletion marker that prevents an older value from being resurrected before the tombstone is safely retired.
+
+> [!EXERCISE apply] A deleted key is never read again, so read repair cannot encounter it. Explain which repair mechanism will propagate its tombstone and why the tombstone must be retained during that process.
+>
+> **Solution:** Background anti-entropy compares replicas and can copy the tombstone even though no client reads this key, so read repair alone would never find it. Retain the tombstone until replicas have had time to learn the deletion; removing it too early could let an old value return.
+
+> [!EXERCISE stretch] A key is rarely read and has recently been deleted; its tombstone has not yet been observed on every replica. Choose a convergence plan and explain what a weaker answer misses.
+>
+> **Solution:** Run background anti-entropy so replicas compare even this rarely read key, and retain the tombstone until the replicas can no longer return the old value. Read repair alone may never touch this key. A weaker answer deletes the tombstone immediately or relies only on reads; it misses how an unseen old copy can resurrect deleted data.

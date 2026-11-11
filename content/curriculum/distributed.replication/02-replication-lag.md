@@ -10,6 +10,15 @@ during a long transaction, by minutes. That staleness produces three distinct
 user-visible anomalies, each of which gets reported as an application bug, and
 each of which has a specific named fix.
 
+> [!WHY] A user sees a new comment from one follower, then a later request reaches a slower follower and shows an older list. The application must decide how much stale data each read path can tolerate.
+
+> [!GOALS]
+>
+> - Recognise read-your-writes, monotonic-read and consistent-prefix anomalies
+> - Estimate write-position lag from a write rate and a time difference
+> - Choose a consistency guarantee and implementation for a read path
+> - Diagnose replication lag by cause and monitor it in seconds
+
 ## The setup
 
 ```text
@@ -247,3 +256,19 @@ order = orders.get(id, consistency=READ_YOUR_WRITES)  # visible decision
 
 Next: failover — what happens when the leader dies, and why this is the part that
 loses data.
+
+## Exercises
+
+> [!EXERCISE recall] How do lag measured in seconds and lag measured in bytes answer different operational questions, and name two causes of follower lag.
+>
+> **Solution:** Seconds estimate how stale a read may be for a user; bytes show the amount of unapplied replication work but depend on write volume and record size. A slow network link, a saturated follower, long transactions or bursty writes can all increase lag.
+
+> [!EXERCISE apply] A write stream averages 800 writes/s. Follower A is 80 ms behind and follower B is 300 ms behind. Assuming the rate is steady, estimate how many write positions further behind B is than A, and name a useful lag metric.
+>
+> **Hint:** First find the lag difference in seconds, then multiply by writes per second.
+>
+> **Solution:** The lag difference is 300 − 80 = 220 ms = 0.220 s. At 800 writes/s, that represents 800 × 0.220 = **176 write positions**. Monitor lag in seconds, such as time since the last replayed transaction, because bytes alone do not say how long a user-visible delay will be.
+
+> [!EXERCISE stretch] A user posts a question and then immediately sees a reply to it on another partition. Explain how a lagging replica can violate the expected sequence and give a chapter-taught way to preserve the prefix.
+>
+> **Solution:** If the reply is visible before the question on a lagging replica, the user sees a later event without its causal predecessor: a consistent-prefix violation. Keep causally related writes in one partition, or carry and enforce their causal dependencies before exposing the later write. A weaker answer only increases a global lag threshold; it misses that this guarantee is about order as well as delay.

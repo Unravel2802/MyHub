@@ -10,6 +10,15 @@ do not actually need to know *when* things happened. You need to know **what
 could have caused what**. That is a different relation, it is knowable without
 any clock at all, and it turns out to be the one that matters.
 
+> [!WHY] A replica receives a reply before the question it answers because two servers' timestamps disagree. Users can see that the response is causally out of order even when the displayed timestamps look plausible.
+
+> [!GOALS]
+>
+> - Apply the three rules that define happens-before
+> - Compute Lamport clock values for local, send and receive events
+> - Distinguish a causal guarantee from an arbitrary total order
+> - Choose a vector clock when an application must detect conflicts
+
 ## The happens-before relation
 
 Write `a → b` for "a happens before b". It is defined by three rules, and
@@ -271,3 +280,17 @@ accepted that concurrent writes are silently resolved rather than surfaced.
 
 Next: vector clocks — paying more to learn the one thing a Lamport clock cannot
 tell you.
+
+## Exercises
+
+> [!EXERCISE recall] State the three rules of happens-before and explain why a smaller Lamport timestamp does not prove that one event caused another.
+>
+> **Solution:** The rules are process order, sending a message before its receipt, and transitivity. Lamport clocks preserve the implication from causal order to increasing timestamps, but concurrent events can also receive different integers, so timestamp order alone cannot prove causality.
+
+> [!EXERCISE apply] Two concurrent events have Lamport timestamp 8, with IDs `node-a` and `node-b`. Apply the chapter's tie-break rule and state whether the resulting order proves causality.
+>
+> **Solution:** Compare the pair `(timestamp, node ID)`: `(8, node-a)` sorts before `(8, node-b)`, so every node can choose that same total order. Since the events were concurrent, the tie-break does not imply that `node-a` caused or happened before `node-b`.
+
+> [!EXERCISE stretch] Two concurrent updates receive different Lamport timestamps, and a team treats the larger one as proof that it happened later in real time. Recommend a conflict policy and explain what a weaker answer misses.
+>
+> **Solution:** If the application needs to know that both updates were concurrent, attach vector clocks and surface both versions for a merge. If a consistent tie-break is enough and losing one update is acceptable, a Lamport timestamp plus node ID supplies an arbitrary total order. A weaker answer calls the larger timestamp “later”; it misses that Lamport order cannot detect concurrency or compare real times.

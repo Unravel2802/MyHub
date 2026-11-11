@@ -11,6 +11,15 @@ least able to absorb it. This chapter is about getting the parameters right,
 because the difference between a system that rides out a blip and one that
 collapses is almost entirely in these numbers.
 
+> [!WHY] A dependency's p99 latency rises during a traffic spike, while every client retries at the same fixed interval. A timeout chosen without measurements can cut off healthy slow work and then add more load to the service already struggling.
+
+> [!GOALS]
+>
+> - Derive a timeout from a dependency's measured latency distribution
+> - Choose retry behavior from error type and operation idempotence
+> - Calculate exponential backoff ceilings and apply full jitter
+> - Bound retry amplification with a single retry layer and a budget
+
 ## Choosing a timeout
 
 A timeout is a claim: "if it has not answered by now, it is not going to."
@@ -308,3 +317,19 @@ non-idempotent operations.
 
 Next: how to measure any of this honestly — tail latency, and why the average is
 the least useful number you can compute.
+
+## Exercises
+
+> [!EXERCISE recall] What must accompany exponential backoff, and why is a retry budget different from a per-request attempt limit?
+>
+> **Solution:** Backoff needs jitter and a cap, as well as a maximum attempt count. Full jitter spreads clients across the wait interval, and the cap avoids absurd delays. A per-request limit bounds one caller's effort; a retry budget caps retries as a fraction of total traffic and therefore bounds amplified load on the dependency.
+
+> [!EXERCISE apply] A dependency has measured p99 latency of 120 ms. Set a starting timeout at 2× p99 and calculate the exponential backoff ceilings for the first three retry delays with a 100 ms base. State the jitter interval for each delay.
+>
+> **Hint:** Double the p99 for the timeout; double the backoff ceiling after each retry.
+>
+> **Solution:** The starting timeout is 2 × 120 ms = **240 ms**. The retry ceilings are 100 ms, 100 × 2 = **200 ms**, and 200 × 2 = **400 ms**. With full jitter, the actual waits are drawn uniformly from 0–100 ms, 0–200 ms and 0–400 ms respectively; the chapter's 20 s cap does not bind for these delays.
+
+> [!EXERCISE stretch] An API client retries both 400 errors and timed-out payment writes at three layers with fixed one-second delays. Propose a safer policy and explain what a weaker answer misses.
+>
+> **Solution:** Never retry a 400 because the request is permanently malformed. Retry a timed-out payment only with the same idempotency key, and put retries at one layer with exponential backoff, full jitter, a cap and a traffic-level retry budget. A weaker answer only lengthens the delay; it misses that permanent errors waste work, a timeout may follow a completed charge, and retries at multiple layers multiply load.

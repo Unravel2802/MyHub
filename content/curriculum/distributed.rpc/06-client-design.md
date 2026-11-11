@@ -10,6 +10,15 @@ client with pooling, sensible timeouts and load balancing will ride out failures
 that a default-configured one turns into an outage. This chapter is the settings
 that matter and why.
 
+> [!WHY] A new service opens a connection for every call and reaches one backend for all HTTP/2 requests. During a traffic burst, handshake delay and an unbounded connection wait can make a healthy downstream appear broken.
+
+> [!GOALS]
+>
+> - Size a connection pool from throughput and latency while respecting downstream capacity
+> - Choose client-side balancing for long-lived HTTP/2 connections when appropriate
+> - Separate liveness from readiness checks
+> - Trace a request across services and correlate spans with logs
+
 ## Connection pooling
 
 Establishing a connection costs a TCP handshake plus a TLS handshake — two to
@@ -254,3 +263,19 @@ wrong, and the one it gets wrong will be different each time.
 
 That completes RPC. Next in the track: **clocks, order and causality** — why two
 machines cannot agree on what time it is, and what you use instead.
+
+## Exercises
+
+> [!EXERCISE recall] What does a connection pool's acquire timeout prevent, and why can a layer-4 proxy misbalance HTTP/2 requests?
+>
+> **Solution:** The acquire timeout bounds how long callers wait when the pool is exhausted, preventing an apparent hang that fills the thread pool. A layer-4 proxy balances connections, while HTTP/2 carries many requests on one long-lived connection, so all those requests can land on one backend.
+
+> [!EXERCISE apply] A fresh same-region connection adds one 1 ms round trip for setup, while a pooled call has an 8 ms service round trip. Calculate the first-call latency with one or two setup round trips, and the savings from reusing a connection.
+>
+> **Hint:** Add one or two setup round trips to the 8 ms service time, then compare with the pooled path.
+>
+> **Solution:** With one setup round trip, the first call takes 1 + 8 = **9 ms**; with two, it takes 2 + 8 = **10 ms**. Reusing the connection takes **8 ms**, saving **1–2 ms** of setup latency. The setup cost is paid when establishing a connection, not on every pooled call.
+
+> [!EXERCISE stretch] A service fails liveness whenever its database is unreachable, and traces stop at a queue boundary. Propose a health-check and tracing design and explain what a weaker answer misses.
+>
+> **Solution:** Keep liveness focused on whether the process is functioning, and put dependencies it cannot serve without in readiness so the load balancer removes the instance without restarting it. Propagate the trace context in the queued message and include trace IDs in logs; sample slow and failed traces with tail-based sampling. A weaker answer restarts on every database outage or traces only synchronous calls; it misses restart amplification and the work that continues asynchronously.

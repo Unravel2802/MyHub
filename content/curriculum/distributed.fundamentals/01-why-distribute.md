@@ -14,6 +14,15 @@ Everything in this track follows from that one sentence. Before any of it, the
 question worth being ruthless about is whether you should be distributing at
 all.
 
+> [!WHY] A well-indexed service now sustains 62,000 reads per second on one database server, above the chapter's 50,000-query upper range. The team must decide whether measured read load justifies another machine and which kind of replication would address it.
+
+> [!GOALS]
+>
+> - Measure a workload against a single server's stated capacity
+> - Choose among capacity, availability, geography and isolation as a reason to distribute
+> - Explain the latency and partial-failure costs of service boundaries
+> - Compare read replicas with partitioning for a read-heavy workload
+
 ## What a single machine can actually do
 
 Engineers routinely underestimate this by an order of magnitude, and then build a
@@ -256,3 +265,19 @@ above applies, because the reason determines the design.
    the source of most of the difficulty ahead.
 
 Next: the eight fallacies in detail, and the specific bug each one produces.
+
+## Exercises
+
+> [!EXERCISE recall] Name the four legitimate reasons to distribute, and explain why a growing team alone does not require separate processes.
+>
+> **Solution:** The reasons are workload capacity, availability, geography and isolation. Team boundaries can justify separate deployables, but a modular monolith can give teams separate codebases without paying network latency, partial failure and distributed operations costs.
+
+> [!EXERCISE apply] A well-indexed product measures 62,000 database reads/s and 1,000 writes/s on one server. Compare its read load with the chapter's 20,000–50,000 simple-query/s range, calculate how far it exceeds the upper figure, and choose the least invasive distributed step for read scaling.
+>
+> **Hint:** Compare the read rate with the top of the stated range; read replicas spread reads, not writes.
+>
+> **Solution:** The reads alone are 62,000 − 50,000 = **12,000 reads/s above** the top of the stated single-server range. Since the workload is read-heavy and the immediate goal is read throughput, first validate the query measurements and add read replicas; the 1,000 writes/s still go to the leader and each replica applies them. This is less invasive than partitioning, and measurement after the change will show whether more is needed.
+
+> [!EXERCISE stretch] A team wants a service per department because its headcount doubled, but the current workload fits comfortably on one server. Recommend a boundary that meets the organisational goal and explain what a weaker answer misses.
+>
+> **Solution:** Keep one deployable with modular code boundaries unless a measured capacity, availability, geography or isolation need justifies distribution. Separate deployables can support team ownership without separate networked processes. A weaker answer treats headcount as proof of a technical need; it misses that distributed boundaries add latency, partial failure and operational work up front.

@@ -11,6 +11,15 @@ happened first", and the obvious way to answer it — compare timestamps — is
 unsound. This chapter is about exactly how unsound, and about the two clocks
 every operating system gives you and which one to use when.
 
+> [!WHY] A request timer starts at 12:00:10, then the host's wall clock steps backwards during an NTP correction. The measured duration can become negative even though the work took real time.
+
+> [!GOALS]
+>
+> - Distinguish wall-clock timestamps from monotonic elapsed-time measurements
+> - Explain how drift, asymmetric network delay and clock steps affect ordering
+> - Choose a clock appropriate to a timeout, timestamp or cross-machine comparison
+> - Identify where skew tolerance and clock-offset monitoring belong
+
 ## Two clocks, and the one you are probably misusing
 
 Every OS exposes two fundamentally different clocks, and conflating them is the
@@ -275,3 +284,19 @@ mechanism** or a **duration measurement** — two jobs they cannot do.
 
 Next: what to use instead — happens-before, and clocks that count events rather
 than seconds.
+
+## Exercises
+
+> [!EXERCISE recall] Why can two machines with synchronized clocks still disagree about which of two nearby events happened first?
+>
+> **Solution:** Clock synchronization estimates offset from network exchanges, but path delay can be asymmetric and the clocks can still have bounded error. Wall timestamps therefore cannot prove causal order for nearby events; use an ordering mechanism for causality and treat offset as uncertainty.
+
+> [!EXERCISE apply] A clock drifts by 50 parts per million. Estimate its maximum accumulated drift over one day, then over 30 days, assuming no correction.
+>
+> **Hint:** Convert 50 ppm to 50 microseconds per second, then multiply by the number of seconds.
+>
+> **Solution:** 50 ppm is 50 / 1,000,000 seconds per second = **0.00005 s/s**, or 50 μs/s. One day has 86,400 seconds, so 86,400 × 0.00005 = **4.32 seconds/day**. Over 30 days, 4.32 × 30 = **129.6 seconds**, or **2 minutes 9.6 seconds** without correction.
+
+> [!EXERCISE stretch] Two services compare wall timestamps to order a write and its reply, but cloud clock skew can be tens of milliseconds. Recommend a correction and explain what a weaker answer misses.
+>
+> **Solution:** Use a causal or logical ordering mechanism rather than wall time to decide which event came first, and monitor clock offset as a separate signal. Keep wall timestamps for logging or human-visible event time. A weaker answer only synchronizes NTP more often; it misses asymmetric delay, clock steps and the fact that timestamps still cannot prove causality.

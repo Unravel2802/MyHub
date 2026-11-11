@@ -10,6 +10,15 @@ both the old and the new version are running simultaneously — because during
 every deploy, both are. Getting this wrong is how a routine field rename becomes
 an incident.
 
+> [!WHY] A mobile client is still sending `phone` when a server deploy begins returning `phone_number`, and a monthly export also reads the old field. A one-step rename can break both consumers while the rollout is in progress.
+
+> [!GOALS]
+>
+> - Evaluate a schema change against all old/new client-server combinations
+> - Apply expand, migrate and contract to a field rename
+> - Use contract tests to identify which consumer a provider change breaks
+> - Design stable machine-readable error responses
+
 ## The rule that generates everything else
 
 ```text
@@ -255,3 +264,19 @@ prose. Three rules:
 
 Next: streaming and backpressure — what changes when a call is not a single
 request and response.
+
+## Exercises
+
+> [!EXERCISE recall] What do backward compatibility and forward compatibility mean for independently deployed clients and servers?
+>
+> **Solution:** Backward compatibility means a new server continues to support old clients; forward compatibility means an old server or client can tolerate data from a newer peer. Since versions coexist during rolling deploys, a contract change must preserve the combinations that can run at each rollout step.
+
+> [!EXERCISE apply] A provider must rename `phone` to `phone_number` for a mobile client and a monthly export. Lay out the expand-and-contract stages, and state the observation period required before removing the old field.
+>
+> **Hint:** Keep both forms available during migration, and use the slowest consumer's full schedule to decide when contraction is safe.
+>
+> **Solution:** First make the server write both fields and read either; then backfill `phone_number`. Migrate readers to the new field, then migrate writers while the server still accepts both. Instrument reads and writes of `phone` and remove it only after usage stays at zero longer than the monthly export's full run period. This preserves every old/new combination during independent deployments.
+
+> [!EXERCISE stretch] A provider plans to make a formerly optional field required and reject values it previously accepted. Recommend a safe rollout and explain what a weaker answer misses.
+>
+> **Solution:** First measure which consumers omit the field or send values that would be rejected, then deploy compatible readers and writers and migrate those clients before tightening validation. Keep the old behavior while independent versions coexist. A weaker answer flips validation in one deploy; it misses old clients that can still send requests for the stricter server to reject.

@@ -10,6 +10,15 @@ and if the Virginia region is partitioned, nobody writes anywhere. Multi-leader
 replication removes that by letting several nodes accept writes — and creates the
 one problem single-leader made impossible.
 
+> [!WHY] A user edits a document while offline, then reconnects after another region accepted a conflicting edit. Multi-leader replication keeps local writes available, but the application must decide how to resolve conflicts and protect global constraints.
+
+> [!GOALS]
+>
+> - Choose multi-leader when geography or offline writes justify it
+> - Select a conflict strategy for a field or entity
+> - Protect uniqueness and other invariants that span regions
+> - Compare replication topology costs and failure modes
+
 ## The shape
 
 ```text
@@ -240,3 +249,19 @@ The honest picture of what you take on:
    monitoring. Budget for it before choosing this.
 
 Next: leaderless replication — no leader at all, and quorums instead.
+
+## Exercises
+
+> [!EXERCISE recall] Why is multi-leader useful for geographic write latency but usually a poor choice for write throughput within one region?
+>
+> **Solution:** Users can write to a nearby leader instead of paying a cross-region round trip, and a region can keep accepting local writes while another is unreachable. Within one region, partitioning is the chapter's answer to write throughput; multi-leader adds conflict-resolution work without addressing that need as directly.
+
+> [!EXERCISE apply] A five-region deployment is comparing all-to-all, circular and star replication. Calculate the link count for each topology and identify which topology has a single forwarding bottleneck.
+>
+> **Hint:** For n regions, all-to-all has n(n−1)/2 links, a circle has n, and a star has n−1.
+>
+> **Solution:** With five regions, all-to-all needs 5 × 4 ÷ 2 = **10 links**; a circle needs **5 links**; a star needs 5 − 1 = **4 links**. The star has one central forwarding region, so it is a bottleneck and a failure point for relaying between spokes.
+
+> [!EXERCISE stretch] Two regions edit the same document while disconnected; on reconnection, one update arrives before its causal predecessor. Recommend how to preserve causal history and explain what a weaker answer misses.
+>
+> **Solution:** Track causal dependencies with version vectors and hold the later update until its predecessor is available, or surface concurrent versions for an explicit merge when they are truly concurrent. A weaker answer applies updates in arrival order; it misses that network arrival order can differ from causal order and can expose an invalid document state.

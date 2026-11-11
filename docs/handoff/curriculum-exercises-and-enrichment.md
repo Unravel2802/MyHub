@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged to main 2026-11-11. X4 batch E0 reviewed 2026-11-11: changes requested (see the E0 review at the end).
+**Status:** X1–X3 merged to main 2026-11-11. X4 batch E0 approved 2026-11-11 (see the E0 reviews at the end); E1 is next.
 
 ---
 
@@ -636,3 +636,16 @@ whichever style E0 merges with.
 
 **Status:** E0 needs fixes 1–3 (content only, no code). E1 can start from
 main once E0 merges.
+
+### E0 re-review — 2026-11-11 (Claude): approved
+
+Codex's 62a0bf9 applies fixes 1–3 correctly: collab is 240 × 10 = 2,400
+updates/s × 239 = 573,600 deliveries/s; the trade-offs creator has 7.5M
+followers (7,500,000 ÷ 288,000 ≈ 26 s of ordinary fan-out, above the
+chapter's 10,000 threshold); search hedges early and returns partial results
+at the deadline. One correction was the reviewer's own: fix 1 asked for
+"the chapter batches and coalesces updates", which the chapter never
+teaches. 5ac003a (Claude) replaces it with the chapter's actual remedy, a
+cap on concurrent editors or a pub/sub-sharded relay. Lint, typecheck, 1,661
+unit tests and 254/254 E2E pass. Lesson for later reviews: check a
+requested sentence against the chapter, too.

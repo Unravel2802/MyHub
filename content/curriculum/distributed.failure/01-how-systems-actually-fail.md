@@ -10,6 +10,15 @@ recover after the disturbance ended. Understanding those dynamics is more useful
 than any list of failure types, because it explains why systems fall over at
 moments nothing obviously broke.
 
+> [!WHY]
+> A metastable system can remain broken after its original trigger disappears because its own response sustains overload.
+
+> [!GOALS]
+>
+> - Distinguish a stable disturbance from metastable failure.
+> - Explain why removing the trigger may not restore service.
+> - Identify how correlated failure can turn a disturbance into a fleet outage.
+
 ## Metastable failure
 
 The most important failure shape, and the least widely known.
@@ -226,3 +235,17 @@ And two that are not physical, and are more likely to bite:
    caller's perspective.
 
 Next: bulkheads — bounding the blast radius so a local failure stays local.
+
+
+## Exercises
+
+> [!EXERCISE recall] What defines a metastable failure after its trigger is gone?
+>
+> **Solution:** The system remains broken because its own response sustains the overload.
+
+> [!EXERCISE apply] A trigger causes overload. After it ends, the system remains overloaded and does not recover. Is this stable recovery or metastable failure?
+>
+> **Solution:** Metastable failure: the trigger is gone but the system does not recover.
+> [!EXERCISE stretch] An incident review recommends only restoring the capacity removed by the original trigger. Why may that not recover a metastable system?
+>
+> **Solution:** Its own response may now sustain overload, so restoring the original capacity does not remove the feedback loop. The weaker answer assumes the trigger is still the only cause.

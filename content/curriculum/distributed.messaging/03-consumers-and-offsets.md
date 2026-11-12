@@ -9,6 +9,14 @@ where the real difficulty is, because the consumer owns its position, and every
 decision about *when* to record that position is a decision about what happens
 after a crash.
 
+> [!WHY] A billing consumer can write a charge and crash before recording its offset, or record the offset before the charge commits. That timing choice decides whether the system loses a charge or risks applying it twice.
+
+> [!GOALS]
+>
+> - Explain the delivery consequences of committing before or after processing
+> - Design an atomic effect and offset update with an inbox transaction
+> - Diagnose poison-message stalls and lag from per-partition signals
+
 ## Consumer groups
 
 ```text
@@ -268,3 +276,17 @@ runbook procedures rather than improvised during an incident.
 
 Next: operating a log — schemas, evolution, and the patterns that make an
 event-driven system maintainable.
+
+
+## Exercises
+
+> [!EXERCISE recall] What delivery behavior results from committing before processing, and what behavior results from committing after processing?
+>
+> **Solution:** Commit-before-process is at most once: a crash can lose the message without replay. Commit-after-process is at least once: a crash can replay an already processed message, so the effect should be idempotent.
+
+> [!EXERCISE apply] A consumer updates a local shipment row and then commits its broker offset. Show how it can make the two changes atomic when both records are stored in the same database.
+>
+> **Solution:** In one database transaction, insert the message ID into a uniquely constrained processed-message table, apply the shipment update, and save the partition offset. The transaction commits all three together or rolls them all back, so a redelivery is deduplicated.
+> [!EXERCISE stretch] A new notification group starts with `auto.offset.reset=earliest` on a topic containing years of retained account-change events. Recommend a safer start policy and explain what a weaker answer misses.
+>
+> **Solution:** Start at `latest` if the group should send only notifications for new events; use an intentional timestamp reset if it must cover a bounded historical period. A weaker answer assumes a new group starts at the current end, missing that `earliest` replays all retained history and could send years of notifications.

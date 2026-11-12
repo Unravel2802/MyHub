@@ -10,6 +10,14 @@ keeps an ordered, replayable record that many independent consumers read at thei
 own pace. Choosing the wrong one is a design mistake that surfaces months later
 as "we need to reprocess everything and we can't".
 
+> [!WHY] A nightly image-resize job needs individual retries, while a refund fact must reach billing, compliance and analytics after the producer has finished. The queue or log choice decides which guarantees each flow gets.
+
+> [!GOALS]
+>
+> - Distinguish broker-owned queue delivery from consumer-owned log offsets
+> - Choose a queue or log from retry, ordering and replay requirements
+> - Explain how partition count limits log consumer parallelism
+
 ## The two models
 
 ```text
@@ -215,3 +223,17 @@ reason about, and no way to add a consumer that needs history.
 
 Next: the log's model in detail — topics, partitions, replication and what
 actually happens when you produce a message.
+
+
+## Exercises
+
+> [!EXERCISE recall] What does a queue remove after acknowledgement, and what position does each log consumer maintain?
+>
+> **Solution:** A queue broker removes an acknowledged message after delivery to one worker. A log retains messages under its retention policy, and each consumer group maintains its own offset.
+
+> [!EXERCISE apply] A document-thumbnail job should be retried one message at a time, while a `customer.closed` fact must reach fraud review and analytics, and a new audit consumer may need past facts. Choose a broker model for each flow.
+>
+> **Solution:** Put thumbnail jobs on a queue because it supports per-message retry and task distribution to one worker. Put `customer.closed` on a log because independent consumers can read it and the new audit consumer can replay retained history.
+> [!EXERCISE stretch] A team proposes attaching one queue per consumer to reproduce a log. Explain what the design misses and what a weaker answer misses.
+>
+> **Solution:** Each queue gains a different depth and failure history, and a later consumer cannot replay messages already removed. A weaker answer points out only that each consumer gets a copy; it misses the lack of a shared retained position and history.

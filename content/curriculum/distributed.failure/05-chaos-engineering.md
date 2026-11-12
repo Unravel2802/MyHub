@@ -10,6 +10,15 @@ the least-exercised code in the system, and by default it does not work. Chaos
 engineering is the practice of breaking things deliberately, while you are
 watching, to find out.
 
+> [!WHY]
+> Resilience mechanisms often go untested because they run only when something is broken; chaos engineering exercises them deliberately.
+
+> [!GOALS]
+>
+> - Describe the stages of a chaos experiment.
+> - State a measurable steady-state hypothesis.
+> - Explain how experiment scope limits blast radius.
+
 ## It is an experiment, not vandalism
 
 The framing that makes it defensible and useful:
@@ -209,3 +218,17 @@ handle it.
 That completes failure modes and resilience. Next in the track: **batch and
 stream processing** — computing over data at rest and in motion, and the duality
 between them.
+
+
+## Exercises
+
+> [!EXERCISE recall] What does a chaos experiment define before injecting failure?
+>
+> **Solution:** A measurable steady state and a hypothesis about whether it will hold.
+
+> [!EXERCISE apply] The chapter's hypothesis is that killing one of three payment instances will not change checkout success rate. What should the team observe?
+>
+> **Solution:** Whether the measurable steady state, checkout success rate of at least 99.5%, holds.
+> [!EXERCISE stretch] A team injects a fleet-wide failure without defining a hypothesis or watching service metrics. Why is that not the experiment described here?
+>
+> **Solution:** The chapter defines an observed experiment: define measurable normal, state a hypothesis, inject the smallest failure that tests it, observe and conclude. The weaker answer skips those controls.

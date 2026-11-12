@@ -9,6 +9,14 @@ so a schema change must be compatible not only with today's consumers but with
 every message already in the topic. A field you remove today still exists in
 messages from last month that someone may replay next year.
 
+> [!WHY] A search projection built last year must still be rebuildable from retained event records after a producer changes its schema today. Compatibility rules decide whether replay remains possible across that gap.
+
+> [!GOALS]
+>
+> - Choose a compatibility mode and deployment order for a schema change
+> - Explain why changing a field's meaning is unsafe even when a registry accepts it
+> - Design event envelopes and topic boundaries that preserve replay context
+
 ## Why this is harder than an API contract
 
 ```text
@@ -217,3 +225,17 @@ schema registry correctly refuses your change.
    ordered for one entity; put a version in the topic name as the escape hatch.
 
 Next: the architectural patterns these enable, and the ones that go wrong.
+
+
+## Exercises
+
+> [!EXERCISE recall] Under backward compatibility, what must a new consumer be able to read, and which side should deploy first?
+>
+> **Solution:** A new consumer must read old retained data. Deploy consumers first and producers afterward so the new consumer is ready before the new schema appears.
+
+> [!EXERCISE apply] An event needs a new optional `delivery_window` field with a default for older records. Choose a compatibility mode and deployment order that keeps replay working.
+>
+> **Solution:** Use backward compatibility because the new consumer must read old records where the optional field is absent. Deploy the consumer first, then deploy producers that begin writing `delivery_window`.
+> [!EXERCISE stretch] A registry rejects a proposed incompatible change to the `parcel` event schema. Recommend a migration path and explain what a weaker answer misses.
+>
+> **Solution:** Create a versioned `v2` topic, dual-publish while consumers migrate, then retire `v1` after the migration. A weaker answer disables registry checks or forces the old topic to accept the incompatible shape; it misses that retained old records and existing consumers still depend on the old contract.

@@ -10,6 +10,14 @@ knowledge: what to monitor, what the common incidents look like, and what to do
 during the one that will actually happen to you — a consumer that is hours behind
 and falling further.
 
+> [!WHY] The fulfillment consumer is falling further behind, and its oldest messages are approaching retention. The first decision determines whether the team has time to recover or loses the records before it can catch up.
+
+> [!GOALS]
+>
+> - Diagnose whether lag is isolated to a partition or affects the whole group
+> - Choose an incident response before retention turns lag into permanent loss
+> - Calculate partition capacity from target throughput and per-consumer throughput
+
 ## The metrics that matter
 
 ```text
@@ -233,3 +241,17 @@ flowchart TB
 That completes messaging and event streaming. Next in the track: **coordination
 and locking** — the primitives built on consensus that services use to agree on
 who does what.
+
+
+## Exercises
+
+> [!EXERCISE recall] Why can lag measured only across a consumer group hide an incident, and what second lag unit helps show a data-loss deadline?
+>
+> **Solution:** One stuck partition can be hidden by a group average, so measure lag per partition and its trend. Lag in time is more useful than messages for seeing how close the consumer is to the retention deadline.
+
+> [!EXERCISE apply] A topic must sustain 24,000 messages per second, and one consumer can process 4,000 messages per second. Using the chapter's capacity rule, find the minimum partition count.
+>
+> **Solution:** Divide target throughput by per-consumer throughput: 24,000 ÷ 4,000 = 6. The topic therefore needs at least 6 partitions to provide that parallelism.
+> [!EXERCISE stretch] One partition's lag is climbing toward retention while the others are flat. Recommend the order of response and explain what a weaker answer misses.
+>
+> **Solution:** Extend retention first if the deadline is near, then address the isolated cause such as a poison message or hot key and increase throughput after diagnosing it. A weaker answer only scales the whole group; it misses that one partition can be blocked and that retention may delete data before a capacity fix takes effect.

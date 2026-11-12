@@ -9,6 +9,14 @@ people use, so it is worth understanding concretely. Almost everything here
 transfers to Pulsar, Kinesis and Redpanda, which differ in implementation more
 than in model.
 
+> [!WHY] A `shipment.packed` record must stay ordered with other facts for its shipment, yet unrelated shipments should process in parallel. The partition key and the replication settings determine whether both goals survive growth and broker failure.
+
+> [!GOALS]
+>
+> - Choose a partition key from the entity whose events must stay ordered
+> - Explain how ISR settings affect whether an acknowledged record can be lost
+> - Trace how retention, compaction and producer batching change log behavior
+
 ## Topics and partitions
 
 ```text
@@ -262,3 +270,17 @@ metadata never fetch the object.
 
 Next: consumers — groups, offsets, rebalancing, and the failure modes that live
 there.
+
+
+## Exercises
+
+> [!EXERCISE recall] What ordering guarantee does one Kafka partition provide, and why can increasing a topic's partition count break per-key ordering?
+>
+> **Solution:** Ordering is guaranteed within one partition, not across partitions. Increasing the count changes `hash(key) mod partition_count`, so a key can move to a different partition and its ordering across that change can break.
+
+> [!EXERCISE apply] A shipment service emits `label.created` and `parcel.handed_off`; those facts must stay ordered for each parcel while separate parcels process in parallel. Which key should route the messages, and what ordering does it provide?
+>
+> **Solution:** Key by `parcel_id` so all facts for one parcel land on one partition and keep their order. Different parcel IDs may land on different partitions and process in parallel.
+> [!EXERCISE stretch] A topic has outgrown its partition capacity, and the team proposes increasing the count in place while preserving each key's order. Recommend a migration and explain what a weaker answer misses.
+>
+> **Solution:** Create a new topic with the desired partition count, then migrate producers and consumers according to a plan that preserves each key's transition. A weaker answer treats adding partitions as a harmless capacity change; it misses that the hash mapping changes and per-key ordering across the change is broken.

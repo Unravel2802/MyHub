@@ -9,6 +9,14 @@ most often implemented incorrectly. The failure is not usually in acquiring the
 lock — that part is easy — but in the assumption that holding it means you still
 hold it.
 
+> [!WHY] A paused worker can wake after its lease expires and another worker has taken over, then overwrite the newer result. The resource must recognize stale ownership, because the lock service alone cannot stop that old write.
+
+> [!GOALS]
+>
+> - Distinguish efficiency locks from correctness locks
+> - Explain how leases and fencing tokens prevent stale writes
+> - Choose an alternative when the protected resource cannot check a token
+
 ## Two different jobs
 
 Before implementing anything, decide which you need, because the requirements
@@ -235,3 +243,17 @@ operate, with no lease to renew and no fencing to implement.
 
 Next: leader election — the most common use of a lock, and the patterns that make
 it safe.
+
+
+## Exercises
+
+> [!EXERCISE recall] What is the difference between an efficiency lock and a correctness lock?
+>
+> **Solution:** An efficiency lock prevents wasted duplicate work, where occasional double execution is acceptable. A correctness lock prevents corruption, where two writers are a bug and require fencing or a different design.
+
+> [!EXERCISE apply] A cache refresh may run twice without changing correctness, but two warehouse workers must not both publish an inventory correction. Which case can use a simple efficiency lock, and what must protect the correction?
+>
+> **Solution:** The cache refresh can use a simple lock such as Redis `SET NX PX` because duplicate work is only waste. The inventory correction is correctness-sensitive and needs a resource-enforced conditional write or a fencing token checked by the protected store.
+> [!EXERCISE stretch] A team says a 60-second lease makes a correctness lock safe because a worker cannot pause that long. Evaluate the claim and explain what a weaker answer misses.
+>
+> **Solution:** No lease duration proves safety because process pauses have no guaranteed upper bound; a worker may resume after expiry and write alongside its successor. A weaker answer only lengthens the lease; it misses that the resource must reject a stale fencing token or the design must change.

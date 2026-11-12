@@ -9,6 +9,15 @@ current, and handling the window in which it is wrong is service discovery. The
 window is unavoidable — the question is only which direction you would rather be
 wrong in.
 
+> [!WHY]
+> Discovery maintains a backend list whose staleness is unavoidable, so clients must survive incorrect entries.
+
+> [!GOALS]
+>
+> - Compare the impact of stale dead and missing live backends.
+> - Explain why systems should be fast to remove and slow to add.
+> - Describe the role of retries and outlier ejection.
+
 ## The two directions of staleness
 
 ```text
@@ -185,3 +194,17 @@ matter more than the discovery mechanism itself.
    staleness survivable, and matter more than the mechanism.
 
 Next: traffic management — using all of this deliberately, to release safely.
+
+
+## Exercises
+
+> [!EXERCISE recall] Which direction of staleness creates user-visible errors?
+>
+> **Solution:** A stale list that still contains a dead backend; requests fail until it is removed.
+
+> [!EXERCISE apply] A discovery cache includes a dead backend. The client retries another backend and passive outlier detection ejects the dead one. Which stale direction is this, and how is it mitigated?
+>
+> **Solution:** It is stale data containing a dead backend. Retrying elsewhere and passive outlier ejection are the chapter's mitigations.
+> [!EXERCISE stretch] An operator proposes aggressively adding new backends and slowly removing dead ones. Why is that backwards?
+>
+> **Solution:** Slow removal costs errors, while aggressive removal costs some capacity. The chapter's principle is to be fast to remove and slow to add.

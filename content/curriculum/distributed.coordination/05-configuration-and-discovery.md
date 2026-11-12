@@ -10,6 +10,15 @@ eventually agree on the current value, and some values must be agreed on
 because unlike a deploy it usually has no canary, no rollback button and no
 review.
 
+> [!WHY]
+> Runtime configuration must spread across instances without a deploy, so a faulty value can affect the fleet quickly.
+
+> [!GOALS]
+>
+> - Identify suitable dynamic configuration and what belongs elsewhere.
+> - Explain how propagation and stale values affect instances.
+> - Describe safeguards for risky changes and flag cleanup.
+
 ## What belongs in dynamic configuration
 
 ```text
@@ -220,3 +229,17 @@ using it noisy rather than convenient.
 That completes coordination. Next in the track: **load balancing and routing** —
 getting a request to a healthy instance, and the traffic-shaping that builds on
 it.
+
+
+## Exercises
+
+> [!EXERCISE recall] What makes a runtime configuration change a coordination problem?
+>
+> **Solution:** Every instance must eventually agree on the current value; some values must be agreed before anyone acts.
+
+> [!EXERCISE apply] A flag is at 100% for six months and nobody removes it. What should the team do?
+>
+> **Solution:** Treat the flag as a temporary control, set an expiry and cleanup process, then remove the dead branch and its config dependency.
+> [!EXERCISE stretch] A traffic-weight change causes errors across the fleet. What is a weaker response, and what safeguards does the chapter support?
+>
+> **Solution:** A weaker response changes weights globally and hopes. The chapter says dynamic configuration has no canary or rollback by default; use a controlled rollout and monitor the change, with a rollback plan before applying it.

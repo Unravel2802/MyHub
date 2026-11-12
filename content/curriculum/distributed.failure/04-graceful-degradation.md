@@ -10,6 +10,15 @@ requires deciding in advance what the product means with that piece missing. Tha
 decision is product work as much as engineering work, and it is what separates a
 degraded experience from an outage.
 
+> [!WHY]
+> A dependency failure need not take down the core product if the system defines what to do without an optional part.
+
+> [!GOALS]
+>
+> - Distinguish fail-closed behavior from graceful degradation.
+> - Identify optional dependencies and their fallback behavior.
+> - Explain how a fallback can preserve the core user flow.
+
 ## The default is fail-closed, and it is usually wrong
 
 ```text
@@ -206,3 +215,17 @@ exception type is renamed.
 
 Next: chaos engineering — finding out whether any of this works before an
 incident does.
+
+
+## Exercises
+
+> [!EXERCISE recall] What two things are required to choose graceful degradation?
+>
+> **Solution:** Know which dependencies are optional and define behavior when they are missing.
+
+> [!EXERCISE apply] A recommendations service is down. The product page still renders with popular items instead. What behavior is this?
+>
+> **Solution:** Graceful degradation: the optional carousel falls back while the core product page remains available.
+> [!EXERCISE stretch] A team says the best fallback is to retry the failed recommendation service forever within the page request. What does this miss?
+>
+> **Solution:** The dependency is optional and needs defined fallback behavior. Retrying without isolation can make the core flow fail with it, which is fail-closed behavior.

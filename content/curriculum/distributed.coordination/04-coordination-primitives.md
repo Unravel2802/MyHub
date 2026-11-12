@@ -10,6 +10,14 @@ rate, and counting. Each has an exact implementation that coordinates and an
 approximate one that does not, and knowing where the approximation is acceptable
 is most of the skill.
 
+> [!WHY] Eight API instances each have to respect a shared partner limit of 1,200 requests per second, but coordinating every request would put a round trip on the hot path. Periodic budget redistribution trades boundary precision for much lower coordination cost.
+
+> [!GOALS]
+>
+> - Distinguish barriers, semaphores, rate limits and distributed counters
+> - Calculate a per-instance budget from a global rate and instance count
+> - Choose approximate counting only when the result does not govern billing
+
 ## Barriers
 
 Wait until N participants arrive before anyone proceeds.
@@ -223,3 +231,17 @@ the large majority of "only one instance should do X" requirements.
 
 Next: configuration and service discovery — the coordination that is about the
 system itself.
+
+
+## Exercises
+
+> [!EXERCISE recall] What does a HyperLogLog estimate, and what does a Count-Min Sketch estimate?
+>
+> **Solution:** HyperLogLog estimates the number of distinct items. Count-Min estimates key frequency and only overestimates; it can identify hot keys with fixed memory.
+
+> [!EXERCISE apply] A global service limit is 1,200 requests per second across 8 instances. If the coordinator splits the budget evenly for the next window, how much does each instance receive?
+>
+> **Solution:** Divide the global budget by the instance count: 1,200 ÷ 8 = **150 requests per second per instance**.
+> [!EXERCISE stretch] A four-worker batch barrier waits forever when the final worker crashes before arriving. Recommend a design decision and explain what a weaker answer misses.
+>
+> **Solution:** Give the barrier a timeout and choose explicitly whether timeout means proceed with fewer workers, abort, or escalate. A weaker answer only retries the missing worker; it misses that a participant may never return and every other worker can remain blocked indefinitely.

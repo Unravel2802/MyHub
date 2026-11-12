@@ -9,6 +9,15 @@ rather than sinking the vessel. The same idea is the most reliable structural
 defence in distributed systems: **accept that things will fail, and bound what
 each failure can take with it.**
 
+> [!WHY]
+> Bulkheads isolate resources so one slow dependency cannot consume everything shared by unrelated work.
+
+> [!GOALS]
+>
+> - Explain how a shared thread pool spreads one dependency's failure.
+> - Describe how separate pools bound the affected work.
+> - Identify what isolation does and does not guarantee.
+
 ## The failure bulkheads prevent
 
 Without isolation, one slow dependency consumes a shared resource and everything
@@ -221,3 +230,17 @@ they deserve the most conservative engineering in the system.
 
 Next: admission control — deciding what to refuse, so that what you accept
 succeeds.
+
+
+## Exercises
+
+> [!EXERCISE recall] What is the purpose of a bulkhead?
+>
+> **Solution:** It divides resources so one failure floods one section rather than taking down the whole system.
+
+> [!EXERCISE apply] A shared pool has 100 threads. Slow checkout requests occupy all 100 threads while search has no dependency problem. Why does search fail?
+>
+> **Solution:** Both routes share the pool, so checkout holds all 100 threads and leaves none for search.
+> [!EXERCISE stretch] A team adds separate pools and claims this makes dependency failures impossible. What is missing?
+>
+> **Solution:** Bulkheads bound how far a failure spreads; they do not prevent the dependency from failing. The affected route can still fail when its own pool is exhausted.

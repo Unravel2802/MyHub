@@ -10,6 +10,15 @@ change — a deploy, a migration, a new dependency — can be rolled out to a
 fraction of traffic first, and rolled back by changing a weight rather than by
 redeploying.
 
+> [!WHY]
+> Routing can control exposure to a deploy, migration or new dependency by sending a small share of traffic first.
+
+> [!GOALS]
+>
+> - Compare blue-green, canary and rolling delivery.
+> - Explain staged traffic increases and metric comparisons in a canary.
+> - Describe why failover planning must consider data as well as routing.
+
 ## Progressive delivery
 
 ```text
@@ -215,3 +224,17 @@ modest; the cost of not having them is measured in the length of an outage.
 That completes load balancing and routing. Next in the track: **failure modes and
 resilience** — how these systems actually fall over, and the patterns that stop a
 local problem becoming a global one.
+
+
+## Exercises
+
+> [!EXERCISE recall] Which delivery method sends a small percentage of real traffic to a new version and then grows it?
+>
+> **Solution:** A canary.
+
+> [!EXERCISE apply] A canary starts at 1%, then goes to 5%, 25% and 100%. How many percentage points does traffic increase from the first to the second stage?
+>
+> **Solution:** 5% − 1% = 4 percentage points.
+> [!EXERCISE stretch] A team says routing all traffic back to the old region guarantees a safe rollback after a database migration. What does this miss?
+>
+> **Solution:** Failover must consider data. Routing alone cannot guarantee safety if the migration changed data compatibility; the weaker answer treats traffic routing as the whole rollback plan.

@@ -10,6 +10,15 @@ fundamentals topic — you cannot distinguish slow from dead, and the timeout yo
 choose trades one failure for another. Health checking done badly is a
 well-documented cause of outages that would not otherwise have happened.
 
+> [!WHY]
+> Backend eligibility depends on failure detection; active probes and passive observation catch different failures.
+
+> [!GOALS]
+>
+> - Distinguish active health checks from passive outlier detection.
+> - Explain how probe load grows with backend and load-balancer counts.
+> - Describe why aggressive health checks can worsen an outage.
+
 ## Active versus passive
 
 ```text
@@ -225,3 +234,17 @@ in the shutdown hook.
    noticed — skipping that wait is why deploys produce errors.
 
 Next: service discovery, which decides what the pool contains in the first place.
+
+
+## Exercises
+
+> [!EXERCISE recall] What does passive outlier detection observe?
+>
+> **Solution:** It watches real traffic and ejects backends that fail.
+
+> [!EXERCISE apply] A fleet has 20 backends and 3 load balancers, each probing every backend once every 5 seconds. How many probes per second are generated?
+>
+> **Solution:** Each load balancer sends 20 ÷ 5 = 4 probes/s. Three load balancers send 3 × 4 = 12 probes/s total.
+> [!EXERCISE stretch] A backend returns `/healthz` successfully but its database pool is exhausted and user requests fail. Why can active checks miss this, and what complements them?
+>
+> **Solution:** A health endpoint can stay healthy while real work fails. Passive outlier detection observes real traffic and can catch partial failures; the chapter recommends using both.

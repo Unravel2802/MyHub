@@ -9,6 +9,14 @@ round trip, forfeits availability under partition, and cannot be made faster by
 adding machines. Every design decision in this topic should therefore start with
 the same question: can this requirement be removed instead of satisfied?
 
+> [!WHY] Two workers can safely retry rebuilding a public search cache, but both must not claim the last seat in a concert. Knowing which requirement is monotonic or bounded decides whether coordination can be removed.
+
+> [!GOALS]
+>
+> - Identify non-monotonic requirements that genuinely need agreement
+> - Choose partition ownership, idempotence, commutativity or optimistic concurrency when they fit
+> - Select a coordination location when a negative invariant remains
+
 ## The cost, stated plainly
 
 ```text
@@ -225,3 +233,17 @@ trip and a failure mode removed.
 
 Next: locks and leases — the primitive, and the well-known argument about whether
 a popular implementation of it is safe.
+
+
+## Exercises
+
+> [!EXERCISE recall] What condition does CALM give for a coordination-free distributed implementation?
+>
+> **Solution:** The operation must be monotonic: new information adds to its conclusion without invalidating what was already concluded.
+
+> [!EXERCISE apply] Two workers may rebuild the same public search cache, where repeating the write is harmless. Choose a coordination-removal technique and explain why it fits.
+>
+> **Solution:** Make the rebuild idempotent so executing it twice has the same safe result as executing it once. That removes the need for a lock whose only purpose was preventing duplicate work.
+> [!EXERCISE stretch] A product requires an exact current count of active carts across changing shards without waiting for coordination. Explain whether both requirements can be guaranteed and what a weaker answer misses.
+>
+> **Solution:** An exact aggregate over a set that is still changing is non-monotonic, so the chapter's coordination-free condition does not apply; keep coordination for exactness or weaken the requirement. A weaker answer merges local counts and calls the result exact, missing that a later update can invalidate the total already reported.

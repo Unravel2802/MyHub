@@ -15,6 +15,10 @@ export const EXERCISE_TRACKS: string[] = [
   "distributed.rpc",
   "distributed.time",
   "distributed.replication",
+  "distributed.partitioning",
+  "distributed.consistency",
+  "distributed.consensus",
+  "distributed.transactions",
 ];
 function markdownFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {

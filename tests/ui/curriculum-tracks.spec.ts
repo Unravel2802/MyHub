@@ -18,6 +18,10 @@ const EXERCISE_TRACKS = [
   "distributed.consistency",
   "distributed.consensus",
   "distributed.transactions",
+  "distributed.batch-stream",
+  "distributed.membership",
+  "distributed.crdt",
+  "distributed.scheduling",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -32,8 +36,12 @@ const tracks = [
       "consistency",
       "consensus",
       "transactions",
+      "batch-stream",
+      "membership",
+      "crdt",
+      "scheduling",
     ],
-    expectedChapters: 44,
+    expectedChapters: 62,
   },
 ];
 const chapters = tracks.flatMap((track) => {

@@ -8,6 +8,14 @@ Everything so far is vocabulary. This chapter is the procedure: how to decide
 what each operation needs, how to record the decision so it survives, and how to
 find out whether the system actually does what you believe.
 
+> [!WHY] “We use strong consistency” sounds reassuring until a replica read, failover setting or database default silently weakens the guarantee. The team needs to name each invariant, the mechanism enforcing it, and a test that can break it.
+
+> [!GOALS]
+>
+> - Choose a consistency level per operation from its invariant and failure cost
+> - Connect each invariant to an explicit API, schema or infrastructure mechanism
+> - Design concurrency and fault tests that can expose a broken guarantee
+
 ## The decision procedure
 
 For each operation, in order. Stop at the first "yes".
@@ -239,3 +247,17 @@ in the datastore.
 That completes consistency models. Next in the track: **consensus** — how a set
 of nodes agrees on a single value, which is the machinery underneath every CP
 system described here.
+
+## Exercises
+
+> [!EXERCISE recall] What should be recorded beside each invariant, and what two testing techniques does the chapter use to expose consistency bugs?
+>
+> **Solution:** Record the mechanism that enforces the invariant, such as an atomic condition, schema rule or infrastructure setting. Test concurrent histories with synchronized contenders and inject faults such as a process pause, then verify that stale actions are rejected.
+
+> [!EXERCISE apply] A ticketing API must keep remaining inventory nonnegative even when two buyers request the last tickets concurrently. Name the invariant, choose an enforcement mechanism, and specify the consistency strength the write path needs.
+>
+> **Solution:** The invariant is that remaining inventory never falls below zero. Enforce it with an atomic conditional database update that succeeds only when enough inventory remains, and use a linearizable write path so concurrent decisions share one order. State this requirement in the API and schema rather than relying on a check-then-act read.
+
+> [!EXERCISE stretch] An engineer proposes linearizable reads for every field to eliminate all consistency surprises. Recommend a review method and explain what a weaker answer misses.
+>
+> **Solution:** List each user-visible invariant and decide which operation needs linearizability; use weaker models for fields where stale values are acceptable. Bind each guarantee to an API or schema mechanism and test it under concurrency and injected faults. A weaker answer accepts one global default; it misses the latency cost and leaves the actual invariant-to-mechanism mapping unexamined.

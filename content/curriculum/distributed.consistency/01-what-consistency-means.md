@@ -10,6 +10,14 @@ argument — including most of what has been written about CAP — comes from tw
 people using the word for two of them at once. Separating them takes five
 minutes and permanently clarifies the rest of the topic.
 
+> [!WHY] A database transaction satisfies every uniqueness constraint, but a remote read still returns an older value. The word “consistency” is being used for different guarantees, and confusing them can make a correct local write look globally fresh when it is not.
+
+> [!GOALS]
+>
+> - Distinguish ACID consistency, CAP consistency and consistency models
+> - Explain which read outcomes a consistency model permits
+> - Classify safety and liveness claims in a distributed design
+
 ## The three meanings
 
 **1. The C in ACID — a database transaction property.**
@@ -194,3 +202,17 @@ and the right question is always "how much of it do I need to buy back here?"
 
 Next: linearizability precisely — the strongest model, how to test for it, and
 what it costs.
+
+## Exercises
+
+> [!EXERCISE recall] What question does a consistency model answer, and how are consistency guarantees different from availability?
+>
+> **Solution:** A consistency model specifies which values a read may legally return. Consistency is a safety property that rules out bad outcomes; availability is liveness, the ability to make progress. Stronger models rule out more outcomes and require more coordination.
+
+> [!EXERCISE apply] During an unbounded network delay, one replica refuses an operation rather than risk contradicting a prior result. Another design always answers but can return an older value. Classify the safety and liveness trade-off in each behavior.
+>
+> **Solution:** Refusing to risk a contradictory value preserves a safety guarantee but gives up progress during the delay. Always answering preserves liveness/availability but may give up the safety guarantee that reads reflect the required order. In a fully asynchronous network, a protocol cannot guarantee both outcomes in all cases.
+
+> [!EXERCISE stretch] A team says eventual consistency is sufficient because replicas “will catch up.” Ask for a stronger contract and explain what a weaker answer misses.
+>
+> **Solution:** Specify which stale or reordered reads users may observe, whether sessions need read-your-writes or causal order, and whether there is any convergence bound. A weaker answer repeats that replicas converge eventually; it misses that eventual consistency alone says nothing about interim reads or how long convergence may take.

@@ -9,6 +9,14 @@ single machine. It is the strongest model on the spectrum, it is what people
 usually mean by "strong consistency", and it is expensive in a way that is
 bounded by physics rather than by engineering effort.
 
+> [!WHY] A user receives confirmation that a lock was acquired, then another client reads the register as unlocked. If the operations did not overlap, no ordering can explain both results under a real-time guarantee.
+
+> [!GOALS]
+>
+> - Explain linearizability as atomic operations ordered consistently with real time
+> - Distinguish single-object linearizability from transaction serializability
+> - Design a history test that checks the guarantee under faults
+
 ## The definition
 
 > A system is **linearizable** if every operation appears to take effect
@@ -244,3 +252,17 @@ qualified answer tells you exactly where the qualification is.
    linearization; claims not tested that way mean little.
 
 Next: the weaker models, and what each one buys back.
+
+## Exercises
+
+> [!EXERCISE recall] State the real-time rule of linearizability and explain why strict serializability includes a different concern as well.
+>
+> **Solution:** Each operation appears atomic at one instant, and if one operation completes before another begins, every observer must order the first before the second. Strict serializability adds that real-time order to serializable multi-object transactions; linearizability alone describes single-object operations.
+
+> [!EXERCISE apply] Two overlapping requests claim the final seat. Both return “reserved,” and no later operation releases it. Can those outcomes fit a linearizable history whose sequential rule permits only one reservation?
+>
+> **Solution:** No. Because the requests overlap, real time does not force which one comes first, but every legal sequential order still contains both successful reservations. The sequential rule permits only one success, so no linearization can explain both responses.
+
+> [!EXERCISE stretch] A team proposes checking username availability in one request and inserting the user in a later request. Recommend a guarantee and explain what a weaker answer misses.
+>
+> **Solution:** Put uniqueness enforcement in an atomic database constraint or conditional write that arbitrates concurrent registrations; make the result linearizable where the invariant requires it. A weaker answer adds a fresher availability read, but two clients can still both observe “free” before either inserts.

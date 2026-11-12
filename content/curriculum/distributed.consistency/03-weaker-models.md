@@ -9,6 +9,14 @@ well-designed systems actually sit. Each model buys back a specific property tha
 users notice, at a specific cost. Knowing them by name lets you specify what you
 need instead of over-buying.
 
+> [!WHY] A social feed must stay available across a network partition, but a reply should never appear before the post it answers. One global consistency setting either costs too much or fails to express this user-visible ordering.
+
+> [!GOALS]
+>
+> - Distinguish sequential, causal and eventual consistency
+> - Identify which session guarantee a user-visible stale read violates
+> - Choose a per-operation model while preserving causal dependencies
+
 ## Sequential consistency
 
 > All operations appear in **some** total order, and each process's operations
@@ -238,3 +246,17 @@ rather than setting a global default and forgetting.
 
 Next: CAP — what the theorem actually says, and the three ways it is
 misquoted.
+
+## Exercises
+
+> [!EXERCISE recall] What does sequential consistency omit from linearizability, and what extra order does causal consistency preserve?
+>
+> **Solution:** Sequential consistency requires everyone to agree on one order but does not require that order to match real time. Causal consistency preserves the order of operations where one could have influenced another, while leaving unrelated concurrent operations unordered.
+
+> [!EXERCISE apply] A user saves draft version 2 and reads version 2. On a later refresh, the service routes them to a replica that returns version 1. Name the session guarantee violated by each observation pattern and give one way the product can preserve the expected session behavior.
+>
+> **Solution:** Returning version 1 after the user wrote version 2 violates read-your-writes. Returning a value older than one the same user already observed also violates monotonic reads. A session token or sticky routing can keep subsequent reads at a replica that has reached the user's known version.
+
+> [!EXERCISE stretch] A user reads a shared document change on one device, then edits a dependent field from another device. Recommend a guarantee for the second write and explain what a weaker answer misses.
+>
+> **Solution:** Carry the causal/session context from the first read with the second device's write, so the system preserves writes-follow-reads and does not order that dependent edit before the version the user saw. A weaker answer only requires eventual convergence; it misses that the user's own dependent actions can be observed in the wrong order in the meantime.

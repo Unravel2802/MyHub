@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 approved 2026-11-12 (see the E2 reviews at the end); E3 is next.
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 under review 2026-11-12 (see the DS3 review at the end).
 
 ---
 
@@ -776,3 +776,65 @@ them with shortening the polling interval. Lint, typecheck, 1,661 unit tests
 and 254 E2E tests pass.
 
 **Status:** E2 approved; ready to merge.
+
+### DS3 review — 2026-11-12 (Claude): changes requested
+
+Branch `curriculum-distributed-3` (4fd8443..2d2c748), in Codex's own worktree
+and based on main. All 21 chapters (messaging 6, coordination 5,
+load-balancing 5, failure 5) gained visuals, an opener and three exercises.
+Lint, typecheck, 1,662 unit tests and 275 E2E tests pass in the worktree.
+
+What holds:
+
+- **Prose.** No original line was removed.
+- **Quotas.** Every chapter has 1 diagram (17 TB flowcharts, 4 sequence
+  diagrams, no LR, every added fenced line ≤ 76 chars), ≤ 1 chart, 0 KEY and
+  exactly 2 CHECKs before "## What to take away". Each topic has 1 PITFALL and
+  1 INTERVIEW. The one chart (admission control: 1,000 arrivals, 600 capacity)
+  uses the chapter's own numbers.
+- **Correctness.** The answers are all derivable from their chapters, and the
+  arithmetic is right: failover 20 + 0.15 + 35 = 55.15 s, budget
+  1,200 ÷ 8 = 150/s, probes 3 × 20 ÷ 5 = 12/s, shedding 600 accepted and 400
+  rejected, partitions 24,000 ÷ 4,000 = 6. No hyphen wraps.
+- **Gates.** Both `EXERCISE_TRACKS` lists, the tracks spec (65 chapters) and
+  a new DS3 quota unit test.
+
+Fix these before merge:
+
+1. **Eleven chapters fall below the batch's own standard.** Messaging 01–06
+   and coordination 01–04 match E2. Coordination 05 and every load-balancing
+   and failure chapter do not:
+   - **Openers** are one-line definitions ("Bulkheads isolate resources so…")
+     rather than a concrete situation with a cost, and the text sits on its
+     own line under `> [!WHY]` instead of following the marker as everywhere
+     else.
+   - **Exercises repeat each other.** `failure/01` asks "what is metastable
+     failure" three times. In `load-balancing/04` the Apply restates the
+     Recall's answer back to the reader.
+   - **Applies test nothing.** `load-balancing/05` asks for 5 − 1
+     percentage points. `load-balancing/02` asks for the minimum of 2, 8
+     and 10. `failure/04` asks the reader to name the behaviour the prompt
+     has just described.
+   - **Stretches lack the shape.** Most give no recommendation and no
+     real weaker answer: `failure/02`–`05`, `load-balancing/03` and `04`,
+     and `coordination/05`.
+   - **GOALS untested.** `failure/01` promises correlated failure (the
+     chapter's "Correlated failure" section), and no exercise touches it.
+
+   Rewrite the openers and exercises for those 11 chapters to the messaging
+   chapters' standard: a scenario opener, a Recall that isn't the Apply, an
+   Apply that makes the reader choose or compute something the chapter
+   teaches (power-of-two sampling, ejection caps, canary comparisons against
+   the baseline, cell sizing at 1/N, queueing-time thresholds, the
+   critical/degradable/optional split), and a Stretch that recommends
+   something and names what a specific weaker answer misses. Their visuals
+   and CHECKs are fine; leave them.
+
+2. **`coordination/03-leader-election`, Apply contradicts the chapter.** It
+   gives "a warm standby that needs 35 seconds to become ready", but the
+   chapter's point (and this chapter's own CHECK) is that a warm standby
+   removes the warm-up term. Make it a standby that must rebuild its state in
+   35 s. The 55.15 s answer stands, and you can add that a warm standby would
+   bring it to about 20.15 s.
+
+**Status:** DS3 needs fixes 1–2. DS4 can start from main once DS3 merges.

@@ -69,7 +69,7 @@ document's last change, which might be someone else's.
 ```
 
 The CRDT implementation is more tractable than OT's: each client keeps a stack of
-the operations *it* generated, and undo applies the inverse of one of them —
+the operations _it_ generated, and undo applies the inverse of one of them —
 which is itself a normal operation that merges like any other. No transformation
 past subsequent operations is needed, because CRDT operations are already
 position-independent.
@@ -109,6 +109,18 @@ Snapshotting is not optional for a long-lived document: replaying 100,000 update
 to open a file is a multi-second load. Snapshot on a schedule or an update count,
 and keep enough of the log to serve clients that are behind — the same reasoning
 as consensus log compaction.
+
+> [!PITFALL] Persisting awareness in the document retains cursor churn as document history. Use a separate ephemeral channel with expiry.
+
+```mermaid
+flowchart TB
+  L[Local edits and local persistence] --> V[Sync server validates permissions]
+  V --> H[Durable update log]
+  H --> S[Periodic snapshot]
+  S --> N[New client loads snapshot]
+  H --> T[Apply log tail]
+  N --> T
+```
 
 ## Access control
 
@@ -211,6 +223,14 @@ And the offline UX question is a product decision that the technology quietly
 makes for you if you do not make it: a CRDT will merge two weeks of divergent
 editing silently and convergently, and whether that is the right user experience
 is not a question the library can answer.
+
+> [!CHECK] Why are cursor positions expressed as relative identities rather than integer offsets?
+>
+> Concurrent edits shift integer positions. Stable CRDT identities keep a cursor attached to its intended location.
+
+> [!CHECK] What does a CRDT merge do to an unauthorised update if nobody validates it?
+>
+> It merges the update like any other. Permissions must be checked outside the data structure, normally before the sync server relays or persists it.
 
 ## What to take away
 

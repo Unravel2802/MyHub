@@ -124,9 +124,19 @@ An event arrives after its window's watermark has passed. Four options:
 discarding 3% of events is producing wrong numbers that look right, and nothing
 else will reveal it.
 
+> [!PITFALL] An accumulating result replaces its previous value. Appending each revision double-counts the same window.
+
+```mermaid
+flowchart TB
+  E[Incoming event] --> W{Window still retained?}
+  W -->|yes| A[Update aggregate]
+  A --> U[Upsert by window key]
+  W -->|no| S[Side output for repair]
+```
+
 ## Triggers
 
-Windows say *what* to aggregate; triggers say *when* to emit. Separating them is
+Windows say _what_ to aggregate; triggers say _when_ to emit. Separating them is
 the key insight of the Beam/Dataflow model.
 
 ```text
@@ -145,7 +155,7 @@ the key insight of the Beam/Dataflow model.
     on each late event                     (correction)
 ```
 
-This gives you low latency *and* eventual correctness, at the cost of downstream
+This gives you low latency _and_ eventual correctness, at the cost of downstream
 consumers receiving multiple results for the same window. Which means they must
 handle refinements:
 
@@ -196,6 +206,14 @@ That configuration serves a dashboard within seconds, converges to a correct
 figure within 30 seconds, corrects for an hour, and repairs the rest offline —
 which is the shape most "real-time analytics" requirements actually have.
 
+> [!CHECK] Why can a quiet input stop all windows from closing?
+>
+> The pipeline watermark is the minimum of the input watermarks. An idle partition can hold that minimum back unless idle-source handling excludes it.
+
+> [!CHECK] How should a sink combine accumulating emissions of 100, 105 and 107?
+>
+> Replace the window value on each emission, leaving 107. Appending and summing them would incorrectly produce 312.
+
 ## What to take away
 
 1. Tumbling windows are the default; sliding windows multiply state by
@@ -206,7 +224,7 @@ which is the shape most "real-time analytics" requirements actually have.
    whole pipeline; that is the first thing to check when windows stop emitting.
 4. Always count dropped late events, or you will produce wrong numbers that look
    right.
-5. Triggers separate *when to emit* from *what to aggregate*, giving speculative
+5. Triggers separate _when to emit_ from _what to aggregate_, giving speculative
    early results plus corrections.
 6. Decide accumulating versus discarding explicitly and make the sink match, or
    you double-count.

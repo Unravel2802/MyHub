@@ -155,8 +155,18 @@ local state gives you the current value of every key, locally, with no remote
 lookup per event.
 
 The temporal join is the subtle one and worth knowing exists. Joining an old
-event against the *current* dimension table gives a different answer on every
+event against the _current_ dimension table gives a different answer on every
 re-run — the same reproducibility failure as processing time, one level up.
+
+> [!INTERVIEW] Before choosing a streaming engine, ask whether a batch every five minutes meets the latency requirement. Continuous state is an operational commitment.
+
+```mermaid
+flowchart TB
+  E[Event stream] --> J[Join operator]
+  U[Reference updates] --> T[Materialised table]
+  T --> J
+  J --> O[Enriched events]
+```
 
 ## Backpressure
 
@@ -212,6 +222,14 @@ running every five minutes is dramatically simpler to build, test, reason about
 and recover, and it satisfies a large fraction of "real-time" requirements. Reach
 for streaming when the latency requirement is genuinely seconds, or when the
 state is genuinely continuous.
+
+> [!CHECK] Why does processing time change historical analytics on replay?
+>
+> It reflects when the operator runs, so replayed events land in different time windows. Event time records when the events happened.
+
+> [!CHECK] What must bound a stream-stream join’s buffer?
+>
+> A join time window limits how long records wait for partners; otherwise the retained state can grow without limit.
 
 ## What to take away
 

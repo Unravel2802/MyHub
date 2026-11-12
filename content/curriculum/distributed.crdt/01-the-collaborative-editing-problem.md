@@ -114,6 +114,18 @@ OT adjusts the operation to fit the new state. CRDTs make the operation
 state-independent so no adjustment is needed. The next two chapters take each in
 turn.
 
+> [!PITFALL] A shared final value is not enough: a last-write-wins document can converge while deleting another writer’s paragraph.
+
+```mermaid
+flowchart TB
+  D[Shared starting document] --> A[Local edit on replica A]
+  D --> B[Local edit on replica B]
+  A --> O[OT: transform state-relative operations]
+  B --> O
+  A --> C[CRDT: reference immutable identities]
+  B --> C
+```
+
 ## What convergence requires, formally
 
 For any approach to converge without coordination, the merge operation must have
@@ -187,6 +199,14 @@ not, and that is checkable.
 The counter-argument, which is real: CRDTs carry more metadata, and for text
 specifically the metadata can dwarf the document. That is the subject of the
 fourth chapter.
+
+> [!CHECK] Why does immediate local editing guarantee concurrent conflicts?
+>
+> An edit takes effect before other replicas hear about it, so another replica may independently edit the same earlier state.
+
+> [!CHECK] Which network behaviours do commutative, associative and idempotent merges tolerate?
+>
+> Commutativity tolerates reordering, associativity tolerates regrouping or batching, and idempotence tolerates duplicates.
 
 ## What to take away
 

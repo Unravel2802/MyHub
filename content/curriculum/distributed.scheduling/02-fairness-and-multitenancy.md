@@ -25,7 +25,7 @@ in a multi-dimensional cluster, is always.
 
 Equal CPU produced an allocation where one user hit a wall and the other could
 not use the remaining CPU. The question "what is a fair share?" has no answer
-until you say fair *in what*.
+until you say fair _in what_.
 
 ## Dominant Resource Fairness
 
@@ -148,7 +148,7 @@ Two mechanisms address it:
 **Reservation.** Hold resources for the pending large job as they free up, rather
 than giving them to the next small job. Costs utilisation — reserved resources sit
 idle while accumulating — which is why it is usually paired with **backfill**:
-allow a small job to use reserved capacity if it will *finish before* the
+allow a small job to use reserved capacity if it will _finish before_ the
 reservation is needed.
 
 ```text
@@ -197,6 +197,17 @@ the default scheduler places pods individually and will happily create the
 deadlock above. If you run distributed training on Kubernetes, gang scheduling is
 not optional.
 
+> [!PITFALL] Partial allocations can deadlock training jobs: each holds GPUs while waiting for the rest. Reserve and launch the complete gang.
+
+```mermaid
+flowchart TB
+  J[Distributed training job] --> R[Reserve complete gang]
+  R --> C{All required workers fit?}
+  C -->|yes| L[Launch together]
+  C -->|no| W[Keep waiting without partial allocation]
+  W --> R
+```
+
 ## Isolation: fairness that survives a bad neighbour
 
 Allocation is a promise; **isolation** is enforcement.
@@ -227,9 +238,17 @@ The practical answer where latency matters: **do not co-locate**. Dedicate hosts
 or use anti-affinity to keep batch off latency-sensitive machines. Perfect
 isolation is not achievable, so separation is the reliable defence.
 
+> [!CHECK] What distinguishes a guarantee from a limit and borrowed capacity?
+>
+> A guarantee is the entitled minimum, a limit is the maximum, and usage above the guarantee is borrowed and reclaimable.
+
+> [!CHECK] Why does backfill require an enforced runtime estimate?
+>
+> A backfilled task must finish before reserved capacity is needed. An unenforced overrun delays the reserved job and defeats the reservation.
+
 ## What to take away
 
-1. Fairness is undefined until you say fair in *which* resource; equal CPU
+1. Fairness is undefined until you say fair in _which_ resource; equal CPU
    produces stranded capacity when users have different resource profiles.
 2. Dominant Resource Fairness equalises each user's largest resource share, and is
    sharing-incentive, strategy-proof, envy-free and Pareto-efficient.

@@ -5,7 +5,7 @@ summary: Strong versus weak membership, and the operations that cannot use the c
 ---
 
 Gossip gives every node an eventually-consistent picture of who is in the
-cluster. That is enough for routing and for load balancing, and it is *not*
+cluster. That is enough for routing and for load balancing, and it is _not_
 enough for anything that depends on counting a majority. Knowing which operations
 need which is the difference between a system that works and one that
 occasionally has two leaders.
@@ -52,7 +52,7 @@ be agreed before a quorum over it means anything.
 Hence the design used by every serious system: **membership changes go through
 consensus**, and the current view is a committed entry in the replicated log —
 which is exactly what the Raft membership-change chapter described. Ordinary
-liveness may be gossiped; *who is a voter* may not.
+liveness may be gossiped; _who is a voter_ may not.
 
 ## Views and view changes
 
@@ -126,7 +126,7 @@ as a learner, promote when caught up.
 **Seeds are a bootstrap dependency worth thinking about.** Hardcoded seed
 addresses become stale; DNS-based seeds inherit DNS's caching problems; a cloud
 API is another dependency at the worst moment. The usual answer is several seeds
-of different kinds, and the requirement that a node only needs *one* of them to
+of different kinds, and the requirement that a node only needs _one_ of them to
 reach the cluster.
 
 ## Leaving, and the two ways
@@ -193,10 +193,28 @@ The standard architecture, restated because it is the practical conclusion:
 ```
 
 Gossip observes and reports; consensus decides. A node being gossiped as
-unreachable is *evidence*; removing it from membership is a *decision*, and
+unreachable is _evidence_; removing it from membership is a _decision_, and
 decisions go through the log. Consul, Cassandra and most large systems are built
 this way, and the separation is what keeps membership from being decided by
 whichever nodes happened to see each other.
+
+> [!PITFALL] Automatically removing every unreachable voter turns a network partition into two independently shrinking memberships and can create split brain.
+
+```mermaid
+flowchart TB
+  G[Gossip: reachability evidence] --> D[Deliberate membership decision]
+  D --> L[Consensus log commits view]
+  L --> V[Numbered voter set]
+  V --> Q[Quorum uses agreed denominator]
+```
+
+> [!CHECK] Why does an unreachable voter still count in the quorum denominator?
+>
+> Liveness does not change committed membership. Shrinking the denominator independently on each partition could let both sides form a majority.
+
+> [!CHECK] Why must a node with lost durable state return under a new identity?
+>
+> Its old identity claims knowledge it no longer holds, including past votes and replica data. Reusing it can permit another vote or count an empty replica as current.
 
 ## What to take away
 

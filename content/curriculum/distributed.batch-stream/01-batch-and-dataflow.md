@@ -98,6 +98,17 @@ statistics.
 **Lazy evaluation.** Nothing runs until a result is demanded, so the engine sees
 the complete graph before choosing a plan.
 
+> [!PITFALL] A retried task that appends directly to the destination duplicates output; write temporary results and commit only after the job succeeds.
+
+```mermaid
+flowchart TB
+  R[Read partitions] --> F[Filter and project]
+  F --> J[Shuffle by join key]
+  J --> A[Aggregate]
+  A --> T[Temporary task outputs]
+  T --> C[Atomic metadata commit]
+```
+
 ## Narrow and wide dependencies
 
 The distinction that predicts a job's cost.
@@ -183,7 +194,7 @@ produce output atomically, when tasks fail and are retried?
 ```
 
 This is why object-store commit protocols are a recurring source of subtlety:
-rename is atomic on HDFS and *not* on S3, where it is a copy. Modern table
+rename is atomic on HDFS and _not_ on S3, where it is a copy. Modern table
 formats (Iceberg, Delta) solve it properly by committing a new metadata pointer
 atomically, which is the same "one atomic single-row write is the decision" trick
 as Percolator.
@@ -208,6 +219,14 @@ in memory, broadcasting it eliminates a shuffle entirely, and engines will do th
 automatically only when they can estimate the size — which they often cannot after
 a few transformations. Telling the engine explicitly is frequently the largest
 single speedup available.
+
+> [!CHECK] Why can a failed deterministic map task be retried without restarting the job?
+>
+> Its output is a function of its input, so another machine can recompute that task while completed tasks remain usable.
+
+> [!CHECK] What makes speculative execution unsafe for a task that appends directly to its destination?
+>
+> Both copies can append the same output. Tasks need idempotent, side-effect-free execution and temporary outputs followed by an atomic commit.
 
 ## What to take away
 

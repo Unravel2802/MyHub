@@ -130,6 +130,19 @@ transforms incoming server operations against that buffer before applying them.
 That buffer is what allows local edits to apply instantly while the server
 catches up, and managing it is most of the client's complexity.
 
+> [!INTERVIEW] State the deployment constraints before choosing OT: a central server, stable operation set and compact metadata can justify it; long offline peer sync points elsewhere.
+
+```mermaid
+sequenceDiagram
+  participant A as Client A
+  participant S as Sequencing server
+  participant B as Client B
+  A->>S: Local operation
+  S->>B: Sequenced operation
+  B->>S: Concurrent operation
+  S->>A: Transformed operation
+```
+
 ## Undo, and why it is hard here
 
 ```text
@@ -187,6 +200,14 @@ stable operation set, and a poor choice for anything local-first.** New systems
 mostly choose CRDTs because the constraints have shifted — offline support and
 peer sync are now expected, and memory is cheap enough that metadata overhead
 matters less than correctness.
+
+> [!CHECK] What must a deterministic tie-break accomplish for concurrent inserts at the same position?
+>
+> Every replica must order the inserts identically; inconsistent tie-breaks make the replicas diverge.
+
+> [!CHECK] Why does collaborative undo target a user’s operation rather than the globally latest one?
+>
+> The latest global operation may belong to another writer. Selective undo inverts the user’s operation and transforms it past subsequent operations.
 
 ## What to take away
 

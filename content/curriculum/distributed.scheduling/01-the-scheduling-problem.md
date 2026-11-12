@@ -125,6 +125,18 @@ deployment cannot proceed when the cluster is full, and a preference means it
 degrades silently to a bad placement. Most systems should use a hard constraint
 for hosts and a preference for zones.
 
+> [!PITFALL] One cluster-wide packing policy ignores workload needs: packing saves machines while spreading reduces the impact of a host failure.
+
+```mermaid
+flowchart TB
+  T[Pending task] --> F[Filter hard constraints]
+  F --> S[Score feasible machines]
+  S --> C[Commit placement]
+  C --> R{Concurrent conflict?}
+  R -->|yes| F
+  R -->|no| B[Run task]
+```
+
 ## Two architectures
 
 ```text
@@ -156,7 +168,7 @@ it retries. Conflicts are rare when the cluster has slack and frequent when it i
 nearly full — which is the same optimistic-concurrency behaviour as the
 coordination topic, and it degrades the same way.
 
-Mesos's two-level model is the other approach: the master *offers* resources to
+Mesos's two-level model is the other approach: the master _offers_ resources to
 frameworks, which accept or decline. It avoids conflicts by construction and
 gives up global optimisation, since each framework sees only what it was offered.
 
@@ -200,6 +212,14 @@ A scheduler optimised for one is wrong for the other, which is why large cluster
 run **several schedulers side by side** over shared state: a careful one for
 services, a fast one for batch. Trying to serve both with one policy produces a
 scheduler that is too slow for batch and too crude for services.
+
+> [!CHECK] Why can free cluster-wide CPU and memory still fail to fit one task?
+>
+> The resources may be fragmented across machines. One eligible machine must satisfy every hard resource constraint at once.
+
+> [!CHECK] How does a hard host anti-affinity rule differ from a zone preference?
+>
+> The hard rule removes violating hosts from consideration; the preference ranks survivors and may be relaxed when capacity is tight.
 
 ## What to take away
 

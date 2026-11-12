@@ -75,8 +75,8 @@ information that must survive everything else being broken — membership.
               best of both. what real implementations use.
 ```
 
-The reason to know this: convergence is exponential in the *early* phase and
-becomes a coupon-collector problem in the *late* phase, where the last few
+The reason to know this: convergence is exponential in the _early_ phase and
+becomes a coupon-collector problem in the _late_ phase, where the last few
 uninformed nodes are hard to reach by pushing at random. Pull fixes the tail.
 
 ## Anti-entropy versus rumour-mongering
@@ -151,6 +151,21 @@ applied to membership claims, so nodes cannot be wrongly evicted by an old rumou
 **Piggybacking** is the fourth: membership updates ride along on the ping and ack
 messages rather than being sent separately, so dissemination is nearly free.
 
+> [!INTERVIEW] Use gossip for eventually shared observations and consensus for unique decisions. A converged rumour is not a distributed lock.
+
+```mermaid
+sequenceDiagram
+  participant A as Observer A
+  participant B as Target B
+  participant C as Helper C
+  A->>B: PING
+  Note over A,B: No direct ACK
+  A->>C: Probe B indirectly
+  C->>B: PING
+  B->>C: ACK
+  C->>A: B is reachable
+```
+
 ## What gossip is good for, and what it is not
 
 ```text
@@ -201,7 +216,7 @@ ones usually do not.
 
 **Partition creates two converged worlds.** Each side gossips internally and
 converges on a view where the other side is dead. On healing, incarnation numbers
-resolve the conflict — but any *action* taken on the wrong view during the
+resolve the conflict — but any _action_ taken on the wrong view during the
 partition has already happened.
 
 **Gossip storms.** A rapidly flapping node generates a stream of alive/suspect
@@ -215,6 +230,14 @@ then between racks — restores it.
 **Clock-free but not order-free.** Gossip carries no ordering by itself, so
 version or incarnation numbers are mandatory on every piece of state, or an old
 value overwrites a new one on merge.
+
+> [!CHECK] What lets a SWIM refutation defeat an old suspicion?
+>
+> The node increments its incarnation number. A refutation with the higher number wins when membership state merges.
+
+> [!CHECK] Why pair rumour-mongering with anti-entropy?
+>
+> Rumours propagate updates cheaply but may die out early. Periodic state reconciliation repairs updates missed by that fast path.
 
 ## What to take away
 
@@ -231,5 +254,5 @@ value overwrites a new one on merge.
 6. Suspicion timeouts must scale with log(n), and every gossiped value needs a
    version number or merges will regress it.
 
-Next: what membership *means* — strong versus weak views, and the operations that
+Next: what membership _means_ — strong versus weak views, and the operations that
 depend on the difference.

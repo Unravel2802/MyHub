@@ -65,6 +65,15 @@ chatter across zones is a surprisingly common line item.
 **Convergence stays fast.** log(300) within a zone plus a hop between zones beats
 log(900) over a flat topology with expensive links.
 
+```mermaid
+flowchart TB
+  C[Small authoritative consensus group] --> A[Zone A gossip]
+  C --> B[Zone B gossip]
+  A <-->|limited cross-zone exchange| B
+  A --> N[Local members]
+  B --> M[Local members]
+```
+
 ## Churn
 
 At scale the cluster is never static:
@@ -81,7 +90,7 @@ consequences:
 **Membership changes must be cheap.** If adding a node triggers a full rebalance,
 you are rebalancing continuously and never converging. This is why fixed partition
 counts with wholesale assignment (from the partitioning topic) matter so much at
-scale — a membership change moves partition *assignments*, not data layout.
+scale — a membership change moves partition _assignments_, not data layout.
 
 **Rebalancing must be rate-limited and, crucially, not triggered automatically on
 suspicion.** The rebalance storm from the partitioning chapter is a large-scale
@@ -186,6 +195,14 @@ Systems that gossip everything get split brain. Systems that reach consensus on
 everything do not scale. The ones that work put a small consensus group in charge
 of the decisions and let gossip carry everything else.
 
+> [!CHECK] Why should membership gossip carry digests rather than application state?
+>
+> Small digests keep repeated exchanges cheap; details can be fetched on mismatch. Application data bloats every exchange and slows membership convergence.
+
+> [!CHECK] Which measurement reveals a split that per-node health can miss?
+>
+> Compare member lists or cluster-size views across nodes. Both halves can look healthy locally while disagreeing globally.
+
 ## What to take away
 
 1. All-to-all heartbeating is O(n²) and untenable past a few hundred nodes;
@@ -197,7 +214,7 @@ of the decisions and let gossip carry everything else.
 4. Constant churn means membership changes must be cheap; automate the rebalance
    mechanism but gate the trigger with delays, concurrency caps and a
    fraction-of-cluster circuit breaker.
-5. Monitor cluster size *per node's view* to detect splits, and the
+5. Monitor cluster size _per node's view_ to detect splits, and the
    false-positive rate as the feedback loop on detector tuning.
 6. Prefer regional clusters with federation to one global membership, and separate
    what must be agreed (consensus) from what may be observed (gossip).

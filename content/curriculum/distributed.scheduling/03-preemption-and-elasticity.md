@@ -152,6 +152,20 @@ The asymmetry rule is the most valuable: an aggressive scale-down is the direct
 cause of the oscillation above, and the savings from removing a machine two
 minutes earlier are trivial compared with the cost of thrashing.
 
+> [!PITFALL] Putting every quorum member on one spot instance type exposes the whole voting group to correlated reclamation.
+
+> [!INTERVIEW] Explain the delay from a scaling decision to warm, useful capacity. Then size headroom for the traffic ramp rather than assuming autoscaling is instantaneous.
+
+```mermaid
+flowchart TB
+  P[Pending pods] --> A[Add machines]
+  A --> W[Provision and warm capacity]
+  W --> R[Pods run]
+  R --> D[Load drops]
+  D --> S[Slow bounded scale-down]
+  S --> P
+```
+
 ## Choosing the scaling signal
 
 ```text
@@ -194,7 +208,7 @@ The reason autoscaling is slower than it looks:
 If your traffic can double in ninety seconds, autoscaling alone cannot save you —
 you need headroom. And a cold instance that receives full traffic immediately is
 slow, which under a load-aware balancer looks like overload, which can trigger
-*more* scaling: the amplifying loop from the resilience topic.
+_more_ scaling: the amplifying loop from the resilience topic.
 
 The mitigations:
 
@@ -219,6 +233,14 @@ The mitigations:
 The first request after scale-to-zero pays the entire cold start. That is fine
 for an internal dashboard and unacceptable for a checkout path. The middle ground
 is a minimum of one instance, which costs one instance and removes the cliff.
+
+> [!CHECK] What makes a grace period useful rather than a delayed crash?
+>
+> The task must handle the signal by checkpointing, draining and deregistering, and the period must be long enough for those actions.
+
+> [!CHECK] Why choose queue depth rather than latency as a worker-pool scaling signal?
+>
+> Queue depth directly measures backlog and moves before user latency. Latency is a lagging signal, and new capacity arrives later still.
 
 ## What to take away
 

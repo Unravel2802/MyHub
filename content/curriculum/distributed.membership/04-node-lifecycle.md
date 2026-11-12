@@ -112,6 +112,17 @@ Step 5 is the one that loses data. Removing a node before its data is
 re-replicated reduces the replication factor silently, and the next failure is the
 one that loses the last copy. Verify restoration; do not assume it.
 
+> [!PITFALL] Closing a node immediately after marking it unready still breaks clients with stale routing information. Wait for propagation before draining.
+
+```mermaid
+flowchart TB
+  U[Mark unready] --> W[Wait for client propagation]
+  W --> D[Drain requests and transfer leadership]
+  D --> R[Restore replication elsewhere]
+  R --> M[Remove through consensus]
+  M --> T[Terminate]
+```
+
 ## Rolling restarts
 
 The most frequent operation, and the one where the ordering discipline matters:
@@ -151,7 +162,7 @@ does not have.
 The corollary: **automation must know which case it is in.** A replacement
 instance with a new empty volume is case two even though its hostname may be
 identical, and a StatefulSet that reattaches the original volume is case one.
-Identity should be tied to the *data*, not to the hostname.
+Identity should be tied to the _data_, not to the hostname.
 
 ## Detecting a split cluster
 
@@ -167,7 +178,7 @@ explicitly, because each half looks healthy from inside:
   □  monitor cross-node clock skew — it precedes lease problems
 ```
 
-Every one of these requires comparing *across* nodes. A per-node dashboard cannot
+Every one of these requires comparing _across_ nodes. A per-node dashboard cannot
 see a split, because each side is individually fine — which is exactly why splits
 are discovered late.
 
@@ -187,6 +198,14 @@ are discovered late.
 The majority-loss procedure is the one to write down while calm. It involves
 forcing a new cluster from surviving data and accepting data loss, and it is not
 something to read for the first time during an incident.
+
+> [!CHECK] What must a rolling restart wait for before proceeding to the next node?
+>
+> The restarted node must rejoin and catch up, and redundancy must be restored. A fixed timer or a Running pod is not sufficient.
+
+> [!CHECK] Why must bootstrap flags be removed after initial formation?
+>
+> Bootstrap is a single-use operation. Re-running it against an existing cluster can create another cluster or wipe state.
 
 ## What to take away
 

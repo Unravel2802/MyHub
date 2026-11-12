@@ -58,7 +58,7 @@ Scheduling is filter-then-score, exactly as described:
 Both phases are pluggable, which is Kubernetes' real design choice: rather than
 being the best scheduler, it is the most extensible one.
 
-**Mesos** takes the two-level approach. The master *offers* resources to
+**Mesos** takes the two-level approach. The master _offers_ resources to
 frameworks; frameworks accept or decline.
 
 ```text
@@ -136,6 +136,15 @@ That asymmetry is worth carrying: **CPU is compressible and memory is not.**
 Exceeding a CPU limit means slowness; exceeding a memory limit means death. So
 memory limits protect the node and CPU limits mostly hurt you.
 
+```mermaid
+flowchart TB
+  R[Measured usage] --> Q[Resource requests]
+  Q --> F[Scheduler reserves and places]
+  F --> L[Runtime limits enforced]
+  L --> C[CPU excess: throttle]
+  L --> M[Memory excess: OOM kill]
+```
+
 ## Operating: what to watch
 
 ```text
@@ -201,6 +210,14 @@ standardise on a small set of task shapes.
      and cache isolation are weak
 ```
 
+> [!CHECK] What does a request control, and what does a limit control?
+>
+> Requests reserve resources for placement. Limits enforce runtime ceilings: CPU throttling or memory OOM-killing.
+
+> [!CHECK] Why investigate the pending reason before adding nodes?
+>
+> A selector mismatch, volume zone restriction or pod-count cap can block placement despite spare CPU and memory; each needs a different fix.
+
 ## What to take away
 
 1. Borg's contribution was mixing batch into services' headroom, taking
@@ -214,7 +231,7 @@ standardise on a small set of task shapes.
    requests cause node overcommit, and low CPU limits cause mysterious latency.
 5. CPU is compressible and memory is not — memory limits protect the node, CPU
    limits mostly hurt you.
-6. The pending-pod *reason* is the primary diagnostic, and capacity planning must
+6. The pending-pod _reason_ is the primary diagnostic, and capacity planning must
    include failure headroom and an allowance for fragmentation.
 
 That completes cluster scheduling, and with it the Distributed Systems track. The

@@ -86,7 +86,7 @@ barrier's position defines consistency rather than a global pause.
 ```
 
 That is **exactly-once state**, and the caveat from the delivery-semantics chapter
-applies unchanged: events *are* reprocessed, so external side effects happen
+applies unchanged: events _are_ reprocessed, so external side effects happen
 twice unless the sink cooperates.
 
 ```text
@@ -102,6 +102,15 @@ twice unless the sink cooperates.
 interval to your output latency — results are invisible until the checkpoint
 commits — and adds a distributed transaction to every checkpoint. An upsert keyed
 by (window, key) achieves the same result with none of that.
+
+```mermaid
+flowchart TB
+  B[Barrier reaches all operator inputs] --> S[Snapshot state]
+  S --> F[Forward barrier]
+  F --> C[All sinks reached: checkpoint complete]
+  C --> R[On failure: restore state and source offsets]
+  R --> P[Replay events after checkpoint]
+```
 
 ## Checkpoint tuning
 
@@ -217,6 +226,14 @@ with reprocessing done by replay.
 
 The one place a separate batch path survives legitimately: correcting data older
 than your retention, or joining against datasets that were never in the stream.
+
+> [!CHECK] Why does exactly-once operator state not guarantee exactly-once external effects?
+>
+> Recovery reprocesses events after the checkpoint. External writes can repeat unless the sink is idempotent or participates transactionally.
+
+> [!CHECK] How does Kappa replace a separate batch implementation during a code change?
+>
+> Run new code from the retained log into a new output table, let it catch up, switch readers, then delete the old output.
 
 ## What to take away
 

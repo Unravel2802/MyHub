@@ -11,6 +11,14 @@ leader election, distributed locks, configuration, atomic commit and ordered log
 are all the same problem wearing different clothes — and it is provably
 unsolvable in the general case.
 
+> [!WHY] Three replicas agree on a command, but one computes its expiry using its own clock and another chooses a different random value. Agreement on log entries is not enough if replicas execute those entries differently.
+
+> [!GOALS]
+>
+> - State consensus agreement, validity and termination obligations
+> - Explain the asynchronous impossibility result and the role of partial synchrony
+> - Design deterministic state-machine commands for the assumed fault model
+
 ## What agreement requires
 
 A consensus protocol must satisfy three properties:
@@ -264,3 +272,17 @@ of independent 3-node or 5-node Raft groups, not one 1,000-node group.
    running many independent groups.
 
 Next: quorums — the one piece of arithmetic that makes all of this work.
+
+## Exercises
+
+> [!EXERCISE recall] Name consensus agreement, validity and termination, and identify which two are safety obligations.
+>
+> **Solution:** Agreement requires nodes to decide the same value; validity constrains decisions to a proposed value; termination requires a decision eventually. Agreement and validity are safety obligations, while termination is liveness.
+
+> [!EXERCISE apply] Three replicas receive the command “expire sessions 60 seconds from now.” Each replica calls its own clock while applying the command. Explain how their state can diverge and change the command so the state machine remains deterministic.
+>
+> **Solution:** Each replica may observe a different time and compute a different expiry, despite agreeing on the log entry. Have the command carry one chosen absolute expiry timestamp; every replica then applies the same input and reaches the same state.
+
+> [!EXERCISE stretch] A service inside one company's data centre is designed to tolerate arbitrary Byzantine behavior from every replica. Recommend a narrower fault model and explain what a weaker answer misses.
+>
+> **Solution:** If the nodes are within the organization's trust boundary and the concern is crashes, use a crash-fault-tolerant protocol such as Raft rather than paying for Byzantine protocols and their extra messaging. A weaker answer argues that tolerating more faults is always safer; it misses the chapter's distinction between a threat the deployment has and one it does not.

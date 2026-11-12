@@ -10,6 +10,14 @@ it decomposes consensus into three nearly independent pieces and adds constraint
 that reduce the number of states you must reason about. It worked. Raft is now
 the default choice for new systems, and it is the one worth learning first.
 
+> [!WHY] A Raft leader commits a transfer, crashes before its reply arrives, and the client retries. The replicated log can safely agree on both entries and still charge the customer twice unless the command carries deduplication state.
+
+> [!GOALS]
+>
+> - Trace Raft roles, terms, elections and log replication
+> - Explain the log-matching check and when entries may be acknowledged
+> - Design durable votes, client deduplication and safe read handling
+
 ## Three roles and one term counter
 
 Every node is in exactly one of three states:
@@ -296,3 +304,17 @@ under load — batching gets better — while latency does not.
 
 Next: the safety argument, snapshots, and the genuinely subtle part — changing
 cluster membership without ever having two leaders.
+
+## Exercises
+
+> [!EXERCISE recall] What does `prevLogIndex`/`prevLogTerm` check on AppendEntries, and what does the leader do after a follower rejects the request?
+>
+> **Solution:** The follower checks that its log matches the leader's preceding entry at that index and term. On rejection, the leader backs up `nextIndex` and retries until it finds the last matching prefix, then overwrites the divergent suffix.
+
+> [!EXERCISE apply] The leader log is `[1@1][2@1][3@2][4@3]`. A follower has `[1@1][2@1][3@2][4@2]`. The leader sends `prevLogIndex=4, prevLogTerm=3`. State the follower's response and how the logs converge.
+>
+> **Solution:** The follower has term 2 at index 4, not term 3, so it rejects that AppendEntries. The leader moves back to the matching index 3 with term 2, retries with the leader's index-4 entry, and the follower replaces its conflicting suffix. Both then have `[1@1][2@1][3@2][4@3]`.
+
+> [!EXERCISE stretch] A team wants followers to acknowledge a command before it is replicated to a majority so the client sees lower latency. Recommend the acknowledgement rule and explain what a weaker answer misses.
+>
+> **Solution:** Acknowledge only after the entry is durably replicated on a majority, committed and applied by the leader. A weaker answer replies after the leader's local append; it misses that this entry could be lost in a tolerable failure before it becomes committed.

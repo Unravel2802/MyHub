@@ -9,6 +9,14 @@ of a set must share at least one member.** That intersection is what carries
 information from one decision to the next, and understanding it makes Raft and
 Paxos feel inevitable rather than clever.
 
+> [!WHY] A new leader must learn every decision accepted by an earlier quorum, while a healthy cluster must still make progress after failures. Quorum sizes are the arithmetic that makes those two requirements compatible.
+
+> [!GOALS]
+>
+> - Compute node count, quorum size and failure tolerance for a target
+> - Explain why intersecting quorums preserve prior decisions
+> - Compare majority, flexible, witness and observer configurations
+
 ## The intersection property
 
 ```text
@@ -255,3 +263,19 @@ partition with its leader placed near that partition's users.
    quorum — a good trade, since elections are rare.
 
 Next: Raft, which turns all of this into an algorithm designed to be understood.
+
+## Exercises
+
+> [!EXERCISE recall] What two quorum properties does a consensus design need for safety and progress, and why does a majority provide intersection?
+>
+> **Solution:** Future decision quorums must intersect earlier decision quorums so accepted knowledge is carried forward, and the remaining nodes after the tolerated failures must still form a quorum. With `2f + 1` voters and quorum `f + 1`, two quorum sizes sum to `2f + 2`, which is greater than the `2f + 1` voters.
+
+> [!EXERCISE apply] A seven-voter group uses Flexible Paxos with election quorum 5 and replication quorum 3. Check whether the two kinds of quorum must intersect, then state the steady-state write and election acknowledgement counts.
+>
+> **Hint:** Flexible Paxos requires the election and replication quorum sizes to sum to more than the voter count.
+>
+> **Solution:** The sizes sum to 5 + 3 = **8**, which is greater than **7**, so every election quorum intersects every replication quorum. A steady-state write needs **3 acknowledgements**, while an election needs **5 votes**. The design shifts more work to the rarer election to reduce the steady-state write quorum.
+
+> [!EXERCISE stretch] A consensus cluster wants more local read capacity but cannot afford a higher acknowledgement quorum on writes. Recommend a membership role for the added nodes and explain what a weaker answer misses.
+>
+> **Solution:** Add observers or learners that receive the log but do not vote. They can serve reads without increasing the write quorum or changing the number of failures the voters tolerate. A weaker answer adds voters for read capacity; it raises the acknowledgement cost without improving the read path's role.

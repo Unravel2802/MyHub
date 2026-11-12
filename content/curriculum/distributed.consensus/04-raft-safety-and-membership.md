@@ -9,6 +9,14 @@ parts that exist purely to make it _correct under failure_ — and they are the
 parts that homegrown implementations get wrong, because they only matter in
 sequences of events you will not think to test.
 
+> [!WHY] A new voter joins while the old cluster is still serving writes. If both configurations can form separate majorities, two leaders may each believe they are safe to commit.
+
+> [!GOALS]
+>
+> - Explain the election restriction and Leader Completeness
+> - Identify why current-term commit rules protect older log entries
+> - Choose a safe membership transition and snapshot strategy
+
 ## The Election Restriction
 
 A candidate must not win if it is missing committed entries — otherwise it would
@@ -265,3 +273,17 @@ it.
    healthy leader.
 
 Next: Paxos — the original, why it has a reputation, and what its variants buy.
+
+## Exercises
+
+> [!EXERCISE recall] Why should a new replica join as a non-voting learner before promotion, and what problem does pre-vote prevent?
+>
+> **Solution:** A learner can catch up without entering the voting quorum while its log is empty; promote it once current. Pre-vote stops a partitioned node from inflating its term during isolation and disrupting a healthy leader when it reconnects.
+
+> [!EXERCISE apply] A five-voter cluster is expanded to seven voters. Propose a safe sequence that avoids allowing two configurations to elect separate leaders, and state how each new node should join.
+>
+> **Solution:** Change one server at a time, moving through six voters before seven, so adjacent configurations differ by one member; alternatively, use joint consensus requiring a majority of both old and new configurations. Add each new node as a non-voting learner, let it catch up, then promote it. Do not switch all seven voters at once, since old and new majorities could be disjoint.
+
+> [!EXERCISE stretch] A snapshot job pauses the leader while serializing a large state machine, and followers start an election. Recommend a snapshot design and explain what a weaker answer misses.
+>
+> **Solution:** Snapshot with copy-on-write or a forked view so the leader continues serving while serialization runs. A weaker answer only lengthens election timeouts; it misses that a scheduled blocking snapshot repeatedly looks like leader failure and can create an outage each time.

@@ -138,8 +138,8 @@ catalog's own code as a topic; it's corrected now, in both places.) `docs/handof
 is the source of truth for what's written and why each track leans on the ones before it.
 
 **The Reader (PDF viewer + highlights) was removed 2026-11-12** as unnecessary — its page,
-module, `pdfjs-dist` dependency and events are gone, and migration `0050` drops its tables and
-storage bucket. Migration `0042` stays as history. Don't rebuild it unless asked; its old
+module, `pdfjs-dist` dependency and events are gone, and migration `0050` drops its tables (its
+storage bucket is removed in the dashboard — Supabase forbids deleting storage rows in SQL). Migration `0042` stays as history. Don't rebuild it unless asked; its old
 handoff notes are in git history (`docs/handoff/reader.md`).
 
 `myhub_plan.md`'s Part A and Part B are now a RECORD of what was built and why, not a to-do list.

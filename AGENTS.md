@@ -151,7 +151,7 @@ LeetCode Tracker, Trading Journal, Knowledge Base UI, Command Palette, and the H
 "don't start on those" is spent.
 
 **The Reader was removed 2026-11-12** (page, module, `pdfjs-dist`, events; migration `0050`
-drops its tables and bucket). There is no queued feature work right now.
+drops its tables; the storage bucket is removed in the Supabase dashboard). There is no queued feature work right now.
 
 `myhub_plan.md` Part A and Part B are a RECORD of what was built and why, not a to-do list.
 Read them for rationale; don't work through Part B's phases as if they're pending.

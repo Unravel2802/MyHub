@@ -14,15 +14,10 @@ drop type if exists reader_annotation_kind;
 -- Storage. The objects policy is plain SQL and always drops.
 drop policy if exists reader_documents_objects_authenticated on storage.objects;
 
--- The bucket itself only drops when EMPTY. Supabase blocks deleting rows from
--- storage.objects directly in SQL (the bytes live outside Postgres and must be
--- removed through the Storage API), and a bucket with objects can't be
--- deleted. So if PDFs were ever uploaded, empty the 'reader-documents' bucket
--- in the dashboard (Storage -> reader-documents -> select all -> delete),
--- then delete the bucket there too; this statement is then a no-op. Guarded
--- so the migration never fails on a non-empty bucket.
-delete from storage.buckets
-where id = 'reader-documents'
-  and not exists (
-    select 1 from storage.objects where bucket_id = 'reader-documents'
-  );
+-- The 'reader-documents' BUCKET is NOT dropped here, and can't be: Supabase's
+-- storage.protect_delete() trigger rejects any SQL delete from storage.buckets
+-- or storage.objects ("Direct deletion from storage tables is not allowed"),
+-- even for an empty bucket — and because the SQL editor runs a script as one
+-- transaction, attempting it rolls back the drops above too. Delete it through
+-- the Storage API instead: dashboard -> Storage -> reader-documents -> empty
+-- the bucket, then delete it.

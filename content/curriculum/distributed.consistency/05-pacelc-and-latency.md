@@ -9,6 +9,14 @@ engineers actually make every day is a different one, and CAP does not mention
 it: even with a perfectly healthy network, stronger consistency costs latency.
 PACELC adds that half, and it is the half that shapes most real designs.
 
+> [!WHY] There is no outage, yet a cross-region write waits for a quorum on every request. PACELC names this ordinary latency-versus-consistency cost that a partition-only discussion leaves out.
+
+> [!GOALS]
+>
+> - Explain both the partition and healthy-network clauses of PACELC
+> - Classify a system's availability/consistency and latency/consistency choices
+> - Choose where strong writes and weaker reads fit a product's needs
+
 ## The formulation
 
 ```text
@@ -219,3 +227,17 @@ the product can tolerate. For a comment, yes. For a seat booking, no.
 
 Next: putting it together — specifying and verifying the guarantees your own
 system offers.
+
+## Exercises
+
+> [!EXERCISE recall] What does PACELC ask during a partition and when the network is healthy, and why is the second choice paid more often?
+>
+> **Solution:** During a partition it asks whether to favour availability or consistency; otherwise it asks whether to favour latency or consistency. Partitions are rare, while the coordination needed for stronger consistency can add delay to every ordinary request.
+
+> [!EXERCISE apply] A service prioritizes responsiveness during partitions and low latency when healthy; a second service preserves consistency during partitions and healthy operation. Assign each a PACELC label and state the cost each accepts.
+>
+> **Solution:** The first service is **PA/EL**: it favours availability under partition and latency when healthy, accepting divergence or weaker read guarantees. The second is **PC/EC**: it favours consistency in both cases, accepting refusals on a minority side during partition and coordination latency on ordinary requests.
+
+> [!EXERCISE stretch] A team routes every catalogue read through a cross-region linearizable quorum because it wants one consistent policy. Recommend a narrower policy and explain what a weaker answer misses.
+>
+> **Solution:** Keep linearizable coordination for fields carrying invariants, such as balances, seats or unique names, and serve catalogue reads from a nearby replica or cache with an explicit staleness target. A weaker answer says “consistency is important” and keeps the global quorum on every read; it misses the repeated latency cost and the fact that most reads can tolerate bounded staleness.

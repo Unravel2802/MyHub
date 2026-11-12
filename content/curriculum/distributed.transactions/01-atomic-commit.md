@@ -10,6 +10,14 @@ decision point and one durable place to record it. Split the work across two
 machines and you need them to agree on a single outcome — which is the consensus
 problem, with all its costs, applied to every transaction.
 
+> [!WHY] An order row commits in one service while a payment event is lost in another. Reversing the order merely creates the opposite failure window; two independent writes do not become atomic because they are issued back to back.
+
+> [!GOALS]
+>
+> - Distinguish single-node transactions from distributed atomic commit
+> - Choose among one-write designs, reconciliation, 2PC and sagas
+> - Explain how sagas trade isolation for independently committed steps
+
 ## What atomicity means, precisely
 
 ```text
@@ -231,6 +239,8 @@ level can be a function of the _stakes_, not just of the operation.
 > if the saga later compensates it; a pending semantic state or re-read
 > can guard that provisional decision.
 
+Next: two-phase commit in detail, and the blocking problem that defines it.
+
 ## What to take away
 
 1. Atomic commit needs every participant to make the same decision, and unlike
@@ -248,4 +258,16 @@ level can be a function of the _stakes_, not just of the operation.
    updates and re-reads are the countermeasures, and routing by value is a
    legitimate design.
 
-Next: two-phase commit in detail, and the blocking problem that defines it.
+## Exercises
+
+> [!EXERCISE recall] Why is a distributed atomic commit decision harder than a single-node transaction, and why does 2PC require unanimity to commit?
+>
+> **Solution:** A single node has one durable decision point; distributed participants can fail or lose messages independently. 2PC commits only if every participant votes YES, so one failed or rejecting participant prevents commit and an in-doubt coordinator can block the others.
+
+> [!EXERCISE apply] Two teams own tables in the same database, but every operation needs their rows to change atomically. The teams are separate deployables and are considering a distributed coordinator. Recommend a boundary review and explain the transaction option if the data belongs together.
+>
+> **Solution:** Review whether the data and operation should belong to one service. If they do, put the tables behind one service boundary and update them in one local database transaction, avoiding a distributed decision on every request. A distributed coordinator remains an explicit option only if the independent boundary is necessary and its availability and blocking costs are acceptable.
+
+> [!EXERCISE stretch] An order system handles both $5 purchases and $5 million purchases. Recommend how the system can choose a transaction pattern for each and explain what a weaker one-size-fits-all answer misses.
+>
+> **Solution:** Route high-value transactions through 2PC when their stakes justify its coordination and blocking cost, and lower-value transactions through a saga when the workflow can accept intermediate state and compensation. A weaker answer applies one pattern to every purchase; it misses that the acceptable isolation and failure cost can depend on the value at risk.

@@ -10,6 +10,14 @@ infrastructure than any other. Its core is genuinely simple — two phases and o
 rule. What is hard is everything between the algorithm and a working system,
 which is precisely what Raft set out to address.
 
+> [!WHY] A proposer learns that an earlier value may already have been accepted, while a team is tempted to implement a “simpler” consensus protocol in-house. Paxos safety rests on a narrow rule, but production correctness depends on far more than that rule.
+
+> [!GOALS]
+>
+> - Explain the prepare/accept safety obligation in single-decree Paxos
+> - Compare Multi-Paxos, Raft and leaderless variants by their trade-offs
+> - Choose a mature consensus implementation instead of inventing one
+
 ## Single-decree Paxos
 
 The base algorithm agrees on **one** value. Three roles, usually all played by the
@@ -282,3 +290,17 @@ injected partitions, clock skew and SIGSTOP pauses.
    runs on homegrown code.
 
 Next: what you build on top of consensus, and what it costs to operate.
+
+## Exercises
+
+> [!EXERCISE recall] How do Fast Paxos and EPaxos reduce reliance on a stable leader, and what trade-off does each make?
+>
+> **Solution:** Fast Paxos lets clients send directly to acceptors for a one-round-trip fast path, but needs a larger quorum and slower recovery when proposals collide. EPaxos has no leader bottleneck for non-interfering commands, but conflicting commands need dependency tracking and another round.
+
+> [!EXERCISE apply] A geo-distributed service has four regions and most commands touch separate customer records; conflicting commands for one customer are relatively rare. Choose a consensus-family design from the chapter and describe what happens to independent and conflicting commands.
+>
+> **Solution:** EPaxos is designed to commit non-interfering commands without a single leader bottleneck, at the replica nearest the client. Commands for the same customer interfere and require dependency tracking and an additional round. Its implementation complexity must be weighed against the benefit.
+
+> [!EXERCISE stretch] A product team proposes writing a custom consensus protocol because the Paxos safety rule seems short. Recommend a next step and explain what a weaker answer misses.
+>
+> **Solution:** Use a mature tested service or library such as etcd, ZooKeeper or a Raft library; if custom consensus is unavoidable, require model checking and aggressive fault-injected history tests. A weaker answer implements the prepare/accept rule and relies on unit tests; it misses failures from interleavings, partitions and clock skew that ordinary tests do not explore.

@@ -10,6 +10,14 @@ and most of the mistakes in this area are made _above_ it, by using those
 primitives as if they were the local versions. This chapter is the correct usage
 patterns and the operational realities.
 
+> [!WHY] A lock holder pauses longer than its lease, a second worker takes over, and the old process resumes with a write still queued. The protected resource must be able to reject that stale writer even when the lock service has moved on.
+
+> [!GOALS]
+>
+> - Design distributed locks with leases, fencing and resource-side checks
+> - Choose consensus-cluster size and placement across failure domains
+> - Identify operational signals that warn of consensus instability
+
 ## What a consensus store gives you
 
 etcd, ZooKeeper and Consul all expose roughly the same set of primitives:
@@ -285,3 +293,17 @@ partitioned data layer, and put almost no traffic through any one of them.
 That completes consensus. Next in the track: **distributed transactions** — using
 consensus and everything before it to make several changes atomic across
 machines.
+
+## Exercises
+
+> [!EXERCISE recall] What kinds of small coordination primitives does a consensus store provide, and which two signals should operators watch for cluster instability?
+>
+> **Solution:** Consensus stores provide compare-and-set, leases/TTLs, ordered watches and sequential keys, which support locks, leader election, configuration and barriers. Watch leader changes per hour and fsync p99; repeated leader churn and slow durable writes warn of an outage.
+
+> [!EXERCISE apply] A coordination service has three voter slots spread across three availability zones and two additional nodes intended only to serve local reads. Decide which nodes should vote and what membership role the two read nodes should have.
+>
+> **Solution:** Keep the three cross-zone nodes as voters so a majority can survive one voter failure while spanning three failure domains. Add the two read-serving nodes as observers/learners: they receive the log and can serve reads without increasing the write quorum or its latency.
+
+> [!EXERCISE stretch] An organization stores all customer records in its consensus key-value service because its lock API is reliable. Recommend a boundary and explain what a weaker answer misses.
+>
+> **Solution:** Keep only small, low-write critical coordination state there, such as locks, leases, configuration and leader records; put application data in a database designed for that workload. A weaker answer points only to service uptime; it misses that large or high-write application data can saturate the Raft group and break every dependent coordination service.

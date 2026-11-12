@@ -10,6 +10,14 @@ is wrong in a way that leads to real architectural mistakes. The actual theorem
 is narrower, and once stated precisely it is both obviously true and much less
 dramatic.
 
+> [!WHY] A network cut separates a five-node service into two groups, and product owners ask whether every endpoint should keep answering. The right behavior depends on whether a stale answer or a refusal is worse for each operation.
+
+> [!GOALS]
+>
+> - State CAP's partition-time trade using linearizability and availability precisely
+> - Choose CP or AP behavior for operations with different invariants
+> - Explain why response latency is separate from CAP availability
+
 ## The theorem
 
 Formalised by Gilbert and Lynch in 2002, from Brewer's 2000 conjecture:
@@ -200,6 +208,9 @@ during an incident.
 > gives up that contract. The domain decides which failure is acceptable;
 > speed of the response is a separate issue.
 
+Next: PACELC, which adds the question CAP leaves out — what you trade when there
+is no partition at all.
+
 ## What to take away
 
 1. CAP says: in an asynchronous network with message loss, you cannot have both
@@ -217,5 +228,16 @@ during an incident.
 6. The valuable work is specifying, per operation, what the minority side does
    during a partition — and testing it with an injected partition.
 
-Next: PACELC, which adds the question CAP leaves out — what you trade when there
-is no partition at all.
+## Exercises
+
+> [!EXERCISE recall] Precisely name CAP's C and A, and state when the theorem forces a choice.
+>
+> **Solution:** C is linearizability, and A means every non-failing node returns a non-error response. The trade appears during a network partition in an asynchronous system with message loss; it is not a permanent choice made for ordinary healthy operation.
+
+> [!EXERCISE apply] A healthy system returns a linearizable read after ten seconds. A reviewer says CAP availability guarantees a fast response. Explain whether CAP supports that conclusion.
+>
+> **Solution:** No. CAP's availability property is about returning a non-error response from every non-failing node, not a latency bound. A ten-second response may be slow, but CAP is silent about that cost; PACELC addresses the healthy-network latency-versus-consistency trade.
+
+> [!EXERCISE stretch] A slide says a system must “pick any two of consistency, availability and partition tolerance” as a permanent architecture choice. Correct it and explain what a weaker answer misses.
+>
+> **Solution:** A partition is a network condition, not a feature to opt out of. During one, the system chooses whether to refuse some operations to preserve linearizability (CP) or answer on both sides and reconcile later (AP); in healthy operation it can provide both properties. A weaker answer repeats “pick two”; it misses when CAP applies and that C specifically means linearizability.

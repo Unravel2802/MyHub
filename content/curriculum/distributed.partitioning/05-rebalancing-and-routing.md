@@ -9,6 +9,14 @@ data must move; and at every moment, a request must find the node currently
 holding its key. Both have standard answers, and the standard answers are worth
 knowing because the ad-hoc ones fail in characteristic ways.
 
+> [!WHY] A capacity addition starts copying partitions faster than production can serve them. Healthy nodes slow down, trigger more moves, and requests keep following stale ownership maps during handover.
+
+> [!GOALS]
+>
+> - Choose a fixed partition count for the projected maximum cluster size
+> - Trace a safe move from snapshot through catch-up, handover and cleanup
+> - Choose a routing model and protect requests during stale-map transitions
+
 ## Rebalancing strategies
 
 ### Never: hash mod N
@@ -270,3 +278,19 @@ Three requirements for this to be correct:
 
 That completes partitioning. Next in the track: **consistency models** — naming
 precisely what guarantees a replicated, partitioned system can actually offer.
+
+## Exercises
+
+> [!EXERCISE recall] Name the four stages of a no-downtime partition move, and explain why transfers are throttled and the trigger should be deliberate.
+>
+> **Solution:** Start the new owner with a snapshot and changes, catch it up, briefly hand over ownership, then clean up the old copy after a rollback delay. Transfers compete with production resources, and suspected failures can be transient; an uncontrolled rebalance can overload healthy nodes and create a rebalance storm.
+
+> [!EXERCISE apply] A service projects a maximum cluster size of 12 nodes and wants to use the chapter's rule of thumb for fixed partitions. Calculate the low and high ends of the recommended count, then choose a reasonable count within that range.
+>
+> **Hint:** Multiply the projected node count by 10 and by 100.
+>
+> **Solution:** The lower end is 12 × 10 = **120 partitions** and the upper end is 12 × 100 = **1,200 partitions**. Choosing **600 partitions** gives 600 ÷ 12 = **50 partitions per projected node**, within the chapter's 10–100 range. The team should still account for per-partition memory, file handles and metadata overhead.
+
+> [!EXERCISE stretch] A health check misses one response during a network blip and an automated controller immediately rebalances that node's data. Recommend a safer trigger and explain what a weaker answer misses.
+>
+> **Solution:** Automate the transfer mechanism, but require a deliberate trigger or a long confirmation window and bounded concurrency before moving data. A single timeout cannot distinguish a dead node from a transient delay. A weaker answer only speeds up the rebalance; it misses the feedback loop where movement overloads healthy nodes and causes more false failure signals.

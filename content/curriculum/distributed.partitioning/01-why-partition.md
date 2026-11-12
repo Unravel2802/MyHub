@@ -58,6 +58,14 @@ flowchart TB
 Note that leadership is spread deliberately. A naive layout that puts all leaders
 on one node gives you the write bottleneck back.
 
+> [!WHY] A read replica brought the dashboard under its latency target, but the write leader is still saturated and the data no longer fits on one disk. The team is considering sharding; choosing the wrong partition key would turn ordinary queries and transactions into cluster-wide work.
+
+> [!GOALS]
+>
+> - Distinguish the capacity problems replication and partitioning solve
+> - Choose a partitioning trigger and key from workload and access patterns
+> - Explain the query, transaction and operational costs partitioning adds
+
 ## When to partition
 
 Partitioning is a large, mostly irreversible complexity increase. The honest
@@ -221,3 +229,17 @@ measuring, not estimating.
    date-based partition keys create a moving hotspot on today.
 
 Next: the two ways to map keys to partitions, and what each one is good at.
+
+## Exercises
+
+> [!EXERCISE recall] Name the four signals that can justify partitioning, and two cheaper steps to try first.
+>
+> **Solution:** Partition when data exceeds one machine's storage, write throughput exceeds one leader, the working set no longer fits memory, or tenant isolation is needed for blast radius. First consider indexes, caching, read replicas, archiving cold data or a larger machine; these are easier to reverse than sharding.
+
+> [!EXERCISE apply] A SaaS product's common query reads one tenant's events over a date range, and edits to one tenant's settings must be atomic. Choose a partition and sort key, and state the cost of an all-tenant query.
+>
+> **Solution:** Partition by `tenant_id` so tenant-local settings and queries stay together, then sort by `created_at` for the common range scan. A query across all tenants still requires fan-out or a separate read model.
+
+> [!EXERCISE stretch] A team wants to shard a table by `created_date` because its dashboard filters by date. Recommend a review question and explain what a weaker answer misses.
+>
+> **Solution:** Check where current writes land: a time-based key sends today's operational writes to one moving-hot partition while older partitions sit idle. Consider whether a tenant or entity key with a time sort key can keep common reads local. A weaker answer optimizes only the date-range dashboard; it misses write distribution and transaction boundaries.

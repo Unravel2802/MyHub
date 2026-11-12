@@ -14,6 +14,10 @@ const EXERCISE_TRACKS = [
   "distributed.rpc",
   "distributed.time",
   "distributed.replication",
+  "distributed.partitioning",
+  "distributed.consistency",
+  "distributed.consensus",
+  "distributed.transactions",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },

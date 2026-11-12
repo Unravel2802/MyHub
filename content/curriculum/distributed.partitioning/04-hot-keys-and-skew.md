@@ -35,6 +35,14 @@ Partition 4: 2
 No hash function fixes this, because all the requests are for **the same key**.
 This is the limit of the partitioning ideas so far, and it needs different tools.
 
+> [!WHY] Four partitions hold similar amounts of data, but one celebrity key drives nearly all requests to a single owner. Adding nodes or changing the hash leaves that one key together, so the hot partition remains hot.
+
+> [!GOALS]
+>
+> - Distinguish data skew from traffic skew and identify useful measurements
+> - Choose a mitigation based on whether the skew is read-heavy or write-heavy
+> - Explain when to isolate, throttle or migrate a persistently hot tenant
+
 ## Two different skews
 
 Worth separating, because the responses differ:
@@ -264,3 +272,17 @@ button, exercised regularly, not a heroic manual project.
 
 Next: rebalancing and routing — moving partitions between nodes while serving
 traffic, and how a request finds the right one.
+
+## Exercises
+
+> [!EXERCISE recall] How do data skew and traffic skew differ, and why are per-node CPU charts insufficient to find a hot key?
+>
+> **Solution:** Data skew means one partition holds more data; traffic skew means one partition receives more requests, and either can occur without the other. Per-node CPU shows where load is high but not which key causes it, so track per-key top-N estimates with a sketch or heavy-hitter structure.
+
+> [!EXERCISE apply] A profile key receives 80% of a partition's reads, changes only a few times per day, and can be served briefly stale. Choose a mitigation and protect the service when the cached entry expires.
+>
+> **Solution:** Cache the hot value, including a small in-process cache in front of the shared cache. Use stale-while-revalidate or single-flight on expiry so the concentrated read load does not stampede the partition at once. This fits read-heavy skew on a slowly changing value.
+
+> [!EXERCISE stretch] A large tenant repeatedly overloads a partition with writes to one non-aggregatable order-status key, even after caching and rebalancing. Recommend a response and explain what a weaker answer misses.
+>
+> **Solution:** Do not split the status into shards because it is not an aggregatable value. Isolate the tenant on a dedicated partition or throttle that hot key to protect other tenants, then investigate whether the partition key is structurally wrong. A weaker answer only rehashes the same key; it misses that every request for one key still reaches its owner.

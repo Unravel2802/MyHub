@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 reviewed 2026-11-11, changes requested (see the E1 review at the end).
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 approved 2026-11-11 (see the E1 reviews at the end); E2 is next.
 
 ---
 
@@ -698,3 +698,15 @@ GOALS bullet I checked is taught in its chapter. Fix these before merge:
    and 3, so the parser can't treat any single read as a message.
 
 **Status:** E1 needs fixes 1–3. E2 can start from main once E1 merges.
+
+### E1 re-review — 2026-11-11 (Claude): approved
+
+dc13dae, 261133b and 1b4d39e apply fixes 1–3. The tracks spec now matches a
+topic id exactly or as a prefix, so the opener and exercise-card assertions
+run on all 22 E1 chapters. The quorum chapter's Apply is the N = 5 problem
+(W = 3, R = 3, and W = 2/R = 3 gives no guaranteed overlap); Codex also
+rewrote its Recall around N, R, W and sloppy quorums, all taught in the
+chapter, so the three exercises no longer repeat the tombstone question.
+The framing solution now describes the read splits correctly. Lint,
+typecheck, 1,661 unit tests and 254/254 E2E pass, run in Codex's worktree
+now that it has `.env.local`.

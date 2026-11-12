@@ -235,6 +235,7 @@ local problem becoming a global one.
 > [!EXERCISE apply] A canary starts at 1%, then goes to 5%, 25% and 100%. How many percentage points does traffic increase from the first to the second stage?
 >
 > **Solution:** 5% − 1% = 4 percentage points.
+
 > [!EXERCISE stretch] A team says routing all traffic back to the old region guarantees a safe rollback after a database migration. What does this miss?
 >
 > **Solution:** Failover must consider data. Routing alone cannot guarantee safety if the migration changed data compatibility; the weaker answer treats traffic routing as the whole rollback plan.

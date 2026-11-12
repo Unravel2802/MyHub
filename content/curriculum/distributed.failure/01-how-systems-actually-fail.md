@@ -246,6 +246,7 @@ Next: bulkheads — bounding the blast radius so a local failure stays local.
 > [!EXERCISE apply] A trigger causes overload. After it ends, the system remains overloaded and does not recover. Is this stable recovery or metastable failure?
 >
 > **Solution:** Metastable failure: the trigger is gone but the system does not recover.
+
 > [!EXERCISE stretch] An incident review recommends only restoring the capacity removed by the original trigger. Why may that not recover a metastable system?
 >
 > **Solution:** Its own response may now sustain overload, so restoring the original capacity does not remove the feedback loop. The weaker answer assumes the trigger is still the only cause.

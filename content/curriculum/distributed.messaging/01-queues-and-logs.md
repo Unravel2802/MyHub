@@ -234,6 +234,7 @@ actually happens when you produce a message.
 > [!EXERCISE apply] A document-thumbnail job should be retried one message at a time, while a `customer.closed` fact must reach fraud review and analytics, and a new audit consumer may need past facts. Choose a broker model for each flow.
 >
 > **Solution:** Put thumbnail jobs on a queue because it supports per-message retry and task distribution to one worker. Put `customer.closed` on a log because independent consumers can read it and the new audit consumer can replay retained history.
+
 > [!EXERCISE stretch] A team proposes attaching one queue per consumer to reproduce a log. Explain what the design misses and what a weaker answer misses.
 >
 > **Solution:** Each queue gains a different depth and failure history, and a later consumer cannot replay messages already removed. A weaker answer points out only that each consumer gets a copy; it misses the lack of a shared retained position and history.

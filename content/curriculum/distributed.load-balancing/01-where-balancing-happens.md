@@ -242,6 +242,7 @@ Next: the algorithms, and why the obvious one is the wrong default.
 > [!EXERCISE apply] A service has three backends. DNS sees no health or load information, while the client tracks latency and errors per backend. Which can make the more informed per-call choice, and why?
 >
 > **Solution:** The client can choose per call using its own latency and error history. DNS sees only the query and cannot know backend health or load.
+
 > [!EXERCISE stretch] A team says L4 can distribute each HTTP request independently over one long-lived HTTP/2 connection. What does that miss?
 >
 > **Solution:** L4 balances TCP connections and cannot see individual requests. The weaker answer confuses connection-level routing with request-level routing; L7 or client-side balancing can make request-aware decisions.

@@ -281,6 +281,7 @@ there.
 > [!EXERCISE apply] A shipment service emits `label.created` and `parcel.handed_off`; those facts must stay ordered for each parcel while separate parcels process in parallel. Which key should route the messages, and what ordering does it provide?
 >
 > **Solution:** Key by `parcel_id` so all facts for one parcel land on one partition and keep their order. Different parcel IDs may land on different partitions and process in parallel.
+
 > [!EXERCISE stretch] A topic has outgrown its partition capacity, and the team proposes increasing the count in place while preserving each key's order. Recommend a migration and explain what a weaker answer misses.
 >
 > **Solution:** Create a new topic with the desired partition count, then migrate producers and consumers according to a plan that preserves each key's transition. A weaker answer treats adding partitions as a harmless capacity change; it misses that the hash mapping changes and per-key ordering across the change is broken.

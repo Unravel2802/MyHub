@@ -10,6 +10,14 @@ something: run a scheduler, drive a migration, be the write path, own a shard.
 The election itself is easy; staying correct while leadership *changes underneath
 you* is the part that needs care.
 
+> [!WHY] A scheduler can reach its database after losing contact with the coordination store. The leader must stop acting unless leadership is confirmed, or a successor may already be writing.
+
+> [!GOALS]
+>
+> - Identify when a service needs one leader and when work can be partitioned.
+> - Compute approximate failover time from lease TTL, election round trip and warm-up.
+> - Explain how fencing protects writes from a stale leader.
+
 ## Why elect at all
 
 ```text
@@ -236,6 +244,7 @@ counters.
 > [!EXERCISE apply] A service uses a 20-second lease TTL, an election round trip of 150 ms, and a warm standby that needs 35 seconds to become ready. Estimate total failover time.
 >
 > **Solution:** Convert the round trip: 150 ms = 0.15 s. Add the terms: 20 s + 0.15 s = 20.15 s; 20.15 s + 35 s = **55.15 seconds**.
+
 > [!EXERCISE stretch] The current leader cannot reach the coordination store during a network partition but can still reach the database. Recommend its behavior and explain what a weaker answer misses.
 >
 > **Solution:** Stop work when leadership cannot be confirmed and ensure writes carry a fencing token that the resource checks. A weaker answer keeps writing because the process is healthy; it misses that a successor may already own the lease and that the old leader can corrupt shared state.

@@ -252,6 +252,7 @@ who does what.
 > [!EXERCISE apply] A topic must sustain 24,000 messages per second, and one consumer can process 4,000 messages per second. Using the chapter's capacity rule, find the minimum partition count.
 >
 > **Solution:** Divide target throughput by per-consumer throughput: 24,000 ÷ 4,000 = 6. The topic therefore needs at least 6 partitions to provide that parallelism.
+
 > [!EXERCISE stretch] One partition's lag is climbing toward retention while the others are flat. Recommend the order of response and explain what a weaker answer misses.
 >
 > **Solution:** Extend retention first if the deadline is near, then address the isolated cause such as a poison message or hot key and increase throughput after diagnosing it. A weaker answer only scales the whole group; it misses that one partition can be blocked and that retention may delete data before a capacity fix takes effect.

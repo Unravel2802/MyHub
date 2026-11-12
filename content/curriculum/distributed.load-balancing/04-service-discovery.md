@@ -205,6 +205,7 @@ Next: traffic management — using all of this deliberately, to release safely.
 > [!EXERCISE apply] A discovery cache includes a dead backend. The client retries another backend and passive outlier detection ejects the dead one. Which stale direction is this, and how is it mitigated?
 >
 > **Solution:** It is stale data containing a dead backend. Retrying elsewhere and passive outlier ejection are the chapter's mitigations.
+
 > [!EXERCISE stretch] An operator proposes aggressively adding new backends and slowly removing dead ones. Why is that backwards?
 >
 > **Solution:** Slow removal costs errors, while aggressive removal costs some capacity. The chapter's principle is to be fast to remove and slow to add.

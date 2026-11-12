@@ -236,6 +236,7 @@ Next: the architectural patterns these enable, and the ones that go wrong.
 > [!EXERCISE apply] An event needs a new optional `delivery_window` field with a default for older records. Choose a compatibility mode and deployment order that keeps replay working.
 >
 > **Solution:** Use backward compatibility because the new consumer must read old records where the optional field is absent. Deploy the consumer first, then deploy producers that begin writing `delivery_window`.
+
 > [!EXERCISE stretch] A registry rejects a proposed incompatible change to the `parcel` event schema. Recommend a migration path and explain what a weaker answer misses.
 >
 > **Solution:** Create a versioned `v2` topic, dual-publish while consumers migrate, then retire `v1` after the migration. A weaker answer disables registry checks or forces the old topic to accept the incompatible shape; it misses that retained old records and existing consumers still depend on the old contract.

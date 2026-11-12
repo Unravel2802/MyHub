@@ -257,6 +257,7 @@ Next: graceful degradation — what to serve when you cannot serve everything.
 > [!EXERCISE apply] Arrivals are 1000 requests/s and capacity is 600 requests/s. How many requests/s are accepted and rejected?
 >
 > **Solution:** Accepted: min(1000, 600) = 600 requests/s. Rejected: 1000 − 600 = 400 requests/s.
+
 > [!EXERCISE stretch] An overloaded service accepts every request into an unbounded queue. Why can its goodput approach zero?
 >
 > **Solution:** Latency climbs past client timeouts, so completed work is discarded. The weaker answer equates accepted requests with successful throughput.

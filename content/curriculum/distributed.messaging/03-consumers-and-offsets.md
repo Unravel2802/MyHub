@@ -287,6 +287,7 @@ event-driven system maintainable.
 > [!EXERCISE apply] A consumer updates a local shipment row and then commits its broker offset. Show how it can make the two changes atomic when both records are stored in the same database.
 >
 > **Solution:** In one database transaction, insert the message ID into a uniquely constrained processed-message table, apply the shipment update, and save the partition offset. The transaction commits all three together or rolls them all back, so a redelivery is deduplicated.
+
 > [!EXERCISE stretch] A new notification group starts with `auto.offset.reset=earliest` on a topic containing years of retained account-change events. Recommend a safer start policy and explain what a weaker answer misses.
 >
 > **Solution:** Start at `latest` if the group should send only notifications for new events; use an intentional timestamp reset if it must cover a bounded historical period. A weaker answer assumes a new group starts at the current end, missing that `earliest` replays all retained history and could send years of notifications.

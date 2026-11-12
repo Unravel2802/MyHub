@@ -244,6 +244,7 @@ a popular implementation of it is safe.
 > [!EXERCISE apply] Two workers may rebuild the same public search cache, where repeating the write is harmless. Choose a coordination-removal technique and explain why it fits.
 >
 > **Solution:** Make the rebuild idempotent so executing it twice has the same safe result as executing it once. That removes the need for a lock whose only purpose was preventing duplicate work.
+
 > [!EXERCISE stretch] A product requires an exact current count of active carts across changing shards without waiting for coordination. Explain whether both requirements can be guaranteed and what a weaker answer misses.
 >
 > **Solution:** An exact aggregate over a set that is still changing is non-monotonic, so the chapter's coordination-free condition does not apply; keep coordination for exactness or weaken the requirement. A weaker answer merges local counts and calls the result exact, missing that a later update can invalidate the total already reported.

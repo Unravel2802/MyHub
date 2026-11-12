@@ -226,6 +226,7 @@ incident does.
 > [!EXERCISE apply] A recommendations service is down. The product page still renders with popular items instead. What behavior is this?
 >
 > **Solution:** Graceful degradation: the optional carousel falls back while the core product page remains available.
+
 > [!EXERCISE stretch] A team says the best fallback is to retry the failed recommendation service forever within the page request. What does this miss?
 >
 > **Solution:** The dependency is optional and needs defined fallback behavior. Retrying without isolation can make the core flow fail with it, which is fail-closed behavior.

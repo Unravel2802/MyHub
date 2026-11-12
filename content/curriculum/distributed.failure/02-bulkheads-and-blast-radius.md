@@ -241,6 +241,7 @@ succeeds.
 > [!EXERCISE apply] A shared pool has 100 threads. Slow checkout requests occupy all 100 threads while search has no dependency problem. Why does search fail?
 >
 > **Solution:** Both routes share the pool, so checkout holds all 100 threads and leaves none for search.
+
 > [!EXERCISE stretch] A team adds separate pools and claims this makes dependency failures impossible. What is missing?
 >
 > **Solution:** Bulkheads bound how far a failure spreads; they do not prevent the dependency from failing. The affected route can still fail when its own pool is exhausted.

@@ -240,6 +240,7 @@ it.
 > [!EXERCISE apply] A flag is at 100% for six months and nobody removes it. What should the team do?
 >
 > **Solution:** Treat the flag as a temporary control, set an expiry and cleanup process, then remove the dead branch and its config dependency.
+
 > [!EXERCISE stretch] A traffic-weight change causes errors across the fleet. What is a weaker response, and what safeguards does the chapter support?
 >
 > **Solution:** A weaker response changes weights globally and hopes. The chapter says dynamic configuration has no canary or rollback by default; use a controlled rollout and monitor the change, with a rollback plan before applying it.

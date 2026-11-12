@@ -242,6 +242,7 @@ system itself.
 > [!EXERCISE apply] A global service limit is 1,200 requests per second across 8 instances. If the coordinator splits the budget evenly for the next window, how much does each instance receive?
 >
 > **Solution:** Divide the global budget by the instance count: 1,200 ÷ 8 = **150 requests per second per instance**.
+
 > [!EXERCISE stretch] A four-worker batch barrier waits forever when the final worker crashes before arriving. Recommend a design decision and explain what a weaker answer misses.
 >
 > **Solution:** Give the barrier a timeout and choose explicitly whether timeout means proceed with fewer workers, abort, or escalate. A weaker answer only retries the missing worker; it misses that a participant may never return and every other worker can remain blocked indefinitely.

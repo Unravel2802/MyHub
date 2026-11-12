@@ -243,6 +243,7 @@ Next: health checking — deciding which backends are eligible at all.
 > [!EXERCISE apply] Three backends have 2, 8 and 10 active requests. Which backend does least-connections select?
 >
 > **Solution:** The backend with 2 active requests, because least-connections chooses the backend with the fewest active requests.
+
 > [!EXERCISE stretch] A team argues that power-of-two-choices must track the exact load of every server to work. What is missing from that answer?
 >
 > **Solution:** It samples two backends and chooses the less loaded one; it does not need to globally track every backend's exact load. The weaker answer adds centralized precision the chapter's algorithm avoids.

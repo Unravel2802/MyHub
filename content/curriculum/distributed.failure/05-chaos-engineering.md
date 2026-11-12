@@ -229,6 +229,7 @@ between them.
 > [!EXERCISE apply] The chapter's hypothesis is that killing one of three payment instances will not change checkout success rate. What should the team observe?
 >
 > **Solution:** Whether the measurable steady state, checkout success rate of at least 99.5%, holds.
+
 > [!EXERCISE stretch] A team injects a fleet-wide failure without defining a hypothesis or watching service metrics. Why is that not the experiment described here?
 >
 > **Solution:** The chapter defines an observed experiment: define measurable normal, state a hypothesis, inject the smallest failure that tests it, observe and conclude. The weaker answer skips those controls.

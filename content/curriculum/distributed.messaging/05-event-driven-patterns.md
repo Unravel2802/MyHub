@@ -251,6 +251,7 @@ that recur.
 > [!EXERCISE apply] A product team separates its write model from a search read model, and users sometimes read stale search results immediately after an update. Give two mitigations taught in the chapter.
 >
 > **Solution:** Return the new state in the command response, or have the client hold a version and wait until the projection reaches it. The projection remains eventually consistent with the write model.
+
 > [!EXERCISE stretch] A team proposes event sourcing solely to keep an audit trail for ordinary account settings. Recommend a lighter fit and explain what a weaker answer misses.
 >
 > **Solution:** Keep an append-only audit table if the requirement is only to record changes; reserve event sourcing for domains where the event history is itself the source of truth. A weaker answer points to time travel and replay but misses the projection cost for every query, permanent schema history and difficult deletion.

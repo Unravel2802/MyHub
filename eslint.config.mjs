@@ -73,9 +73,6 @@ const eslintConfig = defineConfig([
     // eslint judges them by rules they were never written against.
     "Redesign landing page (1)/**",
     "Redesign MyHub Dashboard/**",
-    // Vendored PDF.js worker, copied verbatim from pdfjs-dist/build/ and
-    // served from public/. Third-party minified output, not our source.
-    "public/pdf.worker.min.mjs",
   ]),
   {
     rules: {

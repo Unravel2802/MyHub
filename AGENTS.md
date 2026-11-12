@@ -63,16 +63,11 @@ a "reasonable" alternative.
   `Markdown.tsx` still never renders raw HTML from the DB.
 - Diagrams: `mermaid` — approved 2026-10-08 for curriculum chapters' ` ```mermaid ` blocks
   (`docs/handoff/curriculum-reader-redesign.md`, PR C). Import it DYNAMICALLY inside an effect —
-  it touches `window` at module scope, the same SSR trap as pdfjs — so only chapters with a
+  it touches `window` at module scope, the SSR trap that bit the since-removed Reader's pdfjs import — so only chapters with a
   diagram load it. Initialise with `securityLevel: "strict"` and `flowchart.htmlLabels: false`.
   Inserting `mermaid.render()`'s SVG via `dangerouslySetInnerHTML` is allowed **only** for
   repository chapter files, on the same narrow terms as highlight.js above; it does not relax
   the `Markdown.tsx` rule for anything else.
-- PDF rendering: `pdfjs-dist` (Mozilla's PDF.js) — approved 2026-08-11 for the Reader module.
-  Import from `pdfjs-dist` and point `GlobalWorkerOptions.workerSrc` at a worker copied into
-  `public/`, never a CDN URL. Selection geometry belongs in
-  `src/modules/reader/annotationGeometry.ts` (already written and unit-tested) — call it, don't
-  reimplement the coordinate math in a component. See `docs/handoff/reader.md`.
 - One-off scripts (`scripts/*.ts`, not application code): `tsx` — added 2026-07-13 for the seed
   and backup scripts. Follow the convention those scripts already establish (see
   `docs/handoff/rls-audit-and-backup-script.md`) rather than picking a different runner.
@@ -155,10 +150,8 @@ LeetCode Tracker, Trading Journal, Knowledge Base UI, Command Palette, and the H
 **Knowledge Base and Command Palette are no longer V2** — both shipped. Any older instruction to
 "don't start on those" is spent.
 
-**The Reader shipped 2026-08-11**, so there is no queued feature work right now. If you pick
-it up to extend, read `docs/handoff/reader.md` first — it records the traps (dynamic pdfjs
-import, the text layer's per-span CSS, upload-before-insert ordering, and never letting pixel
-coordinates reach the repository).
+**The Reader was removed 2026-11-12** (page, module, `pdfjs-dist`, events; migration `0050`
+drops its tables and bucket). There is no queued feature work right now.
 
 `myhub_plan.md` Part A and Part B are a RECORD of what was built and why, not a to-do list.
 Read them for rationale; don't work through Part B's phases as if they're pending.

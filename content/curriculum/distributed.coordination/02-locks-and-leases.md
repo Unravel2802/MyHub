@@ -73,6 +73,15 @@ protected** rejects anything older than what it has seen.
   A resumes, writes with 33   → REJECTED
 ```
 
+```mermaid
+flowchart TB
+  A[Holder A acquires token 33] --> P[Lease expires while A pauses]
+  P --> B[Holder B receives token 34]
+  B --> R[Resource records highest token 34]
+  A --> W[Old write with token 33]
+  R --> X[Reject stale write]
+```
+
 ```python
 lease = etcd.lease(ttl=10)
 etcd.put("/locks/report", node_id, lease=lease)
@@ -117,6 +126,8 @@ process pauses. Neither is guaranteed:
 execution is acceptable, and for that purpose it works.
 
 **The resolution that matters for you:**
+
+> [!PITFALL] A Redis lock without fencing does not protect a correctness-sensitive resource from a paused holder that resumes after the lease expires.
 
 ```text
   efficiency lock  ──▶ Redis SET NX PX is fine. Redlock is
@@ -197,6 +208,14 @@ chapter, made concrete:
 That third one is worth adopting as a habit. A `unique (job_name, run_at)`
 constraint gives you a leader per scheduled run, using infrastructure you already
 operate, with no lease to renew and no fencing to implement.
+
+> [!CHECK] Where must a fencing-token check live, and why is a client-side check insufficient?
+>
+> The protected resource must reject tokens older than the highest it has seen. A paused client is exactly the client that cannot perform a reliable check before writing.
+
+> [!CHECK] What should a job do when lease renewal fails, and how early does the chapter recommend renewing?
+>
+> Stop work immediately rather than retrying renewal while continuing. Renew at roughly ttl/3, which leaves two chances to recover from a transient failure before expiry.
 
 ## What to take away
 

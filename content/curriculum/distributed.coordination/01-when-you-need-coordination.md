@@ -119,6 +119,16 @@ The list is short, and each item is a **negative** invariant — something that 
 Everything else is usually a partitioning or idempotence problem wearing a lock's
 clothing.
 
+```mermaid
+flowchart TB
+  R[Requirement] --> O{One owner per item?}
+  O -->|Yes| P[Partition ownership]
+  O -->|No| I{Can duplicate work be harmless?}
+  I -->|Yes| D[Make it idempotent]
+  I -->|No| C[Check commutativity and contention]
+  C --> M[Use a database or consensus store if needed]
+```
+
 ## Where the coordination lives
 
 Three placements, with very different costs:
@@ -187,6 +197,14 @@ Two mitigations that matter:
 
 Most requirements are answered before step 5, and each step avoided is a round
 trip and a failure mode removed.
+
+> [!CHECK] According to CALM, what property allows a coordination-free distributed implementation?
+>
+> The operation must be monotonic: new information only adds to the conclusion and does not retract something already concluded.
+
+> [!CHECK] Why can partition ownership remove a distributed lock for updates to an item?
+>
+> Each item has exactly one owner, so operations for it are routed to that owner and serialized locally rather than coordinated across nodes.
 
 ## What to take away
 

@@ -71,6 +71,14 @@ that already know where each other are. This is the same principle as
 configuration: coordination is needed to *change* the view, not to keep operating
 on it.
 
+```mermaid
+flowchart TB
+  I[Instance registers TTL] --> R[Registry]
+  C[Client watches list] --> R
+  R --> U[Updated list]
+  C --> K[Keep cached list offline]
+```
+
 ## What a registration should carry
 
 More than an address, if the balancer is to make good decisions:
@@ -151,6 +159,14 @@ If you are building rather than adopting:
 
 The last three lines are what make the unavoidable staleness survivable, and they
 matter more than the discovery mechanism itself.
+
+> [!CHECK] Which direction of stale discovery is user-visible, and what is the recommended response?
+>
+> A stale list containing a dead backend causes request errors. Retry on a different backend and use passive outlier ejection; a stale list missing a live backend mainly wastes capacity.
+
+> [!CHECK] Why should a client re-read the full list when a watch reconnects?
+>
+> It may have missed a deregistration while disconnected. Re-reading prevents it from continuing to send requests to an instance that was removed.
 
 ## What to take away
 

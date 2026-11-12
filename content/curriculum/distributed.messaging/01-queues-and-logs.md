@@ -32,6 +32,15 @@ its own offset, and the data stays until a retention policy removes it.
 
 That single difference produces everything below.
 
+```mermaid
+flowchart TB
+  P[Producer] --> Q[Queue]
+  Q -->|ack deletes| W[One worker]
+  P --> L[Append-only log]
+  L --> A[Group A offset]
+  L --> B[Group B offset]
+```
+
 ## The comparison
 
 | | Queue | Log |
@@ -174,10 +183,20 @@ time, or the consumer pausing the partition — which blocks everything behind i
 Delayed work is a genuinely poor fit for a log, and the usual answer is a
 separate scheduler component.
 
+> [!PITFALL] A queue per consumer can imitate an event bus, but each queue develops a different backlog and failure history; new consumers still cannot replay the original history.
+
 Conversely, the thing queues do badly: **a queue used as an event bus by
 attaching a queue per consumer** works, and then diverges — each consumer's queue
 has a different depth and a different failure history, with no shared position to
 reason about, and no way to add a consumer that needs history.
+
+> [!CHECK] Who owns the position in a queue, and who owns it in a log?
+>
+> The queue broker tracks delivery and removes an acknowledged message. A log consumer records its own offset, while the log retains the data until its retention policy removes it.
+
+> [!CHECK] Why can a log-based consumer not simply add an eleventh worker to ten partitions and gain another unit of parallelism?
+>
+> A consumer group assigns each partition to one consumer. With ten partitions, only ten consumers can be active; an eleventh has no partition and stays idle.
 
 ## What to take away
 

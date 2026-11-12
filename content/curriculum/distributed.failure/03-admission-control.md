@@ -25,6 +25,28 @@ available.
   → goodput approaches ZERO         → goodput = 600/s
 ```
 
+```chart
+type: bar
+scale: linear
+unit: requests/s
+title: Overload with admission control
+caption: Shedding preserves service capacity for accepted requests.
+highlight: Accepted with shedding
+---
+Arrivals: 1000
+Service capacity: 600
+Accepted with shedding: 600
+Rejected with shedding: 400
+```
+
+```mermaid
+flowchart TB
+  R[Request arrives] --> D{Past deadline or queue limit?}
+  D -->|Yes| J[Reject early with Retry-After]
+  D -->|No| P[Apply priority and concurrency limit]
+  P --> A[Accept useful work]
+```
+
 **Goodput** — useful work completed, not requests accepted — is the metric that
 matters. Under overload without shedding, goodput collapses to near zero while
 utilisation reads 100%: the server is maximally busy producing nothing, because
@@ -191,6 +213,14 @@ a latency collapse, as the streaming chapter described.
 
 Every one should have a bound and an explicit behaviour when full. The default in
 most libraries is unbounded, which is the wrong default and worth auditing.
+
+> [!CHECK] Which signal does the chapter recommend as the best single indicator of overload, and why?
+>
+> Queueing time is the best single signal because it measures how long the request waits before processing, isolating backlog from CPU, memory and dependency causes.
+
+> [!CHECK] Why should the system reject a request whose deadline has already passed?
+>
+> The client has already stopped waiting, so starting the work wastes capacity at the moment the system is overloaded.
 
 ## What to take away
 

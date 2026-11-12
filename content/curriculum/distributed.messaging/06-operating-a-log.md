@@ -196,6 +196,25 @@ messages is a decision with data-loss consequences, and it should be recorded,
 communicated, and followed by a backfill plan — not performed quietly at 3am and
 forgotten.
 
+```mermaid
+flowchart TB
+  L[Lag is growing] --> P{One partition or all?}
+  P -->|One| X[Check poison message or hot key]
+  P -->|All| C[Check capacity or downstream dependency]
+  X --> R{Near retention deadline?}
+  C --> R
+  R -->|Yes| E[Extend retention first]
+  R -->|No| T[Increase throughput]
+```
+
+> [!CHECK] What does growing lag in time near the retention limit mean, and what is the first action in the runbook?
+>
+> It is an approaching deadline for permanent data loss because retention may delete messages before the consumer reaches them. Extend retention first to buy time for the remaining fix.
+
+> [!CHECK] Why should an operator investigate disk usage and growth per broker rather than only cluster-wide storage totals?
+>
+> A full broker disk stops writes for every topic on that broker. Per-broker usage and growth identify that hard failure before an average hides the endangered broker.
+
 ## What to take away
 
 1. Monitor lag per partition in *time*, ISR size, and rebalance rate — the last

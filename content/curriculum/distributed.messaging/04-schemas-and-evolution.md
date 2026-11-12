@@ -53,6 +53,13 @@ including the oldest messages.
 The upgrade-order implication is the practical part and it is easy to get
 backwards:
 
+```mermaid
+flowchart TB
+  S[Retained old messages] --> C[Deploy backward-compatible consumer]
+  C --> P[Deploy new producer]
+  P --> N[New messages use new schema]
+```
+
 ```text
   BACKWARD compatible change → deploy CONSUMERS first, then producers
   FORWARD compatible change  → deploy PRODUCERS first, then consumers
@@ -185,6 +192,14 @@ Putting a version in the *topic name* is the escape hatch for a change that
 cannot be made compatible: create `v2`, dual-publish, migrate consumers, retire
 `v1`. It is heavier than a schema evolution, and it is what you use when the
 schema registry correctly refuses your change.
+
+> [!CHECK] In backward compatibility mode, which version of data must the new consumer read, and which side deploys first?
+>
+> The new consumer must read old retained data, so deploy consumers first and producers second.
+
+> [!CHECK] Why must a team add a new field instead of changing the meaning of an existing field?
+>
+> A registry cannot detect a semantic change such as redefining an amount or status. It passes compatibility checks while silently corrupting consumers, so the team should add a field and deprecate the old one.
 
 ## What to take away
 

@@ -27,6 +27,17 @@ A partition is the unit of ordering, of parallelism, of replication and of
 storage. Everything about a topic's behaviour follows from how messages are
 distributed across its partitions.
 
+```mermaid
+sequenceDiagram
+  participant P as Producer
+  participant L as Partition leader
+  participant F as In-sync follower
+  P->>L: Produce with acks=all
+  L->>F: Replicate record
+  F-->>L: Record stored
+  L-->>P: Acknowledge under ISR settings
+```
+
 **Which partition a message lands in:**
 
 ```text
@@ -224,6 +235,14 @@ the reference in the message.
 
 The message stays small, the log stays fast, and consumers that only need the
 metadata never fetch the object.
+
+> [!CHECK] What guarantee does a message key choose, and where does that ordering stop?
+>
+> The key routes related messages to the same partition, where their order is guaranteed. There is no ordering guarantee across different partitions.
+
+> [!CHECK] Why do `acks=all` and `min.insync.replicas=2` work together to make the three-replica example durable?
+>
+> `acks=all` waits for every in-sync replica, and the minimum of two prevents an ISR that has shrunk to one from silently accepting a single-copy write. With replication factor three, one broker may be down while two copies remain; with two down, writes are refused.
 
 ## What to take away
 

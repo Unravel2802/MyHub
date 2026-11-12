@@ -40,6 +40,15 @@ canary against baseline on **error rate, latency percentiles, and a business
 metric** — the last one catches the change that is technically healthy and
 commercially catastrophic, which no infrastructure metric sees.
 
+```mermaid
+flowchart TB
+  V[Send small share to new version] --> S[Soak and compare baseline]
+  S --> G{Regression?}
+  G -->|No| I[Increase traffic share]
+  I --> S
+  G -->|Yes| R[Set new-version weight to zero]
+```
+
 Two mistakes worth avoiding:
 
 - **Too small a canary for too short a time.** 1% of traffic for two minutes may
@@ -177,6 +186,16 @@ That is a small change with a disproportionate effect during an incident.
 Every one of these is a control you want to *already have* during an incident,
 not one you want to build during it. The cost of building them in advance is
 modest; the cost of not having them is measured in the length of an outage.
+
+> [!INTERVIEW] For a canary question, say you compare the new version with the old version running concurrently, using error rate, latency percentiles and a business metric; define rollback as setting its traffic weight to zero.
+
+> [!CHECK] What distinguishes a canary from a slow rollout?
+>
+> A canary compares the new version with a concurrent baseline during each soak, using technical and business metrics; a slow rollout only increases the share over time.
+
+> [!CHECK] What must be true before shadow traffic is safe?
+>
+> The shadow copy must not cause side effects. It is safe for read paths or when writes go to a separate store, and shadow traffic's extra dependency load must be budgeted.
 
 ## What to take away
 

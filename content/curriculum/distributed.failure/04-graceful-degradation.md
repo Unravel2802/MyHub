@@ -28,6 +28,15 @@ inside a request that had no isolation. Making the other choice requires exactly
 two things: knowing which dependencies are optional, and having a defined
 behaviour when they are missing.
 
+```mermaid
+flowchart TB
+  R[Optional recommendation needed] --> L[Try live result]
+  L -->|Available| V[Serve live result]
+  L -->|Unavailable| C{Cached value available?}
+  C -->|Yes| S[Serve cached or stale value]
+  C -->|No| D[Use default or omit feature]
+```
+
 ## Classify every dependency
 
 The exercise that makes this concrete, and it should be written down per service:
@@ -171,6 +180,14 @@ exception type is renamed.
      in turn and confirm the product still works
   □  run a game day that exercises them in production
 ```
+
+> [!CHECK] What are the three dependency classes, and which class should readiness include?
+>
+> Critical dependencies are required to serve; degradable dependencies reduce a feature but leave the core flow working; optional dependencies can fail unnoticed. Readiness should include only critical dependencies.
+
+> [!CHECK] What are the acceptable write-path choices during a dependency failure, and what must never happen?
+>
+> Queue the write, reject clearly, or accept the core write while dropping optional enrichment. Never report success and silently lose the accepted write.
 
 ## What to take away
 

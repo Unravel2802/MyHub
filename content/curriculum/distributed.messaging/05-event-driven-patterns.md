@@ -68,6 +68,16 @@ The genuine benefits: read models are independently scalable, individually
 optimised, and rebuildable from the log when one is corrupted or when a new one
 is needed.
 
+```mermaid
+flowchart TB
+  C[Command] --> W[Write model]
+  W --> L[Event log]
+  L --> S[Search projection]
+  L --> D[Dashboard projection]
+  S --> R[Read path]
+  D --> R
+```
+
 The genuine cost: **the read models are eventually consistent with the write
 model**, and the user who just did something will read from a projection that may
 not have caught up. That is the read-your-writes problem from the replication
@@ -194,6 +204,16 @@ costs one column.
   Is the event history itself the domain?
     └─ YES ──▶ event sourcing. otherwise, do not.
 ```
+
+> [!INTERVIEW] If asked to choose between an outbox, CDC and event sourcing, start with the requirement: atomic delivery intent, database change distribution, or a domain whose history is the source of truth.
+
+> [!CHECK] Why are event notification and event-carried state transfer different for replay?
+>
+> A notification forces consumers to call back and sees today's state during replay. State transfer carries enough context in the event for autonomous consumers and reproduces the historical state.
+
+> [!CHECK] What makes event sourcing a larger commitment than keeping an append-only audit table?
+>
+> The event log becomes the source of truth, reads need a fold or maintained projection, schema evolution is permanent, and deletion is difficult when history is immutable.
 
 ## What to take away
 

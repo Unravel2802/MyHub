@@ -35,6 +35,17 @@ the closer to the network, the cheaper and more global.** Real systems use
 several together — anycast to a region, L7 within it, client-side between
 services.
 
+```mermaid
+flowchart TB
+  U[User] --> D[DNS: coarse region]
+  D --> N[Anycast: nearest POP]
+  N --> L[L7: choose per request]
+  L --> A[Backend A]
+  L --> B[Backend B]
+  C[Client-side balancer] --> A
+  C --> B
+```
+
 ## DNS
 
 The oldest and coarsest. Return multiple A records and let clients pick.
@@ -186,6 +197,14 @@ one, more slowly.
 The most common mistake is the last line. The second most common is putting an
 L7 proxy on a service-to-service path where a client-side library would have
 avoided a hop and a shared failure domain.
+
+> [!CHECK] What can an L4 balancer see and balance, and what can an L7 balancer see and balance?
+>
+> L4 sees transport information such as IP and port and balances TCP connections. L7 terminates requests and can use request details such as path, headers, method and response codes to balance requests.
+
+> [!CHECK] Why can a regional failover be incorrect even when the target region is healthy?
+>
+> The target may not have the affected users' data. Sending traffic there without checking data availability can turn a partial outage into a total one.
 
 ## What to take away
 

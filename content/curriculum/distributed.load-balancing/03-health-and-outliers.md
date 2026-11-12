@@ -31,6 +31,16 @@ before any user request reaches it. Passive detection catches the far more commo
 case: a backend that answers `/healthz` cheerfully while failing real work,
 because its database pool is exhausted or one code path is broken.
 
+```mermaid
+flowchart TB
+  A[Active probe] --> H{Process reachable?}
+  H -->|No| E[Eject unavailable backend]
+  H -->|Yes| T[Observe real traffic]
+  T -->|Repeated failures| O[Outlier detection]
+  O --> E
+  T -->|Healthy responses| K[Keep backend eligible]
+```
+
 ## Liveness versus readiness — again, because it matters
 
 The distinction from the RPC topic, restated because this is where it causes
@@ -66,6 +76,8 @@ This has happened to many organisations, and the diagnosis is always the same
 line in a Kubernetes manifest. **Liveness answers "is this process stuck", and
 nothing else.** If a process is running and its event loop is responsive, it is
 alive, even if it can do no useful work.
+
+> [!PITFALL] Putting a database ping in liveness can restart every instance during one database blip, causing the restart surge to overwhelm the recovering dependency.
 
 Kubernetes' third probe, **startup**, exists to stop liveness from killing a
 slow-starting process before it has finished booting. Use it for anything with a
@@ -188,6 +200,14 @@ Step 3 is skipped constantly. With a 5-second probe interval and a threshold of
 exits at step 2 produces 10 seconds of connection failures. That is the entire
 explanation for "we see a few errors during every deploy", and the fix is a sleep
 in the shutdown hook.
+
+> [!CHECK] Which dependencies belong in liveness and readiness checks?
+>
+> Liveness checks only whether the process is wedged and must not check dependencies. Readiness checks critical dependencies the instance cannot serve without, plus capacity such as available pool slots.
+
+> [!CHECK] Why does the chapter recommend a minimum-healthy threshold and a cap on outlier ejection?
+>
+> When many backends fail checks together, the problem is likely shared; serving degraded traffic can be better than removing the whole fleet. The ejection cap likewise prevents a balancer from ejecting too much of the pool at once.
 
 ## What to take away
 

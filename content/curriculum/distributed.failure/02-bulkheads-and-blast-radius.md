@@ -33,6 +33,14 @@ Search was healthy, its dependency was healthy, and it stopped working because
 something unrelated shared its thread pool. This is the exact failure bulkheads
 prevent, and it is common.
 
+```mermaid
+flowchart TB
+  Q[Incoming requests] --> S[Search pool]
+  Q --> P[Payment pool]
+  P -->|Saturated| R[Reject payment work quickly]
+  S -->|Isolated capacity| O[Search continues]
+```
+
 ## Resource pools per dependency
 
 ```text
@@ -186,6 +194,14 @@ that cannot serve a lookup should fall back to a cached mapping; an auth service
 that is down should let already-issued tokens keep working rather than failing
 every request. **The shared components are where the residual risk lives**, and
 they deserve the most conservative engineering in the system.
+
+> [!CHECK] Why should a bulkhead's acquire timeout be short?
+>
+> Waiting to enter a full pool recreates the queue that isolation was meant to avoid. The caller should fail quickly and produce a monitored saturation signal.
+
+> [!CHECK] How does cell-based architecture bound the impact of one cell failure?
+>
+> Each cell is a complete independent stack assigned to a shard of users. A failure is confined to its cell, so the affected user share is 1/N of the cells.
 
 ## What to take away
 

@@ -59,6 +59,15 @@ Whichever you choose, **cache locally and keep serving from the cache** when the
 store is unreachable. A configuration store outage should not stop the fleet —
 instances already have the values they need.
 
+```mermaid
+flowchart TB
+  V[Validate config change] --> S[Stage to a small fleet share]
+  S --> W[Watch and apply validated value]
+  W --> M[Measure during soak]
+  M -->|Healthy| A[Advance rollout]
+  M -->|Invalid or unhealthy| R[Restore last known good value]
+```
+
 ## Rollout: the part people skip
 
 A config change reaches every instance in seconds. That is the feature and the
@@ -184,6 +193,14 @@ You get review, history, blame, rollback via revert, and CI validation of the
 values — while the propagation stays fast. The cost is that emergency changes go
 through a PR, so keep a documented break-glass path for kill switches, and make
 using it noisy rather than convenient.
+
+> [!CHECK] What should a watcher do after disconnecting or receiving a revision-too-old response?
+>
+> Reconnect with backoff and jitter, then re-read the full state before resuming the watch so it does not silently keep stale configuration.
+
+> [!CHECK] Why must deregistration wait after marking an instance unready?
+>
+> Clients and load balancers need at least one health-check interval to observe the change. The instance must keep serving during that propagation window before it finishes in-flight requests and closes connections.
 
 ## What to take away
 

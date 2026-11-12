@@ -29,6 +29,15 @@ The most important failure shape, and the least widely known.
 The defining property: **the trigger is gone and the system does not recover.**
 Restoring capacity does not help; the system is now in a state that feeds itself.
 
+```mermaid
+flowchart TB
+  S[Latency spike] --> T[Client timeouts]
+  T --> R[Retries add load]
+  R --> L[Latency rises]
+  L --> T
+  R --> X[Break loop with shedding or retry control]
+```
+
 The canonical example:
 
 ```text
@@ -126,6 +135,8 @@ control*: stage everything, canary everything, and be able to roll back
 everything quickly. Hardware independence you buy; software correlation you must
 design against.
 
+> [!PITFALL] Counting replicas as independent when they share a deploy, configuration, certificate or dependency overstates the availability they provide.
+
 ## Slow is worse than dead
 
 A counter-intuitive fact worth internalising:
@@ -188,6 +199,14 @@ And two that are not physical, and are more likely to bite:
 - **The deploy** is a failure domain. Everything with the same version fails
   together.
 - **The tenant** is a failure domain, if one tenant's traffic can affect another.
+
+> [!CHECK] What makes a failure metastable rather than a temporary disturbance?
+>
+> The trigger has ended, but the system's own response sustains overload and prevents recovery. The response must break the feedback loop rather than only add capacity.
+
+> [!CHECK] Why can a slow backend be more dangerous to callers than a dead backend?
+>
+> A dead backend fails quickly and can be ejected. A slow one passes health checks while occupying caller threads and connection slots until upstream resources are exhausted.
 
 ## What to take away
 

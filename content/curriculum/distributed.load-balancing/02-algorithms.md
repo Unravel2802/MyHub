@@ -92,6 +92,14 @@ which the exact algorithm does not. This is why it appears in Nginx, Envoy,
 HAProxy and most modern client-side libraries, and it is the algorithm to choose
 if you are choosing one.
 
+```mermaid
+flowchart TB
+  R[Request arrives] --> S[Sample two backends]
+  S --> C[Compare in-flight counts]
+  C --> B[Send to the less-loaded sample]
+  B --> U[Update local in-flight state]
+```
+
 ## The full menu
 
 | Algorithm | State needed | Adapts to slow servers | Notes |
@@ -190,6 +198,14 @@ caps the amplification cluster-wide, which no per-request attempt limit can do.
 The practical recommendation is short: **default to power of two choices**, add
 slow start, add a retry budget, and use consistent hashing only where you
 deliberately want affinity.
+
+> [!CHECK] Why does round robin perform poorly when one backend is slow or requests have different costs?
+>
+> It assumes requests cost the same and servers are equally fast. It continues sending the degraded server its full share, so its queue and timeouts grow.
+
+> [!CHECK] What objective does consistent hashing optimize, and what does it sacrifice?
+>
+> It optimizes affinity and locality by routing the same key to the same backend. It sacrifices even load and cannot adapt to a slow backend; bounded-load hashing can overflow when one exceeds its threshold.
 
 ## What to take away
 

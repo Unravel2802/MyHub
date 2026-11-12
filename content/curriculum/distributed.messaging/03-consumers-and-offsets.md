@@ -56,6 +56,16 @@ The same fork as the delivery-semantics chapter, and the same answer: **commit
 after processing, and make processing idempotent.** Losing messages is almost
 never the right trade.
 
+```mermaid
+sequenceDiagram
+  participant C as Consumer
+  participant B as Broker
+  C->>B: Poll records at offset N
+  C->>C: Process records
+  C->>B: Commit offset after processing
+  Note over C,B: Crash before commit means replay
+```
+
 **Auto-commit is the trap.** `enable.auto.commit=true` commits on a timer,
 independent of whether processing finished:
 
@@ -232,6 +242,14 @@ wrong reset policy and sending a decade of notifications.
 Deliberate offset manipulation is a legitimate operational tool: reset to a
 timestamp to reprocess a day, or forward past a corrupt range. Both should be
 runbook procedures rather than improvised during an incident.
+
+> [!CHECK] What is the consequence of committing before processing, and what is the consequence of committing after processing?
+>
+> Committing first gives at-most-once behaviour: a crash can lose the message permanently. Committing after gives at-least-once behaviour: a crash can cause the message to be processed again, so processing should be idempotent.
+
+> [!CHECK] What must a consumer do after sending a permanent poison message to a dead-letter topic?
+>
+> It must advance the original partition offset, alert on the dead-letter rate, and retain enough original topic, partition, offset and header context to support replay.
 
 ## What to take away
 

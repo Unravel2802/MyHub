@@ -38,6 +38,17 @@ are asserting a belief about the system and testing it. A failed experiment is
 the *point*, not an accident — it is a bug found under controlled conditions with
 everyone watching, rather than at 3am.
 
+```mermaid
+flowchart TB
+  S[Measure steady state] --> H[State a hypothesis]
+  H --> B[Choose smallest useful blast radius]
+  B --> I[Inject one failure]
+  I --> O[Observe the steady-state metric]
+  O --> C{Hypothesis held?}
+  C -->|Yes| A[Increase confidence]
+  C -->|No| F[Fix the exposed failure]
+```
+
 ## What to inject
 
 Ordered roughly by how often each finds something:
@@ -125,6 +136,8 @@ detects, and finding them costs an afternoon.
 volume, or dependencies, and a runbook that works in staging is a runbook that
 has not been tested.
 
+> [!INTERVIEW] Describe a chaos experiment as a measurable steady state, a falsifiable hypothesis, the smallest blast radius that can test it, an observable injection, and a conclusion; name the abort button before starting.
+
 ## Where to start
 
 The honest progression for a team that has not done this:
@@ -168,6 +181,14 @@ Chaos engineering is not the first thing to do. Before it is useful:
 Injecting failure into a system with none of these tells you what you already
 know: it breaks. The value comes from testing mechanisms that are supposed to
 handle it.
+
+> [!CHECK] What turns a failure injection into a chaos experiment rather than random breakage?
+>
+> A measurable steady state and a hypothesis make it a controlled test; the team observes whether the steady state holds and learns from either result.
+
+> [!CHECK] What prerequisites does the chapter require before a production experiment?
+>
+> The team must be able to measure steady state, have working alerts, timeouts and retry controls, deliberate degradation paths, a quick rollback and a stated abort button and blast radius.
 
 ## What to take away
 

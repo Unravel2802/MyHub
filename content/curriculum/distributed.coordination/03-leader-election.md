@@ -53,6 +53,19 @@ Three details are doing real work:
   rather than on the next poll, which is the difference between a 200 ms failover
   and a 30 s one.
 
+```mermaid
+sequenceDiagram
+  participant F as Follower
+  participant S as Coordination store
+  participant L as Leader
+  F->>S: Try to acquire lease
+  S-->>L: Lease granted
+  L->>L: Lead while renewal succeeds
+  L->>S: Renew lease
+  S-->>L: Renewal fails
+  L->>L: Stop work and fence writes
+```
+
 ## The four ways leadership is lost silently
 
 This is the part that produces incidents.
@@ -179,10 +192,20 @@ efficiency purposes, never for correctness.
      leader keep leading, or does everything stop?
 ```
 
+> [!INTERVIEW] Explain why election is the easy part: after winning, a leader must stop on unconfirmed leadership loss and fence each consequential write so a stale leader cannot corrupt state.
+
 That last question deserves a deliberate answer. Two defensible designs: keep
 leading until the lease genuinely expires (favours availability), or stop
 immediately on losing contact (favours safety). Choose knowingly; the default in
 most libraries is the first.
+
+> [!CHECK] Why does a warm standby matter when estimating failover time?
+>
+> Total failover is approximately TTL plus election round trip plus warm-up. A standby that already has the state removes the potentially dominant rebuild time.
+
+> [!CHECK] What should a follower do after losing the leader key in the standard implementation?
+>
+> Watch for deletion instead of polling so it reacts as soon as the key disappears, and acquire the lease through the coordination store before doing leader work.
 
 ## What to take away
 

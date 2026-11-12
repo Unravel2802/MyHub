@@ -119,6 +119,16 @@ This is how production rate limiters are built. The accuracy is approximate at
 window boundaries and exact enough over any meaningful period, and the
 coordination cost is decoupled from request volume — which is the whole point.
 
+```mermaid
+sequenceDiagram
+  participant I as Instances
+  participant C as Coordinator
+  I->>C: Report local budget usage
+  C->>C: Reallocate remaining budget
+  C-->>I: Send next-window budgets
+  I->>I: Enforce locally between reports
+```
+
 **Choosing the algorithm** matters as much as the distribution:
 
 ```text
@@ -187,6 +197,14 @@ No lease, no renewal, no fencing, no coordination service — the unique constra
 provides mutual exclusion and the database provides durability. Add a `status`
 column and a sweeper for runs that started and never finished, and this handles
 the large majority of "only one instance should do X" requirements.
+
+> [!CHECK] Why can a fixed-window rate limiter allow twice the limit at a boundary?
+>
+> It can accept the full limit just before one window ends and another full limit just after the next window begins, as in the chapter's 100 at 0:59 and 100 at 1:00 example.
+
+> [!CHECK] What does the chapter recommend when analytics needs an approximate distinct count rather than an exact billed count?
+>
+> HyperLogLog provides a mergeable distinct-count estimate with about 2% error and roughly 12 KB for billions of items; the chapter says this is suitable for analytics but not billing.
 
 ## What to take away
 

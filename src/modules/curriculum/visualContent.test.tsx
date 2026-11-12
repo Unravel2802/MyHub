@@ -19,6 +19,16 @@ export const EXERCISE_TRACKS: string[] = [
   "distributed.consistency",
   "distributed.consensus",
   "distributed.transactions",
+  "distributed.messaging",
+  "distributed.coordination",
+  "distributed.load-balancing",
+  "distributed.failure",
+];
+const DS3_VISUAL_TRACKS = [
+  "distributed.messaging",
+  "distributed.coordination",
+  "distributed.load-balancing",
+  "distributed.failure",
 ];
 function markdownFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -397,5 +407,35 @@ describe("curriculum visual content gates", () => {
         ];
       }),
     ).toEqual([]);
+  });
+  it("enforces the DS3 visual quotas", () => {
+    const chapters = files.filter((file) =>
+      DS3_VISUAL_TRACKS.some((prefix) =>
+        relative(ROOT, file).startsWith(prefix),
+      ),
+    );
+    expect(chapters).toHaveLength(21);
+    for (const file of chapters) {
+      const source = readFileSync(file, "utf8");
+      const markdown = source.replace(/^```[\s\S]*?^```\s*$/gm, "");
+      const relativePath = relative(ROOT, file);
+      const count = (pattern: RegExp) => [...markdown.matchAll(pattern)].length;
+      expect(count(/^```mermaid\s*$/gm), relativePath).toBeLessThanOrEqual(2);
+      expect(count(/^```chart\s*$/gm), relativePath).toBeLessThanOrEqual(1);
+      expect(count(/^>\s*\[!KEY\]/gm), relativePath).toBeLessThanOrEqual(2);
+      const recapAt = markdown.indexOf("## What to take away");
+      const checks = [...markdown.matchAll(/^>\s*\[!CHECK\]/gm)];
+      expect(checks, relativePath).toHaveLength(2);
+      expect(checks.every((match) => (match.index ?? Infinity) < recapAt), relativePath).toBe(true);
+    }
+    for (const topic of DS3_VISUAL_TRACKS) {
+      const source = chapters
+        .filter((file) => relative(ROOT, file).startsWith(topic))
+        .map((file) => readFileSync(file, "utf8").replace(/^```[\s\S]*?^```\s*$/gm, ""))
+        .join("\n");
+      expect([...source.matchAll(/^>\s*\[!PITFALL\]/gm)].length, topic).toBeGreaterThanOrEqual(1);
+      expect([...source.matchAll(/^>\s*\[!PITFALL\]/gm)].length, topic).toBeLessThanOrEqual(3);
+      expect([...source.matchAll(/^>\s*\[!INTERVIEW\]/gm)].length, topic).toBe(1);
+    }
   });
 });

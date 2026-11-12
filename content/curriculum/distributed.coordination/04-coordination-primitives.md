@@ -10,6 +10,14 @@ rate, and counting. Each has an exact implementation that coordinates and an
 approximate one that does not, and knowing where the approximation is acceptable
 is most of the skill.
 
+> [!WHY] Eight API instances each have to respect a shared partner limit of 1,200 requests per second, but coordinating every request would put a round trip on the hot path. Periodic budget redistribution trades boundary precision for much lower coordination cost.
+
+> [!GOALS]
+>
+> - Distinguish barriers, semaphores, rate limits and distributed counters
+> - Calculate a per-instance budget from a global rate and instance count
+> - Choose approximate counting only when the result does not govern billing
+
 ## Barriers
 
 Wait until N participants arrive before anyone proceeds.
@@ -119,6 +127,16 @@ This is how production rate limiters are built. The accuracy is approximate at
 window boundaries and exact enough over any meaningful period, and the
 coordination cost is decoupled from request volume — which is the whole point.
 
+```mermaid
+sequenceDiagram
+  participant I as Instances
+  participant C as Coordinator
+  I->>C: Report local budget usage
+  C->>C: Reallocate remaining budget
+  C-->>I: Send next-window budgets
+  I->>I: Enforce locally between reports
+```
+
 **Choosing the algorithm** matters as much as the distribution:
 
 ```text
@@ -188,6 +206,14 @@ provides mutual exclusion and the database provides durability. Add a `status`
 column and a sweeper for runs that started and never finished, and this handles
 the large majority of "only one instance should do X" requirements.
 
+> [!CHECK] Why can a fixed-window rate limiter allow twice the limit at a boundary?
+>
+> It can accept the full limit just before one window ends and another full limit just after the next window begins, as in the chapter's 100 at 0:59 and 100 at 1:00 example.
+
+> [!CHECK] What does the chapter recommend when analytics needs an approximate distinct count rather than an exact billed count?
+>
+> HyperLogLog provides a mergeable distinct-count estimate with about 2% error and roughly 12 KB for billions of items; the chapter says this is suitable for analytics but not billing.
+
 ## What to take away
 
 1. A barrier without a timeout is a distributed hang; decide explicitly what
@@ -205,3 +231,18 @@ the large majority of "only one instance should do X" requirements.
 
 Next: configuration and service discovery — the coordination that is about the
 system itself.
+
+
+## Exercises
+
+> [!EXERCISE recall] What does a HyperLogLog estimate, and what does a Count-Min Sketch estimate?
+>
+> **Solution:** HyperLogLog estimates the number of distinct items. Count-Min estimates key frequency and only overestimates; it can identify hot keys with fixed memory.
+
+> [!EXERCISE apply] A global service limit is 1,200 requests per second across 8 instances. If the coordinator splits the budget evenly for the next window, how much does each instance receive?
+>
+> **Solution:** Divide the global budget by the instance count: 1,200 ÷ 8 = **150 requests per second per instance**.
+
+> [!EXERCISE stretch] A four-worker batch barrier waits forever when the final worker crashes before arriving. Recommend a design decision and explain what a weaker answer misses.
+>
+> **Solution:** Give the barrier a timeout and choose explicitly whether timeout means proceed with fewer workers, abort, or escalate. A weaker answer only retries the missing worker; it misses that a participant may never return and every other worker can remain blocked indefinitely.

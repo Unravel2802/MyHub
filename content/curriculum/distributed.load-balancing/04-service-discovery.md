@@ -9,6 +9,15 @@ current, and handling the window in which it is wrong is service discovery. The
 window is unavoidable — the question is only which direction you would rather be
 wrong in.
 
+> [!WHY] Zone-local routing sends customers in zone A to its two backends while zone B’s ten backends sit idle; A overloads and users pay for the uneven routing.
+
+> [!GOALS]
+>
+> - Compare the user cost of a stale dead backend with the capacity cost of a missing live backend.
+> - Choose capacity-aware zone routing when local backend counts differ.
+> - Explain why clients need cached state, retries and fast removal.
+
+
 ## The two directions of staleness
 
 ```text
@@ -70,6 +79,14 @@ registry is unreachable.** A discovery outage should not take down the services
 that already know where each other are. This is the same principle as
 configuration: coordination is needed to *change* the view, not to keep operating
 on it.
+
+```mermaid
+flowchart TB
+  I[Instance registers TTL] --> R[Registry]
+  C[Client watches list] --> R
+  R --> U[Updated list]
+  C --> K[Keep cached list offline]
+```
 
 ## What a registration should carry
 
@@ -152,6 +169,14 @@ If you are building rather than adopting:
 The last three lines are what make the unavoidable staleness survivable, and they
 matter more than the discovery mechanism itself.
 
+> [!CHECK] Which direction of stale discovery is user-visible, and what is the recommended response?
+>
+> A stale list containing a dead backend causes request errors. Retry on a different backend and use passive outlier ejection; a stale list missing a live backend mainly wastes capacity.
+
+> [!CHECK] Why should a client re-read the full list when a watch reconnects?
+>
+> It may have missed a deregistration while disconnected. Re-reading prevents it from continuing to send requests to an instance that was removed.
+
 ## What to take away
 
 1. Staleness is unavoidable in both directions; a stale-dead entry causes errors
@@ -169,3 +194,18 @@ matter more than the discovery mechanism itself.
    staleness survivable, and matter more than the mechanism.
 
 Next: traffic management — using all of this deliberately, to release safely.
+
+
+## Exercises
+
+> [!EXERCISE recall] What should a client do when the registry becomes unreachable after it has learned a backend list?
+>
+> **Solution:** Cache the last known good list and keep using it. A registry outage should not take down services that already know where each other are.
+
+> [!EXERCISE apply] Zone A has two backends and zone B has ten. The router currently always prefers the local zone. What routing policy should replace that rule when local capacity is insufficient?
+>
+> **Solution:** Use capacity-aware zone routing: give each zone its proportional share and spill the remainder when local capacity is insufficient. A naive local preference overloads A while B idles.
+
+> [!EXERCISE stretch] A team proposes always preferring the local zone to avoid cross-zone latency and data charges. Recommend a safer policy and name what the local-only answer misses.
+>
+> **Solution:** Keep local-zone preference but make it capacity-aware: send the local zone its proportional share and spill the remainder. The local-only answer misses uneven zone capacity; with two backends in A and ten in B, A can overload while B is idle.

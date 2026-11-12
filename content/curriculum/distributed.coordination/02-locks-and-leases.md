@@ -9,6 +9,14 @@ most often implemented incorrectly. The failure is not usually in acquiring the
 lock — that part is easy — but in the assumption that holding it means you still
 hold it.
 
+> [!WHY] A paused worker can wake after its lease expires and another worker has taken over, then overwrite the newer result. The resource must recognize stale ownership, because the lock service alone cannot stop that old write.
+
+> [!GOALS]
+>
+> - Distinguish efficiency locks from correctness locks
+> - Explain how leases and fencing tokens prevent stale writes
+> - Choose an alternative when the protected resource cannot check a token
+
 ## Two different jobs
 
 Before implementing anything, decide which you need, because the requirements
@@ -73,6 +81,15 @@ protected** rejects anything older than what it has seen.
   A resumes, writes with 33   → REJECTED
 ```
 
+```mermaid
+flowchart TB
+  A[Holder A acquires token 33] --> P[Lease expires while A pauses]
+  P --> B[Holder B receives token 34]
+  B --> R[Resource records highest token 34]
+  A --> W[Old write with token 33]
+  R --> X[Reject stale write]
+```
+
 ```python
 lease = etcd.lease(ttl=10)
 etcd.put("/locks/report", node_id, lease=lease)
@@ -117,6 +134,8 @@ process pauses. Neither is guaranteed:
 execution is acceptable, and for that purpose it works.
 
 **The resolution that matters for you:**
+
+> [!PITFALL] A Redis lock without fencing does not protect a correctness-sensitive resource from a paused holder that resumes after the lease expires.
 
 ```text
   efficiency lock  ──▶ Redis SET NX PX is fine. Redlock is
@@ -198,6 +217,14 @@ That third one is worth adopting as a habit. A `unique (job_name, run_at)`
 constraint gives you a leader per scheduled run, using infrastructure you already
 operate, with no lease to renew and no fencing to implement.
 
+> [!CHECK] Where must a fencing-token check live, and why is a client-side check insufficient?
+>
+> The protected resource must reject tokens older than the highest it has seen. A paused client is exactly the client that cannot perform a reliable check before writing.
+
+> [!CHECK] What should a job do when lease renewal fails, and how early does the chapter recommend renewing?
+>
+> Stop work immediately rather than retrying renewal while continuing. Renew at roughly ttl/3, which leaves two chances to recover from a transient failure before expiry.
+
 ## What to take away
 
 1. Decide first whether it is an efficiency lock (double execution wastes work)
@@ -216,3 +243,18 @@ operate, with no lease to renew and no fencing to implement.
 
 Next: leader election — the most common use of a lock, and the patterns that make
 it safe.
+
+
+## Exercises
+
+> [!EXERCISE recall] What is the difference between an efficiency lock and a correctness lock?
+>
+> **Solution:** An efficiency lock prevents wasted duplicate work, where occasional double execution is acceptable. A correctness lock prevents corruption, where two writers are a bug and require fencing or a different design.
+
+> [!EXERCISE apply] A cache refresh may run twice without changing correctness, but two warehouse workers must not both publish an inventory correction. Which case can use a simple efficiency lock, and what must protect the correction?
+>
+> **Solution:** The cache refresh can use a simple lock such as Redis `SET NX PX` because duplicate work is only waste. The inventory correction is correctness-sensitive and needs a resource-enforced conditional write or a fencing token checked by the protected store.
+
+> [!EXERCISE stretch] A team says a 60-second lease makes a correctness lock safe because a worker cannot pause that long. Evaluate the claim and explain what a weaker answer misses.
+>
+> **Solution:** No lease duration proves safety because process pauses have no guaranteed upper bound; a worker may resume after expiry and write alongside its successor. A weaker answer only lengthens the lease; it misses that the resource must reject a stale fencing token or the design must change.

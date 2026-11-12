@@ -10,6 +10,15 @@ fundamentals topic — you cannot distinguish slow from dead, and the timeout yo
 choose trades one failure for another. Health checking done badly is a
 well-documented cause of outages that would not otherwise have happened.
 
+> [!WHY] A shared database slows down, every dependency-aware health probe fails together, and the balancer removes the whole fleet; users get a full outage instead of degraded service.
+
+> [!GOALS]
+>
+> - Distinguish active probes from passive outlier detection.
+> - Apply the minimum-healthy threshold and maximum-ejection cap to shared failures.
+> - Explain the probe, readiness and draining costs that affect backend eligibility.
+
+
 ## Active versus passive
 
 ```text
@@ -30,6 +39,16 @@ well-documented cause of outages that would not otherwise have happened.
 before any user request reaches it. Passive detection catches the far more common
 case: a backend that answers `/healthz` cheerfully while failing real work,
 because its database pool is exhausted or one code path is broken.
+
+```mermaid
+flowchart TB
+  A[Active probe] --> H{Process reachable?}
+  H -->|No| E[Eject unavailable backend]
+  H -->|Yes| T[Observe real traffic]
+  T -->|Repeated failures| O[Outlier detection]
+  O --> E
+  T -->|Healthy responses| K[Keep backend eligible]
+```
 
 ## Liveness versus readiness — again, because it matters
 
@@ -66,6 +85,8 @@ This has happened to many organisations, and the diagnosis is always the same
 line in a Kubernetes manifest. **Liveness answers "is this process stuck", and
 nothing else.** If a process is running and its event loop is responsive, it is
 alive, even if it can do no useful work.
+
+> [!PITFALL] Putting a database ping in liveness can restart every instance during one database blip, causing the restart surge to overwhelm the recovering dependency.
 
 Kubernetes' third probe, **startup**, exists to stop liveness from killing a
 slow-starting process before it has finished booting. Use it for anything with a
@@ -189,6 +210,14 @@ exits at step 2 produces 10 seconds of connection failures. That is the entire
 explanation for "we see a few errors during every deploy", and the fix is a sleep
 in the shutdown hook.
 
+> [!CHECK] Which dependencies belong in liveness and readiness checks?
+>
+> Liveness checks only whether the process is wedged and must not check dependencies. Readiness checks critical dependencies the instance cannot serve without, plus capacity such as available pool slots.
+
+> [!CHECK] Why does the chapter recommend a minimum-healthy threshold and a cap on outlier ejection?
+>
+> When many backends fail checks together, the problem is likely shared; serving degraded traffic can be better than removing the whole fleet. The ejection cap likewise prevents a balancer from ejecting too much of the pool at once.
+
 ## What to take away
 
 1. Use active checks to catch a dead backend with no traffic, and passive outlier
@@ -205,3 +234,18 @@ in the shutdown hook.
    noticed — skipping that wait is why deploys produce errors.
 
 Next: service discovery, which decides what the pool contains in the first place.
+
+
+## Exercises
+
+> [!EXERCISE recall] What does passive outlier detection observe, and what failure can it catch that an active `/healthz` check may miss?
+>
+> **Solution:** It observes real traffic and can catch a partial failure, such as a backend that answers `/healthz` while its database pool is exhausted and user requests fail.
+
+> [!EXERCISE apply] A pool has 10 backends and `max_ejection_percent` is 20%. Four backends meet the outlier rule. How many may the balancer eject at once, and why keep the cap?
+>
+> **Solution:** The cap is 20% × 10 = 2 backends. It must not eject all four at once because removing too much of the pool during a shared problem can turn degraded service into a fleet outage.
+
+> [!EXERCISE stretch] A team removes every backend whenever dependency-aware checks fail. Recommend the two fleet-protection settings from the chapter and identify what an eject-everything answer misses.
+>
+> **Solution:** Enable a minimum-healthy panic threshold, such as the chapter’s 50% threshold, so the balancer ignores health status and sends to all when fewer than half appear healthy; also cap the percentage ejected as outliers. Ejecting everything misses that simultaneous failures usually indicate a shared problem and no service is worse than degraded service.

@@ -10,6 +10,14 @@ something: run a scheduler, drive a migration, be the write path, own a shard.
 The election itself is easy; staying correct while leadership *changes underneath
 you* is the part that needs care.
 
+> [!WHY] A scheduler can reach its database after losing contact with the coordination store. The leader must stop acting unless leadership is confirmed, or a successor may already be writing.
+
+> [!GOALS]
+>
+> - Identify when a service needs one leader and when work can be partitioned.
+> - Compute approximate failover time from lease TTL, election round trip and warm-up.
+> - Explain how fencing protects writes from a stale leader.
+
 ## Why elect at all
 
 ```text
@@ -52,6 +60,19 @@ Three details are doing real work:
 - **Watch, not poll** — a follower learns the leader is gone in milliseconds
   rather than on the next poll, which is the difference between a 200 ms failover
   and a 30 s one.
+
+```mermaid
+sequenceDiagram
+  participant F as Follower
+  participant S as Coordination store
+  participant L as Leader
+  F->>S: Try to acquire lease
+  S-->>L: Lease granted
+  L->>L: Lead while renewal succeeds
+  L->>S: Renew lease
+  S-->>L: Renewal fails
+  L->>L: Stop work and fence writes
+```
 
 ## The four ways leadership is lost silently
 
@@ -179,10 +200,20 @@ efficiency purposes, never for correctness.
      leader keep leading, or does everything stop?
 ```
 
+> [!INTERVIEW] Explain why election is the easy part: after winning, a leader must stop on unconfirmed leadership loss and fence each consequential write so a stale leader cannot corrupt state.
+
 That last question deserves a deliberate answer. Two defensible designs: keep
 leading until the lease genuinely expires (favours availability), or stop
 immediately on losing contact (favours safety). Choose knowingly; the default in
 most libraries is the first.
+
+> [!CHECK] Why does a warm standby matter when estimating failover time?
+>
+> Total failover is approximately TTL plus election round trip plus warm-up. A standby that already has the state removes the potentially dominant rebuild time.
+
+> [!CHECK] What should a follower do after losing the leader key in the standard implementation?
+>
+> Watch for deletion instead of polling so it reacts as soon as the key disappears, and acquire the lease through the coordination store before doing leader work.
 
 ## What to take away
 
@@ -202,3 +233,18 @@ most libraries is the first.
 
 Next: the other coordination primitives — barriers, semaphores, rate limits and
 counters.
+
+
+## Exercises
+
+> [!EXERCISE recall] Which three terms make up the chapter's approximate failover-time estimate?
+>
+> **Solution:** Failover time is approximately the lease TTL plus the election round trip plus warm-up; state rebuild time is often the dominant term.
+
+> [!EXERCISE apply] A service uses a 20-second lease TTL, an election round trip of 150 ms, and a standby that must rebuild its state in 35 seconds. Estimate total failover time.
+>
+> **Solution:** Convert the round trip: 150 ms = 0.15 s. Add the terms: 20 s + 0.15 s = 20.15 s; 20.15 s + 35 s of state rebuild = **55.15 seconds**. With a warm standby, failover would be about 20.15 seconds.
+
+> [!EXERCISE stretch] The current leader cannot reach the coordination store during a network partition but can still reach the database. Recommend its behavior and explain what a weaker answer misses.
+>
+> **Solution:** Stop work when leadership cannot be confirmed and ensure writes carry a fencing token that the resource checks. A weaker answer keeps writing because the process is healthy; it misses that a successor may already own the lease and that the old leader can corrupt shared state.

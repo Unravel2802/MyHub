@@ -9,6 +9,15 @@ rather than sinking the vessel. The same idea is the most reliable structural
 defence in distributed systems: **accept that things will fail, and bound what
 each failure can take with it.**
 
+> [!WHY] Payment requests hold every thread in a shared 100-thread pool for 30 seconds, so healthy search requests fail too; checkout latency becomes a whole-service outage.
+
+> [!GOALS]
+>
+> - Choose isolation scope based on the resources and users a failure can affect.
+> - Calculate the user blast radius of a failed cell using the chapter’s 1/N rule.
+> - Explain the reliability and operational costs that remain after isolation.
+
+
 ## The failure bulkheads prevent
 
 Without isolation, one slow dependency consumes a shared resource and everything
@@ -32,6 +41,14 @@ using that resource fails:
 Search was healthy, its dependency was healthy, and it stopped working because
 something unrelated shared its thread pool. This is the exact failure bulkheads
 prevent, and it is common.
+
+```mermaid
+flowchart TB
+  Q[Incoming requests] --> S[Search pool]
+  Q --> P[Payment pool]
+  P -->|Saturated| R[Reject payment work quickly]
+  S -->|Isolated capacity| O[Search continues]
+```
 
 ## Resource pools per dependency
 
@@ -187,6 +204,14 @@ that is down should let already-issued tokens keep working rather than failing
 every request. **The shared components are where the residual risk lives**, and
 they deserve the most conservative engineering in the system.
 
+> [!CHECK] Why should a bulkhead's acquire timeout be short?
+>
+> Waiting to enter a full pool recreates the queue that isolation was meant to avoid. The caller should fail quickly and produce a monitored saturation signal.
+
+> [!CHECK] How does cell-based architecture bound the impact of one cell failure?
+>
+> Each cell is a complete independent stack assigned to a shard of users. A failure is confined to its cell, so the affected user share is 1/N of the cells.
+
 ## What to take away
 
 1. Without isolation, one slow dependency consumes a shared pool and unrelated
@@ -205,3 +230,18 @@ they deserve the most conservative engineering in the system.
 
 Next: admission control — deciding what to refuse, so that what you accept
 succeeds.
+
+
+## Exercises
+
+> [!EXERCISE recall] What isolation levels does the chapter list, from the cheapest to the strongest?
+>
+> **Solution:** Resource pools, processes, instances, then cells; each step costs more and provides stronger isolation.
+
+> [!EXERCISE apply] A service splits users evenly across the three cells shown in the chapter. One cell has a bad deploy. What fraction of users is in that cell?
+>
+> **Solution:** One of three cells is affected: 1 ÷ 3 = 1/3, or about 33% of users. Cell deploys bound the blast radius to that cell.
+
+> [!EXERCISE stretch] One noisy tenant can overload its assigned worker, and workers are stateless so customers can use either assigned worker. Recommend an isolation strategy and name what plain sharding misses.
+>
+> **Solution:** Use shuffle sharding: assign each customer a random pair of workers. With eight workers there are 8 choose 2 = 28 pairs, and another customer is fully affected only if both workers overlap. Plain sharding assigns one worker, so one bad customer can take down that shard for every customer on it.

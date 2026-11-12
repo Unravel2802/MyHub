@@ -9,6 +9,14 @@ that are genuinely powerful, and a couple that look similar and are traps. The
 difference is usually about who owns a decision, and whether a consumer is
 reacting to a fact or being told what to do.
 
+> [!WHY] A customer updates an address, and the same committed fact must update search, analytics and a read cache without making the request wait for all three. The event pattern determines whether consumers stay independent and whether replay preserves what was true then.
+
+> [!GOALS]
+>
+> - Distinguish event notification, state transfer and event sourcing
+> - Choose CQRS or CDC from read/write and synchronization requirements
+> - Spot event chains that hide ownership or turn events into RPC
+
 ## Event notification versus state transfer versus sourcing
 
 Three distinct things get called "event-driven", and they have different
@@ -67,6 +75,16 @@ Separate the write model from the read models:
 The genuine benefits: read models are independently scalable, individually
 optimised, and rebuildable from the log when one is corrupted or when a new one
 is needed.
+
+```mermaid
+flowchart TB
+  C[Command] --> W[Write model]
+  W --> L[Event log]
+  L --> S[Search projection]
+  L --> D[Dashboard projection]
+  S --> R[Read path]
+  D --> R
+```
 
 The genuine cost: **the read models are eventually consistent with the write
 model**, and the user who just did something will read from a projection that may
@@ -195,6 +213,16 @@ costs one column.
     └─ YES ──▶ event sourcing. otherwise, do not.
 ```
 
+> [!INTERVIEW] If asked to choose between an outbox, CDC and event sourcing, start with the requirement: atomic delivery intent, database change distribution, or a domain whose history is the source of truth.
+
+> [!CHECK] Why are event notification and event-carried state transfer different for replay?
+>
+> A notification forces consumers to call back and sees today's state during replay. State transfer carries enough context in the event for autonomous consumers and reproduces the historical state.
+
+> [!CHECK] What makes event sourcing a larger commitment than keeping an append-only audit table?
+>
+> The event log becomes the source of truth, reads need a fold or maintained projection, schema evolution is permanent, and deletion is difficult when history is immutable.
+
 ## What to take away
 
 1. Event notification, event-carried state transfer and event sourcing are three
@@ -212,3 +240,18 @@ costs one column.
 
 Next: operating this in production — the numbers to watch and the failure modes
 that recur.
+
+
+## Exercises
+
+> [!EXERCISE recall] Which event-driven pattern makes the event log itself the source of truth, and what does a read require?
+>
+> **Solution:** Event sourcing makes the log the source of truth. A read must fold the events or use a maintained projection derived from them.
+
+> [!EXERCISE apply] A product team separates its write model from a search read model, and users sometimes read stale search results immediately after an update. Give two mitigations taught in the chapter.
+>
+> **Solution:** Return the new state in the command response, or have the client hold a version and wait until the projection reaches it. The projection remains eventually consistent with the write model.
+
+> [!EXERCISE stretch] A team proposes event sourcing solely to keep an audit trail for ordinary account settings. Recommend a lighter fit and explain what a weaker answer misses.
+>
+> **Solution:** Keep an append-only audit table if the requirement is only to record changes; reserve event sourcing for domains where the event history is itself the source of truth. A weaker answer points to time travel and replay but misses the projection cost for every query, permanent schema history and difficult deletion.

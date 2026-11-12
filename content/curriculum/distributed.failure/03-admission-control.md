@@ -10,6 +10,15 @@ is discarded. Deliberately refusing excess is what keeps throughput positive
 under overload, and it is the single most effective resilience technique
 available.
 
+> [!WHY] A request has waited 120 ms before processing starts, beyond the service’s 100 ms queue-time limit; starting it now spends capacity after the useful wait is gone.
+
+> [!GOALS]
+>
+> - Explain why accepting excess work can collapse goodput.
+> - Apply queue-time and deadline thresholds to decide when to shed work.
+> - Choose which work to shed first and how to tell clients to back off.
+
+
 ## Why accepting everything is worse
 
 ```text
@@ -23,6 +32,28 @@ available.
   client timeout                    → clients can retry elsewhere,
   → work is done and DISCARDED        degrade, or show an error
   → goodput approaches ZERO         → goodput = 600/s
+```
+
+```chart
+type: bar
+scale: linear
+unit: requests/s
+title: Overload with admission control
+caption: Shedding preserves service capacity for accepted requests.
+highlight: Accepted with shedding
+---
+Arrivals: 1000
+Service capacity: 600
+Accepted with shedding: 600
+Rejected with shedding: 400
+```
+
+```mermaid
+flowchart TB
+  R[Request arrives] --> D{Past deadline or queue limit?}
+  D -->|Yes| J[Reject early with Retry-After]
+  D -->|No| P[Apply priority and concurrency limit]
+  P --> A[Accept useful work]
 ```
 
 **Goodput** — useful work completed, not requests accepted — is the metric that
@@ -192,6 +223,14 @@ a latency collapse, as the streaming chapter described.
 Every one should have a bound and an explicit behaviour when full. The default in
 most libraries is unbounded, which is the wrong default and worth auditing.
 
+> [!CHECK] Which signal does the chapter recommend as the best single indicator of overload, and why?
+>
+> Queueing time is the best single signal because it measures how long the request waits before processing, isolating backlog from CPU, memory and dependency causes.
+
+> [!CHECK] Why should the system reject a request whose deadline has already passed?
+>
+> The client has already stopped waiting, so starting the work wastes capacity at the moment the system is overloaded.
+
 ## What to take away
 
 1. Accepting more than you can complete collapses goodput to near zero while
@@ -207,3 +246,18 @@ most libraries is unbounded, which is the wrong default and worth auditing.
    congestion control, and need no tuning; bound every queue explicitly.
 
 Next: graceful degradation — what to serve when you cannot serve everything.
+
+
+## Exercises
+
+> [!EXERCISE recall] Why does the chapter prefer queueing time over CPU utilization as the single overload signal?
+>
+> **Solution:** Queueing time measures the wait before processing starts, which is what the user experiences; it rises under overload whatever the underlying cause.
+
+> [!EXERCISE apply] A service sheds when queueing time exceeds `MAX_QUEUE_TIME = 100 ms`. A request has waited 120 ms and still has 300 ms before its deadline. Should it start?
+>
+> **Solution:** Reject it: 120 ms is already greater than the 100 ms queue-time limit. The chapter says to shed based on queueing time and not to begin work after its budget for waiting is exceeded.
+
+> [!EXERCISE stretch] Retries are amplifying an overload alongside interactive first attempts. Recommend a shedding order and client response, and say what an equal-probability answer misses.
+>
+> **Solution:** Mark retries and shed them before first attempts; return 429 or 503 with `Retry-After` so clients use a coordinated backoff. Treating every request equally misses the chance to protect user work and directly reduce retry amplification.

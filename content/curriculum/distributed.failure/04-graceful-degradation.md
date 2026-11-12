@@ -10,6 +10,15 @@ requires deciding in advance what the product means with that piece missing. Tha
 decision is product work as much as engineering work, and it is what separates a
 degraded experience from an outage.
 
+> [!WHY] When recommendations time out, the product page currently fails for every visitor even though the core product data is available; an optional feature has taken down the purchase flow.
+
+> [!GOALS]
+>
+> - Classify dependencies as critical, degradable or optional.
+> - Choose which dependencies readiness must include and what fallback to serve.
+> - Explain how timeouts and degradation signals keep optional failures from hiding.
+
+
 ## The default is fail-closed, and it is usually wrong
 
 ```text
@@ -27,6 +36,15 @@ Nobody chose fail-closed. It happened because a call was made with no fallback,
 inside a request that had no isolation. Making the other choice requires exactly
 two things: knowing which dependencies are optional, and having a defined
 behaviour when they are missing.
+
+```mermaid
+flowchart TB
+  R[Optional recommendation needed] --> L[Try live result]
+  L -->|Available| V[Serve live result]
+  L -->|Unavailable| C{Cached value available?}
+  C -->|Yes| S[Serve cached or stale value]
+  C -->|No| D[Use default or omit feature]
+```
 
 ## Classify every dependency
 
@@ -172,6 +190,14 @@ exception type is renamed.
   □  run a game day that exercises them in production
 ```
 
+> [!CHECK] What are the three dependency classes, and which class should readiness include?
+>
+> Critical dependencies are required to serve; degradable dependencies reduce a feature but leave the core flow working; optional dependencies can fail unnoticed. Readiness should include only critical dependencies.
+
+> [!CHECK] What are the acceptable write-path choices during a dependency failure, and what must never happen?
+>
+> Queue the write, reject clearly, or accept the core write while dropping optional enrichment. Never report success and silently lose the accepted write.
+
 ## What to take away
 
 1. Fail-closed is the default because nobody chose it; degrading requires
@@ -189,3 +215,18 @@ exception type is renamed.
 
 Next: chaos engineering — finding out whether any of this works before an
 incident does.
+
+
+## Exercises
+
+> [!EXERCISE recall] What distinguishes a critical dependency from degradable and optional dependencies?
+>
+> **Solution:** A critical dependency is required to serve; a degradable dependency diminishes a feature while the core flow works; an optional dependency can fail without anyone noticing.
+
+> [!EXERCISE apply] A checkout page needs the primary database, recommendations and analytics. Classify each dependency, decide which belongs in readiness, and choose what to do if recommendations fail.
+>
+> **Solution:** The primary database is critical and belongs in readiness. Recommendations are degradable, so serve cached or default items or omit the feature; analytics is optional. Readiness should include only the critical dependency.
+
+> [!EXERCISE stretch] Recommendation fetches have a five-second timeout, although the chapter gives a 50 ms budget for this optional work. Recommend a fallback and name what a retry-for-five-seconds answer misses.
+>
+> **Solution:** Use a short 50 ms timeout, then serve a cached or stale result, a default, or omit the feature; record the active degradation for operators. Waiting five seconds delays every page before fallback and lets an optional dependency slow the core flow.

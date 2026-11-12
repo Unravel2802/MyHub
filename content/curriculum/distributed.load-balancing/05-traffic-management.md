@@ -10,6 +10,15 @@ change — a deploy, a migration, a new dependency — can be rolled out to a
 fraction of traffic first, and rolled back by changing a weight rather than by
 redeploying.
 
+> [!WHY] A checkout release keeps error rate and latency flat but lowers conversion; sending it to everyone before checking the business signal costs completed sales.
+
+> [!GOALS]
+>
+> - Choose between blue-green, canary and rolling delivery for a release.
+> - Compare a canary with a concurrent baseline on technical and business metrics.
+> - Choose migration and failover controls that verify data and capacity.
+
+
 ## Progressive delivery
 
 ```text
@@ -39,6 +48,15 @@ The comparison is what makes it a canary rather than a slow rollout. Compare
 canary against baseline on **error rate, latency percentiles, and a business
 metric** — the last one catches the change that is technically healthy and
 commercially catastrophic, which no infrastructure metric sees.
+
+```mermaid
+flowchart TB
+  V[Send small share to new version] --> S[Soak and compare baseline]
+  S --> G{Regression?}
+  G -->|No| I[Increase traffic share]
+  I --> S
+  G -->|Yes| R[Set new-version weight to zero]
+```
 
 Two mistakes worth avoiding:
 
@@ -178,6 +196,16 @@ Every one of these is a control you want to *already have* during an incident,
 not one you want to build during it. The cost of building them in advance is
 modest; the cost of not having them is measured in the length of an outage.
 
+> [!INTERVIEW] For a canary question, say you compare the new version with the old version running concurrently, using error rate, latency percentiles and a business metric; define rollback as setting its traffic weight to zero.
+
+> [!CHECK] What distinguishes a canary from a slow rollout?
+>
+> A canary compares the new version with a concurrent baseline during each soak, using technical and business metrics; a slow rollout only increases the share over time.
+
+> [!CHECK] What must be true before shadow traffic is safe?
+>
+> The shadow copy must not cause side effects. It is safe for read paths or when writes go to a separate store, and shadow traffic's extra dependency load must be budgeted.
+
 ## What to take away
 
 1. Canary releases convert "we think this is fine" into a measurement — compare
@@ -196,3 +224,18 @@ modest; the cost of not having them is measured in the length of an outage.
 That completes load balancing and routing. Next in the track: **failure modes and
 resilience** — how these systems actually fall over, and the patterns that stop a
 local problem becoming a global one.
+
+
+## Exercises
+
+> [!EXERCISE recall] What makes a rollout a canary rather than merely a slow rollout?
+>
+> **Solution:** It compares the canary against a concurrent baseline on error rate, latency percentiles and a business metric; traffic patterns change, so history is not a fair comparison.
+
+> [!EXERCISE apply] At the 1% canary stage, error rate and latency match the concurrent baseline, but conversion is lower on the new version. Should the team advance to 5% or roll back the weight?
+>
+> **Solution:** Roll the new-version weight back to zero. The chapter says compare business metrics as well as technical ones; a technically healthy canary can still be commercially catastrophic.
+
+> [!EXERCISE stretch] A datastore migration appears healthy in staging, but the new store may answer real customer reads differently. Recommend a production-safe comparison and state what a latency-only switch misses.
+>
+> **Solution:** Dual-read the old and new stores with difference logging, keep the old store authoritative, and switch only after the difference rate is zero. A latency-only switch misses record-level correctness on real data.

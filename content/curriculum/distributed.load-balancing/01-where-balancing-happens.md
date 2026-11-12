@@ -9,6 +9,15 @@ something different. A decision made at the DNS layer cannot know about a
 backend's queue depth; a decision made in the client can. Knowing which layer can
 see what is how you diagnose "why is all the traffic going to one server?".
 
+> [!WHY] A mobile client sends 10,000 HTTP/2 requests per second over one long-lived connection; an L4 balancer sends every request to backend A while B and C sit idle.
+
+> [!GOALS]
+>
+> - Compare the information visible at DNS, L4, L7 and client-side layers.
+> - Choose a topology that can balance requests carried over HTTP/2.
+> - Explain the latency and failure-domain costs of the topology you choose.
+
+
 ## The layers
 
 ```text
@@ -34,6 +43,17 @@ The rule that falls out: **the closer to the request, the better the decision;
 the closer to the network, the cheaper and more global.** Real systems use
 several together — anycast to a region, L7 within it, client-side between
 services.
+
+```mermaid
+flowchart TB
+  U[User] --> D[DNS: coarse region]
+  D --> N[Anycast: nearest POP]
+  N --> L[L7: choose per request]
+  L --> A[Backend A]
+  L --> B[Backend B]
+  C[Client-side balancer] --> A
+  C --> B
+```
 
 ## DNS
 
@@ -187,6 +207,14 @@ The most common mistake is the last line. The second most common is putting an
 L7 proxy on a service-to-service path where a client-side library would have
 avoided a hop and a shared failure domain.
 
+> [!CHECK] What can an L4 balancer see and balance, and what can an L7 balancer see and balance?
+>
+> L4 sees transport information such as IP and port and balances TCP connections. L7 terminates requests and can use request details such as path, headers, method and response codes to balance requests.
+
+> [!CHECK] Why can a regional failover be incorrect even when the target region is healthy?
+>
+> The target may not have the affected users' data. Sending traffic there without checking data availability can turn a partial outage into a total one.
+
 ## What to take away
 
 1. Each layer sees something different; the closer to the request, the better the
@@ -203,3 +231,18 @@ avoided a hop and a shared failure domain.
    correct if the target region has the data.
 
 Next: the algorithms, and why the obvious one is the wrong default.
+
+
+## Exercises
+
+> [!EXERCISE recall] What unit does L4 balance, and what unit can L7 balance?
+>
+> **Solution:** L4 balances TCP connections. L7 balances individual requests because it terminates and re-originates them.
+
+> [!EXERCISE apply] The HTTP/2 client cannot move to client-side balancing or an L7 proxy this release, and one long-lived connection pins all requests to backend A. Which mitigation from the chapter can redistribute traffic?
+>
+> **Solution:** Set a maximum connection age or request count so connections periodically rotate and are re-established. L4 will then have new connections to distribute; it still cannot split requests within one connection.
+
+> [!EXERCISE stretch] Several services use different client languages and need per-request balancing over HTTP/2. Recommend a topology and name what a client-library-per-language answer misses.
+>
+> **Solution:** Use a service mesh sidecar to perform client-side balancing on each application’s behalf. A library per language duplicates the implementation and requires all clients to agree; the mesh costs a process per pod and a small latency hop.

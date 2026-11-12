@@ -10,6 +10,15 @@ the least-exercised code in the system, and by default it does not work. Chaos
 engineering is the practice of breaking things deliberately, while you are
 watching, to find out.
 
+> [!WHY] A team kills healthy-looking nodes during tests but never slows a dependency; the untested timeout path later exhausts callers’ pools and turns a slow service into an outage.
+
+> [!GOALS]
+>
+> - Describe the steady-state, hypothesis, injection, observation and conclusion steps.
+> - Choose a measurable hypothesis and the smallest blast radius that can test it.
+> - Explain why observability and an abort button are prerequisites for injection.
+
+
 ## It is an experiment, not vandalism
 
 The framing that makes it defensible and useful:
@@ -37,6 +46,17 @@ The hypothesis is what distinguishes this from randomly breaking production. You
 are asserting a belief about the system and testing it. A failed experiment is
 the *point*, not an accident — it is a bug found under controlled conditions with
 everyone watching, rather than at 3am.
+
+```mermaid
+flowchart TB
+  S[Measure steady state] --> H[State a hypothesis]
+  H --> B[Choose smallest useful blast radius]
+  B --> I[Inject one failure]
+  I --> O[Observe the steady-state metric]
+  O --> C{Hypothesis held?}
+  C -->|Yes| A[Increase confidence]
+  C -->|No| F[Fix the exposed failure]
+```
 
 ## What to inject
 
@@ -125,6 +145,8 @@ detects, and finding them costs an afternoon.
 volume, or dependencies, and a runbook that works in staging is a runbook that
 has not been tested.
 
+> [!INTERVIEW] Describe a chaos experiment as a measurable steady state, a falsifiable hypothesis, the smallest blast radius that can test it, an observable injection, and a conclusion; name the abort button before starting.
+
 ## Where to start
 
 The honest progression for a team that has not done this:
@@ -169,6 +191,14 @@ Injecting failure into a system with none of these tells you what you already
 know: it breaks. The value comes from testing mechanisms that are supposed to
 handle it.
 
+> [!CHECK] What turns a failure injection into a chaos experiment rather than random breakage?
+>
+> A measurable steady state and a hypothesis make it a controlled test; the team observes whether the steady state holds and learns from either result.
+
+> [!CHECK] What prerequisites does the chapter require before a production experiment?
+>
+> The team must be able to measure steady state, have working alerts, timeouts and retry controls, deliberate degradation paths, a quick rollback and a stated abort button and blast radius.
+
 ## What to take away
 
 1. Chaos engineering is a hypothesis-driven experiment against a measurable
@@ -188,3 +218,18 @@ handle it.
 That completes failure modes and resilience. Next in the track: **batch and
 stream processing** — computing over data at rest and in motion, and the duality
 between them.
+
+
+## Exercises
+
+> [!EXERCISE recall] What must a team state and measure before it injects a failure?
+>
+> **Solution:** Define a measurable steady state and a hypothesis about whether that steady state will hold.
+
+> [!EXERCISE apply] A latency injection passed in staging. According to the chapter’s progression, what is the next production step, and what must be ready before it begins?
+>
+> **Solution:** Start with 1% of production instances or traffic during business hours, with the team watching, observability in place, and an abort button and stated blast radius. Do not jump straight to a cell or region.
+
+> [!EXERCISE stretch] A team wants to begin its resilience program by terminating one node. Recommend a higher-yield first injection and say what node termination misses.
+>
+> **Solution:** Inject latency into a dependency first; the chapter says latency finds more bugs because it exposes missing timeouts, exhausted pools and cascading slowness. Node termination is obvious and systems handle it better, so it misses the slow-but-responding failure mode.

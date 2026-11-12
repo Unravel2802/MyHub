@@ -10,6 +10,15 @@ eventually agree on the current value, and some values must be agreed on
 because unlike a deploy it usually has no canary, no rollback button and no
 review.
 
+> [!WHY] A Friday traffic-weight change reaches every instance at once, and a bad value can turn a routine config edit into a fleet-wide outage before anyone can find a rollback.
+
+> [!GOALS]
+>
+> - Choose which values belong in dynamic configuration and which belong elsewhere.
+> - Choose propagation, validation and staged-rollout controls for a risky change.
+> - Explain how cached discovery state and graceful draining protect service.
+
+
 ## What belongs in dynamic configuration
 
 ```text
@@ -58,6 +67,15 @@ the two watch failure modes:
 Whichever you choose, **cache locally and keep serving from the cache** when the
 store is unreachable. A configuration store outage should not stop the fleet —
 instances already have the values they need.
+
+```mermaid
+flowchart TB
+  V[Validate config change] --> S[Stage to a small fleet share]
+  S --> W[Watch and apply validated value]
+  W --> M[Measure during soak]
+  M -->|Healthy| A[Advance rollout]
+  M -->|Invalid or unhealthy| R[Restore last known good value]
+```
 
 ## Rollout: the part people skip
 
@@ -185,6 +203,14 @@ values — while the propagation stays fast. The cost is that emergency changes 
 through a PR, so keep a documented break-glass path for kill switches, and make
 using it noisy rather than convenient.
 
+> [!CHECK] What should a watcher do after disconnecting or receiving a revision-too-old response?
+>
+> Reconnect with backoff and jitter, then re-read the full state before resuming the watch so it does not silently keep stale configuration.
+
+> [!CHECK] Why must deregistration wait after marking an instance unready?
+>
+> Clients and load balancers need at least one health-check interval to observe the change. The instance must keep serving during that propagation window before it finishes in-flight requests and closes connections.
+
 ## What to take away
 
 1. Dynamic config is for temporary controls — flags, limits, thresholds — not for
@@ -203,3 +229,18 @@ using it noisy rather than convenient.
 That completes coordination. Next in the track: **load balancing and routing** —
 getting a request to a healthy instance, and the traffic-shaping that builds on
 it.
+
+
+## Exercises
+
+> [!EXERCISE recall] How quickly does watching propagate a config change, and what is the tradeoff compared with polling?
+>
+> **Solution:** Watching propagates changes in milliseconds and creates a long-lived connection per instance that needs reconnection handling. Polling is simpler but can leave instances inconsistent for the polling interval and creates constant load.
+
+> [!EXERCISE apply] An operator proposes `timeout: 0` for the whole fleet. Which checks and rollout should stop this value from taking every instance down?
+>
+> **Solution:** Validate the value and its range on write and again on each instance. Reject it and keep the last known good value; for a valid replacement, stage 1% of instances, soak and measure, then advance to 10% and finally all, with a one-action rollback.
+
+> [!EXERCISE stretch] A team stores every setting only in a Git repo and waits for a code deploy to propagate an emergency kill switch. Recommend a safer configuration-as-code setup and say what that answer misses.
+>
+> **Solution:** Keep the reviewed, versioned values in Git with CI validation and automatic sync into the config store, so normal changes keep fast propagation and rollback. Document a noisy break-glass path for emergency kill switches. The weaker Git-only answer misses that emergency changes can be blocked behind a PR and deploy.

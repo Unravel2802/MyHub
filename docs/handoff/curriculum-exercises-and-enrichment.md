@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 under review 2026-11-12 (see the DS3 review at the end).
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 approved 2026-11-12 (see the reviews at the end); F1 is next.
 
 ---
 
@@ -838,3 +838,37 @@ Fix these before merge:
    bring it to about 20.15 s.
 
 **Status:** DS3 needs fixes 1–2. DS4 can start from main once DS3 merges.
+
+### DS3 re-review and DS4 review — 2026-11-12 (Claude): both approved
+
+**DS3** (`curriculum-distributed-3` at 179f6be, rebased onto the review). Both
+fixes are in. The 11 rewritten chapters now open on a concrete situation, ask
+three different questions, and give each Stretch a recommendation and a
+distinct weaker answer. Every cited fact is in its chapter: shuffle sharding's
+28 pairs, the 100 ms queue-time limit, the 50 ms optional budget,
+`max_ejection_percent` (20% × 10 = 2), the 50% panic threshold, max connection
+age, dual reads, and latency injection finding more bugs than termination.
+Leader election now says the standby must rebuild its state (55.15 s, or about
+20.15 s with a warm standby). One non-blocking nit for a later batch:
+`load-balancing/04`'s Apply and Stretch both resolve to capacity-aware zone
+routing.
+
+**DS4** (`curriculum-distributed-4` at 8298ab1): 18 chapters (batch-stream 5,
+membership 5, crdt 4, scheduling 4). Quotas hold: 1 diagram each (15 TB
+flowcharts, 2 sequence, 1 state), 2 CHECKs before the recap, and 1–3
+PITFALLs and 1 INTERVIEW per topic. The 40 "removed" lines are only Prettier
+changing `*word*` to `_word_`, plus one Python line in the OT chapter split to
+stay under 76 characters; no wording changed. I re-derived every calculation:
+M × R = 60, 12 ÷ 3 = 4 windows, watermark min(11:16, 11:14) = 11:14, 25
+replayed offsets, φ = 4, 6 gossip rounds = 3 s, quorums 4 → 5, 39,800
+heartbeats and 400 KB, "red lamp!" at index 8, "dXor" at index 3, G-Counter
+10, a 75-update tail, host C, DRF 0.30 vs 0.40, a 30 s checkpoint margin, and
+80 × 1.25 × 1.20 ÷ 0.60 = 200 CPUs. Every formula is the chapter's own. Its
+new unit gate also checks for WHY placement, hyphen wraps, fenced-line width
+and TB flowcharts.
+
+Gates for each branch in its own worktree: lint, typecheck, 1,662 unit tests,
+and the curriculum E2E specs (122 for DS3, 119 for DS4).
+
+**Status:** DS3 and DS4 approved; both ready to merge. Their gate lists will
+conflict in a few lines, which is expected.

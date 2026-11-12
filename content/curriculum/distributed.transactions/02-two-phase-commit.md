@@ -10,6 +10,14 @@ The problem is a specific window in which a coordinator failure leaves
 participants holding locks with no way to decide — and the fix for that window is
 consensus, which is why modern systems that offer 2PC have consensus underneath.
 
+> [!WHY] Every participant votes YES, then the coordinator disappears before announcing the outcome. Participants hold locks because guessing whether to commit or abort could make their durable decisions disagree.
+
+> [!GOALS]
+>
+> - Trace prepare, vote, decision and completion in 2PC
+> - Explain the in-doubt blocking window and its lock cost
+> - Choose when 2PC is appropriate and which recovery design it needs
+
 ## The protocol
 
 ```text
@@ -242,6 +250,8 @@ is the wrong tool, and reaching for it is usually a sign the boundary is wrong.
 > Dividing by 1 ms gives about 10–50 times the hold duration, which
 > explains the stated 50× contention at the upper end.
 
+Next: sagas, which give up atomicity to get availability back.
+
 ## What to take away
 
 1. 2PC is four messages, and its correctness rests on a YES vote being an
@@ -259,4 +269,16 @@ is the wrong tool, and reaching for it is usually a sign the boundary is wrong.
 6. 2PC holds locks for tens to hundreds of milliseconds instead of one, so
    contention on hot rows scales badly — ration it to operations that need it.
 
-Next: sagas, which give up atomicity to get availability back.
+## Exercises
+
+> [!EXERCISE recall] What are the prepare and decision phases of 2PC, and what durable fact makes the coordinator's decision authoritative?
+>
+> **Solution:** In prepare, the coordinator asks every participant to promise it can commit and collects YES or NO votes. It records the final COMMIT or ABORT decision durably before sending it; participants follow that logged decision.
+
+> [!EXERCISE apply] A transaction has three participants. During prepare, two vote YES and one votes NO. State the coordinator's decision, what it tells the YES voters, and when they can release their prepared state.
+>
+> **Solution:** Because not every participant voted YES, the coordinator logs **ABORT** and sends ABORT to the participants. The two YES voters follow that decision and release their prepared locks/state after learning it; the NO participant also aborts. 2PC requires unanimity for commit.
+
+> [!EXERCISE stretch] A team proposes 3PC to avoid blocking, even though the network may partition. Evaluate the proposal and explain what a weaker answer misses.
+>
+> **Solution:** 3PC avoids blocking only under crash-failure assumptions and is unsafe under network partitions, so it does not solve the stated environment. Use a coordinator backed by consensus or a suitable atomic-commit design instead. A weaker answer focuses on its extra phase; it misses the failure assumption that makes its non-blocking claim possible.

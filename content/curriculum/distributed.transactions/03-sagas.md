@@ -10,6 +10,14 @@ succeeded. It gives up atomicity and isolation, and gets back the ability for
 each step to fail and retry independently — which is what makes it the right
 shape across services.
 
+> [!WHY] Inventory is reserved and a payment is authorized, but the shipping service is down. The workflow cannot roll back committed steps as if they never happened; it must compensate, retry or escalate deliberately.
+
+> [!GOALS]
+>
+> - Order saga steps around compensations, a pivot and forward retries
+> - Design durable transitions and idempotent step effects
+> - Explain orchestration, compensation failure and isolation trade-offs
+
 ## The structure
 
 ```text
@@ -266,6 +274,9 @@ real compensation requirements.
 > operation; durable saga state retains the result needed for later steps
 > and compensation.
 
+Next: the outbox — the answer to the two-writes problem, and the piece most of
+this is built on.
+
 ## What to take away
 
 1. A saga is local transactions plus compensating transactions; a compensation is
@@ -281,5 +292,16 @@ real compensation requirements.
 6. Express step effects as deltas rather than absolute values so compensations
    remain correct under concurrent change.
 
-Next: the outbox — the answer to the two-writes problem, and the piece most of
-this is built on.
+## Exercises
+
+> [!EXERCISE recall] Why does a saga need orchestration for longer workflows, and what must be committed together when it advances a step?
+>
+> **Solution:** Beyond a few steps, choreography spreads the workflow across handlers so no one place can answer what happens next. Persist the saga's state transition in the same local transaction as the message that triggers the next step, so it cannot advance without its trigger or emit a trigger without recording progress.
+
+> [!EXERCISE apply] Inventory starts at 10 units. A saga reserves 3, another operation then reduces the available amount by 2, and the saga must compensate its reservation. Calculate the correct final amount and explain why restoring an old absolute value is unsafe.
+>
+> **Solution:** After the reservation, inventory is 10 − 3 = **7**. The other operation leaves 7 − 2 = **5**. Compensating the saga adds back only its delta: 5 + 3 = **8**. Restoring the earlier absolute value 10 would erase the other operation's reduction; delta-based compensation preserves it.
+
+> [!EXERCISE stretch] Two checkout sagas race for the last unit, and a reservation can remain provisional while payment is pending. Recommend a way to keep another workflow from treating that provisional state as settled, and explain what a weaker answer misses.
+>
+> **Solution:** Mark the reservation with a semantic pending state and require the later workflow to re-read or honor that state before acting; clear or advance it through the saga's durable transitions. A weaker answer treats the first local commit as final inventory availability; it misses that the saga may still compensate and that its intermediate state is visible.

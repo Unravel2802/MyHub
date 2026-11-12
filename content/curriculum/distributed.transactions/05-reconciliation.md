@@ -12,6 +12,14 @@ not a sign that the other mechanisms failed. It is what every organisation
 handling money does, without exception, precisely because they take correctness
 seriously.
 
+> [!WHY] An outbox, saga and idempotency key can all be implemented correctly while a manual repair or schema change still creates divergence. Reconciliation compares the resulting systems and finds what the protocols could not prevent.
+
+> [!GOALS]
+>
+> - Choose a source of truth and a settled comparison window
+> - Select aggregate, hash-tree or streaming comparison for the data shape
+> - Decide which discrepancies are safe to repair and which require escalation
+
 ## Why it is not redundant
 
 The outbox is correct. The saga is correct. The idempotency keys are correct. And
@@ -283,3 +291,17 @@ week and never asks why has turned a detection system into a permanent workaroun
 That completes distributed transactions. Next in the track: **messaging and event
 streaming** — the log as infrastructure, and the delivery machinery most of these
 patterns run on.
+
+## Exercises
+
+> [!EXERCISE recall] Name three comparison strategies from the chapter and explain how they narrow work before record-level diagnosis.
+>
+> **Solution:** Aggregate counts, sums and checksums first; compare hash-tree/Merkle branches to find differing buckets; or stream two sorted datasets in lockstep. Aggregate comparison is cheapest, hash trees localize mismatches by branch, and streaming comparison finds row differences with bounded memory.
+
+> [!EXERCISE apply] For one settled day, the source ledger has 1,200 rows totaling $84,000. The partner ledger has 1,199 rows totaling $84,000. What does the aggregate comparison show, and what should the job do next?
+>
+> **Solution:** The count difference is 1,200 − 1,199 = **1 row**, while the sum difference is $84,000 − $84,000 = **$0**. Matching totals do not prove matching records, so descend into the row-level comparison for that settled bucket and identify the missing or mismatched record before any repair.
+
+> [!EXERCISE stretch] A settled payment row differs between your ledger and a provider ledger, and neither record is designated authoritative for that field. Recommend a response and explain what a weaker answer misses.
+>
+> **Solution:** Do not auto-repair the money movement while direction is ambiguous; escalate it for investigation, retain both records and the comparison evidence, and log any eventual correction. A weaker answer copies one side over the other because it is newer; it misses that timestamps alone do not establish which ledger is authoritative.

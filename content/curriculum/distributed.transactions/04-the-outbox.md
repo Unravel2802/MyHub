@@ -10,6 +10,14 @@ implementing correctly everywhere rather than reaching for anything heavier. It
 turns two writes to two systems into **one write to one system, plus a retryable
 delivery step**.
 
+> [!WHY] A service saves an order and publishes its event as two separate writes. A crash between them leaves either an order nobody hears about or a message describing an order that never committed.
+
+> [!GOALS]
+>
+> - Explain how an outbox makes state change and delivery intent atomic
+> - Choose polling or CDC and state the delivery guarantees each requires
+> - Design ordering, cleanup and age-based monitoring for the relay
+
 ## The mechanism
 
 ```sql
@@ -251,6 +259,9 @@ silently dropped?** If yes, outbox. If no, publish directly.
 > its transaction aborts before another increment can commit. Prune IDs
 > only after the longest possible redelivery window.
 
+Next: reconciliation — the backstop that catches the cases where all of this was
+implemented slightly wrong.
+
 ## What to take away
 
 1. The outbox turns two writes into one transaction plus a retryable delivery
@@ -266,5 +277,16 @@ silently dropped?** If yes, outbox. If no, publish directly.
 6. Outbox plus inbox gives effectively-once processing between two services with
    no distributed transaction anywhere.
 
-Next: reconciliation — the backstop that catches the cases where all of this was
-implemented slightly wrong.
+## Exercises
+
+> [!EXERCISE recall] What ordering guarantees can an outbox relay provide, and what cost does each stronger ordering choice impose?
+>
+> **Solution:** A single relay sending one message at a time gives strict global order but limits throughput. Partitioning by an aggregate key gives per-key order with parallelism across keys; no order permits maximum throughput but requires order-insensitive consumers.
+
+> [!EXERCISE apply] An order service emits `paid` then `shipped` for each order, while separate orders may progress in parallel. Choose an ordering key and relay strategy that preserves the needed order without imposing a global sequence.
+>
+> **Solution:** Use the order ID as the `ordering_key` and ensure a single relay worker handles each key's rows in order. Different order IDs can be processed by different workers, preserving the paid-before-shipped sequence for each order without serializing all orders globally.
+
+> [!EXERCISE stretch] A polling relay meets correctness needs but cannot meet a new low-latency delivery target at the current write volume. Recommend a migration path and explain what a weaker answer misses.
+>
+> **Solution:** Consider CDC when the polling interval or database query load is no longer suitable, and monitor replication-slot growth as part of the change. A weaker answer switches transports solely for lower latency; it misses the operational cost of a growing slot and the need to keep delivery and cleanup observable.

@@ -8,6 +8,15 @@ Replication is easy while everything works. Failover — promoting a follower wh
 the leader dies — is where the data loss and the corruption live, and it is the
 part most systems get wrong in a way that is only discovered during an incident.
 
+> [!WHY] An asynchronous leader fails after acknowledging writes that the follower has not received. The promoted follower may be behind, and the old leader can return believing it is still allowed to write.
+
+> [!GOALS]
+>
+> - Trace detection, election, promotion and redirection during failover
+> - Estimate acknowledged writes at risk from replication lag
+> - Choose an acknowledgement policy that meets an RPO requirement
+> - State RTO and RPO separately and test the recovery path
+
 ## The four steps, and what goes wrong at each
 
 ```text
@@ -287,3 +296,19 @@ the second failure happens.
 
 Next: multi-leader replication — accepting writes in several places, and the
 conflicts that follow.
+
+## Exercises
+
+> [!EXERCISE recall] What sequence of operational stages restores service after leader loss, and why does timeout alone not prove the leader is dead?
+>
+> **Solution:** Detect failure, elect a replacement, promote it, and redirect clients; later fence or rejoin the returning leader safely. A timeout only shows that a response was late or absent, which can also happen when the leader is slow or partitioned, so quorum and fencing prevent two leaders from accepting writes.
+
+> [!EXERCISE apply] A failover budget is 30 seconds. Detection takes 8 seconds, election 3 seconds, promotion 7 seconds and client redirection 10 seconds. Calculate the total recovery time and remaining budget.
+>
+> **Hint:** Add each stage; compare the sum with the 30-second RTO.
+>
+> **Solution:** Recovery takes 8 + 3 + 7 + 10 = **28 seconds**. The remaining RTO budget is 30 − 28 = **2 seconds**. The stages must all fit; meeting the detection timeout alone would not meet the end-to-end recovery target.
+
+> [!EXERCISE stretch] A team chooses a five-second detection timeout to meet a short RTO but has never tested failover. Recommend an operational plan and explain what a weaker answer misses.
+>
+> **Solution:** Treat the five-second timeout as an explicit aggressive trade-off that can trigger on a slow leader or brief partition, and use quorum agreement, strong fencing and a cooldown to reduce false failovers and flapping. Exercise failover in a game day, then measure actual recovery time and data loss against the agreed RTO and RPO. A weaker answer tunes only the timeout; it misses election, promotion, redirect, returning leaders and untested recovery behavior.

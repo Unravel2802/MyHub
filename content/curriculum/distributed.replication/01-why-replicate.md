@@ -9,6 +9,15 @@ and they want different architectures. Getting the goal explicit first is what
 stops a team building a read-scaling setup and then discovering it does not
 survive a data-centre failure.
 
+> [!WHY] Users on another continent wait about 150 ms for a database read while nearby users wait about 1 ms. A replica can bring data closer, but every copy adds consistency work and still does not replace a backup.
+
+> [!GOALS]
+>
+> - Distinguish replication goals: availability, read throughput, latency and durability
+> - Choose single-leader, multi-leader or leaderless replication from the requirement
+> - Compare synchronous, asynchronous and semi-synchronous acknowledgement
+> - Explain why replication does not protect against deletion or a bad migration
+
 ## The four goals
 
 **1. Availability.** Survive a machine, rack, zone or region failing. Requires
@@ -264,3 +273,19 @@ everything behind it, so systems using them need explicit repair logic.
 
 Next: leader-follower replication in detail, and the lag that makes a replica's
 answers wrong.
+
+## Exercises
+
+> [!EXERCISE recall] Name the four goals of replication and explain why a replica is not a backup.
+>
+> **Solution:** Replication can provide availability, read throughput, lower read latency or durability. A replica copies changes, including an accidental table deletion or bad migration, so it cannot recover the prior state; a separate backup is needed and must be tested by restoring it.
+
+> [!EXERCISE apply] A user reads from a database 150 ms away today. A nearby replica would serve the read in 1 ms. Calculate the per-read latency reduction and explain what replication trade-off remains if the copy is far from the leader.
+>
+> **Hint:** Subtract the local-read latency from the cross-continent latency in the chapter.
+>
+> **Solution:** The reduction is 150 ms − 1 ms = **149 ms per read**. Replication improves locality, but keeping distant copies consistent still costs network time; an asynchronous copy may be stale, while waiting for a remote acknowledgement increases write latency.
+
+> [!EXERCISE stretch] A product asks for fast reads in several regions, continued writes during a regional partition, and recovery from accidental deletion. Recommend the replication arrangement and the separate recovery mechanism, and explain what a weaker answer misses.
+>
+> **Solution:** Local replicas address read latency, while multi-leader or leaderless replication can accept writes in multiple regions during a partition, with conflict handling as part of the design. Keep independent backups and test a restore for accidental deletion. A weaker answer says “replicate the database”; it misses that the goals require different properties and replication faithfully copies mistakes.

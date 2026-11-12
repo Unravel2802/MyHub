@@ -10,6 +10,15 @@ compared with a wall time. Real systems need both — a timestamp you can put in
 `created_at` column *and* rely on for causal ordering. Two designs achieve this,
 by opposite strategies.
 
+> [!WHY] Two regions need timestamps that remain close to wall time but still respect message causality. One region's clock is behind, so the timestamp format must preserve order without pretending the physical clocks agree.
+
+> [!GOALS]
+>
+> - Compute HLC updates on send and receive when clocks differ
+> - Explain how a logical counter preserves causal order through clock skew
+> - Calculate the latency cost of TrueTime commit wait from its uncertainty
+> - Choose a sequence number, HLC or bounded-uncertainty clock from the ordering need
+
 ## Hybrid Logical Clocks
 
 An HLC timestamp is a pair: a physical component that tracks wall time, and a
@@ -235,3 +244,19 @@ Whatever you choose, these apply:
 
 Next: what all of this means for real system behaviour — the consistency
 guarantees you can actually offer, and what each one costs.
+
+## Exercises
+
+> [!EXERCISE recall] What are the two parts of an HLC timestamp, and what failure can happen when its physical component jumps far into the future?
+>
+> **Solution:** An HLC is a physical component plus a logical counter. The counter preserves ordering when physical time cannot advance, but a clock far ahead can drag peers' physical components forward; implementations enforce a maximum offset and may stop the node rather than corrupt ordering.
+
+> [!EXERCISE apply] Node A has HLC state (100,2) and wall time 103 when it sends. Node B has state (101,4), wall time 102, and receives A's message. Calculate both resulting timestamps using the chapter's rules.
+>
+> **Hint:** A send resets the counter if wall time advances the physical component; on receipt, compare the chosen physical value with the message's component.
+>
+> **Solution:** A chooses l = max(100,103) = 103, so its counter resets to 0 and it sends **(103,0)**. B chooses l = max(101,103,102) = 103. Because that value equals the message's physical component, B sets c = 0 + 1 = 1 and receives **(103,1)**. Thus the received message's timestamp is smaller than B's resulting event timestamp.
+
+> [!EXERCISE stretch] A service needs global external consistency and is considering HLC because it avoids commit wait. Recommend whether HLC meets the requirement and explain what a weaker answer misses.
+>
+> **Solution:** HLC preserves causal order and stays near wall time, but it does not guarantee external consistency across nodes. If that guarantee is required, use a bounded-uncertainty design such as TrueTime and wait until the earliest bound is later than the chosen commit timestamp, paying about 2ε. A weaker answer compares timestamp formats only; it misses the guarantee and latency cost the product actually needs.

@@ -9,6 +9,15 @@ light and will still be there in fifty years. Knowing which is which stops you
 from optimising something that cannot move, and stops you from accepting
 something that can.
 
+> [!WHY] A file copy between regions uses a gigabit link but never approaches its advertised rate. The sender's small in-flight window, rather than the link or compression, may be the limiting resource.
+
+> [!GOALS]
+>
+> - Estimate a round-trip or bandwidth-delay floor from stated values
+> - Calculate the bytes that must be in flight to fill a link
+> - Distinguish transfer time from round-trip latency
+> - Locate queueing or network setup in a request's time breakdown
+
 ## The numbers
 
 Jeff Dean's "latency numbers every programmer should know", updated for 2026
@@ -281,3 +290,19 @@ every time.
 
 Next: what to do with those numbers — choosing timeouts, retrying safely, and
 the retry storms that take systems down.
+
+## Exercises
+
+> [!EXERCISE recall] Why should an engineer measure a request's distributed trace before optimising its business logic?
+>
+> **Solution:** A trace shows how time is divided among network, authentication, database, serialization and other spans across services. In the chapter's example, business logic is only 1.7% of total request time, so optimising it first is likely to target the wrong row.
+
+> [!EXERCISE apply] An M/M/1 service runs at 95% utilisation and has a 4 ms service time. Calculate the chapter's latency multiplier and the corresponding latency under its model.
+>
+> **Hint:** Use 1/(1 − ρ) for the multiplier, with ρ = 0.95.
+>
+> **Solution:** The multiplier is 1 ÷ (1 − 0.95) = 1 ÷ 0.05 = **20×**. At a 4 ms service time, the chapter's model gives 4 ms × 20 = **80 ms** latency. This steep increase is why the chapter recommends headroom rather than running a latency-sensitive service near full utilisation.
+
+> [!EXERCISE stretch] A dashboard shows 90% server utilisation and a 10 ms network RTT, but users report requests taking 400 ms. Propose what to measure first and explain what a weaker answer misses.
+>
+> **Solution:** Break the request into network, queueing, authentication, database, serialization and return-path spans with distributed tracing. At 90% utilisation, the chapter's M/M/1 model gives a 10× service-time latency multiplier, so queueing is a strong candidate; measure before optimising code. A weaker answer subtracts the 10 ms RTT and blames the remaining time on application logic, missing the non-linear queueing delay and the other measured stages.

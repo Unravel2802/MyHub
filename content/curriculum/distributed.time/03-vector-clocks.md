@@ -9,6 +9,15 @@ you whether it did, whether it did not, or whether the two are genuinely
 concurrent — the distinction you need to detect a conflict rather than silently
 paper over one. The price is that the clock is no longer one integer.
 
+> [!WHY] Two replicas accept edits to the same cart while disconnected, and a last-write-wins rule would silently discard one person's items. The application needs to know whether the versions are ordered or genuinely concurrent before deciding how to merge them.
+
+> [!GOALS]
+>
+> - Update a vector clock on local events and message receipt
+> - Compare vectors to distinguish before, after and concurrent versions
+> - Choose between exposing siblings, merging or accepting last-write-wins
+> - Explain the metadata and application complexity that vectors add
+
 ## The structure
 
 Each node keeps a **vector**: one counter per node in the system.
@@ -252,3 +261,19 @@ the question.
 
 Next: the hybrid clocks that try to get the best of physical and logical time,
 including how Spanner turns clock uncertainty into a guarantee.
+
+## Exercises
+
+> [!EXERCISE recall] What does vector-clock comparison reveal that Lamport timestamps cannot, and what does it cost?
+>
+> **Solution:** Vector comparison can identify that neither version is before the other, so the writes are concurrent. It costs one counter per participating node or writer, and applications must handle multiple versions and resolve them on the read path.
+
+> [!EXERCISE apply] Node C has vector {A:2, B:1, C:5} and receives {A:3, B:1, C:2}. Calculate C's vector after receipt and determine whether the received event happened before C's new event.
+>
+> **Hint:** Take the component-wise maximum, then increment C's own component.
+>
+> **Solution:** The component-wise maximum is {A:3, B:1, C:5}. Incrementing C's component gives **{A:3, B:1, C:6}**. The received vector is less than or equal in every component and strictly smaller in C, so the received event happened before C's new event.
+
+> [!EXERCISE stretch] A shopping-cart service wants to merge concurrent adds and removes, but the team proposes unioning two cart versions. Recommend the appropriate representation and explain what a weaker answer misses.
+>
+> **Solution:** Use conflict-aware versions so the store surfaces concurrent siblings, then choose merge semantics that represent both additions and removals, such as an observed-remove set. Plain set union preserves any item present in either sibling, so an item removed on one side can reappear. A weaker answer treats the vector clock as the merge rule; it detects concurrency but does not decide the product meaning of a delete.

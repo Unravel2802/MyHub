@@ -10,6 +10,15 @@ once, and consistency comes from the *overlap* between those sets rather than
 from any node being in charge. It is the design behind Dynamo, Cassandra, Riak
 and S3, and its central idea is one inequality.
 
+> [!WHY] A regional partition leaves a coordinator unable to reach every replica, but a telemetry service still needs to accept writes. A leaderless quorum can keep the write path available while making the read/write overlap and its limits explicit.
+
+> [!GOALS]
+>
+> - Calculate read/write quorum overlap from R, W and N
+> - Choose read and write quorum sizes for availability and latency needs
+> - Explain why overlap does not guarantee linearizability
+> - Use read repair, anti-entropy and tombstones to keep replicas converged
+
 ## The mechanism
 
 ```text
@@ -272,3 +281,17 @@ failover problems from the previous chapter.
 
 That completes replication. Next in the track: **partitioning** — splitting data
 across nodes rather than copying it, and the two are almost always combined.
+
+## Exercises
+
+> [!EXERCISE recall] What do N, R and W represent in a replicated store, and what assumption about the replica sets matters when reasoning about overlap?
+>
+> **Solution:** N is the number of home replicas for a key, R is the number of replicas that must respond to a read, and W is the number that must acknowledge a write. The overlap argument assumes both the read and write sets are chosen from the same N home replicas; sloppy quorums can use substitutes and break that assumption.
+
+> [!EXERCISE apply] A store has N = 5 home replicas, and writes must succeed with two replicas down. Choose W, find the smallest R that guarantees read/write overlap, and determine whether W = 2, R = 3 guarantees overlap. State one limit of overlap.
+>
+> **Solution:** Writes must reach 5 − 2 = **3 replicas**, so choose W = 3. For overlap, R + 3 > 5, so the smallest integer R is **3** (3 + 3 = 6 > 5); that also lets reads succeed with two replicas down. With W = 2 and R = 3, R + W = 3 + 2 = **5**, which is not greater than N, so overlap is not guaranteed. Even guaranteed overlap does not provide linearizability.
+
+> [!EXERCISE stretch] A key is rarely read and has recently been deleted; its tombstone has not yet been observed on every replica. Choose a convergence plan and explain what a weaker answer misses.
+>
+> **Solution:** Run background anti-entropy so replicas compare even this rarely read key, and retain the tombstone until the replicas can no longer return the old value. Read repair alone may never touch this key. A weaker answer deletes the tombstone immediately or relies only on reads; it misses how an unseen old copy can resurrect deleted data.

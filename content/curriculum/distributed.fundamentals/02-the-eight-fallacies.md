@@ -9,6 +9,15 @@ more useful as a **checklist for reviewing a design**, because each one maps to
 a specific defect that appears in real code. This chapter walks through them in
 that form: the assumption, the failure it causes, and the change that removes it.
 
+> [!WHY] A list endpoint returns 40 KB per item for 80 items, though the screen uses only two fields. The hidden transfer cost turns a routine UI request into a payload the service must serialize and move.
+
+> [!GOALS]
+>
+> - Identify the network assumption behind a concrete service defect
+> - Reduce payloads with field selection, pagination or compression
+> - Explain how topology changes invalidate cached addresses
+> - Design an expand-and-contract change for independently deployed services
+
 ## 1. The network is reliable
 
 **The assumption:** if I send a request, it arrives; if I get no error, it
@@ -270,3 +279,19 @@ review than a week of load testing.
 
 Next: partial failure — the one property with no single-process analogue, and
 why "did it work?" can be genuinely unanswerable.
+
+## Exercises
+
+> [!EXERCISE recall] Name the eight network fallacies and explain why a checklist is more useful in a design review than memorising their names.
+>
+> **Solution:** The fallacies are reliability, zero latency, infinite bandwidth, security, stable topology, one administrator, zero transport cost and homogeneous networks. Each maps to a specific defect in a remote call, so asking the chapter's review questions exposes concrete risks such as unauthenticated calls, stale addresses or excessive payloads.
+
+> [!EXERCISE apply] A list endpoint returns 40 KB for each of 80 items, although the client displays only two fields from each item. Calculate the transferred payload size before protocol overhead, name the fallacy it illustrates, and choose two changes taught in the chapter.
+>
+> **Hint:** Multiply the per-item size by the item count, then convert kilobytes to megabytes using decimal units.
+>
+> **Solution:** The payload is 80 × 40 KB = 3,200 KB = **3.2 MB** before protocol overhead. This illustrates that bandwidth and transport cost are not free. Field selection can omit unused fields, and mandatory pagination can bound each response; compression is another option when its CPU cost is justified by the volume.
+
+> [!EXERCISE stretch] A service has a strict schema that rejects unknown fields, and a provider wants to add a response field while old clients are still deployed. Propose a compatible rollout and explain what a weaker answer misses.
+>
+> **Solution:** Make the new field optional and ensure old consumers ignore unknown fields; then migrate readers and writers independently while both versions remain valid. A weaker answer rejects the field or deploys both services together; it misses forward compatibility and that independent services cannot all change atomically.

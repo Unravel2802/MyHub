@@ -10,6 +10,15 @@ programming languages: **you do not know**. Learning to design for that third
 outcome is the largest single step in becoming competent at distributed systems,
 because no amount of careful coding removes it.
 
+> [!WHY] A vendor booking call times out after a travel service has reserved a seat and charged a card. The caller cannot tell whether the vendor booked the trip, so its recovery plan must keep the customer and the records from diverging silently.
+
+> [!GOALS]
+>
+> - Distinguish a known failure from a timeout with an unknown outcome
+> - Design retries around client-generated idempotency keys
+> - Choose retry-forward, compensation and reconciliation for partial work
+> - Make a database update and its event intent atomic with an outbox
+
 ## The three outcomes
 
 ```text
@@ -293,3 +302,19 @@ nothing that notices is a design that will accumulate silent corruption.
 
 Next: latency — the numbers worth memorising, and why the physics puts a floor
 under some of them.
+
+## Exercises
+
+> [!EXERCISE recall] What are the three outcomes of a remote request, and why can the caller not infer from a timeout whether the operation ran?
+>
+> **Solution:** The caller can receive success, receive an error, or receive no response. A timeout can mean the request was lost, the work succeeded but the reply was lost, or the work is still running; those cases look identical from the caller because the needed information never returned.
+
+> [!EXERCISE apply] A travel workflow has durably recorded a reservation and charged the card, then the vendor-booking call times out. Explain how to make retry-forward safe, what to do if the vendor later rejects the booking permanently, and how to catch a missed repair.
+>
+> **Hint:** Separate temporary uncertainty from a known permanent failure; the chapter gives a different response to each.
+>
+> **Solution:** Keep the workflow pending with a durable intent to retry the vendor call, and reuse an idempotency key so a repeated call does not create a second booking. If the vendor definitively rejects it, compensate completed steps such as releasing the reservation and refunding the charge where those actions exist. Run reconciliation to compare the independent records and repair any discrepancy that the retry or compensation path missed.
+
+> [!EXERCISE stretch] An order workflow sends an irreversible welcome email, then a later step fails. Propose how to resolve the partial state and explain what a weaker answer misses.
+>
+> **Solution:** Do not pretend the email can be undone. Retry forward if the later step must eventually happen, using a durable pending state and idempotent work; if the product must not leave the order half-complete, compensate the reversible completed steps. Run reconciliation as a backstop to find and repair discrepancies. A weaker answer promises rollback of the email; it misses that some side effects cannot be compensated.

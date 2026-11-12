@@ -9,6 +9,15 @@ decisions: what to use as an identifier, how to order an event log, how to
 resolve two writes that arrived without knowledge of each other, and how to make
 a distributed trace tell the truth. This chapter is those decisions.
 
+> [!WHY] An event service is moving writes to four regions and wants IDs that sort roughly by creation time without contacting one central allocator. The ID choice also affects index locality and what outsiders can infer from a public identifier.
+
+> [!GOALS]
+>
+> - Choose an identifier from ordering, coordination, size and information-leak needs
+> - Select the smallest event-ordering scope that satisfies the product
+> - Choose a conflict-resolution strategy for the data's invariant
+> - Calculate a deduplication window from the longest retry path
+
 ## Choosing an identifier
 
 The ID scheme is an ordering decision disguised as a naming decision, and it is
@@ -279,3 +288,19 @@ restart.
 
 That completes Clocks, Order and Causality. Next in the track: **replication** —
 keeping several copies of data, and the guarantees each arrangement can offer.
+
+## Exercises
+
+> [!EXERCISE recall] What properties make UUIDv7 a useful distributed identifier, and what information does it reveal?
+>
+> **Solution:** UUIDv7 sorts chronologically at millisecond precision, requires no coordination, and is 16 bytes. Its timestamp bits reveal creation time; the ID choice trades that information leak against ordering and coordination needs.
+
+> [!EXERCISE apply] An event store creates 2 million IDs on several independent regional writers. Calculate the raw identifier storage for UUIDv7 and for an 8-byte Snowflake ID, and recommend one if creation-time sorting without a central sequence is required.
+>
+> **Hint:** Multiply the number of IDs by each scheme's size in the chapter's table.
+>
+> **Solution:** UUIDv7 uses 2,000,000 × 16 bytes = **32,000,000 bytes = 32 MB**. Snowflake uses 2,000,000 × 8 bytes = **16,000,000 bytes = 16 MB**, saving 16 MB in raw IDs but requiring node-ID assignment. UUIDv7 fits the stated need because it sorts by time without coordination; it also reveals creation time.
+
+> [!EXERCISE stretch] A team proposes global ordering for a log whose consumers only need events for each order to remain in sequence. Recommend a partition key and conflict strategy, and explain what a weaker answer misses.
+>
+> **Solution:** Partition by order ID so events for one order share an ordered partition, without coordinating one total order across unrelated orders. If a write conflict occurs, optimistic concurrency can reject a stale version so the caller rereads and retries. A weaker answer imposes global ordering; it misses that the smallest useful scope scales and that conflict resolution is a separate decision from event delivery order.

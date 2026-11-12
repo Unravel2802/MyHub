@@ -10,6 +10,15 @@ producer can outpace a consumer you have a new failure mode — one that shows u
 as memory exhaustion rather than as an error, and therefore kills the process
 rather than returning a 503.
 
+> [!WHY] A stream producer sends thousands of order events per second while its consumer is slowed by a database incident. If the application keeps draining into an unbounded queue, the process can run out of memory before the caller sees a useful error.
+
+> [!GOALS]
+>
+> - Calculate backlog growth when producer and consumer rates differ
+> - Choose buffer, drop, block or fail deliberately at capacity
+> - Preserve backpressure across application and transport layers
+> - Design heartbeat, reconnection and resume behavior for long-lived streams
+
 ## Why stream at all
 
 Three reasons, and they are different:
@@ -262,3 +271,17 @@ answer only when the client genuinely needs to push at high frequency too.
 
 Next: the client side — pooling, load balancing, and the observability that makes
 any of this debuggable.
+
+## Exercises
+
+> [!EXERCISE recall] Name the four responses to a full buffer, and explain why blocking composes across a pipeline.
+>
+> **Solution:** The responses are buffer, drop, block and fail. Blocking propagates upstream: when a consumer slows, its queue fills, the producer blocks, and pressure can reach the source instead of accumulating without bound at one stage.
+
+> [!EXERCISE apply] Choose a transport pattern for each: one-way browser notifications, bidirectional browser collaboration, service-to-service streaming, durable replay to many consumers, and a large downloadable file.
+>
+> **Solution:** Use SSE for one-way browser notifications, WebSocket when the browser and server both send ongoing messages, and gRPC streaming for service-to-service streams. Use Kafka when consumers need durable replay and fan-out, and HTTP with range or chunked transfer for a large file. The transport follows the required direction, durability and replay behavior.
+
+> [!EXERCISE stretch] Ten thousand clients are disconnected by a regional restart and retry at once. Propose a reconnect policy and explain what a weaker answer misses.
+>
+> **Solution:** Use exponential backoff with full jitter and a maximum delay so the clients spread their reconnect attempts instead of creating a synchronized retry storm; keep a retry budget and let the server reject excess load clearly. A weaker answer reconnects immediately or uses a fixed delay; it sends all clients back together and can prolong the outage.

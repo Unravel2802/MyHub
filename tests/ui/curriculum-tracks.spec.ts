@@ -8,6 +8,13 @@ import {
 
 const contentRoot = path.join(process.cwd(), "content/curriculum");
 // Extend the distributed allowlist as later batches are augmented.
+const EXERCISE_TRACKS = [
+  "systems-design",
+  "distributed.fundamentals",
+  "distributed.rpc",
+  "distributed.time",
+  "distributed.replication",
+];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
   {
@@ -70,7 +77,12 @@ for (const chapter of chapters) {
     );
     expect(response?.ok()).toBe(true);
     await expect(page.locator("article")).toBeVisible();
-    if (chapter.topic.startsWith("systems-design.")) {
+    if (
+      EXERCISE_TRACKS.some(
+        (prefix) =>
+          chapter.topic === prefix || chapter.topic.startsWith(`${prefix}.`),
+      )
+    ) {
       await expect(
         page.getByRole("complementary", { name: "Why this matters" }),
       ).toBeVisible();

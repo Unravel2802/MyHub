@@ -10,6 +10,15 @@ conversations can share a connection, who may speak first, and what happens when
 a packet is lost. Those decisions are the protocol, and they determine what
 shapes of communication are even possible.
 
+> [!WHY] A TCP read returns half of a message prefix, and the next read contains the rest of that message plus bytes from another one. A receiver that mistakes reads for messages can parse valid traffic into corrupted requests.
+
+> [!GOALS]
+>
+> - Reconstruct message boundaries from a TCP byte stream
+> - Compare application-layer and transport-layer head-of-line blocking
+> - Choose text or binary encoding for the protocol's constraints
+> - Select a call shape and transport for the direction and size of data
+
 ## Framing: the problem underneath everything
 
 TCP gives you a **byte stream**, not messages. It guarantees the bytes arrive in
@@ -269,3 +278,19 @@ balances at the request level, or client-side load balancing.
 
 Next: delivery semantics — at-most-once, at-least-once, and why exactly-once is
 a claim you should always interrogate.
+
+## Exercises
+
+> [!EXERCISE recall] Why can one TCP read contain part of a message or multiple messages, and what does a length prefix add?
+>
+> **Solution:** TCP delivers an ordered byte stream, not message boundaries, so a read may split or combine writes. A length prefix states how many payload bytes belong to a frame, letting the receiver wait for the full message before parsing it.
+
+> [!EXERCISE apply] Two frames use four-byte length prefixes: the first payload is `cat` (3 bytes) and the second is `ok` (2 bytes). TCP returns these chunks: `00 00`, then `00 03 c`, then `a t 00 00`, then `00 02 o k`. Reassemble the two payloads and explain where the second prefix is split.
+>
+> **Hint:** Concatenate the reads first; then consume a four-byte prefix followed by its stated number of payload bytes.
+>
+> **Solution:** The reads concatenate to `00 00 00 03 c a t 00 00 00 02 o k`. The first four bytes state length 3, so the first payload is `cat`. The next four bytes are `00 00` from the third read plus `00 02` from the fourth, stating length 2; the remaining payload is `ok`. Each length prefix is split across two reads, and the first payload is split across reads two and three, so the parser cannot treat any single read as a message.
+
+> [!EXERCISE stretch] A browser must display a very large result set while the server is still producing it. Recommend an API shape and explain what a weaker answer misses.
+>
+> **Solution:** Stream bounded chunks and apply backpressure so the browser can consume incrementally and the server does not build an unbounded response in memory. Keep framing explicit so the receiver can identify complete records across arbitrary transport reads. A weaker answer buffers the entire result before sending; it misses memory growth and the chapter's distinction between transport chunks and application messages.

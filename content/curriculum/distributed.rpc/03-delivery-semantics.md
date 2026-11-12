@@ -10,6 +10,15 @@ is the most misunderstood term in distributed systems, and the confusion is not
 academic — it is the difference between a payments system that double-charges
 and one that does not.
 
+> [!WHY] A worker commits a shipment update, but its acknowledgement is lost and the broker delivers the event again to another worker. The consumer must prevent duplicate effects even when deliveries overlap.
+
+> [!GOALS]
+>
+> - Distinguish message delivery count from processing effects and ordering
+> - Make an at-least-once consumer idempotent with an atomic deduplication marker
+> - State the boundary within which an exactly-once claim holds
+> - Choose ordering guarantees at the smallest useful key or partition
+
 ## The three semantics
 
 ```text
@@ -299,3 +308,19 @@ catches the case where it was not.
 
 Next: contracts and versioning — how two services that deploy independently
 avoid breaking each other.
+
+## Exercises
+
+> [!EXERCISE recall] Contrast at-most-once and at-least-once delivery, and explain why neither alone promises exactly-once effects.
+>
+> **Solution:** At-most-once avoids duplicates by not retrying uncertain delivery, so an event can be lost. At-least-once retries until acknowledged, so an event can be delivered more than once. Exactly-once effects require handling both uncertainty and duplicates at the boundary where the effect is committed.
+
+> [!EXERCISE apply] A search index currently stores document version 12. A delayed event for version 11 arrives after a version 13 event. Specify a version-aware update rule and the final indexed version.
+>
+> **Hint:** Apply only an event whose version is newer than the version already stored.
+>
+> **Solution:** Compare each event's version with the stored version and apply only a strictly newer version. Since 13 is already stored, version 11 is ignored and the final indexed version remains **13**. This order-insensitive handler makes delayed and duplicate delivery safe without reverting the document.
+
+> [!EXERCISE stretch] A system advertises exactly-once processing while consuming from Kafka, writing an order to Postgres and calling an external carrier. Assess the claim and explain what a weaker answer misses.
+>
+> **Solution:** The Kafka transaction can cover Kafka offsets and Kafka output inside its boundary, but it cannot include the Postgres write or carrier HTTP effect. The Postgres effect needs atomic deduplication with its marker, and the carrier call needs the carrier's idempotency mechanism. A weaker answer repeats the product label; it misses that exactly-once processing is only meaningful after naming every effect and its transactional boundary.

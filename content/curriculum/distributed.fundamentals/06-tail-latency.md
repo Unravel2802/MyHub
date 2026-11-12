@@ -11,6 +11,15 @@ completely different systems, and only one of them has a problem — but you
 cannot tell which from the average, and the average is what most dashboards show
 by default.
 
+> [!WHY] A page waits for results from 40 backend calls, and the average latency looks healthy. Even a small chance of a slow call becomes common at the page level when the slowest response controls completion.
+
+> [!GOALS]
+>
+> - Explain why percentiles describe a skewed latency distribution better than its mean
+> - Calculate how fan-out changes the chance of a slow request
+> - Choose hedging, partial results or lower fan-out for a latency tail
+> - Measure latency without coordinated omission or averaged percentiles
+
 ## Why the mean is the wrong statistic
 
 Latency distributions are not normal. They are heavily right-skewed with a long
@@ -242,3 +251,19 @@ That completes Distributed Fundamentals. Next in the track: **RPC and service
 communication** — what actually happens when one service calls another, and why
 the abstraction of a "remote function call" is a lie worth understanding
 precisely.
+
+## Exercises
+
+> [!EXERCISE recall] Why can a service's p99 become a typical page experience when the page fans out to many services, and name two defences from the chapter.
+>
+> **Solution:** The parent waits for the slowest child, so each additional call is another chance to draw from the tail. Hedged requests, partial results and reducing fan-out are defences; the right choice depends on whether the read is idempotent and whether the product can accept incomplete results.
+
+> [!EXERCISE apply] An SLO covers 2,000,000 requests in a 28-day window and requires 99% to complete under 300 ms. Calculate the request error budget above that latency threshold.
+>
+> **Hint:** Apply the allowed 1% to the request count.
+>
+> **Solution:** The SLO allows 100% − 99% = **1%** of requests to exceed 300 ms. The budget is 2,000,000 × 0.01 = **20,000 requests** over the 28-day window. The threshold, percentile and window together make this a measurable target.
+
+> [!EXERCISE stretch] A search page has a hard response deadline and queries many shards, but an empty response is worse than a visibly incomplete one. Propose a tail-latency policy and explain what a weaker answer misses.
+>
+> **Solution:** Hedge an idempotent shard read to another replica after the first exceeds its usual latency, such as p95, and return completed shard results at the deadline with an incomplete marker. Also look for ways to reduce fan-out. A weaker answer waits for every shard or hides missing results; it misses both the slowest-child effect and the need to tell clients when results are partial.

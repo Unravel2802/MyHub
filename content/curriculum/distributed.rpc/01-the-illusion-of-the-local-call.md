@@ -11,6 +11,15 @@ several expensive failures to fully accept it. Understanding *why* it is false
 — precisely, not vaguely — is what makes you good at designing service
 boundaries.
 
+> [!WHY] A page calls a remote service once for each of its twelve product cards, even though the caller needs the same product fields together. The network turns a tidy local loop into repeated round trips that a use-case-shaped endpoint could avoid.
+
+> [!GOALS]
+>
+> - Explain how latency, copying, partial failure and concurrency change remote calls
+> - Shape a remote endpoint around the caller's use case
+> - Calculate the round-trip cost of chatty and batched calls
+> - Choose RPC or messaging based on whether the caller needs an answer
+
 ## The promise
 
 ```python
@@ -243,3 +252,17 @@ two round trips and would double the total.
 
 Next: what actually goes on the wire — framing, protocols, and why HTTP/2 changed
 what an RPC system can do.
+
+## Exercises
+
+> [!EXERCISE recall] Name the four differences between local and remote calls that transparency cannot hide, and state when messaging is preferable to RPC.
+>
+> **Solution:** Remote calls add latency, copy rather than share memory, can fail ambiguously, and receive concurrent calls from many clients. Use messaging when the caller does not need the result to produce its own response, so unrelated side effects do not become dependencies of the user's request.
+
+> [!EXERCISE apply] A request needs an immediate reservation result, a welcome email, and an analytics record. Choose RPC or messaging for each action and explain which results the caller must wait for.
+>
+> **Solution:** Use RPC for the reservation because the request needs its result before it can respond. Publish the welcome email and analytics record through messaging because the caller can continue without either result. Waiting for all three would make unrelated side effects part of the user-facing request path.
+
+> [!EXERCISE stretch] A team exposes every domain-object method as a remote endpoint, then adds automatic retries so calls appear local to callers. Recommend a boundary and explain what a weaker answer misses.
+>
+> **Solution:** Shape remote methods around complete use cases, require deadlines and expose failure and cancellation behavior. Use RPC for data the caller needs now, and publish side effects asynchronously when the caller can continue without their result. A weaker answer improves the stub; it misses that generated code cannot erase network latency, partial failure, copying or concurrent callers.

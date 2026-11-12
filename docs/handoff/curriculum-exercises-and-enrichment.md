@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 approved 2026-11-11 (see the E1 reviews at the end); E2 is next.
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 under review 2026-11-12 (see the E2 review at the end).
 
 ---
 
@@ -710,3 +710,56 @@ chapter, so the three exercises no longer repeat the tombstone question.
 The framing solution now describes the read splits correctly. Lint,
 typecheck, 1,661 unit tests and 254/254 E2E pass, run in Codex's worktree
 now that it has `.env.local`.
+
+### E2 review — 2026-11-12 (Claude): changes requested
+
+Branch `curriculum-e2` (9841741..5ed66c0), in Codex's own worktree and based
+on main. All 22 DS2 chapters (partitioning 5, consistency 6, consensus 6,
+transactions 5) gained an opener and three exercises; the batch table's "21"
+was a miscount. No original prose changed: the five moved `Next:` lines now
+sit before `## Exercises`, as in E1. Both gate lists gained the four topic ids.
+Lint, typecheck, 1,661 unit tests and 254 E2E tests pass in the worktree.
+
+I re-derived every calculation: the vnode imbalance (1/√400 = 5%, matching
+the chapter's table), fixed partitions for 12 nodes (120–1,200; 600 → 50 per
+node), Flexible Paxos 5 + 3 = 8 > 7, the Raft log repair (reject at index 4,
+retry from index 3), five-to-seven membership one voter at a time, the 2PC
+vote (one NO → ABORT), the saga delta (10 − 3 − 2 + 3 = 8) and the
+reconciliation aggregates (1 row, $0). All correct, and every term the
+solutions lean on (sketches, single-flight, directory partitioning, EPaxos,
+fsync p99, semantic locks, 2PC-by-value, 3PC's synchrony assumption) is taught
+in its chapter. Fix these before merge:
+
+1. **`distributed.consensus/02-quorums`: the first GOALS bullet is never
+   exercised.** "Compute node count, quorum size and failure tolerance for a
+   target" has no matching exercise; the Recall restates the general `2f + 1`
+   argument, and the Apply checks Flexible Paxos intersection. Replace the
+   Recall with the computation, using the chapter's "even numbers are strictly
+   worse" section, for instance: a cluster must survive two simultaneous voter
+   failures; how many voters and what quorum, and what does adding a sixth
+   voter change? Solution: 2 × 2 + 1 = **5 voters**, quorum **3**; six voters
+   need a quorum of **4** and still tolerate only **2** failures (6 − 4), so
+   every write waits for one more acknowledgement and gains no tolerance.
+
+2. **`distributed.consensus/03-raft-election-and-log`, Stretch: the prompt
+   doesn't match its answer.** It says the team wants _followers_ to
+   acknowledge before majority replication, but the solution (and its weaker
+   answer) is about the _leader_ replying to the client after its own local
+   append. Reword the prompt to that: the team wants the leader to reply to
+   the client as soon as the entry is in the leader's own log, before a
+   majority has it.
+
+3. **`distributed.transactions/04-the-outbox`, Stretch: the weaker answer is
+   the recommended answer.** The solution recommends moving to CDC for the
+   latency target; the "weaker answer" also switches to CDC for latency, so
+   the contrast is only "and monitor the slot". Make the contrast the
+   chapter's: recommend CDC (the chapter's trigger, polling latency or load
+   becoming the constraint) and name its costs, which are extra
+   infrastructure, schema coupling to the log format, and alerting on
+   replication-slot growth, because a stalled consumer makes the database
+   retain WAL until its disk fills. Then the weaker answer is to keep
+   shortening the polling interval: below the 100–500 ms the chapter gives,
+   each step adds a query per interval to the database the relay is meant to
+   protect, and the latency floor is still the interval.
+
+**Status:** E2 needs fixes 1–3. E3 can start from main once E2 merges.

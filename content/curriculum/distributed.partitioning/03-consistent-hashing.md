@@ -9,6 +9,14 @@ catastrophic property: changing N remaps almost everything. Consistent hashing i
 the standard fix, and it is worth understanding precisely because the naive
 version of it is still noticeably bad.
 
+> [!WHY] A cache fleet adds one worker, and modulo routing sends most hot keys to new owners at once. A ring limits movement, but a careless replica walk can still put every copy on the same machine.
+
+> [!GOALS]
+>
+> - Explain why modulo routing remaps keys and how a ring limits movement
+> - Compute approximate vnode imbalance from the chapter's relationship
+> - Choose ring or rendezvous hashing and preserve distinct failure domains
+
 ## The problem with `mod N`
 
 ```text
@@ -299,3 +307,19 @@ it is the same idea as the "fixed partitions" scheme in the next chapter.
    an explicit, controllable operation.
 
 Next: hot keys and skew — the failure that no hashing scheme fixes.
+
+## Exercises
+
+> [!EXERCISE recall] How does a ring assign a key to an owner, and what do virtual nodes change when a physical node fails?
+>
+> **Solution:** Hash keys and node positions into one ring, then assign a key to the next node clockwise. Virtual nodes give each physical node many small arcs, which evens ownership and spreads a failed node's arcs among many successors instead of loading one neighbor.
+
+> [!EXERCISE apply] A ring uses 400 virtual nodes per physical node. Using the chapter's approximate `1/√V` relationship, estimate the typical worst-node load imbalance.
+>
+> **Hint:** The square root of 400 is 20.
+>
+> **Solution:** √400 = 20, so 1/√400 = 1/20 = **0.05**, or about **5%** typical worst-node overload. This is an approximation from the chapter's relationship, not a guarantee for every placement.
+
+> [!EXERCISE stretch] A Python worker fleet uses the built-in string `hash()` to route keys, and restarts produce a different assignment. Recommend a correction and explain what a weaker answer misses.
+>
+> **Solution:** Use a stable, distribution-oriented hash whose output is the same across processes and versions, then use that value for the ring or partition map. A weaker answer adds virtual nodes but keeps the process-randomized hash; it misses that more positions cannot make unstable key placement stable.

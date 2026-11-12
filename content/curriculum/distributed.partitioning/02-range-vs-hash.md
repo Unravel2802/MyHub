@@ -8,6 +8,14 @@ Once you have chosen a partition key, you must decide how key values map to
 partitions. There are two fundamental schemes, they support different queries,
 and each creates a characteristic failure that the other avoids.
 
+> [!WHY] A time-series service needs fast date-range reads, but current writes all land on the newest range. Hashing spreads those writes, yet a report across all tenants now touches every partition.
+
+> [!GOALS]
+>
+> - Compare range-query and distribution trade-offs of range and hash mapping
+> - Choose a mapping from the service's common query shapes
+> - Design a composite or salted key and state its bounded read cost
+
 ## Range partitioning
 
 Assign contiguous key ranges to partitions.
@@ -229,3 +237,17 @@ sometimes apply it deliberately.
 
 Next: consistent hashing — how to add and remove partitions without moving
 everything.
+
+## Exercises
+
+> [!EXERCISE recall] What does range partitioning preserve that hash partitioning scatters, and what characteristic hotspot does each scheme risk?
+>
+> **Solution:** Range partitioning keeps adjacent keys together for efficient range scans, but monotonic keys concentrate current writes on one range. Hash partitioning spreads keys evenly, but a range query becomes fan-out because its keys land on unrelated partitions.
+
+> [!EXERCISE apply] An order table uses monotonically increasing IDs, gets frequent lookups by exact ID, and rarely scans ID ranges. Choose a mapping that avoids concentrating current writes and state what happens to a range scan.
+>
+> **Solution:** Hash the ID with a stable hash so sequential values spread across partitions and point lookups can compute their owner. A range scan over IDs loses locality and must fan out to the partitions and merge results. A range mapping would keep the scan local but concentrate the newest writes.
+
+> [!EXERCISE stretch] A multi-tenant service has a few tenants hundreds of times larger than the median. Recommend a key mapping and explain what a weaker uniform-hash answer misses.
+>
+> **Solution:** Use a tenant-to-partition directory so ordinary tenants can share partitions while a whale can be isolated on its own resources; retain a sort key such as time for that tenant's range queries. A weaker answer hashes every tenant uniformly and stops there; it misses that a large tenant can dominate its assigned partition even when the hash distributes tenant IDs evenly.

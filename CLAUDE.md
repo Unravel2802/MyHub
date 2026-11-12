@@ -69,20 +69,11 @@ rather than picking a "reasonable" alternative.
   `Markdown.tsx` still never renders raw HTML from the DB.
 - Diagrams: `mermaid` — approved 2026-10-08 for curriculum chapters' ` ```mermaid ` blocks
   (`docs/handoff/curriculum-reader-redesign.md`, PR C). Import it DYNAMICALLY inside an effect —
-  it touches `window` at module scope, the same SSR trap as pdfjs — so only chapters with a
+  it touches `window` at module scope, the SSR trap that bit the since-removed Reader's pdfjs import — so only chapters with a
   diagram load it. Initialise with `securityLevel: "strict"` and `flowchart.htmlLabels: false`.
   Inserting `mermaid.render()`'s SVG via `dangerouslySetInnerHTML` is allowed **only** for
   repository chapter files, on the same narrow terms as highlight.js above; it does not relax
   the `Markdown.tsx` rule for anything else.
-- PDF rendering: `pdfjs-dist` (Mozilla's PDF.js) — approved 2026-08-11 for the Reader module
-  (migration 0042). Chosen over `react-pdf` because that's a wrapper around this same engine and
-  its component API constrains the annotation overlay; the browser's native `<embed>` viewer was
-  ruled out because it exposes no text coordinates, which makes highlighting impossible. Import
-  from `pdfjs-dist` and set `GlobalWorkerOptions.workerSrc` to a worker copied into `public/` —
-  never a CDN URL. Its text layer is what makes select-to-highlight work; the geometry that
-  turns a selection into storable coordinates lives in
-  `src/modules/reader/annotationGeometry.ts` and is unit-tested — don't reimplement it in a
-  component.
 - One-off scripts (`scripts/*.ts`, not application code): `tsx` — added 2026-07-13 for the seed
   and backup scripts. Follow the convention those scripts already establish (see
   `docs/handoff/rls-audit-and-backup-script.md`) rather than picking a different runner.
@@ -146,12 +137,10 @@ stretch of the SWE-track work, from a regex miscounting a `.` string argument in
 catalog's own code as a topic; it's corrected now, in both places.) `docs/handoff/curriculum.md`
 is the source of truth for what's written and why each track leans on the ones before it.
 
-**The Reader shipped 2026-08-11** (PDF viewer + select-to-highlight annotation), so there is
-now no unbuilt feature. Read `docs/handoff/reader.md` before touching it — it records two traps
-that cost real debugging: pdfjs must be imported DYNAMICALLY (it touches `DOMMatrix` at module
-scope, which throws during server render even from a `"use client"` component), and the text
-layer's per-span CSS must actually apply or highlights anchor tens of pixels off the words —
-a failure the E2E assertions could not see, because the coordinates were still validly 0-1.
+**The Reader (PDF viewer + highlights) was removed 2026-11-12** as unnecessary — its page,
+module, `pdfjs-dist` dependency and events are gone, and migration `0050` drops its tables and
+storage bucket. Migration `0042` stays as history. Don't rebuild it unless asked; its old
+handoff notes are in git history (`docs/handoff/reader.md`).
 
 `myhub_plan.md`'s Part A and Part B are now a RECORD of what was built and why, not a to-do list.
 Read them for rationale; don't work through Part B's phases as if they're pending.
@@ -205,8 +194,6 @@ reference** — every wave they described has shipped. Part B's "Sequencing & wo
 `myhub_plan.md` is likewise a record, not an assignment sheet.
 
 For new work the split above still applies verbatim: publish the contract, hand the UI to Codex.
-The Reader (`docs/handoff/reader.md`) is the live example — its contract is published and its
-UI is Codex's.
 
 ## Workflow
 

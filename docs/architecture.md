@@ -123,8 +123,7 @@ render path and a dev-mode suite could not have caught it.
 
 Contract-first (CLAUDE.md): steps 1–5 are Claude's and land as one standalone
 commit with stubs that throw `not implemented`; step 6–7 are Codex's, built
-against that published surface. `docs/handoff/reader.md` is the current
-worked example.
+against that published surface.
 
 ## Why not a monorepo
 

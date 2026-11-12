@@ -10,14 +10,14 @@ fundamentals topic — you cannot distinguish slow from dead, and the timeout yo
 choose trades one failure for another. Health checking done badly is a
 well-documented cause of outages that would not otherwise have happened.
 
-> [!WHY]
-> Backend eligibility depends on failure detection; active probes and passive observation catch different failures.
+> [!WHY] A shared database slows down, every dependency-aware health probe fails together, and the balancer removes the whole fleet; users get a full outage instead of degraded service.
 
 > [!GOALS]
 >
-> - Distinguish active health checks from passive outlier detection.
-> - Explain how probe load grows with backend and load-balancer counts.
-> - Describe why aggressive health checks can worsen an outage.
+> - Distinguish active probes from passive outlier detection.
+> - Apply the minimum-healthy threshold and maximum-ejection cap to shared failures.
+> - Explain the probe, readiness and draining costs that affect backend eligibility.
+
 
 ## Active versus passive
 
@@ -238,14 +238,14 @@ Next: service discovery, which decides what the pool contains in the first place
 
 ## Exercises
 
-> [!EXERCISE recall] What does passive outlier detection observe?
+> [!EXERCISE recall] What does passive outlier detection observe, and what failure can it catch that an active `/healthz` check may miss?
 >
-> **Solution:** It watches real traffic and ejects backends that fail.
+> **Solution:** It observes real traffic and can catch a partial failure, such as a backend that answers `/healthz` while its database pool is exhausted and user requests fail.
 
-> [!EXERCISE apply] A fleet has 20 backends and 3 load balancers, each probing every backend once every 5 seconds. How many probes per second are generated?
+> [!EXERCISE apply] A pool has 10 backends and `max_ejection_percent` is 20%. Four backends meet the outlier rule. How many may the balancer eject at once, and why keep the cap?
 >
-> **Solution:** Each load balancer sends 20 ÷ 5 = 4 probes/s. Three load balancers send 3 × 4 = 12 probes/s total.
+> **Solution:** The cap is 20% × 10 = 2 backends. It must not eject all four at once because removing too much of the pool during a shared problem can turn degraded service into a fleet outage.
 
-> [!EXERCISE stretch] A backend returns `/healthz` successfully but its database pool is exhausted and user requests fail. Why can active checks miss this, and what complements them?
+> [!EXERCISE stretch] A team removes every backend whenever dependency-aware checks fail. Recommend the two fleet-protection settings from the chapter and identify what an eject-everything answer misses.
 >
-> **Solution:** A health endpoint can stay healthy while real work fails. Passive outlier detection observes real traffic and can catch partial failures; the chapter recommends using both.
+> **Solution:** Enable a minimum-healthy panic threshold, such as the chapter’s 50% threshold, so the balancer ignores health status and sends to all when fewer than half appear healthy; also cap the percentage ejected as outliers. Ejecting everything misses that simultaneous failures usually indicate a shared problem and no service is worse than degraded service.

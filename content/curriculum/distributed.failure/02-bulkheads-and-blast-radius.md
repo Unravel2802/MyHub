@@ -9,14 +9,14 @@ rather than sinking the vessel. The same idea is the most reliable structural
 defence in distributed systems: **accept that things will fail, and bound what
 each failure can take with it.**
 
-> [!WHY]
-> Bulkheads isolate resources so one slow dependency cannot consume everything shared by unrelated work.
+> [!WHY] Payment requests hold every thread in a shared 100-thread pool for 30 seconds, so healthy search requests fail too; checkout latency becomes a whole-service outage.
 
 > [!GOALS]
 >
-> - Explain how a shared thread pool spreads one dependency's failure.
-> - Describe how separate pools bound the affected work.
-> - Identify what isolation does and does not guarantee.
+> - Choose isolation scope based on the resources and users a failure can affect.
+> - Calculate the user blast radius of a failed cell using the chapter’s 1/N rule.
+> - Explain the reliability and operational costs that remain after isolation.
+
 
 ## The failure bulkheads prevent
 
@@ -234,14 +234,14 @@ succeeds.
 
 ## Exercises
 
-> [!EXERCISE recall] What is the purpose of a bulkhead?
+> [!EXERCISE recall] What isolation levels does the chapter list, from the cheapest to the strongest?
 >
-> **Solution:** It divides resources so one failure floods one section rather than taking down the whole system.
+> **Solution:** Resource pools, processes, instances, then cells; each step costs more and provides stronger isolation.
 
-> [!EXERCISE apply] A shared pool has 100 threads. Slow checkout requests occupy all 100 threads while search has no dependency problem. Why does search fail?
+> [!EXERCISE apply] A service splits users evenly across the three cells shown in the chapter. One cell has a bad deploy. What fraction of users is in that cell?
 >
-> **Solution:** Both routes share the pool, so checkout holds all 100 threads and leaves none for search.
+> **Solution:** One of three cells is affected: 1 ÷ 3 = 1/3, or about 33% of users. Cell deploys bound the blast radius to that cell.
 
-> [!EXERCISE stretch] A team adds separate pools and claims this makes dependency failures impossible. What is missing?
+> [!EXERCISE stretch] One noisy tenant can overload its assigned worker, and workers are stateless so customers can use either assigned worker. Recommend an isolation strategy and name what plain sharding misses.
 >
-> **Solution:** Bulkheads bound how far a failure spreads; they do not prevent the dependency from failing. The affected route can still fail when its own pool is exhausted.
+> **Solution:** Use shuffle sharding: assign each customer a random pair of workers. With eight workers there are 8 choose 2 = 28 pairs, and another customer is fully affected only if both workers overlap. Plain sharding assigns one worker, so one bad customer can take down that shard for every customer on it.

@@ -9,14 +9,14 @@ matters more than it looks, because the failure it produces — one overloaded
 backend beside idle ones — is exactly what load balancing was supposed to
 prevent.
 
-> [!WHY]
-> A balancing algorithm chooses among eligible backends, and poor choices can overload one backend while others sit idle.
+> [!WHY] A backend enters a two-second GC pause, but round robin keeps sending it every third request; its queue fills and a third of requests time out while other servers are idle.
 
 > [!GOALS]
 >
-> - Explain why round robin can overload one backend.
-> - Describe least-connections and power-of-two-choices.
-> - Choose a policy that uses observed backend load.
+> - Explain why round robin fails when request costs or server speeds differ.
+> - Choose between least outstanding and power of two choices based on state and cost.
+> - Explain why sampling two backends gives useful load correction without global state.
+
 
 ## Round robin, and why it fails
 
@@ -236,14 +236,14 @@ Next: health checking — deciding which backends are eligible at all.
 
 ## Exercises
 
-> [!EXERCISE recall] What two assumptions make round robin a poor default?
+> [!EXERCISE recall] What makes least-outstanding request balancing self-correcting?
 >
-> **Solution:** It assumes requests cost the same and servers are equally fast.
+> **Solution:** A slow backend accumulates in-flight requests, so the balancer sends it fewer new requests without needing request-cost estimates or health data.
 
-> [!EXERCISE apply] Three backends have 2, 8 and 10 active requests. Which backend does least-connections select?
+> [!EXERCISE apply] A fleet has many independent balancers that cannot share exact load state. They can each sample two backends and read their in-flight counts. Which algorithm should they use, and what does each balancer do?
 >
-> **Solution:** The backend with 2 active requests, because least-connections chooses the backend with the fewest active requests.
+> **Solution:** Use power of two choices: choose two backends at random, compare their in-flight counts, send the request to the less-loaded one, and update local in-flight state. The sample gives selection pressure at constant cost without global state.
 
-> [!EXERCISE stretch] A team argues that power-of-two-choices must track the exact load of every server to work. What is missing from that answer?
+> [!EXERCISE stretch] A team proposes full least-loaded selection across every backend for each request. Recommend a policy for a large fleet and explain what the full scan answer misses.
 >
-> **Solution:** It samples two backends and chooses the less loaded one; it does not need to globally track every backend's exact load. The weaker answer adds centralized precision the chapter's algorithm avoids.
+> **Solution:** Use power of two choices: it gets nearly all the benefit of checking every server at constant cost. Full least-loaded selection needs O(n) work per decision and global state, which is awkward across independent balancers.

@@ -10,14 +10,14 @@ requires deciding in advance what the product means with that piece missing. Tha
 decision is product work as much as engineering work, and it is what separates a
 degraded experience from an outage.
 
-> [!WHY]
-> A dependency failure need not take down the core product if the system defines what to do without an optional part.
+> [!WHY] When recommendations time out, the product page currently fails for every visitor even though the core product data is available; an optional feature has taken down the purchase flow.
 
 > [!GOALS]
 >
-> - Distinguish fail-closed behavior from graceful degradation.
-> - Identify optional dependencies and their fallback behavior.
-> - Explain how a fallback can preserve the core user flow.
+> - Classify dependencies as critical, degradable or optional.
+> - Choose which dependencies readiness must include and what fallback to serve.
+> - Explain how timeouts and degradation signals keep optional failures from hiding.
+
 
 ## The default is fail-closed, and it is usually wrong
 
@@ -219,14 +219,14 @@ incident does.
 
 ## Exercises
 
-> [!EXERCISE recall] What two things are required to choose graceful degradation?
+> [!EXERCISE recall] What distinguishes a critical dependency from degradable and optional dependencies?
 >
-> **Solution:** Know which dependencies are optional and define behavior when they are missing.
+> **Solution:** A critical dependency is required to serve; a degradable dependency diminishes a feature while the core flow works; an optional dependency can fail without anyone noticing.
 
-> [!EXERCISE apply] A recommendations service is down. The product page still renders with popular items instead. What behavior is this?
+> [!EXERCISE apply] A checkout page needs the primary database, recommendations and analytics. Classify each dependency, decide which belongs in readiness, and choose what to do if recommendations fail.
 >
-> **Solution:** Graceful degradation: the optional carousel falls back while the core product page remains available.
+> **Solution:** The primary database is critical and belongs in readiness. Recommendations are degradable, so serve cached or default items or omit the feature; analytics is optional. Readiness should include only the critical dependency.
 
-> [!EXERCISE stretch] A team says the best fallback is to retry the failed recommendation service forever within the page request. What does this miss?
+> [!EXERCISE stretch] Recommendation fetches have a five-second timeout, although the chapter gives a 50 ms budget for this optional work. Recommend a fallback and name what a retry-for-five-seconds answer misses.
 >
-> **Solution:** The dependency is optional and needs defined fallback behavior. Retrying without isolation can make the core flow fail with it, which is fail-closed behavior.
+> **Solution:** Use a short 50 ms timeout, then serve a cached or stale result, a default, or omit the feature; record the active degradation for operators. Waiting five seconds delays every page before fallback and lets an optional dependency slow the core flow.

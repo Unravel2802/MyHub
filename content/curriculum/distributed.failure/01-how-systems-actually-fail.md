@@ -10,14 +10,14 @@ recover after the disturbance ended. Understanding those dynamics is more useful
 than any list of failure types, because it explains why systems fall over at
 moments nothing obviously broke.
 
-> [!WHY]
-> A metastable system can remain broken after its original trigger disappears because its own response sustains overload.
+> [!WHY] Three replicas all receive the same bad config change and stop serving together; counting replicas as independent offered no protection from the fleet-wide outage.
 
 > [!GOALS]
 >
-> - Distinguish a stable disturbance from metastable failure.
-> - Explain why removing the trigger may not restore service.
-> - Identify how correlated failure can turn a disturbance into a fleet outage.
+> - Distinguish metastable, cascading and correlated failure.
+> - Explain how shared deploys, config, certificates and dependencies defeat independence assumptions.
+> - Choose controls that break feedback loops and reduce correlated blast radius.
+
 
 ## Metastable failure
 
@@ -239,14 +239,14 @@ Next: bulkheads — bounding the blast radius so a local failure stays local.
 
 ## Exercises
 
-> [!EXERCISE recall] What defines a metastable failure after its trigger is gone?
+> [!EXERCISE recall] In a cascading failure, what happens to the requests that were going to the failed server?
 >
-> **Solution:** The system remains broken because its own response sustains the overload.
+> **Solution:** They do not disappear; their load moves onto the surviving servers, which can then fail in turn.
 
-> [!EXERCISE apply] A trigger causes overload. After it ends, the system remains overloaded and does not recover. Is this stable recovery or metastable failure?
+> [!EXERCISE apply] Every replica shares a certificate that expires at the same instant. Which reliability assumption fails, and what specific monitoring does the chapter recommend?
 >
-> **Solution:** Metastable failure: the trigger is gone but the system does not recover.
+> **Solution:** The replicas are not independent because they share the same certificate expiry; the event is correlated across the fleet. Monitor days-to-expiry as a first-class metric.
 
-> [!EXERCISE stretch] An incident review recommends only restoring the capacity removed by the original trigger. Why may that not recover a metastable system?
+> [!EXERCISE stretch] A team responds to a bad deploy by adding more replicas, even though every replica runs the same version. Recommend a release control and say what the replica-count answer misses.
 >
-> **Solution:** Its own response may now sustain overload, so restoring the original capacity does not remove the feedback loop. The weaker answer assumes the trigger is still the only cause.
+> **Solution:** Make the deploy the unit of correlation you control: stage the rollout, canary it, and keep a fast rollback. More replicas running the same buggy code remain correlated and can all fail together.

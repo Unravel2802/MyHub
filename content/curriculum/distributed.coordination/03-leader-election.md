@@ -241,9 +241,9 @@ counters.
 >
 > **Solution:** Failover time is approximately the lease TTL plus the election round trip plus warm-up; state rebuild time is often the dominant term.
 
-> [!EXERCISE apply] A service uses a 20-second lease TTL, an election round trip of 150 ms, and a warm standby that needs 35 seconds to become ready. Estimate total failover time.
+> [!EXERCISE apply] A service uses a 20-second lease TTL, an election round trip of 150 ms, and a standby that must rebuild its state in 35 seconds. Estimate total failover time.
 >
-> **Solution:** Convert the round trip: 150 ms = 0.15 s. Add the terms: 20 s + 0.15 s = 20.15 s; 20.15 s + 35 s = **55.15 seconds**.
+> **Solution:** Convert the round trip: 150 ms = 0.15 s. Add the terms: 20 s + 0.15 s = 20.15 s; 20.15 s + 35 s of state rebuild = **55.15 seconds**. With a warm standby, failover would be about 20.15 seconds.
 
 > [!EXERCISE stretch] The current leader cannot reach the coordination store during a network partition but can still reach the database. Recommend its behavior and explain what a weaker answer misses.
 >

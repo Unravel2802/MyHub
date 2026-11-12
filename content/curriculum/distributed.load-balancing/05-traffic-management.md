@@ -10,14 +10,14 @@ change — a deploy, a migration, a new dependency — can be rolled out to a
 fraction of traffic first, and rolled back by changing a weight rather than by
 redeploying.
 
-> [!WHY]
-> Routing can control exposure to a deploy, migration or new dependency by sending a small share of traffic first.
+> [!WHY] A checkout release keeps error rate and latency flat but lowers conversion; sending it to everyone before checking the business signal costs completed sales.
 
 > [!GOALS]
 >
-> - Compare blue-green, canary and rolling delivery.
-> - Explain staged traffic increases and metric comparisons in a canary.
-> - Describe why failover planning must consider data as well as routing.
+> - Choose between blue-green, canary and rolling delivery for a release.
+> - Compare a canary with a concurrent baseline on technical and business metrics.
+> - Choose migration and failover controls that verify data and capacity.
+
 
 ## Progressive delivery
 
@@ -228,14 +228,14 @@ local problem becoming a global one.
 
 ## Exercises
 
-> [!EXERCISE recall] Which delivery method sends a small percentage of real traffic to a new version and then grows it?
+> [!EXERCISE recall] What makes a rollout a canary rather than merely a slow rollout?
 >
-> **Solution:** A canary.
+> **Solution:** It compares the canary against a concurrent baseline on error rate, latency percentiles and a business metric; traffic patterns change, so history is not a fair comparison.
 
-> [!EXERCISE apply] A canary starts at 1%, then goes to 5%, 25% and 100%. How many percentage points does traffic increase from the first to the second stage?
+> [!EXERCISE apply] At the 1% canary stage, error rate and latency match the concurrent baseline, but conversion is lower on the new version. Should the team advance to 5% or roll back the weight?
 >
-> **Solution:** 5% − 1% = 4 percentage points.
+> **Solution:** Roll the new-version weight back to zero. The chapter says compare business metrics as well as technical ones; a technically healthy canary can still be commercially catastrophic.
 
-> [!EXERCISE stretch] A team says routing all traffic back to the old region guarantees a safe rollback after a database migration. What does this miss?
+> [!EXERCISE stretch] A datastore migration appears healthy in staging, but the new store may answer real customer reads differently. Recommend a production-safe comparison and state what a latency-only switch misses.
 >
-> **Solution:** Failover must consider data. Routing alone cannot guarantee safety if the migration changed data compatibility; the weaker answer treats traffic routing as the whole rollback plan.
+> **Solution:** Dual-read the old and new stores with difference logging, keep the old store authoritative, and switch only after the difference rate is zero. A latency-only switch misses record-level correctness on real data.

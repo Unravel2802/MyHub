@@ -10,14 +10,14 @@ the least-exercised code in the system, and by default it does not work. Chaos
 engineering is the practice of breaking things deliberately, while you are
 watching, to find out.
 
-> [!WHY]
-> Resilience mechanisms often go untested because they run only when something is broken; chaos engineering exercises them deliberately.
+> [!WHY] A team kills healthy-looking nodes during tests but never slows a dependency; the untested timeout path later exhausts callers’ pools and turns a slow service into an outage.
 
 > [!GOALS]
 >
-> - Describe the stages of a chaos experiment.
-> - State a measurable steady-state hypothesis.
-> - Explain how experiment scope limits blast radius.
+> - Describe the steady-state, hypothesis, injection, observation and conclusion steps.
+> - Choose a measurable hypothesis and the smallest blast radius that can test it.
+> - Explain why observability and an abort button are prerequisites for injection.
+
 
 ## It is an experiment, not vandalism
 
@@ -222,14 +222,14 @@ between them.
 
 ## Exercises
 
-> [!EXERCISE recall] What does a chaos experiment define before injecting failure?
+> [!EXERCISE recall] What must a team state and measure before it injects a failure?
 >
-> **Solution:** A measurable steady state and a hypothesis about whether it will hold.
+> **Solution:** Define a measurable steady state and a hypothesis about whether that steady state will hold.
 
-> [!EXERCISE apply] The chapter's hypothesis is that killing one of three payment instances will not change checkout success rate. What should the team observe?
+> [!EXERCISE apply] A latency injection passed in staging. According to the chapter’s progression, what is the next production step, and what must be ready before it begins?
 >
-> **Solution:** Whether the measurable steady state, checkout success rate of at least 99.5%, holds.
+> **Solution:** Start with 1% of production instances or traffic during business hours, with the team watching, observability in place, and an abort button and stated blast radius. Do not jump straight to a cell or region.
 
-> [!EXERCISE stretch] A team injects a fleet-wide failure without defining a hypothesis or watching service metrics. Why is that not the experiment described here?
+> [!EXERCISE stretch] A team wants to begin its resilience program by terminating one node. Recommend a higher-yield first injection and say what node termination misses.
 >
-> **Solution:** The chapter defines an observed experiment: define measurable normal, state a hypothesis, inject the smallest failure that tests it, observe and conclude. The weaker answer skips those controls.
+> **Solution:** Inject latency into a dependency first; the chapter says latency finds more bugs because it exposes missing timeouts, exhausted pools and cascading slowness. Node termination is obvious and systems handle it better, so it misses the slow-but-responding failure mode.

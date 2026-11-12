@@ -9,14 +9,14 @@ current, and handling the window in which it is wrong is service discovery. The
 window is unavoidable — the question is only which direction you would rather be
 wrong in.
 
-> [!WHY]
-> Discovery maintains a backend list whose staleness is unavoidable, so clients must survive incorrect entries.
+> [!WHY] Zone-local routing sends customers in zone A to its two backends while zone B’s ten backends sit idle; A overloads and users pay for the uneven routing.
 
 > [!GOALS]
 >
-> - Compare the impact of stale dead and missing live backends.
-> - Explain why systems should be fast to remove and slow to add.
-> - Describe the role of retries and outlier ejection.
+> - Compare the user cost of a stale dead backend with the capacity cost of a missing live backend.
+> - Choose capacity-aware zone routing when local backend counts differ.
+> - Explain why clients need cached state, retries and fast removal.
+
 
 ## The two directions of staleness
 
@@ -198,14 +198,14 @@ Next: traffic management — using all of this deliberately, to release safely.
 
 ## Exercises
 
-> [!EXERCISE recall] Which direction of staleness creates user-visible errors?
+> [!EXERCISE recall] What should a client do when the registry becomes unreachable after it has learned a backend list?
 >
-> **Solution:** A stale list that still contains a dead backend; requests fail until it is removed.
+> **Solution:** Cache the last known good list and keep using it. A registry outage should not take down services that already know where each other are.
 
-> [!EXERCISE apply] A discovery cache includes a dead backend. The client retries another backend and passive outlier detection ejects the dead one. Which stale direction is this, and how is it mitigated?
+> [!EXERCISE apply] Zone A has two backends and zone B has ten. The router currently always prefers the local zone. What routing policy should replace that rule when local capacity is insufficient?
 >
-> **Solution:** It is stale data containing a dead backend. Retrying elsewhere and passive outlier ejection are the chapter's mitigations.
+> **Solution:** Use capacity-aware zone routing: give each zone its proportional share and spill the remainder when local capacity is insufficient. A naive local preference overloads A while B idles.
 
-> [!EXERCISE stretch] An operator proposes aggressively adding new backends and slowly removing dead ones. Why is that backwards?
+> [!EXERCISE stretch] A team proposes always preferring the local zone to avoid cross-zone latency and data charges. Recommend a safer policy and name what the local-only answer misses.
 >
-> **Solution:** Slow removal costs errors, while aggressive removal costs some capacity. The chapter's principle is to be fast to remove and slow to add.
+> **Solution:** Keep local-zone preference but make it capacity-aware: send the local zone its proportional share and spill the remainder. The local-only answer misses uneven zone capacity; with two backends in A and ten in B, A can overload while B is idle.

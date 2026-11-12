@@ -10,14 +10,14 @@ eventually agree on the current value, and some values must be agreed on
 because unlike a deploy it usually has no canary, no rollback button and no
 review.
 
-> [!WHY]
-> Runtime configuration must spread across instances without a deploy, so a faulty value can affect the fleet quickly.
+> [!WHY] A Friday traffic-weight change reaches every instance at once, and a bad value can turn a routine config edit into a fleet-wide outage before anyone can find a rollback.
 
 > [!GOALS]
 >
-> - Identify suitable dynamic configuration and what belongs elsewhere.
-> - Explain how propagation and stale values affect instances.
-> - Describe safeguards for risky changes and flag cleanup.
+> - Choose which values belong in dynamic configuration and which belong elsewhere.
+> - Choose propagation, validation and staged-rollout controls for a risky change.
+> - Explain how cached discovery state and graceful draining protect service.
+
 
 ## What belongs in dynamic configuration
 
@@ -233,14 +233,14 @@ it.
 
 ## Exercises
 
-> [!EXERCISE recall] What makes a runtime configuration change a coordination problem?
+> [!EXERCISE recall] How quickly does watching propagate a config change, and what is the tradeoff compared with polling?
 >
-> **Solution:** Every instance must eventually agree on the current value; some values must be agreed before anyone acts.
+> **Solution:** Watching propagates changes in milliseconds and creates a long-lived connection per instance that needs reconnection handling. Polling is simpler but can leave instances inconsistent for the polling interval and creates constant load.
 
-> [!EXERCISE apply] A flag is at 100% for six months and nobody removes it. What should the team do?
+> [!EXERCISE apply] An operator proposes `timeout: 0` for the whole fleet. Which checks and rollout should stop this value from taking every instance down?
 >
-> **Solution:** Treat the flag as a temporary control, set an expiry and cleanup process, then remove the dead branch and its config dependency.
+> **Solution:** Validate the value and its range on write and again on each instance. Reject it and keep the last known good value; for a valid replacement, stage 1% of instances, soak and measure, then advance to 10% and finally all, with a one-action rollback.
 
-> [!EXERCISE stretch] A traffic-weight change causes errors across the fleet. What is a weaker response, and what safeguards does the chapter support?
+> [!EXERCISE stretch] A team stores every setting only in a Git repo and waits for a code deploy to propagate an emergency kill switch. Recommend a safer configuration-as-code setup and say what that answer misses.
 >
-> **Solution:** A weaker response changes weights globally and hopes. The chapter says dynamic configuration has no canary or rollback by default; use a controlled rollout and monitor the change, with a rollback plan before applying it.
+> **Solution:** Keep the reviewed, versioned values in Git with CI validation and automatic sync into the config store, so normal changes keep fast propagation and rollback. Document a noisy break-glass path for emergency kill switches. The weaker Git-only answer misses that emergency changes can be blocked behind a PR and deploy.

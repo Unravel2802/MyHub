@@ -9,14 +9,14 @@ something different. A decision made at the DNS layer cannot know about a
 backend's queue depth; a decision made in the client can. Knowing which layer can
 see what is how you diagnose "why is all the traffic going to one server?".
 
-> [!WHY]
-> Traffic is balanced at several layers, and each layer sees different information. Choosing a layer means choosing what it can know and how globally it can act.
+> [!WHY] A mobile client sends 10,000 HTTP/2 requests per second over one long-lived connection; an L4 balancer sends every request to backend A while B and C sit idle.
 
 > [!GOALS]
 >
 > - Compare the information visible at DNS, L4, L7 and client-side layers.
-> - Explain the cost and decision-quality tradeoff across layers.
-> - Diagnose why one backend may receive disproportionate traffic.
+> - Choose a topology that can balance requests carried over HTTP/2.
+> - Explain the latency and failure-domain costs of the topology you choose.
+
 
 ## The layers
 
@@ -235,14 +235,14 @@ Next: the algorithms, and why the obvious one is the wrong default.
 
 ## Exercises
 
-> [!EXERCISE recall] Which layer can route using a request path, headers and response codes?
+> [!EXERCISE recall] What unit does L4 balance, and what unit can L7 balance?
 >
-> **Solution:** L7, the application layer, can see those request details.
+> **Solution:** L4 balances TCP connections. L7 balances individual requests because it terminates and re-originates them.
 
-> [!EXERCISE apply] A service has three backends. DNS sees no health or load information, while the client tracks latency and errors per backend. Which can make the more informed per-call choice, and why?
+> [!EXERCISE apply] The HTTP/2 client cannot move to client-side balancing or an L7 proxy this release, and one long-lived connection pins all requests to backend A. Which mitigation from the chapter can redistribute traffic?
 >
-> **Solution:** The client can choose per call using its own latency and error history. DNS sees only the query and cannot know backend health or load.
+> **Solution:** Set a maximum connection age or request count so connections periodically rotate and are re-established. L4 will then have new connections to distribute; it still cannot split requests within one connection.
 
-> [!EXERCISE stretch] A team says L4 can distribute each HTTP request independently over one long-lived HTTP/2 connection. What does that miss?
+> [!EXERCISE stretch] Several services use different client languages and need per-request balancing over HTTP/2. Recommend a topology and name what a client-library-per-language answer misses.
 >
-> **Solution:** L4 balances TCP connections and cannot see individual requests. The weaker answer confuses connection-level routing with request-level routing; L7 or client-side balancing can make request-aware decisions.
+> **Solution:** Use a service mesh sidecar to perform client-side balancing on each application’s behalf. A library per language duplicates the implementation and requires all clients to agree; the mesh costs a process per pod and a small latency hop.

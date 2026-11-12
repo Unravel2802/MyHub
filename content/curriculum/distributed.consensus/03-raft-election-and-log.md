@@ -315,6 +315,6 @@ cluster membership without ever having two leaders.
 >
 > **Solution:** The follower has term 2 at index 4, not term 3, so it rejects that AppendEntries. The leader moves back to the matching index 3 with term 2, retries with the leader's index-4 entry, and the follower replaces its conflicting suffix. Both then have `[1@1][2@1][3@2][4@3]`.
 
-> [!EXERCISE stretch] A team wants followers to acknowledge a command before it is replicated to a majority so the client sees lower latency. Recommend the acknowledgement rule and explain what a weaker answer misses.
+> [!EXERCISE stretch] A team wants the leader to reply to the client as soon as a command is in the leader's own log, before it is replicated to a majority, to reduce latency. Recommend the acknowledgement rule and explain what a weaker answer misses.
 >
 > **Solution:** Acknowledge only after the entry is durably replicated on a majority, committed and applied by the leader. A weaker answer replies after the leader's local append; it misses that this entry could be lost in a tolerable failure before it becomes committed.

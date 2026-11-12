@@ -287,6 +287,6 @@ implemented slightly wrong.
 >
 > **Solution:** Use the order ID as the `ordering_key` and ensure a single relay worker handles each key's rows in order. Different order IDs can be processed by different workers, preserving the paid-before-shipped sequence for each order without serializing all orders globally.
 
-> [!EXERCISE stretch] A polling relay meets correctness needs but cannot meet a new low-latency delivery target at the current write volume. Recommend a migration path and explain what a weaker answer misses.
+> [!EXERCISE stretch] Polling latency or database load has become the delivery constraint for an outbox relay. Recommend a migration path, name its operational costs, and explain what a weaker answer misses.
 >
-> **Solution:** Consider CDC when the polling interval or database query load is no longer suitable, and monitor replication-slot growth as part of the change. A weaker answer switches transports solely for lower latency; it misses the operational cost of a growing slot and the need to keep delivery and cleanup observable.
+> **Solution:** Move to CDC when polling latency or load is the constraint. It adds infrastructure, couples the relay to the database log schema, and requires replication-slot monitoring: a stalled consumer makes the database retain WAL until the disk fills. A weaker answer keeps shortening the polling interval; each step below the chapter's typical 100–500 ms adds another query per interval to the database, while the interval remains the latency floor.

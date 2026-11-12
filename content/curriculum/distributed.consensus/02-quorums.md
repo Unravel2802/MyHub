@@ -266,9 +266,9 @@ Next: Raft, which turns all of this into an algorithm designed to be understood.
 
 ## Exercises
 
-> [!EXERCISE recall] What two quorum properties does a consensus design need for safety and progress, and why does a majority provide intersection?
+> [!EXERCISE recall] A cluster must survive two simultaneous voter failures. How many voters and what quorum does it need, and what changes if a sixth voter is added?
 >
-> **Solution:** Future decision quorums must intersect earlier decision quorums so accepted knowledge is carried forward, and the remaining nodes after the tolerated failures must still form a quorum. With `2f + 1` voters and quorum `f + 1`, two quorum sizes sum to `2f + 2`, which is greater than the `2f + 1` voters.
+> **Solution:** Set `f = 2`: `2 × 2 + 1 = 5` voters and a quorum of `2 + 1 = 3`. With six voters, the quorum becomes 4 and tolerance remains `6 − 4 = 2` failures, so every write needs one more acknowledgement without gaining failure tolerance.
 
 > [!EXERCISE apply] A seven-voter group uses Flexible Paxos with election quorum 5 and replication quorum 3. Check whether the two kinds of quorum must intersect, then state the steady-state write and election acknowledgement counts.
 >

@@ -284,13 +284,13 @@ across nodes rather than copying it, and the two are almost always combined.
 
 ## Exercises
 
-> [!EXERCISE recall] What are read repair and anti-entropy each responsible for, and how does a tombstone represent a deletion?
+> [!EXERCISE recall] What do N, R and W represent in a replicated store, and what assumption about the replica sets matters when reasoning about overlap?
 >
-> **Solution:** Read repair updates stale replicas encountered during reads; anti-entropy compares replicas in the background so keys that are rarely read still converge. A tombstone is a replicated deletion marker that prevents an older value from being resurrected before the tombstone is safely retired.
+> **Solution:** N is the number of home replicas for a key, R is the number of replicas that must respond to a read, and W is the number that must acknowledge a write. The overlap argument assumes both the read and write sets are chosen from the same N home replicas; sloppy quorums can use substitutes and break that assumption.
 
-> [!EXERCISE apply] A deleted key is never read again, so read repair cannot encounter it. Explain which repair mechanism will propagate its tombstone and why the tombstone must be retained during that process.
+> [!EXERCISE apply] A store has N = 5 home replicas, and writes must succeed with two replicas down. Choose W, find the smallest R that guarantees read/write overlap, and determine whether W = 2, R = 3 guarantees overlap. State one limit of overlap.
 >
-> **Solution:** Background anti-entropy compares replicas and can copy the tombstone even though no client reads this key, so read repair alone would never find it. Retain the tombstone until replicas have had time to learn the deletion; removing it too early could let an old value return.
+> **Solution:** Writes must reach 5 − 2 = **3 replicas**, so choose W = 3. For overlap, R + 3 > 5, so the smallest integer R is **3** (3 + 3 = 6 > 5); that also lets reads succeed with two replicas down. With W = 2 and R = 3, R + W = 3 + 2 = **5**, which is not greater than N, so overlap is not guaranteed. Even guaranteed overlap does not provide linearizability.
 
 > [!EXERCISE stretch] A key is rarely read and has recently been deleted; its tombstone has not yet been observed on every replica. Choose a convergence plan and explain what a weaker answer misses.
 >

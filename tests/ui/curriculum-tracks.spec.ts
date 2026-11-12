@@ -78,7 +78,10 @@ for (const chapter of chapters) {
     expect(response?.ok()).toBe(true);
     await expect(page.locator("article")).toBeVisible();
     if (
-      EXERCISE_TRACKS.some((prefix) => chapter.topic.startsWith(`${prefix}.`))
+      EXERCISE_TRACKS.some(
+        (prefix) =>
+          chapter.topic === prefix || chapter.topic.startsWith(`${prefix}.`),
+      )
     ) {
       await expect(
         page.getByRole("complementary", { name: "Why this matters" }),

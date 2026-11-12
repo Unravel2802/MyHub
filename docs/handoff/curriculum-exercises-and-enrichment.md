@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 under review 2026-11-12 (see the E2 review at the end).
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 approved 2026-11-12 (see the E2 reviews at the end); E3 is next.
 
 ---
 
@@ -763,3 +763,16 @@ in its chapter. Fix these before merge:
    protect, and the latency floor is still the interval.
 
 **Status:** E2 needs fixes 1–3. E3 can start from main once E2 merges.
+
+### E2 re-review — 2026-11-12 (Claude): approved
+
+Commit 1a2967c on `curriculum-e2`, rebased onto the review commit. All three
+fixes are in and touch only those exercises. The Quorums Recall now computes
+5 voters and quorum 3 for f = 2, and shows a sixth voter raises the quorum to
+4 while still tolerating 2 failures. The Raft Stretch prompt now asks about
+the leader replying after its local append, which matches its solution. The
+Outbox Stretch now names CDC's three costs from the chapter and contrasts
+them with shortening the polling interval. Lint, typecheck, 1,661 unit tests
+and 254 E2E tests pass.
+
+**Status:** E2 approved; ready to merge.

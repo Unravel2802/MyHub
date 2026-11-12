@@ -9,6 +9,14 @@ running tasks, and changing the cluster's size to match demand, are the two ways
 out — and both introduce feedback loops that can destabilise the system they were
 meant to stabilise.
 
+> [!WHY] A traffic surge adds pods faster than machines become warm, then an aggressive scale-down removes the new capacity as load briefly falls. The resulting oscillation spends money while requests continue to queue.
+
+> [!GOALS]
+>
+> - Explain the interaction of application and cluster autoscaling
+> - Compute checkpoint exposure and interruption fit
+> - Choose bounded scaling and headroom for a fast traffic ramp
+
 ## Preemption
 
 Evicting running work so more important work can run. Necessary the moment you
@@ -261,3 +269,17 @@ is a minimum of one instance, which costs one instance and removes the cliff.
 
 Next: how real schedulers put all of this together, and what to watch when
 operating one.
+
+## Exercises
+
+> [!EXERCISE recall] How can independent pod and machine autoscalers amplify one another, and what dampers does the chapter recommend?
+>
+> **Solution:** Pending pods trigger more machines, but provisioning delay leaves pods pending while more are added. Removing capacity rapidly on a load dip can recreate pending work. Cooldowns, persistent-signal stabilisation windows, fast scale-up, slow scale-down and minimum/maximum bounds damp the loop.
+
+> [!EXERCISE apply] A new batch workload checkpoints every 6 minutes. If interrupted just before its next checkpoint, what is the approximate maximum lost progress? A final checkpoint takes 90 seconds and the interruption notice gives 120 seconds; does it fit, and how much margin remains?
+>
+> **Solution:** The lost work approaches one interval, about 6 minutes, if no final checkpoint succeeds. A 90-second checkpoint fits in the 120-second notice: 120 − 90 = 30 seconds remain. That margin must also cover any other shutdown work; the task must handle the notice rather than assume the interval alone protects it.
+
+> [!EXERCISE stretch] A user-facing worker pool can see demand ramp faster than machines warm up. Recommend its scaling signal and capacity policy; should it scale to zero between bursts?
+>
+> **Solution:** Scale from queue depth, keep headroom or a warm pool for the ramp, use slow start for new capacity, and bound scaling with slow scale-down. Retain a baseline for unpredictable arrivals. Scaling to zero and waiting for latency to rise is weaker: the first arrivals pay the full cold start and the lagging signal acts only after users are affected.

@@ -9,6 +9,14 @@ that is a million messages per interval. Gossip solves this by having each node
 talk to a few random peers and letting information spread the way a rumour does:
 exponentially, robustly, and with no coordinator.
 
+> [!WHY] During a migration, partitioned nodes gossip conflicting views of which peer is alive. Using those views to grant the migration lock can start two writers, so cheap dissemination must be separated from the exclusive decision.
+
+> [!GOALS]
+>
+> - Compare push, pull and push-pull dissemination
+> - Estimate gossip convergence under the doubling model
+> - Choose which decisions require consensus instead of gossip
+
 ## The mechanism
 
 ```text
@@ -256,3 +264,17 @@ value overwrites a new one on merge.
 
 Next: what membership _means_ — strong versus weak views, and the operations that
 depend on the difference.
+
+## Exercises
+
+> [!EXERCISE recall] Why is push effective early and pull useful near the end of gossip dissemination?
+>
+> **Solution:** Early on, most targets are uninformed, so pushes spread knowledge rapidly. Late on, random pushes often reach nodes that already know; uninformed nodes pulling from informed peers finish the tail efficiently. Push-pull combines the two.
+
+> [!EXERCISE apply] A new 64-node cluster uses the chapter’s idealised doubling model, starting with one informed node and a 0.5-second interval. Estimate rounds and elapsed time to inform everyone, and say whether this is an exact delivery deadline.
+>
+> **Solution:** The informed counts are 1, 2, 4, 8, 16, 32 and 64: six rounds because 2⁶ = 64. At 0.5 seconds per round the estimate is 6 × 0.5 = 3 seconds. This is an idealised estimate, not a deadline; random contacts and the dissemination tail make agreement probabilistic.
+
+> [!EXERCISE stretch] A team wants gossip to publish configuration and grant an exclusive migration lock. Recommend which function can stay on gossip and which must move.
+>
+> **Solution:** Configuration that tolerates brief divergence can use gossip. Put the unique migration-lock decision through consensus. Using gossip for both is weaker: eventual probabilistic agreement cannot guarantee exactly one current holder, especially while partitions have different views.

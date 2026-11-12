@@ -10,6 +10,14 @@ same set of updates hold the same value, regardless of the order they arrived in
 how they were batched, or how many times each was delivered. No coordination, no
 transformation, no server.
 
+> [!WHY] An offline permission editor uses an add-wins set and reports a successful revocation. A concurrent addition can preserve the permission on merge, so a mathematically convergent result can still violate the product’s security intent.
+
+> [!GOALS]
+>
+> - Explain delta-state delivery and monotonic removals
+> - Compute an idempotent G-Counter merge
+> - Choose data types whose conflict semantics match the product
+
 ## The mathematics, briefly
 
 The state-based formulation rests on a **join-semilattice**: a partially ordered
@@ -292,3 +300,17 @@ survives — which is convergent, provable, and a security bug.
    on a permission set is convergent and a security bug.
 
 Next: building a real collaborative application with these pieces.
+
+## Exercises
+
+> [!EXERCISE recall] How do delta-state CRDTs reduce payload while keeping state-based merge robustness, and why are removals represented by added information?
+>
+> **Solution:** They send changed portions of state and merge them using the state-based function. State must advance monotonically; a removal therefore records additional information such as tombstones or observed removed tags rather than simply subtracting knowledge.
+
+> [!EXERCISE apply] Two G-Counter replicas hold {A: 4, B: 2} and {A: 3, B: 6}. Compute the merged state and visible value, then merge the first state into the result again. Does the visible total change?
+>
+> **Solution:** Take per-replica maxima: A = max(4, 3) = 4 and B = max(2, 6) = 6. The state is {A: 4, B: 6}, so the value is 4 + 6 = 10. Merging {A: 4, B: 2} again gives max(4, 4) = 4 and max(6, 2) = 6, still 10. Summing received totals instead would double-count duplicates.
+
+> [!EXERCISE stretch] A cart should preserve a concurrent addition, while a permission list must not silently preserve a revoked grant. Should both use the chapter’s add-wins OR-Set?
+>
+> **Solution:** Use the OR-Set for the cart if observed-remove add-wins matches user intent. Reject that same semantics for revocation-sensitive permissions and require a policy that satisfies the security requirement before choosing a type. Applying the OR-Set to both merely because it converges is weaker: convergence proves agreement, not that a surviving permission is authorised.

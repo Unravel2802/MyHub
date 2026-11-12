@@ -8,6 +8,14 @@ The concepts in this topic are visible in every production scheduler, arranged
 differently according to what each was built for. Knowing the shape of each makes
 their documentation legible and their trade-offs predictable.
 
+> [!WHY] A pod stays pending although dashboards show free CPU, and operators keep adding nodes with the same incompatible placement labels. Reading the pending reason can stop spending on capacity that never becomes eligible.
+
+> [!GOALS]
+>
+> - Compare resource offers with filter-score-bind scheduling
+> - Compute planned capacity including growth, failures and utilisation
+> - Choose a remedy from a pending pod’s actual constraint
+
 ## The systems
 
 **Borg** (Google, internal) is the ancestor. A monolithic scheduler per cell of
@@ -238,3 +246,17 @@ That completes cluster scheduling, and with it the Distributed Systems track. Th
 material from here connects outward: **Systems Design** applies all of it to
 concrete cases, **Infrastructure & Ops** covers running it, and **ML Systems**
 applies the same reasoning to training and serving models.
+
+## Exercises
+
+> [!EXERCISE recall] How does Mesos resource offering differ from Kubernetes filter-score-bind, and what does the offer model give up?
+>
+> **Solution:** Mesos offers resources to frameworks, which accept or decline and apply independent policies. Kubernetes filters eligible nodes, scores them and binds the pod assignment. Offers give frameworks policy independence but only a partial resource view, trading away global optimisation.
+
+> [!EXERCISE apply] A new plan has peak demand of 80 CPUs, 25% growth headroom, 20% failure headroom and 60% target utilisation. Apply the chapter’s capacity formula, showing each step.
+>
+> **Solution:** Growth-adjusted demand is 80 × 1.25 = 100 CPUs. Failure headroom gives 100 × 1.20 = 120 CPUs. Divide by target utilisation: 120 ÷ 0.60 = 200 CPUs of planned raw capacity. Fragmentation can still make effective capacity lower, so this estimate does not guarantee any particular task fits.
+
+> [!EXERCISE stretch] A pending pod reports volume node affinity while free capacity exists in another zone. Recommend a diagnostic and remedy before adding generic nodes.
+>
+> **Solution:** Inspect the persistent volume’s zone and the pod’s placement constraints. Provide eligible capacity in that zone or deliberately revise storage and placement compatibility. Adding more arbitrary nodes is weaker: free CPU in the wrong zone does not satisfy the hard volume constraint. Keep this distinct from genuine insufficient CPU or memory.

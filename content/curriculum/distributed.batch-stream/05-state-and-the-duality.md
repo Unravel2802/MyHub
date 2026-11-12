@@ -10,6 +10,14 @@ that took hours to build, and losing them means recomputing from the beginning o
 retention. This chapter is how that state is kept, and the observation that
 dissolves the batch/streaming distinction entirely.
 
+> [!WHY] A stateful job recovers its counters correctly after a crash but appends the replayed outputs again. Correct internal checkpoints still leave duplicated external results unless the sink cooperates.
+
+> [!GOALS]
+>
+> - Explain how stream changes and table state represent the same information
+> - Compute replay volume and choose a replay-safe sink
+> - Choose replay or a separate batch correction path
+
 ## Where state lives
 
 ```text
@@ -254,3 +262,17 @@ than your retention, or joining against datasets that were never in the stream.
 That completes batch and stream processing. Next in the track: **membership and
 failure detection** — how a cluster agrees on which nodes exist and which are
 alive.
+
+## Exercises
+
+> [!EXERCISE recall] How do compaction and CDC illustrate the stream-table duality, and where does batch fit?
+>
+> **Solution:** Compaction folds a stream of changes into current values, like a table. CDC unfolds table changes into a stream. Batch is the same computation over a bounded input that eventually ends.
+
+> [!EXERCISE apply] A checkpoint records source offset 400. Before a crash the job processes offsets 401 through 425 inclusive. How many events replay after restoring the checkpoint? Choose an append-only or keyed-upsert sink for recomputed window totals.
+>
+> **Solution:** The replay range is 401 through 425, so 425 − 401 + 1 = 25 events. Restore both operator state and source position, then replay those events. Choose an upsert keyed by window and key: a repeated total replaces its prior output, whereas append-only output can duplicate effects.
+
+> [!EXERCISE stretch] A correction needs history older than the log retention. Should the team claim Kappa replay alone is sufficient, or keep a separate correction path?
+>
+> **Solution:** Use a batch correction path over the older data if it is available outside the retained stream. The chapter explicitly allows this exception. Claiming replay alone is sufficient is weaker: offsets cannot reconstruct events that retention has already removed. Future replay requirements should inform retention, but increasing it now does not restore missing history.

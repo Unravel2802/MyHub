@@ -10,6 +10,14 @@ incomplete information and a deadline of milliseconds — and the exact answer i
 computationally intractable, so every real scheduler is a well-chosen
 approximation.
 
+> [!WHY] A service has spare CPU across the cluster but no single eligible host with enough memory. Scoring every machine more carefully cannot create a feasible placement, and relaxing replica separation can turn the next host loss into an outage.
+
+> [!GOALS]
+>
+> - Compare packing and spreading as workload policies
+> - Choose a feasible host by applying hard constraints before scores
+> - Choose a scheduler architecture for competing workload regimes
+
 ## What a scheduler decides
 
 ```text
@@ -193,8 +201,7 @@ everything.
   sample two machines, pick the better.
 ```
 
-That is the same result as the load-balancing chapter, applied to placement: near
--optimal quality from a constant-size sample, with no global state. It recurs
+That is the same result as the load-balancing chapter, applied to placement: near-optimal quality from a constant-size sample, with no global state. It recurs
 because it is the general answer to "choose well among many options cheaply".
 
 ## Latency, and the two regimes
@@ -238,3 +245,17 @@ scheduler that is too slow for batch and too crude for services.
    constant cost, and services and batch want different schedulers.
 
 Next: fairness — dividing a cluster between tenants who all want all of it.
+
+## Exercises
+
+> [!EXERCISE recall] Why do cost-sensitive batch work and availability-sensitive services favour different placement policies?
+>
+> **Solution:** Packing reduces the number of active machines and makes scale-down easier, but concentrates failure impact and noisy neighbours. Spreading leaves more headroom and reduces tasks lost per host failure, at higher capacity cost. The right policy belongs to the workload.
+
+> [!EXERCISE apply] A task needs 3 CPUs, 6 GB RAM and host separation from its sibling on A. Free resources are A: 8 CPUs/16 GB, B: 4 CPUs/4 GB, C: 3 CPUs/8 GB. A has the best soft locality score. Choose the host and explain every exclusion.
+>
+> **Solution:** Exclude A because the hard sibling anti-affinity fails despite its resources and score. Exclude B because 4 GB is below the 6 GB requirement. C meets CPU (3 ≥ 3), memory (8 ≥ 6) and host separation, so choose C. Scores rank only feasible candidates.
+
+> [!EXERCISE stretch] A large cluster handles short batch tasks and long-running services needing careful placement. Recommend one universal policy or specialised schedulers over shared state.
+>
+> **Solution:** Recommend specialised policies over shared state, with optimistic commit conflict detection and retry. Use cheap sampling for short tasks and more careful scoring for services. One universal exhaustive scoring policy is weaker: it can be too slow for batch, while a uniformly crude policy sacrifices long-lived placement quality. Expect more conflicts near full utilisation.

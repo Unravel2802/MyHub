@@ -10,6 +10,14 @@ observe silence, and silence is produced equally by a crashed node, a slow node,
 and a working node behind a broken network link. A failure detector is a
 deliberate, tunable guess.
 
+> [!WHY] A network pause makes a healthy leader look dead. An aggressive failover pays warm-up cost and risks split brain, while the same suspicion could cheaply stop new request routing first.
+
+> [!GOALS]
+>
+> - Explain how a phi-accrual detector adapts to observed variance
+> - Compute a suspicion score and choose consumer-specific actions
+> - Design detection safeguards against eviction cascades
+
 ## The two properties, and the trade between them
 
 ```text
@@ -259,3 +267,17 @@ detector is more likely wrong than the fleet.**
    dead, the detector is more likely wrong than the fleet.
 
 Next: gossip — spreading membership information without a central authority.
+
+## Exercises
+
+> [!EXERCISE recall] Why can the same silence produce different phi scores on a stable network and a high-variance network?
+>
+> **Solution:** Phi measures how abnormal the delay is under observed heartbeat intervals. Silence is rarer on a stable network, so suspicion rises faster; the same delay is more normal on a variable network, so suspicion rises more slowly.
+
+> [!EXERCISE apply] The estimated probability of a heartbeat being this late under normal conditions is 0.0001. Compute φ = −log10(probability). With routing stopped at φ=3 and failover at φ=8, choose the actions now.
+>
+> **Solution:** 0.0001 = 10⁻⁴, so φ = −(−4) = 4. The score exceeds the routing threshold of 3, so stop new routing. It is below 8, so do not trigger failover yet; continue probing and allow refutation.
+
+> [!EXERCISE stretch] Under high load, many nodes become slow and begin failing probes. Should automation immediately evict all suspects? Recommend safeguards.
+>
+> **Solution:** Cap the fraction suspected, back off aggressiveness under load, use indirect probes and a refutation window, and monitor false positives. Immediately evicting every suspect is a weaker policy: shifting their work overloads survivors, causing further suspicions and potentially evicting the whole cluster.

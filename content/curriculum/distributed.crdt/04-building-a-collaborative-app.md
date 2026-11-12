@@ -8,6 +8,14 @@ A CRDT library solves convergence. A collaborative product needs a good deal mor
 than convergence, and the remaining parts are where most of the engineering time
 goes. This chapter is what surrounds the data structure.
 
+> [!WHY] A returning collaborator opens a long-lived document by replaying its entire history, while cursor movements have been stored as permanent edits. Load time and state size grow for changes that should have expired.
+
+> [!GOALS]
+>
+> - Separate persistent document state from expiring awareness
+> - Compute a snapshot tail and choose what to replay
+> - Place permission validation before durable acceptance
+
 ## The architecture
 
 ```text
@@ -114,7 +122,7 @@ as consensus log compaction.
 
 ```mermaid
 flowchart TB
-  L[Local edits and local persistence] --> V[Sync server validates permissions]
+  L[Local edits and local persistence] --> V[Permission validation]
   V --> H[Durable update log]
   H --> S[Periodic snapshot]
   S --> N[New client loads snapshot]
@@ -249,3 +257,17 @@ is not a question the library can answer.
 
 That completes collaborative editing. Next in the track: **cluster scheduling** —
 deciding which machine runs which work.
+
+## Exercises
+
+> [!EXERCISE recall] Which channel should carry cursor movements, what should expire them, and how should cursor positions be expressed?
+>
+> **Solution:** Use a separate lossy awareness channel with heartbeat-driven TTL expiry, outside persistent document state. Express cursor positions as CRDT-relative identities so concurrent inserts do not move them to unintended integer offsets.
+
+> [!EXERCISE apply] A server has a snapshot through update 800 and updates through 875. A new client has no local document. Choose its load sequence and compute how many tail updates it applies instead of replaying all 875.
+>
+> **Solution:** Load the snapshot through 800, then apply updates 801 through 875. The tail contains 875 − 800 = 75 updates, rather than 875. The snapshot already includes updates through 800, so replaying those again is unnecessary work.
+
+> [!EXERCISE stretch] A team proposes relaying and persisting every update first, then checking edit permission later because the CRDT converges. Recommend where validation belongs.
+>
+> **Solution:** Validate permission at the sync server before relaying or persisting an update; the server must understand enough document semantics to enforce that policy. Keeping a dumb relay and checking later is weaker: convergence does not reject unauthorised edits, and those edits have already reached replicas and durable history.

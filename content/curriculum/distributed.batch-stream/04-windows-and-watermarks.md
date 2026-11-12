@@ -9,6 +9,14 @@ total. Windows carve it into finite pieces, and watermarks answer the question
 that makes windows possible: **when have I probably seen everything for this
 window?**
 
+> [!WHY] A revenue sink appends each revised window total as if it were a new sale. Early results look responsive, but corrections inflate the final bill unless the sink and trigger semantics agree.
+
+> [!GOALS]
+>
+> - Distinguish window boundaries from trigger timing
+> - Compute sliding-window membership and watermark progress
+> - Choose late-data handling and sink semantics for corrections
+
 ## Window types
 
 ```text
@@ -230,3 +238,17 @@ which is the shape most "real-time analytics" requirements actually have.
    you double-count.
 
 Next: state, fault tolerance, and the relationship between batch and streaming.
+
+## Exercises
+
+> [!EXERCISE recall] What separate questions do windows and triggers answer, and how does a session window differ from a tumbling one?
+>
+> **Solution:** Windows define what to aggregate; triggers define when to emit. Tumbling windows have fixed non-overlapping boundaries. Session boundaries depend on inactivity gaps in the data and can merge when a late event bridges sessions.
+
+> [!EXERCISE apply] For an aligned sliding window of 12 minutes with a 3-minute slide, how many windows contain a steady-state event? A source has maximum event time 11:20 and uses a 4-minute lateness subtraction; compute its watermark. Another active source is at 11:14: what is the pipeline watermark?
+>
+> **Solution:** Window membership is size ÷ slide = 12 ÷ 3 = 4 windows. The first source watermark is 11:20 − 4 minutes = 11:16. The pipeline takes the minimum of active source watermarks: min(11:16, 11:14) = 11:14.
+
+> [!EXERCISE stretch] A dashboard needs quick provisional totals and later corrections, including repair for events beyond its retained window. Recommend triggers, a sink policy and a repair route.
+>
+> **Solution:** Use early triggers, a watermark emission and late corrections while the window is retained. Emit accumulating totals to an upsert sink keyed by window, and side-output older events for batch repair while counting dropped-late events. Appending and summing accumulating revisions is a weaker design: it counts prior contributions repeatedly instead of replacing the total.

@@ -8,6 +8,14 @@ Membership protocols that work comfortably at ten nodes behave differently at a
 thousand, and differently again at ten thousand. The changes are not gradual —
 they are specific thresholds where an assumption stops holding.
 
+> [!WHY] A brief zone-link outage triggers mass data movement in a large cluster. Rebalancing saturates the same network used by probes, so the attempted repair creates more apparent failures and more movement.
+
+> [!GOALS]
+>
+> - Explain why hierarchical gossip and a small consensus layer serve different roles
+> - Compute heartbeat and metadata costs as membership grows
+> - Choose guarded rebalance triggers for a large fleet
+
 ## What breaks as n grows
 
 ```text
@@ -222,3 +230,17 @@ of the decisions and let gossip carry everything else.
 That completes membership and failure detection. Next in the track:
 **collaborative editing with OT and CRDTs** — letting many writers change the same
 data with no lock at all.
+
+## Exercises
+
+> [!EXERCISE recall] Why combine zone-local gossip with a small authoritative consensus group instead of putting every observation through consensus?
+>
+> **Solution:** Local gossip keeps most repeated traffic on cheap low-latency links and disseminates observations at scale. The small consensus group commits decisions such as membership and shard assignments. Logging every liveness change through it makes churn a bottleneck.
+
+> [!EXERCISE apply] For 200 nodes, compute directed all-to-all heartbeat messages per interval using n(n−1). If each node carries 2 KB of metadata, compute the full member-state size in decimal KB and MB.
+>
+> **Solution:** Each of 200 nodes contacts 199 others: 200 × 199 = 39,800 messages per interval. Metadata is 200 × 2 KB = 400 KB = 0.4 MB using 1,000 KB per MB. Repeatedly exchanging full state carries that payload; digests avoid sending unchanged details.
+
+> [!EXERCISE stretch] After a WAN blip, many nodes are suspected at once. Recommend a rebalance trigger policy and explain why fully automatic immediate repair is unsafe.
+>
+> **Solution:** Automate movement but gate its trigger with a delay, concurrent-movement and fraction-of-fleet caps, plus a circuit breaker that stops and pages when too many nodes look dead. Immediate rebalance on every suspicion is weaker: false positives generate network saturation, which causes more false positives and a rebalance storm.

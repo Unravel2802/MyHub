@@ -10,6 +10,14 @@ enough for anything that depends on counting a majority. Knowing which operation
 need which is the difference between a system that works and one that
 occasionally has two leaders.
 
+> [!WHY] A partitioned cluster removes unreachable peers from each side’s local list. Both sides can then claim a local majority and accept conflicting writes, turning a reachability incident into split brain.
+
+> [!GOALS]
+>
+> - Distinguish observed reachability from committed membership
+> - Compute quorums before and after a voter change
+> - Choose a safe learner promotion procedure
+
 ## Two kinds of view
 
 ```text
@@ -233,3 +241,17 @@ flowchart TB
    carries claims about knowledge, and must not outlive it.
 
 Next: the node lifecycle in operation, and the sequences that go wrong.
+
+## Exercises
+
+> [!EXERCISE recall] What roles do gossip and the consensus membership log play, and why do membership messages carry view numbers?
+>
+> **Solution:** Gossip supplies reachability evidence. The consensus log commits authoritative voter sets in numbered views. View numbers let recipients reject stale messages whose sender acts on an obsolete membership denominator.
+
+> [!EXERCISE apply] A committed view has 7 voters, of whom 3 are unreachable. Compute the quorum and decide whether the 4 reachable voters can decide. If a caught-up eighth voter is then safely added through consensus, compute the new quorum.
+>
+> **Solution:** The old majority is floor(7 ÷ 2) + 1 = 4. Four reachable voters meet it; unreachable voters still remain in the denominator. After the committed change, the majority is floor(8 ÷ 2) + 1 = 5. The new denominator is eight, not the number currently reachable.
+
+> [!EXERCISE stretch] A new node has contacted a seed but has not replayed state. Should it become a voter immediately to improve availability?
+>
+> **Solution:** Join it as a non-voting learner, transfer state and replay the log, then promote it only when current through the membership protocol. Immediate promotion is weaker: it can raise the quorum while adding a member unable to contribute, making availability worse rather than better.

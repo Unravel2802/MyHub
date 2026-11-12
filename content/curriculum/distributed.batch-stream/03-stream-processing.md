@@ -10,6 +10,14 @@ the data never ends, results must be emitted before all the input has arrived,
 and events show up late and out of order. Almost every difficulty follows from
 those three facts.
 
+> [!WHY] A purchase arrives after a phone reconnects, and a replay enriches it with today’s price. The dashboard can assign both the wrong time bucket and the wrong amount even though the pipeline processes every event.
+
+> [!GOALS]
+>
+> - Explain why unbounded input requires durable bounded state
+> - Choose time semantics and a join for reproducible historical results
+> - Choose batch or streaming from latency requirements
+
 ## What changes when the data is unbounded
 
 ```text
@@ -248,3 +256,17 @@ state is genuinely continuous.
 
 Next: windowing and watermarks — deciding when a result is complete enough to
 emit.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a stateful streaming operator need a different recovery and cleanup plan from a batch operator?
+>
+> **Solution:** Its input never ends and it emits before seeing everything. Aggregations, join buffers and deduplication state survive beyond any one job, so state needs durability for restarts and bounds to prevent indefinite growth.
+
+> [!EXERCISE apply] A sale occurred before a catalogue price change but arrives after the change. An analyst replays sales to report revenue when each sale happened. Choose event or processing time, and a current-table or temporal join; explain both choices.
+>
+> **Solution:** Use event time to place the sale when it happened rather than when the operator sees it. Use a temporal join against the catalogue value as of that event time, rather than the current price. Both choices keep replay tied to historical facts.
+
+> [!EXERCISE stretch] An internal report accepts five-minute freshness and has no continuous state requirement. Should the team run a streaming cluster or a recurring batch job?
+>
+> **Solution:** Recommend a batch job every five minutes: it satisfies the stated requirement and is simpler to test and recover. Choosing a streaming cluster merely because the report is called real-time is a weaker answer; it adds state and operational complexity without a seconds-level latency need.

@@ -9,6 +9,14 @@ the network during shuffles, and whether the work is evenly divided. The second
 is the more common cause of a job that "used to take twenty minutes" taking
 seven hours.
 
+> [!WHY] A reporting stage leaves the cluster idle while one partition keeps spilling. Buying more machines does not divide that key, so the bill rises while the completion deadline still slips.
+
+> [!GOALS]
+>
+> - Explain the network and disk work in a shuffle
+> - Compute shuffle fetches from map and reduce counts
+> - Choose a skew remedy that preserves aggregation semantics
+
 ## What a shuffle actually does
 
 ```text
@@ -230,3 +238,17 @@ response to a slow job.
    10× win the engine misses; bucketing removes it permanently for repeated joins.
 
 Next: stream processing, where the dataset never ends.
+
+## Exercises
+
+> [!EXERCISE recall] What happens between map output and reduce input during a shuffle, and why should filtering precede it?
+>
+> **Solution:** Map tasks partition by key, sort and write output locally. Each reducer fetches its partition from every mapper, incurring network transfer, disk work, encoding and potentially spill. Filtering, projection and pre-aggregation reduce the data paying those costs.
+
+> [!EXERCISE apply] A new stage has 12 map tasks and 5 reduce tasks. Under this chapter’s all-to-all fetch model, compute the number of fetches. If early filtering halves the bytes but leaves task counts unchanged, what happens to the fetch count?
+>
+> **Solution:** The count is M × R = 12 × 5 = 60 fetches. Halving bytes does not change 12 or 5, so there are still 60 fetches, each transferring less data in aggregate. It reduces volume rather than the number of map-reducer pairs.
+
+> [!EXERCISE stretch] A required customer key dominates a sum aggregation. Choose between salting, speculative copies and adding machines. Would you apply the same two-stage recipe to an exact median?
+>
+> **Solution:** Salt the heavy key, sum within salt buckets, then combine the partial sums by the original key. Sum is associative. Speculative copies are a weaker answer: each repeats the same oversized partition, and more machines alone do not split it. Do not combine partial medians using this recipe; exact median needs information beyond those partial scalar results.

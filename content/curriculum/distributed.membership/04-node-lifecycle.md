@@ -8,6 +8,14 @@ Membership theory is short; the operational sequences built on it are where
 clusters lose data. This chapter is the lifecycle as a set of procedures, with
 the specific step in each that gets skipped.
 
+> [!WHY] A deployment terminates a node as soon as it becomes unready. Clients still routing to it see errors, and removing its disk before replication is restored leaves the next failure able to lose data.
+
+> [!GOALS]
+>
+> - Choose a safe initial bootstrap procedure
+> - Repair the order of a node-removal runbook
+> - Choose identity handling when replacing a failed node
+
 ## The states
 
 ```text
@@ -224,3 +232,17 @@ something to read for the first time during an incident.
    disk is a new member.
 
 Next: the operational consequences of all of this at scale.
+
+## Exercises
+
+> [!EXERCISE recall] What are the two safe bootstrap approaches, and why is forming a cluster after a discovery timeout unsafe?
+>
+> **Solution:** Wait for an expected number of nodes to discover one another, or designate exactly one initiator and have others join it. Independent timeout-based formation can create separate clusters during a network blip; bootstrap flags must be removed after formation.
+
+> [!EXERCISE apply] A scale-down runbook says: mark unready, terminate, remove membership, then check replicas. Replace it with the chapter’s safe sequence, including propagation, in-flight work and leadership.
+>
+> **Solution:** Mark unready; wait for the load balancer and clients to notice; finish in-flight requests; transfer leadership; re-replicate data and verify the replication factor is restored; remove through consensus; finally terminate. This keeps stale routing from hitting a closed process and verifies redundancy before removing its copy.
+
+> [!EXERCISE stretch] A replacement machine has the old hostname but a new empty disk. Should it reuse the old member identity? Contrast this with a restart that reattaches the original durable volume.
+>
+> **Solution:** Give the empty-disk replacement a new identity and remove the old member; it must join and catch up as new. A restart with intact durable state may reuse its identity and resume. Reusing identity based only on hostname is weaker: it falsely claims past votes and data that the empty disk no longer contains.

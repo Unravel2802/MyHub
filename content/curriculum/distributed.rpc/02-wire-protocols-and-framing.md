@@ -289,7 +289,7 @@ a claim you should always interrogate.
 >
 > **Hint:** Concatenate the reads first; then consume a four-byte prefix followed by its stated number of payload bytes.
 >
-> **Solution:** The reads concatenate to `00 00 00 03 c a t 00 00 00 02 o k`. The first four bytes state length 3, so the first payload is `cat`. The next four bytes are `00 00` from the third read plus `00 02` from the fourth, stating length 2; the remaining payload is `ok`. TCP read boundaries do not align with either frame boundary.
+> **Solution:** The reads concatenate to `00 00 00 03 c a t 00 00 00 02 o k`. The first four bytes state length 3, so the first payload is `cat`. The next four bytes are `00 00` from the third read plus `00 02` from the fourth, stating length 2; the remaining payload is `ok`. Each length prefix is split across two reads, and the first payload is split across reads two and three, so the parser cannot treat any single read as a message.
 
 > [!EXERCISE stretch] A browser must display a very large result set while the server is still producing it. Recommend an API shape and explain what a weaker answer misses.
 >

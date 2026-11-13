@@ -10,6 +10,17 @@ that turn out to have a simple, mechanical explanation — a number that
 silently wraps, a comparison that's mysteriously false, text that looks
 identical but isn't — trace back to that encoding.
 
+> [!WHY] A browser receives a large database id as a JavaScript number and
+> later requests a different record. Integer precision can be lost before
+> any visible arithmetic, so the representation chosen at the boundary
+> decides whether the id survives intact.
+
+> [!GOALS]
+>
+> - Explain why large ids need an exact representation
+> - Compute byte lengths and interpret byte order
+> - Choose grapheme-safe text limits
+
 ## Integer width and overflow
 
 ```text
@@ -101,10 +112,10 @@ identical but isn't — trace back to that encoding.
   → "reverse this string" or "get the Nth character" using a
     NAIVE code-unit-based approach can SPLIT a multi-code-point
     grapheme in half, producing corrupted, unrenderable text
-    (a common cause of mangled emoji when a naive string-
-    truncation limit cuts a message mid-character) — text
-    processing that needs to be CORRECT (truncating a user-
-    facing string, reversing display text) needs a
+      (a common cause of mangled emoji when a naive string-truncation limit
+    cuts a message mid-character) — text
+      processing that needs to be CORRECT (truncating a user-facing string,
+    reversing display text) needs a
     grapheme-aware API, not a naive length/index operation.
 ```
 
@@ -128,6 +139,16 @@ identical but isn't — trace back to that encoding.
     territory, at the byte level rather than the layout level).
 ```
 
+
+```mermaid
+flowchart TB
+  T[Visible text] --> G[Grapheme clusters]
+  G --> P[Unicode code points]
+  P --> B[Encoded bytes]
+  G --> U[Display length]
+  B --> S[Storage length]
+```
+
 ## Endianness
 
 ```text
@@ -149,6 +170,28 @@ identical but isn't — trace back to that encoding.
     a real, recurring bug in low-level parsing code.
 ```
 
+> [!PITFALL] A character limit is not a byte limit, and code points are
+> not always user-perceived characters.
+
+> [!INTERVIEW] State the unit at the boundary: exact integer, floating
+> approximation, grapheme, code point or byte. A length or equality check
+> is meaningful only after that choice.
+
+> [!CHECK] Why can 0.1 + 0.2 miss an exact comparison with 0.3?
+>
+> These decimals lack exact finite binary representations; their stored
+> approximations accumulate rounding error.
+
+> [!CHECK] How should JavaScript test for NaN?
+>
+> Use Number.isNaN rather than equality with NaN, which is not equal to
+> itself.
+
+> [!CHECK] Which broad choices prevent fixed-width counter overflow?
+>
+> Choose a wider or arbitrary-precision representation, or explicitly
+> check before the risky operation.
+
 ## What to take away
 
 1. Fixed-width integer overflow is a real, documented cause of production
@@ -167,3 +210,34 @@ identical but isn't — trace back to that encoding.
 5. Endianness determines byte order for a multi-byte value across a format
    or protocol boundary — getting it wrong produces a completely wrong
    number, not a subtly wrong one.
+
+## Exercises
+
+> [!EXERCISE recall] Why can an integer id lose precision in JavaScript
+> number, and what representation avoids that at an API boundary?
+>
+> **Solution:** number is a binary64 floating-point value with a maximum
+> safe integer of 2⁵³ − 1. Larger integer ids can round, so transmit and
+> retain them as strings or use an appropriate exact integer
+> representation rather than converting through number.
+
+> [!EXERCISE apply] A payload contains 20 ASCII letters and 10 CJK
+> characters, each CJK character occupying 3 UTF-8 bytes. Does it fit a
+> 45-byte field? Also interpret bytes 01 02 as a two-byte unsigned
+> big-endian value and contrast little-endian.
+>
+> **Solution:** ASCII contributes 20 × 1 = 20 bytes and CJK contributes 10
+> × 3 = 30, for 50 bytes; it exceeds 45 despite having 30 visible
+> characters. Big-endian 01 02 is 1 × 256 + 2 = 258. Little-endian reads
+> the same bytes as 2 × 256 + 1 = 513.
+
+> [!EXERCISE stretch] A display-name limit truncates by raw code units and
+> claims that an emoji is always one element. Recommend a text policy and
+> distinguish the storage check.
+>
+> **Solution:** Use grapheme-aware segmentation for a user-visible length
+> and truncate only at grapheme boundaries. Check encoded byte length
+> separately when storage has a byte limit. A weaker answer counts code
+> points instead of code units and assumes that solves display characters:
+> a grapheme may still combine multiple code points, so it can still be
+> split.

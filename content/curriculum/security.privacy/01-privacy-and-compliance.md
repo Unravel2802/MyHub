@@ -11,6 +11,16 @@ insight is that privacy-respecting design constraints, applied from the
 start, are cheaper and more effective than a compliance audit bolted onto a
 system that was never designed with them in mind.
 
+> [!WHY] An account-deletion feature hides the profile while copies remain
+> in comments and analytics tables. A recoverable row can still retain the
+> personal data the deletion workflow was meant to address.
+
+> [!GOALS]
+>
+> - Explain re-identification across combined fields
+> - Choose deletion actions from explicit requirements
+> - Design collection around a current purpose
+
 ## PII: broader than it sounds
 
 ```text
@@ -94,6 +104,14 @@ system that was never designed with them in mind.
     nobody was keeping score as the schema grew.
 ```
 
+```mermaid
+flowchart TB
+  U[Account deletion request] --> G[Map data dependencies]
+  G --> D[Hard-delete where required]
+  G --> A[Anonymize where appropriate]
+  G --> R[Retain for genuine requirement]
+```
+
 ## Consent and purpose limitation
 
 ```text
@@ -121,6 +139,27 @@ system that was never designed with them in mind.
     not just a documentation gap.
 ```
 
+> [!PITFALL] Soft deletion is a recovery mechanism; it does not by itself
+> enforce eventual removal.
+
+> [!INTERVIEW] Name the actual purpose, dependencies and retention
+> requirement before selecting a storage action.
+
+> [!CHECK] Why can collecting less improve security?
+>
+> Data never collected cannot later leak or be misused; it removes the
+> exposure entirely.
+
+> [!CHECK] Why do backups matter to residency design?
+>
+> A replica or backup’s processing/storage region is part of the
+> infrastructure constraint, not just the primary database region.
+
+> [!CHECK] Why is old consent not an automatic basis for a new feature?
+>
+> Consent to a stated purpose does not itself establish a basis for an
+> unrelated later use.
+
 ## What to take away
 
 1. PII extends beyond obviously-personal fields — otherwise-innocuous
@@ -139,3 +178,36 @@ system that was never designed with them in mind.
 5. Data residency requirements are a real engineering constraint on
    infrastructure choices (which cloud region a database or its backup
    lives in), not purely a legal/paperwork concern.
+
+## Exercises
+
+> [!EXERCISE recall] Why does removing names not establish that a dataset
+> is anonymous?
+>
+> **Solution:** Other attributes, including combinations of otherwise
+> innocuous fields, may identify a person. Assess the combined dataset
+> rather than treating PII as a checklist of obvious individual fields.
+
+> [!EXERCISE apply] Assume a product’s reviewed policy requires profile
+> removal, comment anonymization and retention of specified audit records
+> for a defined window. A developer proposes only setting deleted_at on
+> the user. Choose a workflow from these given requirements.
+>
+> **Solution:** Map the profile, comments and audit dependencies.
+> Hard-delete the profile as required, anonymize linked comments, and
+> retain only the specified audit records through their defined window
+> before applying their eventual disposition. A deleted_at flag leaves the
+> data recoverable and does not implement any of those three requirements
+> by itself. These are scenario requirements, not universal legal
+> retention periods.
+
+> [!EXERCISE stretch] A delivery feature needs an address, but a team also
+> wants indefinite precise location history in case a future analytics
+> feature needs it. Recommend a collection policy.
+>
+> **Solution:** Collect what the current delivery purpose requires, define
+> its lifecycle and avoid speculative history collection. A weaker answer
+> collects everything and relies only on restricted access: it preserves a
+> breach and misuse liability for data without a current justified
+> purpose. Revisit a genuine new use with its own basis rather than
+> assuming the delivery purpose covers it.

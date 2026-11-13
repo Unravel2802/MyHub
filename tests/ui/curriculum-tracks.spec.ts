@@ -120,6 +120,17 @@ const EXERCISE_TRACKS = [
   "infra.reliability",
   "infra.serverless-edge",
   "infra.service-mesh",
+  "security.abuse",
+  "security.appsec",
+  "security.crypto",
+  "security.detection",
+  "security.foundations",
+  "security.identity",
+  "security.ml-security",
+  "security.network-security",
+  "security.privacy",
+  "security.secrets",
+  "security.supply-chain",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -153,6 +164,7 @@ const tracks = [
   { prefix: "backend", expectedChapters: 22 },
   { prefix: "frontend", expectedChapters: 20 },
   { prefix: "infra", expectedChapters: 15 },
+  { prefix: "security", expectedChapters: 11 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

@@ -10,6 +10,16 @@ version of the same discipline — aimed not at "why is this slow" but at "did
 someone attack us, when, how, and what did they actually get to" — which
 asks genuinely different questions of the same underlying data.
 
+> [!WHY] An investigation finds months of application logs but cannot tell
+> which account read a sensitive record. Restoring the host immediately
+> may also erase the evidence needed to explain how access happened.
+
+> [!GOALS]
+>
+> - Explain the fields a security audit needs
+> - Correlate an incident timeline across systems
+> - Choose evidence-preserving containment
+
 ## Audit trails: what actually needs to be logged
 
 ```text
@@ -37,16 +47,21 @@ asks genuinely different questions of the same underlying data.
     suspicious" becomes meaningless the moment the log itself is
     something the attacker could have altered.
 
-  → the fix: WRITE audit logs to an APPEND-ONLY destination the
-    compromised system ITSELF cannot modify after the fact — a
-    separate logging service with restricted delete permissions,
-    or a genuinely append-only log structure (conceptually
-    similar to the Event Sourcing and CQRS chapter's immutable
-    event log, applied here specifically FOR its tamper-
-    resistance property rather than for replay/audit-trail
-    convenience). the log needs to be SEPARATE from, and
-    protected from, exactly the system whose compromise it's
-    meant to help investigate.
+  → the fix: WRITE audit logs to an APPEND-ONLY destination the compromised
+    system ITSELF cannot modify after the fact — a separate logging service
+    with restricted delete permissions, or a genuinely append-only log
+    structure (conceptually similar to the Event Sourcing and CQRS chapter's
+    immutable event log, applied here specifically FOR its tamper-resistance
+    property rather than for replay/audit-trail convenience). the log needs
+    to be SEPARATE from, and protected from, exactly the system whose
+    compromise it's meant to help investigate.
+```
+
+```mermaid
+flowchart TB
+  A[Application events] --> L[Separate append-only log]
+  L --> D[Detection rules]
+  D --> I[Correlated investigation]
 ```
 
 ## Detection rules: turning "we have logs" into "we notice"
@@ -69,14 +84,13 @@ asks genuinely different questions of the same underlying data.
 ```
 
 ```text
-  → this is the Observability and SLOs chapters' symptom-vs-
-    cause alerting distinction, applied to security specifically:
-    a good detection rule flags a genuinely ANOMALOUS PATTERN,
-    not merely "any admin action" (which fires constantly, for
-    entirely legitimate reasons, producing exactly the alert
-    fatigue those chapters already warned about — except here,
-    the missed alert buried in the noise could be an active,
-    ongoing breach rather than a system health metric).
+  → this is the Observability and SLOs chapters' symptom-vs-cause alerting
+    distinction, applied to security specifically: a good detection rule
+    flags a genuinely ANOMALOUS PATTERN, not merely "any admin action"
+    (which fires constantly, for entirely legitimate reasons, producing
+    exactly the alert fatigue those chapters already warned about — except
+    here, the missed alert buried in the noise could be an active, ongoing
+    breach rather than a system health metric).
 ```
 
 ## What an investigation actually needs
@@ -97,16 +111,14 @@ asks genuinely different questions of the same underlying data.
 ```
 
 ```text
-  → answering these needs CORRELATED data ACROSS systems (an
-    auth log, an application log, a network log, all
-    cross-referenced against each other for the same time
-    window and the same actor) — this is precisely why
-    CENTRALIZED logging (the Observability chapter's log
-    aggregation) matters enormously for security specifically,
-    not merely for convenience: correlating events scattered
-    across a dozen different systems' own separate, un-
-    aggregated logs, under real time pressure during an active
-    investigation, is dramatically harder than querying one
+  → answering these needs CORRELATED data ACROSS systems (an auth log, an
+    application log, a network log, all cross-referenced against each other
+    for the same time window and the same actor) — this is precisely why
+    CENTRALIZED logging (the Observability chapter's log aggregation)
+    matters enormously for security specifically, not merely for
+    convenience: correlating events scattered across a dozen different
+    systems' own separate, un-aggregated logs, under real time pressure
+    during an active investigation, is dramatically harder than querying one
     already-centralized, already-correlatable source.
 ```
 
@@ -136,6 +148,27 @@ asks genuinely different questions of the same underlying data.
     independently) to walk right back through it again, later.
 ```
 
+> [!PITFALL] A clean-looking log proves little if the compromised
+> application can delete its entries.
+
+> [!INTERVIEW] Distinguish when compromise began from when someone first
+> noticed it.
+
+> [!CHECK] What turns stored logs into detection?
+>
+> Active rules watch for suspicious patterns; otherwise an attack can
+> remain recorded but unnoticed.
+
+> [!CHECK] Why is any admin action a noisy alert?
+>
+> Ordinary legitimate work triggers it; an account suddenly acting outside
+> its own baseline is more informative.
+
+> [!CHECK] Why centralize logs for an investigation?
+>
+> It makes events from auth, application and network systems correlatable
+> by actor and time rather than scattered across hosts.
+
 ## What to take away
 
 1. A security audit trail answers "who did what, when, from where" — a
@@ -158,3 +191,35 @@ asks genuinely different questions of the same underlying data.
    sometimes means isolating rather than immediately restoring a compromised
    system, creating a real tension with mitigate-before-diagnose that a
    reliability outage doesn't have.
+
+## Exercises
+
+> [!EXERCISE recall] Which questions should an audit event answer beyond a
+> debugging message?
+>
+> **Solution:** Who did what, when and from where, including
+> authentication outcomes, the permission checked for an authorization
+> decision and sensitive accesses.
+
+> [!EXERCISE apply] For the same actor, auth logs show a new login at
+> 02:10, application logs show sensitive reads at 02:14, and network logs
+> show unusual outbound activity at 02:17. An alert fires at 03:00. What
+> timeline is supported, and what remains unknown?
+>
+> **Solution:** Correlate the login, reads and outbound activity in that
+> order. The alert is 50 minutes after the login and 46 after the reads;
+> it is a discovery time, not proof of a 03:00 start. Investigate whether
+> compromise began before 02:10, exactly what was accessed and whether the
+> actor remains active. The sequence alone does not prove every event was
+> malicious or establish the full scope.
+
+> [!EXERCISE stretch] An apparently compromised host still contains
+> evidence of entry. Recommend a containment approach before a routine
+> restart.
+>
+> **Solution:** Consider isolating it from the network while preserving
+> its state and protecting the separate audit trail, then investigate
+> scope and entry. A weaker answer immediately restarts or rolls back as
+> if this were only a reliability outage: it can destroy evidence needed
+> to close the original access path. Balance containment with evidence
+> preservation deliberately.

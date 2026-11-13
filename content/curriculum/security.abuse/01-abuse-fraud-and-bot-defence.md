@@ -11,6 +11,16 @@ automated-looking pattern, a new account) is ambiguous, produced by both
 genuine users AND attackers, which means every defense here is a
 probabilistic trade-off, not a clean rule.
 
+> [!WHY] A login defence catches more bots after a threshold change, but
+> paying customers start abandoning challenges. Counting blocked attempts
+> alone hides the legitimate-user cost that can make the change a loss.
+
+> [!GOALS]
+>
+> - Explain the economics of CAPTCHA friction
+> - Compare missed-fraud and false-positive costs
+> - Choose signals for distributed credential stuffing
+
 ## Account takeover: credential stuffing at scale
 
 ```text
@@ -32,14 +42,13 @@ probabilistic trade-off, not a clean rule.
 ```
 
 ```text
-  → this is exactly why MFA (the Identity chapter) matters SO
-    much specifically as a defense here: even a CORRECT,
-    leaked password is USELESS to an attacker without the
-    second factor — MFA doesn't just make an individual
-    account harder to compromise, it makes an ENTIRE credential-
-    stuffing attack strategy far less profitable at scale, since
-    the attacker's leaked password list becomes mostly useless
-    against MFA-protected accounts.
+  → this is exactly why MFA (the Identity chapter) matters SO much
+    specifically as a defense here: even a CORRECT, leaked password is
+    USELESS to an attacker without the second factor — MFA doesn't just make
+    an individual account harder to compromise, it makes an ENTIRE
+    credential-stuffing attack strategy far less profitable at scale, since
+    the attacker's leaked password list becomes mostly useless against
+    MFA-protected accounts.
 ```
 
 ## Scraping: the ambiguous case
@@ -57,15 +66,13 @@ probabilistic trade-off, not a clean rule.
 ```
 
 ```text
-  → practical, imperfect signals used together: request RATE
-    (unusually fast, beyond plausible human browsing speed),
-    PATTERN (sequential, exhaustive access to every single page
-    in order — a shape real human browsing essentially never
-    produces), and a robots.txt-declared policy (which a well-
-    behaved bot respects VOLUNTARILY, and a determined
-    adversarial one simply ignores entirely, which is precisely
-    why it's a POLICY declaration and not an actual technical
-    enforcement mechanism).
+  → practical, imperfect signals used together: request RATE (unusually
+    fast, beyond plausible human browsing speed), PATTERN (sequential,
+    exhaustive access to every single page in order — a shape real human
+    browsing essentially never produces), and a robots.txt-declared policy
+    (which a well-behaved bot respects VOLUNTARILY, and a determined
+    adversarial one simply ignores entirely, which is precisely why it's a
+    POLICY declaration and not an actual technical enforcement mechanism).
 ```
 
 ## CAPTCHAs: a real, imperfect human/bot boundary
@@ -109,6 +116,14 @@ probabilistic trade-off, not a clean rule.
     way most of the rest of this track's decisions have been.
 ```
 
+```mermaid
+flowchart TB
+  S[Rate and behavioural signals] --> R[Combined risk score]
+  R --> A[Allow]
+  R --> V[Verify or review]
+  R --> B[Block]
+```
+
 ## The core tension: false positives have a real cost too
 
 ```text
@@ -125,16 +140,35 @@ probabilistic trade-off, not a clean rule.
 ```
 
 ```text
-  → this is exactly the "security as an explicit trade-off, not
-    an absolute" point from the Security Foundations chapter,
-    concretely instantiated: the RIGHT threshold for how
-    aggressive a defense should be depends on the actual,
-    measured cost ratio between a missed attack and a
-    frustrated legitimate user — not on maximizing detection
-    rate in isolation, which optimizes for catching fraud while
-    ignoring the real, measurable cost paid by every falsely-
-    flagged genuine user.
+  → this is exactly the "security as an explicit trade-off, not an absolute"
+    point from the Security Foundations chapter, concretely instantiated:
+    the RIGHT threshold for how aggressive a defense should be depends on
+    the actual, measured cost ratio between a missed attack and a frustrated
+    legitimate user — not on maximizing detection rate in isolation, which
+    optimizes for catching fraud while ignoring the real, measurable cost
+    paid by every falsely-flagged genuine user.
 ```
+
+> [!PITFALL] A robots.txt policy is voluntary; it cannot enforce an access
+> restriction against an adversarial scraper.
+
+> [!INTERVIEW] State both attack loss and legitimate-user friction before
+> choosing a threshold.
+
+> [!CHECK] Why is a new account insufficient evidence of fraud?
+>
+> Legitimate users also create new accounts; one ambiguous signal cannot
+> reliably separate the groups.
+
+> [!CHECK] Why is automated sequential access hard to classify?
+>
+> Search engines, competitors and harmless scripts can exhibit similar raw
+> behaviour but warrant different responses.
+
+> [!CHECK] Why concentrate challenges on elevated risk?
+>
+> It directs friction toward suspicious cases instead of charging every
+> genuine login the same usability cost.
 
 ## What to take away
 
@@ -155,3 +189,31 @@ probabilistic trade-off, not a clean rule.
    aggressiveness depends on the actual cost ratio between a missed attack
    and a frustrated legitimate user, not on maximizing detection rate in
    isolation.
+
+## Exercises
+
+> [!EXERCISE recall] Why can a breakable CAPTCHA still be useful?
+>
+> **Solution:** It raises time or money per attempt until low-value
+> automated abuse becomes unprofitable. That is an economic barrier, not a
+> guarantee against a funded attacker.
+
+> [!EXERCISE apply] In a labelled evaluation, policy A misses 12
+> fraudulent purchases and blocks 80 legitimate ones; B misses 20 and
+> blocks 15. Assume each missed fraud costs $40 and each false block costs
+> $8. Compare total costs and choose under these assumptions.
+>
+> **Solution:** A costs 12 × $40 = $480 plus 80 × $8 = $640, totalling
+> $1,120. B costs 20 × $40 = $800 plus 15 × $8 = $120, totalling $920.
+> Choose B at $200 less despite its lower detection rate; these assumed
+> costs, not detection alone, decide this evaluation.
+
+> [!EXERCISE stretch] A login attack uses many IPs, trying one leaked
+> credential pair per account. Recommend a defence beyond one per-IP
+> limit.
+>
+> **Solution:** Combine cross-account attempt patterns and unfamiliar
+> account/IP relationships with rate limits and MFA. A weaker answer
+> merely lowers each IP limit: distributing attempts still evades it while
+> shared legitimate networks pay more friction. MFA separately reduces the
+> usefulness of a correct leaked password.

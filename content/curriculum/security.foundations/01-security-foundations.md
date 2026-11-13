@@ -11,6 +11,16 @@ concern bolted onto a system afterward. It's a way of looking at a design
 that this chapter makes explicit, so the rest of the track has a shared
 vocabulary to build on.
 
+> [!WHY] A design review assumes users will never edit another account’s
+> identifier in a URL. One handcrafted request can turn that UI assumption
+> into a data-access incident unless the server enforces the boundary.
+
+> [!GOALS]
+>
+> - Explain the purpose of structured threat modeling
+> - Apply least privilege to a service credential
+> - Design independent overlapping controls
+
 ## The attacker's view: assume, don't hope
 
 ```text
@@ -129,6 +139,13 @@ vocabulary to build on.
     novel technique nobody anticipated when it was built.
 ```
 
+```mermaid
+flowchart TB
+  W[Request through WAF] --> V[Input validation]
+  V --> Q[Parameterized query]
+  Q --> P[Minimal database permissions]
+```
+
 ## Security is a trade-off, not an absolute
 
 ```text
@@ -149,6 +166,25 @@ vocabulary to build on.
     universal maximum to chase everywhere.
 ```
 
+> [!PITFALL] An unavailable UI action does not prevent a caller from
+> crafting the underlying request.
+
+> [!INTERVIEW] Describe assets, data flows and trust boundaries before
+> enumerating threats.
+
+> [!CHECK] Where should less-trusted input be validated?
+>
+> At the trust boundary, before the more-trusted operation acts on it.
+
+> [!CHECK] Why is zero risk not the target for every system?
+>
+> Controls cost development effort, user friction and operations; their
+> value depends on the system’s actual risk.
+
+> [!CHECK] What should happen to access that is no longer required?
+>
+> Revoke it rather than keeping it indefinitely just in case.
+
 ## What to take away
 
 1. Design assuming an attacker will deliberately try what the UI doesn't
@@ -167,3 +203,33 @@ vocabulary to build on.
    because any single control will eventually fail — and the right amount
    of security is a trade-off tuned to a specific system's actual threat
    model, not a universal maximum.
+
+## Exercises
+
+> [!EXERCISE recall] Why use STRIDE rather than only asking whether a
+> feature works?
+>
+> **Solution:** Its categories force a structured search for attacks the
+> team might not think of spontaneously. Threat modeling also records
+> mitigations and reviews completeness; the checklist does not promise an
+> exhaustive perfect model.
+
+> [!EXERCISE apply] A report service only reads one table, but its
+> credential can read, update and delete every table. An old export
+> permission is no longer used. Choose the permission change and explain
+> its value if the credential is stolen.
+>
+> **Solution:** Limit it to the read access the report actually needs and
+> revoke the obsolete export access. A stolen credential can then do less
+> damage than one with global write/delete privileges. The change limits
+> blast radius rather than preventing credential theft itself; keeping
+> excess access for convenience violates least privilege.
+
+> [!EXERCISE stretch] A team wants a WAF to be its sole SQL-injection
+> defence. Recommend a layered design.
+>
+> **Solution:** Keep the WAF as one layer, validate at the application
+> boundary, use parameterized queries and narrowly scoped database
+> permissions. A weaker answer relies on one perfect WAF rule: a bypass
+> then exposes the database without independent barriers. Depth
+> deliberately leaves other controls standing when one fails.

@@ -9,6 +9,17 @@ It's really a boundary-drawing question, and the code-organization benefit is
 available at a fraction of the operational cost by drawing the boundary
 inside one deployable instead of across a network.
 
+> [!WHY] A team splits a module for cleaner code and then needs retries,
+> schema compatibility and another on-call service. An organisational
+> cleanup has created a recurring operational bill without an independent
+> scaling requirement.
+
+> [!GOALS]
+>
+> - Explain the cost of a network boundary
+> - Choose whether a workload justifies extraction
+> - Design a clean extraction path
+
 ## The modular monolith
 
 ```text
@@ -138,6 +149,36 @@ inside one deployable instead of across a network.
     (and only when) a real reason shows up.
 ```
 
+```mermaid
+flowchart TB
+  M[Module with owned boundary] --> I[Stable explicit interface]
+  I --> N[Replace local call with network adapter]
+  N --> D[Deploy independently]
+  D --> O[Own monitoring and failure handling]
+```
+
+> [!PITFALL] Cleaner file organisation does not by itself justify network
+> failure modes and another deployment surface.
+
+> [!INTERVIEW] State the independent scaling, deployment, ownership or
+> isolation need that pays for extraction, and identify the boundary that
+> makes it possible.
+
+> [!CHECK] Is a modular monolith only a temporary step?
+>
+> No. Explicit boundaries inside one deployable can be the right permanent
+> design.
+
+> [!CHECK] Why can shared databases silently couple services?
+>
+> A service can depend on another owner’s tables without an import
+> statement exposing the dependency.
+
+> [!CHECK] What read complication can database-per-service introduce?
+>
+> Composing customer and order data may require multiple calls or a
+> denormalised read model.
+
 ## What to take away
 
 1. A modular monolith gets the main benefit people reach for microservices
@@ -156,3 +197,34 @@ inside one deployable instead of across a network.
 5. Enforced module boundaries inside a monolith are what make a later, real
    extraction clean — tangled cross-module imports make extraction painful
    whenever it eventually becomes necessary.
+
+## Exercises
+
+> [!EXERCISE recall] Which costs appear when an in-process boundary
+> becomes a network boundary?
+>
+> **Solution:** Network failure and retry behaviour, serialization and
+> compatibility, cross-service transaction coordination, and a separate
+> deployment, monitoring and on-call surface. Clean code alone does not
+> pay that bill.
+
+> [!EXERCISE apply] A thumbnail module needs specialised GPU workers and
+> independent scale; a small billing helper only has a confusing file
+> layout. Choose which boundary may justify a service and which should
+> first be improved inside the monolith.
+>
+> **Solution:** Independent hardware and load needs can justify extracting
+> the thumbnail workload, with its operational costs explicitly accepted.
+> Improve the billing helper’s module ownership and internal structure
+> without adding a network hop merely for cleaner files. Different
+> workload pressure, not identical code neatness, determines the split.
+
+> [!EXERCISE stretch] A module now needs independent deployment but
+> imports other modules’ internals and reads their tables. Recommend
+> whether to replace its entry function with an HTTP call immediately.
+>
+> **Solution:** First restore explicit interfaces, ownership and schema
+> boundaries, then replace in-process calls behind the same interface and
+> deploy separately. A weaker answer wraps the tangled module in HTTP
+> immediately: hidden cross-module imports and table dependencies remain
+> and now couple nominally independent services through code or schema.

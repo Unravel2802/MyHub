@@ -112,10 +112,10 @@ overhead is larger than people expect:
 ```text
   1,000,000 32-bit integers
 
-  int array (contiguous) ........  4 MB
-  Python list of ints ........... 40+ MB (8-byte pointers + 28-byte objects)
-HashMap<Integer,Integer> ...... 80+ MB (boxing, entry objects, load factor)
-  linked list of nodes .......... 40+ MB (node + pointer + allocator header)
+  int array (contiguous) .......  4 MB
+  Python list of ints .......... 40+ MB (8-byte pointers + 28-byte objects)
+  HashMap<Integer,Integer> ..... 80+ MB (boxing, entry objects, load factor)
+  linked list of nodes ......... 40+ MB (node + pointer + allocator header)
 ```
 
 A structure that does not fit in cache — or worse, does not fit in RAM — loses

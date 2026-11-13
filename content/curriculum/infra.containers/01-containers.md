@@ -10,6 +10,16 @@ using two specific kernel features that already existed before Docker made
 them convenient. Understanding those two features explains nearly every
 container behavior that otherwise looks like magic.
 
+> [!WHY] A tiny source edit forces a full dependency install in every
+> image build. The image is reproducible, but its instruction order makes
+> the slowest layer change at the frequency of ordinary code edits.
+
+> [!GOALS]
+>
+> - Explain namespaces and cgroups
+> - Choose cache-efficient multi-stage packaging
+> - Choose a reproducible image identity
+
 ## What a container actually is
 
 ```text
@@ -51,14 +61,13 @@ container behavior that otherwise looks like magic.
   RUN npm install             layer 3: node_modules
   COPY . .                     layer 4: your application code
 
-  → each Dockerfile instruction creates a NEW LAYER, and layers
-    are CACHED and SHARED — this is why instruction ORDER
-    matters for build speed: putting `COPY . .` (your code,
-    which changes on every commit) BEFORE `npm install`
-    (dependencies, which change rarely) means every single code
-    change invalidates the cached npm install layer too,
-    forcing a full reinstall on every build — ordering rarely-
-    changing layers FIRST is what makes incremental builds fast.
+  → each Dockerfile instruction creates a NEW LAYER, and layers are CACHED
+    and SHARED — this is why instruction ORDER matters for build speed:
+    putting `COPY . .` (your code, which changes on every commit) BEFORE
+    `npm install` (dependencies, which change rarely) means every single
+    code change invalidates the cached npm install layer too, forcing a full
+    reinstall on every build — ordering rarely-changing layers FIRST is what
+    makes incremental builds fast.
 ```
 
 ```text
@@ -70,6 +79,14 @@ container behavior that otherwise looks like magic.
     final artifact into a clean, minimal final image) — this is
     the actual, mechanical fix for the "why is my image so
     huge" question, not a vague "optimize it" instruction.
+```
+
+```mermaid
+flowchart TB
+  M[Dependency manifests] --> D[Cached dependency install]
+  D --> S[Frequently changing source]
+  S --> B[Build artifact in build stage]
+  B --> F[Minimal runtime stage]
 ```
 
 ## The filesystem: copy-on-write layers
@@ -132,6 +149,28 @@ container behavior that otherwise looks like magic.
     never actually broken.
 ```
 
+> [!PITFALL] A cached or familiar tag name does not identify fixed image
+> bytes when the tag is mutable.
+
+> [!INTERVIEW] Separate process isolation, resource enforcement, build
+> caching and artifact identity; they answer different container
+> questions.
+
+> [!CHECK] What happens to a container’s writable layer when it is
+> removed?
+>
+> It is discarded; changes were not edits to the underlying read-only
+> image.
+
+> [!CHECK] Why inspect OOMKilled status for a load-related crash?
+>
+> The kernel may have enforced the cgroup memory limit rather than the
+> application throwing an ordinary logic error.
+
+> [!CHECK] Why can many containers share image layers safely?
+>
+> They reuse read-only layers while maintaining separate writable layers.
+
 ## What to take away
 
 1. A container is a normal process made to look isolated by namespaces
@@ -150,3 +189,34 @@ container behavior that otherwise looks like magic.
 5. A container that "randomly crashes" under load is very often hitting its
    cgroup memory limit (an OOM kill), not experiencing an application bug —
    a real, common operational misdiagnosis.
+
+## Exercises
+
+> [!EXERCISE recall] How do namespaces and cgroups differ, and what kernel
+> does a container use?
+>
+> **Solution:** Namespaces restrict what ordinary processes see, while
+> cgroups limit resources they can use. Containers share the host kernel
+> rather than booting an independent guest kernel like a VM.
+
+> [!EXERCISE apply] A build currently copies all source before installing
+> rarely changed dependencies and ships 450 MB of build-only tools with a
+> 50 MB runtime and 30 MB artifact. Choose build order and stage contents,
+> then calculate the scenario’s final payload sizes.
+>
+> **Solution:** Copy dependency manifests and install dependencies before
+> copying frequently changing application source so ordinary edits can
+> reuse the install layer. Build in a separate stage and copy only the
+> needed runtime and artifact into the final image. The current payload is
+> 450 + 50 + 30 = 530 MB; the final runtime payload is 50 + 30 = 80 MB,
+> avoiding 450 MB of build-only content under the stated assumptions.
+
+> [!EXERCISE stretch] A deployment uses latest and a restart unexpectedly
+> runs different bytes. Recommend how to identify a reproducible artifact.
+>
+> **Solution:** Pin the intended image by a stable content digest when
+> exact identity matters, keeping build and deployment records tied to
+> that artifact. A weaker answer keeps the mutable latest tag because the
+> name stayed unchanged: the tag can move even when the deployment text
+> does not. Cached layers help transfer efficiency but do not make a
+> mutable tag an immutable identity.

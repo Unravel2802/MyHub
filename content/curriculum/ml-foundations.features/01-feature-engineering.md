@@ -8,6 +8,17 @@ For tabular problems, feature quality dominates model choice. A gradient-boosted
 tree on good features beats a neural network on raw ones, reliably — and the same
 work is where leakage most often enters.
 
+> [!WHY] A feature pipeline gets excellent validation results by fitting
+> transformations on data that would arrive only after prediction time.
+> The improvement disappears in production because the offline feature
+> contained future information.
+
+> [!GOALS]
+>
+> - Explain out-of-fold target encoding
+> - Apply train-only scaling and time cutoffs
+> - Preserve informative missingness
+
 ## Encoding categoricals
 
 ```text
@@ -134,6 +145,13 @@ that it survives review — the code looks like ordinary aggregation.
     concrete form.
 ```
 
+```mermaid
+flowchart TB
+  P[Prediction timestamp] --> W[Window ends no later]
+  W --> A[Only available observations]
+  A --> F[Point-in-time feature]
+```
+
 ## Feature selection
 
 ```text
@@ -194,6 +212,27 @@ Automated tools are a supplement rather than a replacement, and their aggregatio
 features need the same point-in-time scrutiny as hand-written ones — more, because
 nobody reviewed each one.
 
+> [!PITFALL] An automated aggregation needs the same time-boundary
+> scrutiny as a hand-written feature.
+
+> [!INTERVIEW] State when each input was available and which split fitted
+> each transformation.
+
+> [!CHECK] Why can ordinal category codes mislead a linear model?
+>
+> They imply an order that may not exist; one-hot encoding avoids that
+> false order.
+
+> [!CHECK] Why use cyclical time encoding?
+>
+> It keeps the ends of a repeating period adjacent rather than far apart
+> as raw integer codes.
+
+> [!CHECK] Why can hashing bound feature memory?
+>
+> It maps levels, including unseen ones, into a fixed bucket count,
+> accepting collisions.
+
 ## What to take away
 
 1. Feature quality dominates model choice on tabular problems.
@@ -208,3 +247,34 @@ nobody reviewed each one.
    highest-return activity available.
 
 Next: evaluating a model honestly.
+
+## Exercises
+
+> [!EXERCISE recall] How does whole-training-set target encoding leak a
+> row’s label into its input?
+>
+> **Solution:** That row contributes to its category’s target mean, making
+> its own label part of its feature. Compute the encoding out-of-fold or
+> on a separate split so the row’s label is not used for its own feature.
+
+> [!EXERCISE apply] A standard scaler fitted on training data has mu=10
+> and sigma=2; a new value is 14. A 09:00 prediction also proposes a
+> rolling aggregate including an observation first available at 09:05.
+> Compute the scaled value and decide whether either transformation should
+> be refitted using that later observation.
+>
+> **Solution:** Standard scaling is (x−mu)/sigma = (14−10)/2 = 4/2 = 2.
+> Apply the training-fitted parameters without refitting on
+> validation/future data. The 09:05 observation was unavailable at 09:00
+> and must be excluded from that prediction’s rolling feature; later
+> arrival cannot be retroactively treated as known input.
+
+> [!EXERCISE stretch] An optional field is often missing because users
+> deliberately decline to supply it. Recommend a missing-value
+> representation.
+>
+> **Solution:** Choose an appropriate imputation/native handling strategy
+> while retaining a was_missing indicator, since the absence may itself
+> carry information. A weaker answer replaces every missing value with the
+> mean and discards its origin: it makes declined answers
+> indistinguishable from actual average values.

@@ -154,6 +154,23 @@ const EXERCISE_TRACKS = [
   "engineering.process",
   "engineering.product",
   "engineering.scoping",
+  "ml-foundations.bandits",
+  "ml-foundations.bayesian",
+  "ml-foundations.calculus",
+  "ml-foundations.causality",
+  "ml-foundations.evaluation",
+  "ml-foundations.fairness",
+  "ml-foundations.features",
+  "ml-foundations.interpretability",
+  "ml-foundations.learning-theory",
+  "ml-foundations.linear-algebra",
+  "ml-foundations.nlp-classical",
+  "ml-foundations.probability",
+  "ml-foundations.supervised",
+  "ml-foundations.timeseries",
+  "ml-foundations.trees",
+  "ml-foundations.tuning",
+  "ml-foundations.unsupervised",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -190,6 +207,7 @@ const tracks = [
   { prefix: "security", expectedChapters: 11 },
   { prefix: "data", expectedChapters: 11 },
   { prefix: "engineering", expectedChapters: 12 },
+  { prefix: "ml-foundations", expectedChapters: 17 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

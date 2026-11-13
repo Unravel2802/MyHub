@@ -10,6 +10,17 @@ on what those bytes mean. The format choice matters less than the compatibility
 discipline, because the discipline is what lets the schema change after
 callers already exist.
 
+> [!WHY] A queued message survives longer than an application rollout,
+> then reaches a worker that assumes every field uses the new shape. A
+> compatible deploy must account for data still waiting in queues, not
+> only currently running processes.
+
+> [!GOALS]
+>
+> - Explain reader-writer compatibility directions
+> - Choose a safe schema evolution
+> - Design one trustworthy parsing boundary
+
 ## The format spectrum
 
 ```text
@@ -76,9 +87,9 @@ callers already exist.
 ```
 
 ```text
-  Protobuf's field numbers exist specifically to make rename-
-  without-breaking possible: the WIRE format only ever
-  references the number, never the name.
+  Protobuf's field numbers exist specifically to make
+  rename-without-breaking possible: the WIRE format only ever references the
+  number, never the name.
 
     message Order {
       string id = 1;
@@ -86,6 +97,14 @@ callers already exist.
     }                              // customer_display_name
                                     // freely — the number is
                                     // what's on the wire
+```
+
+```mermaid
+flowchart TB
+  O[Old writer] --> N[New reader: backward compatibility]
+  W[New writer] --> R[Old reader: forward compatibility]
+  O --> Q[Old payload waiting in queue]
+  Q --> N
 ```
 
 ## The rolling-deploy scenario, concretely
@@ -134,6 +153,27 @@ rolling-deploy constraint, except the "old reader" can be a message sitting in
 the queue for hours before a worker picks it up, which makes the
 compatibility window longer than a typical API rollout.
 
+> [!PITFALL] A queue’s compatibility window can outlast the rollout
+> because old bytes remain unread after all writers have upgraded.
+
+> [!INTERVIEW] Describe compatibility by the ages of reader and data, and
+> include queued historical payloads when choosing the evolution window.
+
+> [!CHECK] What is JSON’s principal debugging advantage here?
+>
+> It is self-describing human-readable text without requiring generated
+> clients to inspect it.
+
+> [!CHECK] Why can a Protobuf field be renamed without changing its wire
+> identity?
+>
+> The wire uses its field number rather than its source-code name.
+
+> [!CHECK] When may adding an enum value be unsafe?
+>
+> When an older reader crashes on unknown values instead of handling an
+> other/unknown case.
+
 ## What to take away
 
 1. Format choice trades self-description and debuggability (JSON) against size
@@ -147,3 +187,35 @@ compatibility window longer than a typical API rollout.
    re-validation at every layer drifts out of sync.
 5. A queue payload's schema lives under the same compatibility constraint as
    an API's, except messages can sit unread far longer than a rollout takes.
+
+## Exercises
+
+> [!EXERCISE recall] Define backward and forward compatibility using
+> reader and data ages. Why does a rolling deploy need both?
+>
+> **Solution:** Backward compatibility means a new reader can read old
+> data; forward compatibility means an old reader can handle new data.
+> Mixed readers and writers coexist during rollout, and queued old
+> payloads can extend the required window beyond the deploy.
+
+> [!EXERCISE apply] A message has an optional label and a Protobuf field
+> number 4 used for owner id. Compare adding optional colour with a
+> default, requiring label immediately, and reusing number 4 for another
+> meaning. Choose the safe candidate under the chapter’s rules.
+>
+> **Solution:** Add optional colour with a default so old messages remain
+> readable and old readers can ignore the new field under the stated
+> compatibility contract. Requiring label breaks old messages that omitted
+> it. Reusing field 4 changes the interpretation of existing binary data,
+> so do not repurpose that number. Test old-data/new-reader and
+> new-data/old-reader cases.
+
+> [!EXERCISE stretch] Each internal layer adds a slightly different
+> validator for the same external response. Recommend a boundary design.
+>
+> **Solution:** Parse and validate the external bytes once into the
+> trusted internal shape, then use that contract inside. A weaker answer
+> adds another near-duplicate validator at every layer: redundant rules
+> drift apart and turn a single shape guarantee into conflicting
+> interpretations. Keep external schema compatibility explicit rather than
+> treating static annotations as byte validation.

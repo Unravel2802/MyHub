@@ -11,6 +11,16 @@ system that coordinates that whole pipeline, and the one property that
 makes coordinating it survivable when something inevitably fails partway
 through.
 
+> [!WHY] A morning report job succeeds after its readers have already made
+> their decisions. Checking only for task exceptions misses the
+> operational failure: useful data arrived too late.
+
+> [!GOALS]
+>
+> - Explain sensor-based readiness
+> - Compute completion time from a dependency graph
+> - Design idempotent historical backfills
+
 ## The DAG: dependencies as an explicit graph, not implicit ordering
 
 ```text
@@ -31,6 +41,14 @@ through.
     without anyone having to notice that opportunity and
     hand-code it — the graph structure itself reveals which
     tasks are genuinely independent.
+```
+
+```mermaid
+flowchart TB
+  O[Extract orders] --> T[Transform]
+  C[Extract customers] --> T
+  T --> L[Load warehouse]
+  L --> R[Build report]
 ```
 
 ## Idempotent tasks: the property that makes retry safe
@@ -129,6 +147,28 @@ through.
     upstream problem measurably worse.
 ```
 
+> [!PITFALL] A green task status is not evidence that a downstream data
+> deadline was met.
+
+> [!INTERVIEW] Describe dependencies and consumer deadlines before
+> choosing a fixed schedule.
+
+> [!CHECK] Why can independent extraction tasks run concurrently?
+>
+> The explicit DAG has no dependency edge between them; both must complete
+> before their dependent transform runs.
+
+> [!CHECK] Why back off and add jitter after an overloaded upstream
+> failure?
+>
+> Immediate synchronized retries can worsen the upstream overload rather
+> than allowing recovery.
+
+> [!CHECK] Why is a blind INSERT unsafe on retry?
+>
+> A failed attempt may already have inserted some rows, so repeating the
+> append can duplicate them.
+
 ## What to take away
 
 1. A DAG makes task dependencies explicit as a graph rather than implicit
@@ -146,3 +186,33 @@ through.
 5. A sensor decouples "when a task is scheduled to check" from "when its
    actual dependency is ready," which a fixed-time schedule alone can't
    express when upstream data arrival is genuinely variable.
+
+## Exercises
+
+> [!EXERCISE recall] What does a sensor express that a fixed clock time
+> does not?
+>
+> **Solution:** It waits for an actual external readiness condition, such
+> as a completed source file, instead of assuming the dependency exists at
+> the scheduled time.
+
+> [!EXERCISE apply] At 01:00, two independent extracts start and take 12
+> and 20 minutes. The transform needs both and takes 8 minutes, loading
+> takes 5, and the report takes 4. Assume no queueing. When is the report
+> ready, and does it meet a 01:35 deadline? Compare serial extraction.
+>
+> **Solution:** Parallel extracts finish at 01:12 and 01:20. Transform
+> ends at 01:28, load at 01:33, report at 01:37: two minutes late. Serial
+> extraction would consume 12 + 20 = 32 minutes, then 8 + 5 + 4 = 17 more,
+> finishing at 01:49. Parallelism saves 12 minutes but does not meet the
+> deadline; successful tasks alone do not establish freshness.
+
+> [!EXERCISE stretch] A transform bug requires rerunning last month, and
+> the current load appends every row each time. Recommend a prerequisite
+> for safe backfill.
+>
+> **Solution:** Make each historical task instance idempotent, replacing
+> or otherwise safely rewriting its own batch output so repeated execution
+> converges to the same result. A weaker answer simply schedules the month
+> again: blind appends duplicate historical data rather than correcting
+> it.

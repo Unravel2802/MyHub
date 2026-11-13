@@ -10,6 +10,16 @@ production database repeatedly) creates a genuine conflict between the
 system that needs to stay fast for real users and the system that wants to
 read all of it for analytics.
 
+> [!WHY] A frequent extraction job slows customer requests and still
+> misses rows deleted between runs. Reading changed rows from the live
+> table cannot reconstruct a deletion that is no longer present.
+
+> [!GOALS]
+>
+> - Explain CDC’s treatment of deletes
+> - Apply idempotency to repeated change events
+> - Design a complete snapshot-to-stream handoff
+
 ## Batch extraction: the simple, naive starting point
 
 ```text
@@ -80,6 +90,13 @@ read all of it for analytics.
     needs.
 ```
 
+```mermaid
+flowchart TB
+  W[Production WAL] --> C[CDC connector]
+  C --> Q[Durable message queue]
+  Q --> I[Idempotent warehouse consumer]
+```
+
 ## Schema drift: the production database changes, and the pipeline has to notice
 
 ```text
@@ -127,6 +144,27 @@ read all of it for analytics.
     a newly launched pipeline.
 ```
 
+> [!PITFALL] A successful updated_at extraction does not prove deleted
+> rows were captured.
+
+> [!INTERVIEW] Explain both the production-load effect and the correctness
+> of the transition into continuous capture.
+
+> [!CHECK] Why can frequent extraction hurt user traffic?
+>
+> It competes for the production database’s buffer, connections and other
+> query resources.
+
+> [!CHECK] How should schema drift be handled?
+>
+> Detect changes automatically, adapt to safe additive changes and alert
+> on breaking renames/removals rather than dropping data silently.
+
+> [!CHECK] Why can CDC replay create duplicate effects?
+>
+> At-least-once delivery may deliver the same change more than once, so
+> blind append is unsafe.
+
 ## What to take away
 
 1. A naive batch extraction query competes for the same production database
@@ -146,3 +184,33 @@ read all of it for analytics.
    pipeline is a real, common cause of a dashboard quietly showing wrong
    numbers for weeks — detecting it automatically, and distinguishing safe
    additive changes from breaking ones, is the practical response.
+
+## Exercises
+
+> [!EXERCISE recall] Why does WAL-based CDC see a hard delete that
+> updated_at polling misses?
+>
+> **Solution:** The row is gone and cannot be selected by a later query,
+> but the database’s durability log contains an explicit delete event for
+> the change.
+
+> [!EXERCISE apply] A test consumer receives e1 insert order 8, e2 update
+> order 8, e2 again, and e3 delete order 8. Assume ordered processing and
+> idempotent effects keyed by unique event id. Trace accepted events and
+> the final order state; contrast blindly appending every receipt.
+>
+> **Solution:** Apply e1 once to create the order, e2 once to update it,
+> ignore the repeated e2 effect, and apply e3 once to delete it. Four
+> deliveries represent three unique changes; the final state has no order 8. Blindly appending receipts produces four records including a
+> duplicate update and does not by itself produce the correct
+> current-state deletion.
+
+> [!EXERCISE stretch] A new pipeline loads an old snapshot and starts its
+> live stream later, with an unspecified interval between them. Recommend
+> the handoff requirement.
+>
+> **Solution:** Define and verify the boundary between snapshot contents
+> and continuous capture so every transition-period change is covered, and
+> handle overlap idempotently. A weaker answer starts the stream whenever
+> the batch happens to finish: writes in the uncovered gap may be lost
+> even if both stages report success.

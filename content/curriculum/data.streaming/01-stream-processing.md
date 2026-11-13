@@ -10,6 +10,17 @@ continuously, as data arrives, possibly late, possibly out of order, with
 no defined 'all the data' to wait for." That shift is where nearly every
 genuine difficulty in this chapter comes from.
 
+> [!WHY] A phone reconnects and uploads purchases from an earlier
+> interval, but the dashboard counts them as purchases made now. Arrival
+> order has silently replaced the business time the chart was meant to
+> describe.
+
+> [!GOALS]
+>
+> - Explain watermark completeness trade-offs
+> - Assign late events to event-time windows
+> - Choose crash-safe sink effects
+
 ## Event time vs processing time: the distinction everything else depends on
 
 ```text
@@ -68,11 +79,11 @@ genuine difficulty in this chapter comes from.
 ## Watermarks: deciding when a window is "done enough" to emit a result
 
 ```text
-  the genuinely hard problem event time creates: a window for
-  [10:00-10:05) needs to eventually EMIT a result — but late-
-  arriving data (event time 10:03, arriving in processing time
-  at 10:47, from that offline mobile device) COULD still show
-  up for that window, arbitrarily far into the future.
+  the genuinely hard problem event time creates: a window for [10:00-10:05)
+  needs to eventually EMIT a result — but late-arriving data (event time
+  10:03, arriving in processing time at 10:47, from that offline mobile
+  device) COULD still show up for that window, arbitrarily far into
+  the future.
 
   → a WATERMARK is an explicit, deliberate POLICY: "assume no
     event with event-time earlier than X will arrive from this
@@ -94,6 +105,14 @@ genuine difficulty in this chapter comes from.
     late data before finalizing) — there is no watermark
     setting that's simultaneously instant AND perfectly
     complete; the two pull directly against each other.
+```
+
+```mermaid
+flowchart TB
+  E[Event with event timestamp] --> W[Assign event-time window]
+  W --> M[Watermark progress]
+  M --> C[Close under lateness policy]
+  C --> L[Handle arrivals beyond policy]
 ```
 
 ## State stores: remembering across events in an unbounded stream
@@ -143,6 +162,27 @@ genuine difficulty in this chapter comes from.
     impossible rather than merely unlikely.
 ```
 
+> [!PITFALL] A watermark is a lateness policy, not proof that no older
+> event can ever arrive.
+
+> [!INTERVIEW] State event time, arrival time and late-data policy
+> separately.
+
+> [!CHECK] Why do stream state stores need checkpoints?
+>
+> Per-key accumulated state must survive failures across events and
+> restarts.
+
+> [!CHECK] How does a sliding window differ from a tumbling one?
+>
+> Sliding windows overlap so an event may belong to several; tumbling
+> windows do not overlap.
+
+> [!CHECK] What defines a session boundary?
+>
+> A configured inactivity gap for that user/key, rather than a
+> fixed-length global interval.
+
 ## What to take away
 
 1. Event time (when something happened) and processing time (when it was
@@ -163,3 +203,34 @@ genuine difficulty in this chapter comes from.
    stays fundamentally at-least-once) — via the same idempotent-upsert
    pattern that recurs throughout this curriculum, or via a transactional
    write that commits the checkpoint and the output atomically together.
+
+## Exercises
+
+> [!EXERCISE recall] What trade-off changes when watermark lateness
+> tolerance is increased?
+>
+> **Solution:** Waiting longer can include more late events but delays
+> final results. A tighter policy emits sooner at the cost of potentially
+> excluding later arrivals; neither is instantly and perfectly complete.
+
+> [!EXERCISE apply] Use five-minute tumbling event-time windows
+> [11:00,11:05) and [11:05,11:10). Events A, B and C occur at 11:04, 11:05
+> and 11:03, arriving at 11:06, 11:06 and 11:12. Assume the first window
+> closes at 11:10 and later arrivals for it are excluded. Assign the
+> events and evaluate which contribute.
+>
+> **Solution:** A belongs to [11:00,11:05) and arrives before closure, so
+> it contributes there. B is exactly at 11:05 and belongs to
+> [11:05,11:10), not the first window. C belongs to the first by event
+> time but arrives at 11:12, after its stated closure, so this policy
+> excludes it. Grouping by receipt time would misattribute A even though
+> it is eligible under the event-time policy.
+
+> [!EXERCISE stretch] A processor writes output then crashes before saving
+> its checkpoint, so replay repeats those events. Recommend a sink design.
+>
+> **Solution:** Use idempotent writes keyed on event identity, or a
+> transactional sink that commits output and processing position
+> atomically. A weaker answer assumes the input queue’s delivery promise
+> prevents repeats: replay can still deliver the same effect twice to a
+> blind-append sink.

@@ -12,6 +12,16 @@ simple to write — and that different goal justifies deliberately
 reintroducing the duplication normalization spent a whole chapter
 eliminating.
 
+> [!WHY] A dashboard needs revenue by product, but its fact table kept
+> only one total per multi-product order. No clever query can recover the
+> line-level attribution the model discarded.
+
+> [!GOALS]
+>
+> - Explain why analytical dimensions are denormalized
+> - Choose grain from required questions
+> - Preserve historical dimension meaning
+
 ## OLTP vs OLAP: two different jobs, two different schemas
 
 ```text
@@ -90,20 +100,16 @@ eliminating.
   genuinely painful to change after real queries and dashboards
   already depend on it.
 
-    "one row per ORDER"          → cannot answer "revenue by
-                                     PRODUCT," since a multi-
-                                     item order has no single
+    "one row per ORDER"            → cannot answer "revenue by PRODUCT,"
+                                     since a multi-item order has no single
                                      product to attribute it to
 
-    "one row per ORDER LINE ITEM" → CAN answer both "revenue by
-                                     order" (sum the lines) AND
-                                     "revenue by product" — the
-                                     FINER grain can always
-                                     answer a coarser question
-                                     by aggregating UP, but a
-                                     coarse grain can never
-                                     answer a finer question —
-                                     the detail simply isn't
+    "one row per ORDER LINE ITEM"  → CAN answer both "revenue by order" (sum
+                                     the lines) AND "revenue by product" —
+                                     the FINER grain can always answer a
+                                     coarser question by aggregating UP, but
+                                     a coarse grain can never answer a finer
+                                     question — the detail simply isn't
                                      there to recover
 ```
 
@@ -114,6 +120,13 @@ eliminating.
     possible; going FINER later requires re-loading the
     ENTIRE fact table from source data, if that source data is
     even still available and unchanged by then.
+```
+
+```mermaid
+flowchart TB
+  L[Order-line facts] --> O[Aggregate by order]
+  L --> P[Aggregate by product]
+  O --> X[Product detail no longer retained]
 ```
 
 ## Slowly changing dimensions: history that a plain UPDATE destroys
@@ -170,6 +183,27 @@ eliminating.
   version of the other.
 ```
 
+> [!PITFALL] Overwriting a changed region can silently reattribute old
+> orders to a customer’s current location.
+
+> [!INTERVIEW] State what one fact row represents before describing joins
+> or aggregations.
+
+> [!CHECK] How do OLTP and OLAP workloads differ?
+>
+> OLTP emphasizes many small writes/point reads; OLAP emphasizes large
+> aggregate reads and is deliberately modeled for them.
+
+> [!CHECK] When is Type 1 dimension overwrite appropriate?
+>
+> When losing prior values is acceptable, such as correcting a typo
+> without meaningful historical state.
+
+> [!CHECK] How much history does Type 3 keep?
+>
+> A bounded previous value alongside the current value, rather than the
+> full sequence of changes.
+
 ## What to take away
 
 1. OLTP (normalized, from the SQL chapter) and OLAP (star schema, this
@@ -190,3 +224,31 @@ eliminating.
 5. Type 2 SCD is this project's own event-sourcing "never overwrite, only
    append" discipline, applied specifically to descriptive attributes that
    change slowly over time rather than to every write in the system.
+
+## Exercises
+
+> [!EXERCISE recall] Why deliberately denormalize an analytical dimension?
+>
+> **Solution:** Keeping descriptive context together reduces joins for
+> large analytical reads. It trades the write-oriented normalization goal
+> for simpler and faster answers to known analytical questions.
+
+> [!EXERCISE apply] Two orders have lines: order A, product X $30 and
+> product Y $50; order B, product X $20. Choose a grain that answers
+> revenue by order and product, compute both summaries, and explain what
+> an order-total-only table loses.
+>
+> **Solution:** Use one row per order line. By order: A = $30 + $50 = $80;
+> B = $20. By product: X = $30 + $20 = $50; Y = $50. An order-total table
+> retains $80 and $20 but loses A’s allocation across X and Y, so it
+> cannot recover the product summary from those totals alone.
+
+> [!EXERCISE stretch] A customer moves region and analysts need reports
+> based on their region when each order occurred. Recommend a dimension
+> strategy.
+>
+> **Solution:** Use Type 2 history with separate versions and validity
+> dates, joining each fact to the version valid at its time. A weaker
+> answer overwrites the region with Type 1: it retroactively assigns
+> historical orders to the current region and destroys the information the
+> report requires.

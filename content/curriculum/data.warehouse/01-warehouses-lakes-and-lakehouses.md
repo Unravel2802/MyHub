@@ -10,6 +10,16 @@ analytical query that touches every row but only a few columns. This
 chapter is the storage layout and architecture built specifically for that
 different access pattern.
 
+> [!WHY] A report reads two columns from a wide fact table but pays to
+> scan every field. Scaling the query machines treats the bill while
+> leaving the storage layout and skipped-data opportunity untouched.
+
+> [!GOALS]
+>
+> - Explain columnar compression
+> - Estimate selected-column and partition scan volume
+> - Choose independent storage and compute scaling
+
 ## Row-oriented vs column-oriented storage
 
 ```text
@@ -89,6 +99,13 @@ different access pattern.
     actually run against it.
 ```
 
+```mermaid
+flowchart TB
+  Q[Query date filter] --> P[Prune other partitions]
+  P --> C[Read required columns]
+  C --> A[Aggregate selected data]
+```
+
 ## The warehouse vs the lake: two different original philosophies
 
 ```text
@@ -147,6 +164,28 @@ different access pattern.
     cluster sized for PEAK load that sits mostly idle.
 ```
 
+> [!PITFALL] A partition key only helps pruning when the query actually
+> filters on that organization.
+
+> [!INTERVIEW] State which bytes the query can avoid before adding
+> compute.
+
+> [!CHECK] How do schema-on-write and schema-on-read differ?
+>
+> The warehouse validates a defined schema during loading; a lake defers
+> interpretation to reads, trading immediate checking for ingestion
+> flexibility.
+
+> [!CHECK] What does a lakehouse’s table metadata add?
+>
+> Schema enforcement, transaction guarantees and query optimization on top
+> of open files in object storage.
+
+> [!CHECK] Why can a row layout suit a point lookup?
+>
+> A complete row is stored contiguously, matching a small targeted request
+> for that row’s fields.
+
 ## What to take away
 
 1. Columnar storage reads only the columns a query actually touches, which
@@ -167,3 +206,34 @@ different access pattern.
    of data volume, paying for compute only while a query actually runs —
    the same scale-to-zero idea serverless applies, aimed at analytical
    query engines specifically.
+
+## Exercises
+
+> [!EXERCISE recall] Why can columns compress better than interleaved
+> rows?
+>
+> **Solution:** Values within a column repeat and share type/pattern more
+> than unrelated fields across a row. Columnar organization exposes that
+> repetition directly to compression.
+
+> [!EXERCISE apply] Assume 12 equal monthly partitions, each 80 GB across
+> 20 equal-size columns. A query selects two columns and one month, and
+> layout permits both pruning and selected-column reads. Estimate bytes
+> read versus all rows/all columns, ignoring overhead and compression
+> differences.
+>
+> **Solution:** Full volume is 12 × 80 = 960 GB. Selecting one month
+> leaves 80 GB; selecting 2 of 20 columns reads 80 × 2 ÷ 20 = 8 GB. That
+> is 960 ÷ 8 = 120 times fewer assumed scan bytes. The result depends on
+> the explicit equal-size/layout assumptions and is not a wall-clock
+> guarantee.
+
+> [!EXERCISE stretch] Data volume stays stable but occasional exploratory
+> queries need more CPU. Recommend an architecture and explain the
+> alternative’s cost.
+>
+> **Solution:** Separate durable object storage from independently
+> scalable query compute so additional query capacity need not also expand
+> storage. A weaker answer scales a coupled storage/compute cluster for
+> every CPU peak: it pays for storage growth even when storage is not the
+> bottleneck.

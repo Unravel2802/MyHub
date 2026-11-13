@@ -10,6 +10,16 @@ formats those ideas are actually built from — the files a query engine
 reads, and the metadata layer that turns a folder of files into something
 that behaves like a real, transactional table.
 
+> [!WHY] A writer crashes halfway through publishing new analytical files,
+> and a reader reports a mixture of old and new rows. Faster column scans
+> cannot fix the missing table-level snapshot boundary.
+
+> [!GOALS]
+>
+> - Explain Arrow’s role relative to Parquet
+> - Use row-group statistics to prune reads
+> - Choose snapshot semantics for concurrent readers
+
 ## Parquet: columnar storage as an actual file format
 
 ```text
@@ -96,21 +106,26 @@ that behaves like a real, transactional table.
     in object storage.
 ```
 
+```mermaid
+flowchart TB
+  F[New immutable data files] --> M[New manifest]
+  M --> C[Atomic current-snapshot change]
+  C --> R[Reader sees complete snapshot]
+```
+
 ## Time travel: a direct consequence of keeping old snapshots
 
 ```text
   SELECT * FROM orders VERSION AS OF '2026-01-15'
 
-  → because OLD manifests/snapshots aren't immediately deleted
-    on a write (only eventually garbage-collected, once nothing
-    references them and a retention window has passed), a table
-    format can query the table AS IT EXISTED AT A PAST POINT IN
-    TIME — this is the Database Internals chapter's write-ahead-
-    log-enables-point-in-time-recovery idea, appearing again in
-    a genuinely different, adjacent context: versioned snapshots
-    instead of a replayable log, but the same underlying
-    payoff — being able to reconstruct a specific past state on
-    demand.
+  → because OLD manifests/snapshots aren't immediately deleted on a write
+    (only eventually garbage-collected, once nothing references them and a
+    retention window has passed), a table format can query the table AS IT
+    EXISTED AT A PAST POINT IN TIME — this is the Database Internals
+    chapter's write-ahead-log-enables-point-in-time-recovery idea, appearing
+    again in a genuinely different, adjacent context: versioned snapshots
+    instead of a replayable log, but the same underlying payoff — being able
+    to reconstruct a specific past state on demand.
 ```
 
 ## Schema evolution: changing a table's shape without rewriting history
@@ -153,6 +168,27 @@ that behaves like a real, transactional table.
                                               lakes eventually
 ```
 
+> [!PITFALL] A directory of Parquet files supplies columnar layout, not an
+> atomic table update.
+
+> [!INTERVIEW] Distinguish the in-memory format, on-disk format and table
+> metadata layer.
+
+> [!CHECK] How does a table format read an old file missing a new column?
+>
+> Its explicit schema history permits the missing column to read as NULL
+> for those old rows.
+
+> [!CHECK] What enables time travel?
+>
+> Retained old manifests/snapshots define past table states until
+> retention and garbage collection remove them.
+
+> [!CHECK] Why track columns by identity rather than only position?
+>
+> Stable column identity lets schema changes be interpreted across files
+> written under different schemas.
+
 ## What to take away
 
 1. Parquet's per-row-group min/max metadata enables predicate pushdown at a
@@ -172,3 +208,34 @@ that behaves like a real, transactional table.
    point-in-time recovery, reappearing here), and column-id-based schema
    tracking is the serialization chapter's compatibility discipline applied
    to a data lake's schema instead of an API's.
+
+## Exercises
+
+> [!EXERCISE recall] Why might an analytical system use both Parquet and
+> Arrow?
+>
+> **Solution:** Parquet optimizes compressed disk storage and I/O; Arrow
+> supplies a common in-memory representation systems can operate on
+> without serializing between compatible tools. They solve different
+> stages rather than replacing one another.
+
+> [!EXERCISE apply] A query filters price > 700. Row-group price ranges
+> are A: 10–500, B: 500–900, C: 701–950, D: 0–700. Choose which groups can
+> be skipped from min/max alone and which need further work.
+>
+> **Solution:** Skip A because max 500 is below the threshold, and D
+> because max 700 cannot satisfy the strict > 700 predicate. B may contain
+> matching rows, so it cannot be skipped; its individual values still need
+> filtering. C’s range is entirely above 700 and cannot be skipped.
+> Reading metadata can eliminate two of four groups without scanning their
+> data, but says nothing about equal byte sizes.
+
+> [!EXERCISE stretch] Readers run continuously while a writer adds a
+> multi-file batch. Recommend a representation that prevents partial-batch
+> reads.
+>
+> **Solution:** Use the table-format metadata layer to publish a complete
+> snapshot through an atomic current-manifest change. Readers see one
+> complete old or new version. A weaker answer only compresses the files
+> as Parquet: columnar compression does not establish a transaction
+> boundary across a directory of files.

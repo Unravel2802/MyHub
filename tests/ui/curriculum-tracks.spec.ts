@@ -131,6 +131,17 @@ const EXERCISE_TRACKS = [
   "security.privacy",
   "security.secrets",
   "security.supply-chain",
+  "data.analytics-eng",
+  "data.batch",
+  "data.formats",
+  "data.governance",
+  "data.ingestion",
+  "data.modeling",
+  "data.orchestration",
+  "data.quality",
+  "data.serving",
+  "data.streaming",
+  "data.warehouse",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -165,6 +176,7 @@ const tracks = [
   { prefix: "frontend", expectedChapters: 20 },
   { prefix: "infra", expectedChapters: 15 },
   { prefix: "security", expectedChapters: 11 },
+  { prefix: "data", expectedChapters: 11 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

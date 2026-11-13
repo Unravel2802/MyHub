@@ -9,6 +9,16 @@ entirely in ad hoc, hand-run SQL scripts — and in a hundred slightly
 different spreadsheet formulas across a company — gets treated with the
 same rigor software engineering has applied to application code all along.
 
+> [!WHY] Finance and Sales bring different revenue totals to the same
+> planning meeting. Without a shared definition, the argument consumes the
+> meeting while both dashboards continue to look internally correct.
+
+> [!GOALS]
+>
+> - Explain the role of a shared metrics layer
+> - Compute a metric using explicit refund rules
+> - Choose tests for transformation output
+
 ## The problem this discipline exists to solve: five different "revenue" numbers
 
 ```text
@@ -96,6 +106,14 @@ same rigor software engineering has applied to application code all along.
     automatically and consistently, together.
 ```
 
+```mermaid
+flowchart TB
+  M[Reviewed metric definition] --> L[Shared metrics layer]
+  L --> D[Dashboard]
+  L --> R[Report]
+  L --> N[Notebook]
+```
+
 ## Testing transformation logic
 
 ```text
@@ -129,6 +147,27 @@ same rigor software engineering has applied to application code all along.
     intentional, documented business logic.
 ```
 
+> [!PITFALL] Putting SQL in git does not resolve a business-rule
+> disagreement unless consumers use the agreed definition.
+
+> [!INTERVIEW] State the metric’s filters and date boundaries before
+> comparing totals.
+
+> [!CHECK] Why review a transformation like application code?
+>
+> It computes consequential business results, so logic changes need
+> tracked review rather than an unrecorded ad hoc query.
+
+> [!CHECK] What does a model DAG make explicit?
+>
+> Dependencies among transformation models, enabling them to be built,
+> tested and documented together.
+
+> [!CHECK] Why document the reason for a refund cutoff?
+>
+> A future analyst must distinguish deliberate business policy from a bug
+> rather than silently changing the meaning.
+
 ## What to take away
 
 1. Different teams independently computing their own "revenue" with subtly
@@ -147,3 +186,33 @@ same rigor software engineering has applied to application code all along.
    documentation discipline as any other consequential code in this
    curriculum — a deliberate business-logic choice needs to be
    distinguishable from an actual bug.
+
+## Exercises
+
+> [!EXERCISE recall] How does a metrics layer prevent independent
+> dashboards drifting?
+>
+> **Solution:** It defines the metric centrally and consumers reference
+> that definition instead of maintaining separate formulas. Changing the
+> shared definition then updates dependent consumers consistently.
+
+> [!EXERCISE apply] For this exercise, net revenue subtracts only refunds
+> processed within 30 days of the order, as in the documented policy
+> example. Three completed orders are $120 with a $20 refund on day 12,
+> $80 with a $10 refund on day 35, and $50 without a refund. Compute this
+> metric and compare a dashboard subtracting every refund.
+>
+> **Solution:** Under the stated rule the orders contribute $100, $80 and
+> $50, totalling $230. The all-refund dashboard reports ($120 − $20) +
+> ($80 − $10) + $50 = $220. The $10 difference comes from the late refund,
+> not arithmetic. Keep its treatment in the separately documented
+> adjustment logic rather than silently mixing definitions.
+
+> [!EXERCISE stretch] A transformation’s output has plausible totals but
+> may duplicate orders or omit some. Recommend model tests.
+>
+> **Solution:** Assert every source order_id appears unchanged exactly
+> once in the transformed output, and explicitly investigate unexpected
+> negative net revenue under the model’s business rules. A weaker answer
+> checks only that the SQL executes: duplicated or missing orders can
+> still produce plausible totals without an exception.

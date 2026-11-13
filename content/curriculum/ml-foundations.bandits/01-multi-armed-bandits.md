@@ -9,6 +9,17 @@ A bandit shifts traffic toward what is winning as evidence accumulates. The
 trade-off between them is precise: bandits minimise regret, A/B tests estimate
 effects, and confusing the two produces unusable conclusions.
 
+> [!WHY] A content selector keeps sending users to a weak variant while an
+> experiment runs. Shifting traffic can reduce that ongoing loss, but
+> reporting the adaptive traffic as a clean effect-size experiment answers
+> a different question.
+
+> [!GOALS]
+>
+> - Explain regret as the bandit objective
+> - Trace a Thompson-sampling decision and update
+> - Choose adaptation for changing rewards
+
 ## The problem
 
 ```text
@@ -72,6 +83,15 @@ effects, and confusing the two produces unusable conclusions.
 
 The elegance is the point: exploration is not a parameter, it is a consequence of
 uncertainty, and it shrinks automatically as evidence accumulates.
+
+```mermaid
+flowchart TB
+  P[Posterior per arm] --> S[Sample reward parameter]
+  S --> A[Choose largest sample]
+  A --> R[Observe chosen reward]
+  R --> U[Update chosen posterior]
+  U --> P
+```
 
 ## Contextual bandits
 
@@ -181,6 +201,27 @@ converged on an arm stops exploring, so when the world changes it does not notic
 Discounting past observations — treating older data as less informative — keeps a
 floor under exploration.
 
+> [!PITFALL] A harmful arm must be excluded by constraints; exploration is
+> not a safety policy.
+
+> [!INTERVIEW] Say whether the goal is cumulative reward or an effect
+> estimate before choosing a bandit.
+
+> [!CHECK] Why does fixed epsilon exploration waste traffic?
+>
+> It keeps trying even well-established poor arms uniformly; decaying
+> epsilon reduces that continuing cost.
+
+> [!CHECK] What gives a rarely tried UCB arm an opportunity?
+>
+> Its uncertainty bonus can outweigh a lower current reward estimate.
+
+> [!CHECK] When does the contextual-bandit abstraction stop being
+> sufficient?
+>
+> When the action changes future state, the decision becomes an RL problem
+> rather than the chapter’s context-only choice.
+
 ## What to take away
 
 1. Bandits minimise regret by shifting traffic toward what is winning; A/B tests
@@ -198,3 +239,31 @@ floor under exploration.
    bandit stops adapting when the world changes.
 
 Next: classical NLP.
+
+## Exercises
+
+> [!EXERCISE recall] What does regret compare?
+>
+> **Solution:** Reward earned against what would have been earned by
+> always choosing the best arm. Minimizing that cumulative shortfall
+> differs from estimating a defensible treatment effect.
+
+> [!EXERCISE apply] Binary-reward arms A and B have (successes, failures)
+> of (3,1) and (1,3). This round’s posterior samples are 0.55 and 0.70.
+> Choose the arm and update its posterior after a failure; show the
+> distributions before and after.
+>
+> **Solution:** The rule is theta_i ~ Beta(1+s_i, 1+f_i), then choose
+> argmax theta_i. A starts Beta(1+3,1+1) = Beta(4,2); B starts
+> Beta(1+1,1+3) = Beta(2,4). Since 0.70 > 0.55, choose B despite its lower
+> observed success count. Its failure count becomes 3+1 = 4, so B becomes
+> Beta(1+1,1+4) = Beta(2,5). A remains Beta(4,2); no reward for the
+> unchosen arm was observed.
+
+> [!EXERCISE stretch] A selector converged on one arm, but audience
+> preferences now change over time. Recommend a response.
+>
+> **Solution:** Discount old observations or use a sliding window so
+> historical confidence does not prevent adaptation. A weaker answer keeps
+> all old evidence at full weight and simply trusts convergence: that can
+> make the system stop noticing a changed best arm.

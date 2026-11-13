@@ -9,6 +9,16 @@ Systems Design assumes you already have. This chapter is not a SQL syntax
 tour — it is the reasoning behind normalization, when to break it, and how to
 read a query plan instead of guessing.
 
+> [!WHY] A customer report quietly drops customers with no matching orders
+> after a filter is added. A syntactically valid LEFT JOIN can still lose
+> its intended outer-row behaviour when the predicate is placed in WHERE.
+
+> [!GOALS]
+>
+> - Explain normalisation through update anomalies
+> - Choose an outer join and composite index
+> - Diagnose repeated relationship queries
+
 ## Normalization, briefly and practically
 
 ```text
@@ -87,6 +97,15 @@ read a query plan instead of guessing.
 
   → put the condition in the JOIN's ON clause instead, if the
     row itself should still appear
+```
+
+```mermaid
+flowchart TB
+  C[All customers] --> J[LEFT JOIN with order filter in ON]
+  J --> M[Customers with matching orders]
+  J --> N[Customers without matches keep null order]
+  M --> R[Complete customer report]
+  N --> R
 ```
 
 ## Indexes
@@ -191,6 +210,27 @@ The full machinery of isolation levels, the anomalies each one still permits,
 and optimistic-vs-pessimistic concurrency belongs to the Transactions &
 Isolation chapter — this chapter is the schema and query layer underneath it.
 
+> [!PITFALL] A right-table predicate in WHERE can reject the null rows a
+> LEFT JOIN was meant to preserve.
+
+> [!INTERVIEW] Explain both the row set a query must preserve and the
+> actual read pattern before choosing predicate placement or an index.
+
+> [!CHECK] What does a foreign key enforce?
+>
+> A referenced row exists, subject to the relationship’s configured delete
+> policy.
+
+> [!CHECK] What does actual time add beyond estimated query cost?
+>
+> Measured execution in milliseconds, whereas planner cost is an estimate
+> in its own units.
+
+> [!CHECK] Why not index every potentially filtered column?
+>
+> Every write maintains the indexes, so unused read flexibility incurs
+> ongoing write cost.
+
 ## What to take away
 
 1. Normalize by default; denormalize for a measured reason and document what
@@ -205,3 +245,36 @@ Isolation chapter — this chapter is the schema and query layer underneath it.
    large gap between them as a signal that statistics are stale.
 5. N+1 is usually an ORM's lazy-loading default producing a query inside a
    loop — look for it there, not in the SQL itself.
+
+## Exercises
+
+> [!EXERCISE recall] How does an update anomaly reveal a misplaced
+> duplicate fact?
+>
+> **Solution:** If changing one row makes another row’s copy false, that
+> fact has multiple maintenance locations. Normalise it into the owning
+> entity by default; deliberate denormalisation needs a measured reason
+> and an explicit synchronisation rule.
+
+> [!EXERCISE apply] A report must include every customer and only their
+> open orders, including customers with none. A hot endpoint also filters
+> orders by customer id and a created-at range. Choose the join predicate
+> placement and the index column order.
+>
+> **Solution:** Put the open-order condition in the LEFT JOIN ON clause so
+> customers with no qualifying order retain a null right side instead of
+> being removed by WHERE. For the hot endpoint, use the equality customer
+> id before the created-at range in the composite index. The first choice
+> preserves report semantics; the second matches the stated access pattern
+> while accepting index write cost.
+
+> [!EXERCISE stretch] A page fetches 24 orders, then lazily fetches each
+> customer. Recommend a query plan and compute the round-trip difference
+> from a batched lookup.
+>
+> **Solution:** Fetch the orders and batch customer ids into one further
+> lookup, reducing 1 + 24 = 25 queries to 1 + 1 = 2; a suitable join can
+> combine related work too. A weaker answer caches each lazy call without
+> changing the query shape: cold execution still fans out into the same
+> N+1 requests. Inspect the plan and real timings rather than assuming
+> local loop simplicity means low cost.

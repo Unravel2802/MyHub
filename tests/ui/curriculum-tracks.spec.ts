@@ -64,6 +64,27 @@ const EXERCISE_TRACKS = [
   "craft.testing",
   "craft.type-design",
   "craft.version-control",
+  "backend.api-hardening",
+  "backend.auth",
+  "backend.caching",
+  "backend.event-sourcing",
+  "backend.files",
+  "backend.graphql-grpc",
+  "backend.http",
+  "backend.integrations",
+  "backend.jobs-scheduling",
+  "backend.migrations",
+  "backend.multitenancy",
+  "backend.nosql",
+  "backend.queues",
+  "backend.realtime",
+  "backend.rest",
+  "backend.search",
+  "backend.serialization",
+  "backend.services",
+  "backend.sql",
+  "backend.time-money",
+  "backend.transactions",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -94,6 +115,7 @@ const tracks = [
     expectedChapters: 28,
   },
   { prefix: "craft", expectedChapters: 20 },
+  { prefix: "backend", expectedChapters: 22 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

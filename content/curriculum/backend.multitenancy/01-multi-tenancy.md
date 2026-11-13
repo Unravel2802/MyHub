@@ -9,6 +9,16 @@ customers (tenants) sharing the same application and often the same database,
 each believing — correctly, if the isolation is done right — that they have
 the system to themselves.
 
+> [!WHY] A globally unique order id is queried without tenant scope. The
+> row exists, but returning it to a different tenant violates isolation
+> even though the database lookup itself is perfectly valid.
+
+> [!GOALS]
+>
+> - Explain isolation strength versus operational cost
+> - Trace tenant scope from authenticated context
+> - Design noisy-neighbour protection
+
 ## Isolation models
 
 ```text
@@ -73,6 +83,14 @@ the system to themselves.
     scoping) — a request body containing tenant_id is a
     request for a DIFFERENT tenant's data, trivially, if the
     server trusts it.
+```
+
+```mermaid
+flowchart TB
+  R[Request with client fields] --> A[Verified session tenant]
+  A --> Q[Query scoped by tenant]
+  Q --> P[RLS policy backstop]
+  P --> O[Only permitted tenant rows]
 ```
 
 ## Row-level security as a backstop
@@ -151,6 +169,28 @@ the system to themselves.
     an application-level redesign, just a routing change.
 ```
 
+> [!PITFALL] A globally unique resource id identifies a row, not the
+> caller’s permission to read that row.
+
+> [!INTERVIEW] Trace tenant identity from verification to every data
+> access, and separately explain how shared-resource usage is bounded.
+
+> [!CHECK] What does RLS add beyond an application convention?
+>
+> A database-layer tenant filter even when a query forgets its own scope,
+> under the configured tenant context.
+
+> [!CHECK] Why cache tenant configuration on a hot path?
+>
+> Repeated plan and feature lookups affect most requests, but cached
+> values still need invalidation when the plan changes.
+
+> [!CHECK] Does a tenant subdomain alone replace authenticated tenant
+> verification?
+>
+> No. Routing identifies context, while the trusted tenant and permissions
+> must still be established through authenticated context.
+
 ## What to take away
 
 1. Shared schema, separate schema, separate database is a spectrum of
@@ -166,3 +206,35 @@ the system to themselves.
    other tenant's performance — per-tenant limits are what prevent that.
 5. Cache per-tenant configuration and plan limits rather than querying them
    on every request, with the same invalidation discipline any cache needs.
+
+## Exercises
+
+> [!EXERCISE recall] How do shared-schema, per-schema and per-database
+> tenancy change isolation and operations?
+>
+> **Solution:** Shared schema is cheap but depends on row scoping;
+> per-tenant schemas separate namespaces while multiplying migrations;
+> per-tenant databases provide stronger isolation while multiplying
+> backups, monitoring, upgrades and pools.
+
+> [!EXERCISE apply] A session establishes tenant A. A request for order 72
+> includes tenant_id=B in its body; the order belongs to B. Choose the
+> query scope and decide whether the global order id or supplied tenant
+> changes access.
+>
+> **Solution:** Use the authenticated tenant A in the order query: id = 72
+> AND tenant_id = A. The order for B does not match, regardless of its
+> globally unique id or the body’s tenant choice. Keep RLS as a
+> database-layer backstop so an accidental missing application predicate
+> does not expose other tenants.
+
+> [!EXERCISE stretch] One tenant’s reporting saturates the shared database
+> and slows small tenants. Recommend whether moving every tenant
+> immediately to a separate database is the first response.
+>
+> **Solution:** Apply per-tenant resource caps, query timeouts and rate
+> limits, and evaluate stronger isolation where a specific requirement
+> justifies its ongoing cost. A weaker answer leaves the pool unlimited
+> and merely scales it: one tenant can continue consuming the enlarged
+> shared budget. Splitting every database without a requirement adds
+> operations before trying scoped protection.

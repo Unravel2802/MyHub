@@ -9,6 +9,16 @@ the response goes back to the caller? When the answer is no, moving it off the
 request path improves latency and lets the work retry independently of the
 request that triggered it — at the cost of a whole new set of failure modes.
 
+> [!WHY] A worker completes a job and crashes before acknowledging it.
+> Redelivery repeats the same side effect unless the handler’s outcome is
+> safe to produce again.
+
+> [!GOALS]
+>
+> - Explain at-least-once delivery
+> - Choose a partition and visibility policy
+> - Design recovery for repeated permanent failures
+
 ## Why move work off the request path
 
 ```text
@@ -33,8 +43,8 @@ request that triggered it — at the cost of a whole new set of failure modes.
 ## At-least-once delivery
 
 ```text
-  the guarantee nearly every real queue makes is AT-LEAST-
-  ONCE, not exactly-once:
+  the guarantee nearly every real queue makes is AT-LEAST-ONCE,
+  not exactly-once:
 
     worker picks up job → crashes AFTER doing the work but
     BEFORE acknowledging it → the queue, having seen no ack,
@@ -42,14 +52,21 @@ request that triggered it — at the cost of a whole new set of failure modes.
 ```
 
 ```text
-  → exactly-once delivery is not achievable at the messaging
-    layer in general (this is the same underlying problem as
-    distributed consensus under network partitions — see
-    the Consensus chapter). the
-    practical answer is at-least-once delivery PLUS an
-    idempotent handler, which composes into an effectively-
-    once OUTCOME even though delivery itself is not
-    exactly-once.
+  → exactly-once delivery is not achievable at the messaging layer in
+    general (this is the same underlying problem as distributed consensus
+    under network partitions — see the Consensus chapter). the practical
+    answer is at-least-once delivery PLUS an idempotent handler, which
+    composes into an effectively-once OUTCOME even though delivery itself is
+    not exactly-once.
+```
+
+```mermaid
+flowchart TB
+  Q[Queue delivers job] --> W[Worker performs effect]
+  W --> C{Ack received?}
+  C -->|yes| D[Delivery complete]
+  C -->|no| R[Redeliver same job]
+  R --> I[Idempotent handler protects outcome]
 ```
 
 ## Idempotency in the handler
@@ -115,9 +132,8 @@ request that triggered it — at the cost of a whole new set of failure modes.
 ## Ordering
 
 ```text
-  most queues do NOT guarantee global order — only per-
-  partition/per-key order, if that (SQS FIFO, Kafka per-
-  partition).
+  most queues do NOT guarantee global order — only per-partition/per-key
+  order, if that (SQS FIFO, Kafka per-partition).
 
   → "process events for user 42 in the order they happened"
     needs events for user 42 routed to the SAME partition/
@@ -149,6 +165,27 @@ The Scheduling & Cron chapter is queues plus a clock — recurring work instead
 of one-off. The Event Sourcing & CQRS chapter uses a queue's ordering and
 at-least-once guarantees as its event log's delivery mechanism.
 
+> [!PITFALL] A visibility timeout below legitimate processing duration
+> creates duplicate work even when no worker has crashed.
+
+> [!INTERVIEW] Separate ordering, acknowledgement, visibility and
+> idempotent effects; none of these guarantees implies the others.
+
+> [!CHECK] What decides whether work belongs off the response path?
+>
+> Whether the response needs its output, not merely whether the work is
+> slow.
+
+> [!CHECK] Why must idempotency check-and-mark be atomic?
+>
+> Concurrent copies can both observe not processed before either records
+> completion.
+
+> [!CHECK] Why add jitter to exponential retries?
+>
+> Jobs that failed together otherwise retry together and recreate the load
+> spike.
+
 ## What to take away
 
 1. Move work off the request path when the response doesn't need its output —
@@ -162,3 +199,38 @@ at-least-once guarantees as its event log's delivery mechanism.
 5. Exponential backoff needs jitter, or every job that failed at the same
    moment retries in lockstep and recreates the load spike that caused the
    failure.
+
+## Exercises
+
+> [!EXERCISE recall] Why can a queue redeliver work that already happened,
+> and where must repeated-effect safety live?
+>
+> **Solution:** A crash after the effect but before acknowledgement leaves
+> the queue unable to distinguish completed work from an abandoned job.
+> Delivery can repeat; the handler must preserve an idempotent outcome
+> with atomic processing identity rather than assuming exactly one
+> delivery.
+
+> [!EXERCISE apply] Jobs update each account in event order; normal
+> processing is fast but measured p99 is 45 seconds. A proposed queue
+> mixes keys arbitrarily and uses a 5-second visibility timeout. Choose
+> changes and state what each fixes.
+>
+> **Solution:** Route each account’s events consistently to the same
+> ordered partition or queue where that guarantee is supported. Set
+> visibility comfortably above the expected p99 rather than 5 seconds, so
+> legitimate slow jobs are not redelivered while still running.
+> Partitioning addresses per-account order; timeout tuning addresses
+> duplicate concurrent processing and must still be paired with handler
+> idempotency.
+
+> [!EXERCISE stretch] Malformed jobs repeatedly fail and occupy workers
+> while healthy jobs wait. Recommend a terminal retry and ownership
+> policy.
+>
+> **Solution:** After a bounded retry budget, move them to a dead-letter
+> queue, alert an owner and retain them for diagnosis and deliberate
+> recovery. A weaker answer retries forever with a fixed delay: permanent
+> payload errors do not repair themselves and healthy work keeps losing
+> capacity. Backoff with jitter helps transient failures but is not an
+> ownership process for dead letters.

@@ -9,6 +9,16 @@ in consistency: an API that follows them is guessable, and one that doesn't
 forces every consumer to read the docs for every endpoint. This chapter is the
 decisions that are easy to get wrong, and expensive to fix once clients exist.
 
+> [!WHY] A mobile client loads successive offset pages while new orders
+> arrive at the front. Users see repeated or skipped rows, so a convenient
+> pagination interface has exposed an unstated stability trade-off.
+
+> [!GOALS]
+>
+> - Explain stable error codes
+> - Choose pagination for different workloads
+> - Design a version transition policy
+
 ## Resources and verbs
 
 ```text
@@ -73,6 +83,14 @@ decisions that are easy to get wrong, and expensive to fix once clients exist.
     correct" option is the wrong default at small scale,
     because a cursor is real complexity to build a UI around
     (no jump-to-page-5).
+```
+
+```mermaid
+flowchart TB
+  L[List request] --> C{Large or changing dataset?}
+  C -->|yes| P[Position cursor]
+  C -->|no| O[Offset may suit page jumps]
+  P --> N[Continue after last seen position]
 ```
 
 ## Versioning
@@ -160,6 +178,27 @@ other field.
     widely-used stopping point, not a failure to reach level 3.
 ```
 
+> [!PITFALL] An endpoint version label does not migrate existing clients
+> or define when their old contract may disappear.
+
+> [!INTERVIEW] Explain the client-visible navigation and migration
+> contract, not just the endpoint spelling or pagination parameter.
+
+> [!CHECK] What is a useful canonical URL rule for an item?
+>
+> Use one direct item location; nesting is for scoped collections rather
+> than the entire ownership chain.
+
+> [!CHECK] What does an idempotency key add to a creation POST?
+>
+> Repeated requests with the same key can return the stored result instead
+> of creating another resource.
+
+> [!CHECK] When may an action-shaped endpoint be appropriate?
+>
+> When the operation is genuinely a process rather than a simple resource
+> field update.
+
 ## What to take away
 
 1. Prefer a resource shape over an action verb in the URL — it is what makes
@@ -175,3 +214,34 @@ other field.
 5. An idempotency key for POST solves a real retry-duplication bug; level-2
    REST (resources and verbs, no embedded links) is a reasonable stopping
    point, not an unfinished implementation.
+
+## Exercises
+
+> [!EXERCISE recall] Why should clients branch on a machine-readable error
+> code rather than a human-readable message?
+>
+> **Solution:** The documented code remains a stable contract while
+> messages can be reworded. String matching couples client behaviour to
+> prose and makes harmless wording changes break control flow.
+
+> [!EXERCISE apply] Choose pagination for a rapidly changing order feed
+> and a tiny low-churn admin table that needs direct page-number jumps.
+> Explain both choices and which capability the cursor UI gives up.
+>
+> **Solution:** Use a position cursor for the changing large feed so
+> traversal does not rely on shifting offsets and deep skipped-row work.
+> Offset pagination can suit the small stable admin table and its page
+> jumps. Cursor navigation adds UI complexity and generally lacks direct
+> jump-to-page-number behaviour, so imposing it on every tiny table buys
+> little.
+
+> [!EXERCISE stretch] A change replaces a response field rather than
+> adding an optional one. A team proposes introducing /v2 and immediately
+> deleting /v1. Recommend a policy beyond the URL mechanism.
+>
+> **Solution:** Define how long both versions operate, identify and
+> migrate the existing callers, and retire v1 after that compatibility
+> window. A weaker answer treats a v2 path alone as compatibility: callers
+> still using v1 break when it disappears. Additive optional changes can
+> avoid a new version, but the proposed replacement is not merely
+> additive.

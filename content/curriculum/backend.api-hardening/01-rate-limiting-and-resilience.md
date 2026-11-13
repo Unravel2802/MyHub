@@ -9,6 +9,17 @@ abuse and partial failure. This chapter is the set of patterns that make the
 difference — most of them cheap to add, and each one a direct answer to a
 specific, named failure mode.
 
+> [!WHY] A slow third-party call consumes a shared connection pool until
+> unrelated requests fail too. The original dependency outage now takes
+> healthy features down because waiting time and resource ownership were
+> never bounded.
+
+> [!GOALS]
+>
+> - Explain circuit-breaker recovery states
+> - Choose a limiter for burst and sustained demand
+> - Design isolation for a slow dependency
+
 ## Rate limiting algorithms
 
 ```text
@@ -97,6 +108,14 @@ specific, named failure mode.
     its recovery.
 ```
 
+```mermaid
+flowchart TB
+  C[Closed: calls flow] -->|threshold crossed| O[Open: fail fast]
+  O -->|cooldown| H[Half-open: limited probes]
+  H -->|success| C
+  H -->|failure| O
+```
+
 ## Bulkheads
 
 ```text
@@ -152,6 +171,28 @@ specific, named failure mode.
     them together.
 ```
 
+> [!PITFALL] A larger shared resource pool does not isolate a failing
+> dependency; bulkheads change which requests can consume whose capacity.
+
+> [!INTERVIEW] Name the failure each protection addresses: admission,
+> bounded waiting, failing dependencies, safe retry and resource isolation
+> compose rather than replace each other.
+
+> [!CHECK] Why include Retry-After with a 429?
+>
+> It tells a throttled caller when to try again rather than making it
+> guess.
+
+> [!CHECK] Why does an idempotency-key store need a uniqueness constraint?
+>
+> Concurrent requests can both pass an unchecked lookup before either
+> stores the result.
+
+> [!CHECK] Why is an unspecified outbound timeout risky?
+>
+> A hung dependency can keep handlers and resources occupied indefinitely,
+> exhausting the caller.
+
 ## What to take away
 
 1. Token bucket is the standard rate-limiting choice because it allows a
@@ -167,3 +208,36 @@ specific, named failure mode.
 5. A bulkhead (a separate resource pool per dependency) stops one slow
    dependency from starving requests to healthy ones — these patterns compose,
    they aren't alternatives to choose between.
+
+## Exercises
+
+> [!EXERCISE recall] Trace a circuit breaker from normal calls through
+> failure and recovery probing. Why not restore all traffic immediately
+> after cooldown?
+>
+> **Solution:** Closed allows calls and counts failures. Crossing the
+> threshold opens it so calls fail immediately. After cooldown, half-open
+> permits a small probe set; success closes it and failure reopens it.
+> Probing tests recovery without immediately restoring the full load.
+
+> [!EXERCISE apply] An API should permit occasional bursts of 30 requests
+> but sustain at most 6 per second. Choose fixed-window or token-bucket
+> limiting, set its parameters and reason about 40 simultaneous requests
+> from a full bucket with no refill during the burst.
+>
+> **Solution:** Use a token bucket of capacity 30 refilling at 6 tokens
+> per second. The initial burst consumes 30 tokens, so 30 requests can
+> proceed and 10 must be throttled. Later sustained admission is bounded
+> by refill. Fixed reset windows can admit adjacent-window bursts beyond
+> their intended short-term allowance; the bucket directly models the
+> desired burst-plus-rate policy.
+
+> [!EXERCISE stretch] A slow reporting API shares a pool with a healthy
+> checkout dependency. Recommend containment and reject simply increasing
+> the common pool.
+>
+> **Solution:** Give the dependencies separate resource pools, explicit
+> timeouts and a breaker for failing calls. Retry only when the operation
+> is idempotent, with backoff and jitter. A weaker answer enlarges the
+> shared pool: reporting can still exhaust it and starve checkout, merely
+> at a higher resource cost.

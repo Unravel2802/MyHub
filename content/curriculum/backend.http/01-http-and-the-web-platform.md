@@ -9,6 +9,16 @@ gaps are worth knowing precisely rather than by feel. Most production bugs in
 this area are not exotic — they are a status code used loosely, or a caching
 header nobody set on purpose.
 
+> [!WHY] An authenticated account response is marked public and reaches a
+> shared cache. A later user at the same URL can receive the previous
+> user’s body, turning a casual header choice into a data leak.
+
+> [!GOALS]
+>
+> - Explain safe versus idempotent methods
+> - Choose conditional request responses
+> - Design caching for identity-dependent data
+
 ## Methods and idempotency
 
 ```text
@@ -144,6 +154,13 @@ proxy, and monitoring tool built on that contract.
        or:   200 OK, ETag: "v8"        (changed — full body)
 ```
 
+```mermaid
+flowchart TB
+  R[Request with cached ETag] --> C{Still matches?}
+  C -->|yes| N[304 without body]
+  C -->|no| B[200 with current body and ETag]
+```
+
 ## HTTP/1.1, HTTP/2, HTTP/3
 
 ```text
@@ -184,6 +201,29 @@ proxy, and monitoring tool built on that contract.
     from the same client depends on.
 ```
 
+> [!PITFALL] no-cache means revalidate, while no-store prohibits storage;
+> neither should be confused with a public-versus-private decision.
+
+> [!INTERVIEW] Name the resource effect, the conditional header and the
+> cache audience separately; one HTTP property does not establish the
+> others.
+
+> [!CHECK] What distinguishes 401 from 403 in this chapter?
+>
+> 401 concerns missing or unestablished authentication; 403 denies an
+> action after identity is known.
+
+> [!CHECK] Which header states body format versus client preference?
+>
+> Content-Type describes the body; Accept states the desired response
+> format.
+
+> [!CHECK] Why can horizontal scaling still fail despite HTTP
+> statelessness?
+>
+> The application may keep per-client state only in one instance’s memory,
+> making later requests depend on that instance.
+
 ## What to take away
 
 1. Idempotency is a real guarantee, not a convention — it is what makes
@@ -197,3 +237,35 @@ proxy, and monitoring tool built on that contract.
    HTTP/3's QUIC removes it by giving each stream independent loss recovery.
 5. Statelessness is a design constraint, not a description of reality — every
    session mechanism is built on top of it, deliberately.
+
+## Exercises
+
+> [!EXERCISE recall] How can an operation be idempotent without being
+> safe?
+>
+> **Solution:** Idempotence means repetition has the same resource effect
+> as one call. Safety means the request does not change the resource.
+> Repeated PUT can leave the same final state while still changing it,
+> unlike a safe retrieval.
+
+> [!EXERCISE apply] A resource now has ETag v12. Client A sends GET with
+> If-None-Match v12; B sends GET with If-None-Match v11; C sends an update
+> with If-Match v11. Choose each response behaviour and identify the
+> guarantee it protects.
+>
+> **Solution:** A receives 304 without a body because its cached
+> representation still matches. B receives the current full body with a
+> successful response and ETag v12 because its copy changed. C receives
+> 412 rather than overwriting a newer version, implementing optimistic
+> concurrency. Conditional retrieval saves transfer; conditional update
+> protects against stale writes.
+
+> [!EXERCISE stretch] A personalised response is cached as public for
+> speed; a proposal changes it to no-cache and claims sharing is now safe.
+> Recommend a policy.
+>
+> **Solution:** Use private or no-store according to whether local storage
+> is permitted, and configure the shared cache explicitly. A weaker answer
+> relies only on no-cache: that directive requires revalidation but does
+> not mean never store, so it does not state the intended private-storage
+> boundary.

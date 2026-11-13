@@ -9,6 +9,16 @@ different parts of the relational model in exchange for a specific access
 pattern. Choosing between them is choosing which access pattern you actually
 have, not choosing a side in a SQL-vs-NoSQL debate.
 
+> [!WHY] A document embeds every new comment and grows without bound. The
+> initial no-join convenience eventually hits the document’s size limit,
+> making the original access-pattern choice a production constraint.
+
+> [!GOALS]
+>
+> - Explain access-pattern-first persistence
+> - Choose embedding versus referencing
+> - Evaluate polyglot storage against a concrete need
+
 ## The four shapes
 
 ```text
@@ -86,6 +96,13 @@ have, not choosing a side in a SQL-vs-NoSQL debate.
     embedded in a "post" document eventually hits it.
 ```
 
+```mermaid
+flowchart TB
+  N[Nested data] --> B{Bounded and read with parent?}
+  B -->|yes| E[Embed]
+  B -->|no| R[Reference and query separately]
+```
+
 ## Consistency, revisited
 
 ```text
@@ -126,6 +143,28 @@ have, not choosing a side in a SQL-vs-NoSQL debate.
     shape, not a compromise.
 ```
 
+> [!PITFALL] An unbounded embedded child collection turns future growth
+> into a parent-document size problem.
+
+> [!INTERVIEW] State the actual query and growth pattern before naming a
+> database family; explain what ad-hoc flexibility the choice trades away.
+
+> [!CHECK] What workload fits a key-value store?
+>
+> Lookups are by a known key without expecting arbitrary other fields to
+> be equally fast.
+
+> [!CHECK] What workload fits wide-column storage?
+>
+> Very high write volume with queries designed around the partition key,
+> such as time-series data.
+
+> [!CHECK] What should a read-your-own-write use case check in an
+> eventually consistent store?
+>
+> Whether it needs an available stronger read mode instead of assuming the
+> default immediately reflects the write.
+
 ## What to take away
 
 1. NoSQL is four distinct data models, each traded against relational for a
@@ -141,3 +180,35 @@ have, not choosing a side in a SQL-vs-NoSQL debate.
    own write" may be the model working as designed, not a bug.
 5. Polyglot persistence means choosing a store per access pattern and running
    several side by side — that's the normal shape, not a compromise.
+
+## Exercises
+
+> [!EXERCISE recall] What relational flexibility do specialised NoSQL
+> access patterns often trade away?
+>
+> **Solution:** Ad-hoc filtering, joins and aggregation over arbitrary
+> columns can give way to predictable performance for preplanned key,
+> document, partition or traversal queries. A new attribute query may
+> require an index or scan rather than just a WHERE clause.
+
+> [!EXERCISE apply] A product has a small fixed collection of variants
+> read with the product and a growing review history queried separately.
+> Choose document embedding or references for each, and explain why using
+> the same approach for both is risky.
+>
+> **Solution:** Embed bounded variants that are always read with their
+> parent. Reference the independently queried, unbounded reviews so their
+> growth does not inflate the product document indefinitely. Embedding
+> both saves an initial join but ignores the different size and retrieval
+> contracts.
+
+> [!EXERCISE stretch] A team wants to migrate its whole relational
+> application to a graph store because one recommendation query traverses
+> relationships. Recommend a narrower decision.
+>
+> **Solution:** Keep relational storage for ordinary ad-hoc business
+> queries and evaluate graph storage for the relationship traversal that
+> benefits from it. A weaker answer migrates every table because one query
+> fits graphs: it gives up unrelated relational strengths without
+> demonstrating an access-pattern benefit. Polyglot persistence chooses
+> per workload, not by a single platform slogan.

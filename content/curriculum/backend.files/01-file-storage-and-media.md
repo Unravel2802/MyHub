@@ -9,6 +9,16 @@ opaque to the database, and streaming them through your application server is
 usually the wrong architecture. This chapter is the pattern for keeping the
 server out of the byte stream while still controlling who can access it.
 
+> [!WHY] A server buffers several large uploads before sending them to
+> storage. File sizes multiply by concurrent requests, consuming memory
+> for bytes the application often did not need to proxy at all.
+
+> [!GOALS]
+>
+> - Explain what a signed URL authorises
+> - Choose an upload path from byte-processing needs
+> - Design private download expiry
+
 ## Object storage vs a filesystem
 
 ```text
@@ -58,6 +68,14 @@ server out of the byte stream while still controlling who can access it.
     signed GET URL with a short expiry, rather than the app
     server streaming it through itself, or the bucket being
     public.
+```
+
+```mermaid
+flowchart TB
+  C[Client requests upload permission] --> A[App authorises key and limits]
+  A --> U[Signed PUT URL]
+  U --> D[Client uploads directly]
+  D --> O[Object storage]
 ```
 
 ## Streaming uploads, when the server must be in the path
@@ -135,6 +153,28 @@ server out of the byte stream while still controlling who can access it.
     caching a long-lived signed URL client-side.
 ```
 
+> [!PITFALL] Revoking a session does not retract an already-issued signed
+> URL that remains valid until its expiry.
+
+> [!INTERVIEW] Separate authorisation from byte transport, and state
+> whether an issued URL’s remaining lifetime meets the sensitivity
+> requirement.
+
+> [!CHECK] Why should local disk not be the permanent upload home?
+>
+> It is tied to an instance and may not survive restarts or scale across
+> machines.
+
+> [!CHECK] How should repeated on-demand image resizing avoid redundant
+> work?
+>
+> Cache generated variants so later requests reuse them.
+
+> [!CHECK] How can updated media avoid fragile edge invalidation?
+>
+> Use a changed immutable object key, such as one containing a content
+> hash.
+
 ## What to take away
 
 1. Application servers should be stateless with respect to files — never a
@@ -148,3 +188,35 @@ server out of the byte stream while still controlling who can access it.
    and serve the resized version — never the original — to a browser.
 5. Cache-bust media by changing the key (a content hash in the filename),
    not by invalidating a CDN edge cache on every update.
+
+## Exercises
+
+> [!EXERCISE recall] Which dimensions does a signed file URL scope, and
+> why can the application remain outside the byte path?
+>
+> **Solution:** It scopes an object key, HTTP method and expiry, with
+> upload constraints such as type and size where supported. The
+> application authorises the operation and issues the capability; the
+> client transfers bytes directly to object storage.
+
+> [!EXERCISE apply] A product accepts ordinary profile photos and also
+> documents that require server-side scanning before storage. Choose a
+> path for each; compare buffering four 250 MB scans with streaming
+> chunks.
+>
+> **Solution:** Use signed direct uploads for photos when the server need
+> not inspect bytes. For documents requiring in-path scanning, stream
+> through the processing path into object storage rather than retaining
+> whole bodies. Four fully buffered files require 4 × 250 = 1000 MB for
+> payloads alone; streaming avoids that whole-file accumulation, with
+> memory tied to the processing buffers rather than all file sizes.
+
+> [!EXERCISE stretch] A sensitive file has a signed GET URL valid for
+> days, and a team assumes session revocation disables it. Recommend a
+> revised access policy.
+>
+> **Solution:** Issue short-lived signed URLs after authorising each
+> access rather than retaining a long-lived URL. A weaker answer revokes
+> only the application session while keeping the days-long URL valid:
+> anyone holding the issued URL can still use it until expiry under this
+> chapter’s capability model.

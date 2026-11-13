@@ -10,6 +10,17 @@ almost certainly isn't one. Recognizing when a problem you're facing belongs
 to this category is worth knowing before spending real engineering effort
 trying to beat it.
 
+> [!WHY] A planner’s exact optimisation stalls as customer constraints
+> grow. Recognising an NP-hard shape can redirect effort toward a bounded
+> approximation or a small exact instance before the roadmap depends on an
+> efficient exact solver nobody has found.
+
+> [!GOALS]
+>
+> - Explain undecidable versus unknown efficient solution
+> - Choose the direction of a hardness reduction
+> - Recommend a tractable compromise
+
 ## Decidability: problems with no algorithm at all
 
 ```text
@@ -108,6 +119,14 @@ trying to beat it.
     proof reduces FROM an already-known NP-complete problem.
 ```
 
+
+```mermaid
+flowchart TB
+  B[Known hard problem B] -->|polynomial transform| A[New problem A]
+  A --> S[Hypothetical fast A solver]
+  S --> R[Answer for original B]
+```
+
 ## What to actually do with an NP-complete problem
 
 ```text
@@ -152,6 +171,28 @@ trying to beat it.
     together — choose which one you're willing to give up."
 ```
 
+> [!PITFALL] Reducing your problem to a known hard problem does not prove
+> your problem is hard; the hardness proof needs the opposite direction.
+
+> [!INTERVIEW] State whether you need exactness, a quality bound or only
+> practical usefulness. For a hardness claim, explicitly give the
+> direction of the polynomial reduction.
+
+> [!CHECK] Does P lie inside NP?
+>
+> Yes. A polynomial-time solution also permits polynomial-time
+> verification.
+
+> [!CHECK] What two properties define NP-completeness?
+>
+> Membership in NP and a polynomial-time reduction from every problem in
+> NP.
+
+> [!CHECK] Does NP-hardness rule out exact solutions for small inputs?
+>
+> No. It concerns scaling; an exponential solver can still be acceptable
+> on genuinely small instances.
+
 ## What to take away
 
 1. The halting problem is provably undecidable — not "unsolved," but proven
@@ -171,3 +212,35 @@ trying to beat it.
    (a provable bound), heuristics (no guarantee, works well in practice),
    accepting exponential cost at small scale, or restricting the problem to
    a tractable special case.
+
+## Exercises
+
+> [!EXERCISE recall] How does the general halting problem differ from an
+> NP-complete problem’s lack of a known efficient exact solution?
+>
+> **Solution:** The halting problem has a proof that no algorithm decides
+> every program-input pair correctly. NP-complete problems are decidable
+> and solutions are efficiently verifiable, but no general polynomial-time
+> exact algorithm is known; P versus NP remains open.
+
+> [!EXERCISE apply] A team wants to show a new allocation decision problem
+> A is NP-hard using a known NP-complete problem B. Choose the
+> transformation direction and explain how a hypothetical fast A solver
+> would be used.
+>
+> **Solution:** Transform every instance of B into an instance of A in
+> polynomial time, preserving the answer. Solve the transformed instance
+> using the hypothetical fast A solver, then interpret its answer for B.
+> This makes a fast A solver solve B. Reducing A to B would only show A
+> can use a B solver, not establish A’s hardness.
+
+> [!EXERCISE stretch] An exact route optimiser exceeds its runtime budget
+> on large inputs, while dispatch accepts a non-optimal route. Recommend
+> options and distinguish a genuine guarantee from a weaker answer.
+>
+> **Solution:** Choose a bounded approximation when a provable quality
+> bound is required; use a heuristic when empirical route quality
+> suffices, measuring realistic inputs. Small instances can still use
+> exact search, or a tractable restriction may help. A weaker answer calls
+> any nearest-neighbour heuristic an approximation guarantee: practical
+> success alone supplies no bound on distance from optimality.

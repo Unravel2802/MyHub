@@ -8,6 +8,16 @@ Before neural language models, text processing was a pipeline of explicit steps.
 Most of it has been superseded, and a meaningful minority remains the right tool —
 particularly where speed, interpretability or exact matching matter.
 
+> [!WHY] A search feature misses an exact product identifier while a large
+> model adds latency to a task that needs literal matching. A classical
+> baseline can establish whether that operational cost buys useful signal.
+
+> [!GOALS]
+>
+> - Explain static versus contextual word representations
+> - Compute TF-IDF with a stated log base
+> - Choose preprocessing appropriate to a modern model
+
 ## The classical pipeline
 
 ```text
@@ -54,6 +64,13 @@ particularly where speed, interpretability or exact matching matter.
 **BM25 is the classical technique most worth knowing today.** It is fast, needs no
 training, is fully interpretable, and complements embeddings rather than competing
 with them.
+
+```mermaid
+flowchart TB
+  T[Term count in document] --> W[TF times inverse document frequency]
+  D[Document frequency in corpus] --> W
+  W --> R[Sparse retrieval or classifier]
+```
 
 ## Word embeddings
 
@@ -146,6 +163,27 @@ The over-normalisation point is worth flagging: classical pipelines lowercased a
 stripped punctuation because sparse features needed it, and applying those habits
 before a modern model discards information the model would have used.
 
+> [!PITFALL] Classical normalization can discard casing and small words
+> that a contextual model would have used.
+
+> [!INTERVIEW] Explain what the simplest exact-match or sparse baseline
+> achieves before paying for a larger model.
+
+> [!CHECK] Why can BM25 complement dense retrieval?
+>
+> It handles exact terms, identifiers and rare names well rather than
+> depending only on semantic similarity.
+
+> [!CHECK] How do stemming and lemmatization differ?
+>
+> Stemming chops suffixes and may produce nonwords; lemmatization uses
+> linguistic/dictionary information to return real forms.
+
+> [!CHECK] When is a regular expression a reasonable extraction tool?
+>
+> For structured patterns such as known identifier or date formats, where
+> a language model adds unnecessary machinery.
+
 ## What to take away
 
 1. BM25 is the classical technique most worth knowing today — fast, untrained,
@@ -162,3 +200,34 @@ before a modern model discards information the model would have used.
    normalisation — before a modern model; it discards signal the model would use.
 
 Next: interpretability.
+
+## Exercises
+
+> [!EXERCISE recall] What limitation of static word embeddings do
+> contextual embeddings remove?
+>
+> **Solution:** A static type has one vector across different senses; a
+> contextual representation can differ for each occurrence according to
+> its surrounding text.
+
+> [!EXERCISE apply] Use base-10 logs and raw term counts in TF-IDF. A
+> document contains term R three times and term C twice; a 1,000-document
+> corpus contains R in 10 documents and C in all 1,000. Compute both
+> weights and compare their role.
+>
+> **Solution:** TF-IDF(t,d) = tf(t,d)×log(N/df(t)). R has N/df = 1,000/10
+> = 100 and log10(100)=2, so its weight is 3×2=6. C has N/df =
+> 1,000/1,000=1 and log10(1)=0, so its weight is 2×0=0. Under this
+> explicitly unsmoothed formula, the corpus-wide term contributes no
+> distinguishing weight despite its document count.
+
+> [!EXERCISE stretch] A transformer pipeline inherits lowercasing,
+> stopword removal and stemming from an older sparse classifier. Recommend
+> a review.
+>
+> **Solution:** Remove inherited transformations that destroy signal the
+> modern model expects, rather than applying the classical recipe
+> automatically. Preserve meaningful casing and words unless the actual
+> model’s input design requires otherwise. A weaker answer keeps all old
+> steps because they improved sparse features: that evidence does not
+> establish they suit contextual/subword inputs.

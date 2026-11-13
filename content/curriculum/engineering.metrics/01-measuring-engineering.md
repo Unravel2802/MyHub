@@ -10,6 +10,16 @@ that stops measuring what it was meant to the moment it becomes a target,
 is one of the most reliable, predictable traps in all of management,
 appearing again and again across genuinely different domains.
 
+> [!WHY] A team doubles deployment frequency and celebrates while more
+> releases break users. The speed number has improved, but measuring it
+> alone conceals the stability cost the process was supposed to avoid.
+
+> [!GOALS]
+>
+> - Explain Goodhart’s law
+> - Evaluate delivery speed alongside failure rate
+> - Choose evidence for individual impact
+
 ## Goodhart's law: the single idea underneath this entire chapter
 
 ```text
@@ -156,6 +166,33 @@ appearing again and again across genuinely different domains.
     HONEST, bounded, and pointed at what actually matters.
 ```
 
+```mermaid
+flowchart TB
+  S[Speed measurement] --> J[Joint delivery assessment]
+  Q[Quality measurement] --> J
+  J --> O[Outcome-focused improvement]
+```
+
+> [!PITFALL] Counting commits or lines creates a target people can inflate
+> without improving maintainability or user outcomes.
+
+> [!INTERVIEW] Say which real outcome a proxy represents and what
+> counterweight keeps it honest.
+
+> [!CHECK] What period does lead time for changes measure here?
+>
+> From a commit being written until that change is running in production.
+
+> [!CHECK] What does time to restore service capture?
+>
+> How long an incident takes to resolve once it starts, a stability
+> measure alongside failure rate.
+
+> [!CHECK] Why can a daily-active-user target mislead?
+>
+> Manipulative notifications can increase openings without improving the
+> product for users.
+
 ## What to take away
 
 1. Goodhart's law — a measure used as a target stops being a good measure —
@@ -177,3 +214,30 @@ appearing again and again across genuinely different domains.
    for can drift into actively harming the real thing — the defense is
    deliberately pairing metrics (speed with quality, the same shape as an
    error budget) so the optimization stays honest and bounded.
+
+## Exercises
+
+> [!EXERCISE recall] What does Goodhart’s law predict when a proxy becomes
+> a rewarded target?
+>
+> **Solution:** People optimize the measured number, which can detach from
+> the intended outcome. More verbose code can raise a lines-of-code target
+> while reducing real productivity.
+
+> [!EXERCISE apply] In two equal four-week periods, a team moves from 20
+> deployments with 1 user-facing failure to 40 with 6. Compute frequency
+> per week and failure rate. Is the higher frequency alone enough to claim
+> improvement?
+>
+> **Solution:** Frequency increases from 20 ÷ 4 = 5 per week to 40 ÷ 4 = 10. Failure rate rises from 1 ÷ 20 = 5% to 6 ÷ 40 = 15%, tripling. The
+> team ships twice as often but with a worse failure fraction; assess both
+> speed and stability rather than declaring success from frequency alone.
+
+> [!EXERCISE stretch] A manager proposes ranking engineers solely by
+> commits per week. Recommend an impact assessment.
+>
+> **Solution:** Use concrete qualitative examples of impact, correctness,
+> maintainability, problem-solving and peer input, as described in the
+> chapter, while using delivery metrics for team-process health. A weaker
+> answer keeps the ranking and asks people not to game it: splitting
+> commits can raise the count without increasing genuine value.

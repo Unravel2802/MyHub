@@ -9,6 +9,16 @@ chapter is the operational side: the tools and artifacts (a certificate, a
 load balancer's health check, a traceroute) that an engineer actually
 configures and debugs when a networked system misbehaves in production.
 
+> [!WHY] A backend passes a TCP health probe while its database connection
+> is broken. The load balancer continues routing users to an instance that
+> is alive but unable to complete the actual request.
+
+> [!GOALS]
+>
+> - Explain the certificate verification chain
+> - Interpret incomplete traceroute evidence
+> - Design meaningful load-balancer health checks
+
 ## TLS certificates: the chain of trust, made concrete
 
 ```text
@@ -29,15 +39,20 @@ configures and debugs when a networked system misbehaves in production.
 ```
 
 ```text
-  → EXPIRY is the most common real-world TLS incident: a
-    certificate silently expiring (often because a manual
-    renewal process was forgotten) takes a service from working
-    to completely broken for every client, instantly, at a
-    specific known moment — which is exactly why automated
-    renewal (Let's Encrypt's ACME protocol, a managed cloud
-    certificate) has become the default rather than a nice-to-
-    have: it removes a human's memory from a failure mode with
-    zero warning and total impact.
+  → EXPIRY is the most common real-world TLS incident: a certificate
+    silently expiring (often because a manual renewal process was forgotten)
+    takes a service from working to completely broken for every client,
+    instantly, at a specific known moment — which is exactly why automated
+    renewal (Let's Encrypt's ACME protocol, a managed cloud certificate) has
+    become the default rather than a nice-to-have: it removes a human's
+    memory from a failure mode with zero warning and total impact.
+```
+
+```mermaid
+flowchart TB
+  L[Server leaf certificate] --> I[Intermediate authority]
+  I --> R[Client-trusted root]
+  R --> V[Verified chain]
 ```
 
 ## Load balancers: distributing traffic, and detecting failure
@@ -158,13 +173,34 @@ configures and debugs when a networked system misbehaves in production.
 ```
 
 ```text
-  → default-deny's failure mode is annoying but SAFE; default-
-    allow's failure mode is invisible and DANGEROUS — this
-    asymmetry is why default-deny is the standard recommendation
-    for any genuinely security-sensitive boundary, even though
-    it means more upfront configuration work to explicitly
-    allow legitimate traffic.
+  → default-deny's failure mode is annoying but SAFE; default-allow's
+    failure mode is invisible and DANGEROUS — this asymmetry is why
+    default-deny is the standard recommendation for any genuinely
+    security-sensitive boundary, even though it means more upfront
+    configuration work to explicitly allow legitimate traffic.
 ```
+
+> [!PITFALL] An open TCP port can pass a probe even when the dependencies
+> needed for real requests are unusable.
+
+> [!INTERVIEW] Distinguish reachability, probe response, certificate
+> verification and application readiness before choosing the failing
+> network layer.
+
+> [!CHECK] Why automate certificate renewal?
+>
+> A missed manual expiry can abruptly break all validating clients at a
+> known deadline.
+
+> [!CHECK] Why prefer default-deny for sensitive firewall boundaries?
+>
+> A forgotten allow rule creates a visible blocked legitimate path rather
+> than silently admitting unintended traffic.
+
+> [!CHECK] Why use content-hashed CDN URLs on update?
+>
+> A new immutable URL avoids waiting for a global purge of the old cached
+> name.
 
 ## What to take away
 
@@ -183,3 +219,33 @@ configures and debugs when a networked system misbehaves in production.
 5. Default-deny fails safely (annoying but visible); default-allow fails
    dangerously (invisible until exploited) — this asymmetry is why
    default-deny is the standard for a security-sensitive network boundary.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a server need to supply its leaf certificate
+> and intermediates, rather than only a valid-looking leaf?
+>
+> **Solution:** The client must build a chain to a root it already trusts.
+> Without the intermediate, a client that has not cached it may be unable
+> to verify the leaf even if another client with a warm cache succeeds.
+
+> [!EXERCISE apply] Traceroute reports hop 1 at 2 ms, hop 2 at 4 ms, no
+> response from hop 3, hop 4 at 70 ms and the destination at 72 ms. Choose
+> what evidence to investigate and whether replacing hop 3 is justified.
+>
+> **Solution:** The destination is reached, so the intermediate
+> nonresponse alone does not prove a broken router; some routers ignore
+> probes. The observed large increase is between the last responding hop 2
+> and hop 4: 70 − 4 = 66 ms. Investigate that interval without claiming
+> the missing probe identifies the exact failing device. A successful
+> destination and an ignored probe are different observations.
+
+> [!EXERCISE stretch] A TCP-open health check keeps an instance in
+> rotation while every real request fails on a dead database dependency.
+> Recommend a health criterion rather than a longer caller timeout.
+>
+> **Solution:** Check meaningful request-serving dependencies through a
+> health endpoint so failed backends can leave rotation. A weaker answer
+> only increases timeouts: the open port remains a false indication of
+> readiness, and users simply wait longer for the same unusable service. A
+> process being alive is not the whole service contract.

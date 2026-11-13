@@ -11,6 +11,17 @@ sitting somewhere an attacker (or a careless commit) can find it. Most
 secrets leaks aren't sophisticated attacks; they're a secret ending up
 somewhere it was never meant to be, by an ordinary, easy mistake.
 
+> [!WHY] A debug line copies a live token into centralized logs, and
+> deleting the line leaves earlier copies accessible. The exposure has
+> spread beyond the credential’s intended audience and needs a lifecycle
+> response.
+
+> [!GOALS]
+>
+> - Explain the distinct roles of DEK and KEK
+> - Evaluate envelope rotation work
+> - Choose containment for a committed credential
+
 ## The most common leak: committed to git
 
 ```text
@@ -105,6 +116,14 @@ somewhere it was never meant to be, by an ordinary, easy mistake.
     theoretically-nice-but-operationally-infeasible idea).
 ```
 
+```mermaid
+flowchart TB
+  K[KEK in key service] --> W[Wrap DEK]
+  D[Local DEK] --> E[Encrypt data]
+  W --> S[Store wrapped DEK and ciphertext]
+  E --> S
+```
+
 ## Rotation: planned, not just reactive
 
 ```text
@@ -124,15 +143,13 @@ somewhere it was never meant to be, by an ordinary, easy mistake.
 ```
 
 ```text
-  → a rotation process that's NEVER been run outside of a real
-    incident is a real, common failure mode — the SAME "an
-    untested backup is a hope" lesson from the running-
-    databases-in-production chapter, applied to key rotation:
-    if the FIRST time you rotate a key is during an actual
-    emergency, you're debugging the rotation PROCESS itself
-    while ALSO responding to a live incident, which is
-    genuinely the worst possible moment to discover it doesn't
-    actually work cleanly.
+  → a rotation process that's NEVER been run outside of a real incident is a
+    real, common failure mode — the SAME "an untested backup is a hope"
+    lesson from the running-databases-in-production chapter, applied to key
+    rotation: if the FIRST time you rotate a key is during an actual
+    emergency, you're debugging the rotation PROCESS itself while ALSO
+    responding to a live incident, which is genuinely the worst possible
+    moment to discover it doesn't actually work cleanly.
 ```
 
 ## Secrets in logs: the leak nobody notices
@@ -155,6 +172,26 @@ somewhere it was never meant to be, by an ordinary, easy mistake.
     single time, everywhere in a growing codebase.
 ```
 
+> [!PITFALL] Environment variables avoid source hardcoding but can still
+> leak through dumps, tooling or logs.
+
+> [!INTERVIEW] Distinguish rotating a key from merely removing one visible
+> copy of it.
+
+> [!CHECK] Why run rotation before an emergency?
+>
+> Regular execution exercises the process so an incident does not become
+> its first operational test.
+
+> [!CHECK] What does a secrets manager add beyond a plain variable?
+>
+> Central access control, access audit records and rotation support.
+
+> [!CHECK] Where should known-sensitive log fields be masked?
+>
+> At the structured logging layer, so protection does not depend on each
+> engineer remembering every call site.
+
 ## What to take away
 
 1. A secret committed to git remains in history even after the file is
@@ -174,3 +211,32 @@ somewhere it was never meant to be, by an ordinary, easy mistake.
    catches secret leaks in log lines that no individual engineer
    remembered to avoid — a systemic fix rather than relying on discipline
    alone.
+
+## Exercises
+
+> [!EXERCISE recall] Which key encrypts the data in envelope encryption,
+> and which wraps that key?
+>
+> **Solution:** The DEK encrypts the actual content locally; the KEK held
+> in a secure key-management service encrypts the DEK. Stored content
+> includes ciphertext and the wrapped DEK.
+
+> [!EXERCISE apply] Assume 400 files of 25 MB each, with a 32-byte DEK per
+> file. For a planned KEK rotation, compare content volume with raw DEK
+> material to rewrap; ignore metadata and encryption expansion. Does
+> planned KEK rotation inherently require re-encrypting all content?
+>
+> **Solution:** Content totals 400 × 25 = 10,000 MB. DEK material totals
+> 400 × 32 = 12,800 bytes. Planned KEK rotation rewraps the small DEKs
+> rather than re-encrypting all 10,000 MB of content. The byte count is
+> key material under the stated simplifications, not an estimate of
+> network calls or total protocol traffic.
+
+> [!EXERCISE stretch] A production API key was committed and later removed
+> from the latest source. Recommend the necessary response and prevention.
+>
+> **Solution:** Treat the exposed credential as compromised and rotate it.
+> Prevent recurrence with secret scanning before commits and ignored local
+> secret files; keep real values out of infrastructure definitions. A
+> weaker answer only deletes the current line: past commits and existing
+> clones can still contain the credential.

@@ -9,6 +9,16 @@ learned relevance. It replaced recurrence because it is parallel, because it has
 no information bottleneck, and because the path between any two positions is a
 single step rather than a chain.
 
+> [!WHY] A decoder’s validation improves after a masking change, but the
+> change lets each position read future tokens. The apparent gain
+> disappears during generation, when those tokens do not exist yet.
+
+> [!GOALS]
+>
+> - Explain query-key-value soft lookup
+> - Compute a masked weighted-value output
+> - Choose an exact attention-memory optimization
+
 ## The mechanism
 
 ```text
@@ -43,6 +53,14 @@ single step rather than a chain.
 variance proportional to d, so without scaling the softmax saturates for large d —
 one weight approaches 1, the rest approach 0, and the gradient vanishes. Dividing
 by √d keeps the scores in a range where softmax has useful gradients.
+
+```mermaid
+flowchart TB
+  Q[Query and keys] --> S[Dot-product scores]
+  S --> C[Scale and causal mask]
+  C --> W[Softmax weights]
+  W --> V[Weighted values]
+```
 
 ## Self-attention versus cross-attention
 
@@ -202,6 +220,27 @@ Attention maps are *suggestive* and not explanations. This is the same caution a
 the reasoning topic's warning about traces: an observable internal quantity that
 looks like an explanation is not necessarily the computation.
 
+> [!PITFALL] An attention heatmap is not by itself a causal explanation of
+> the prediction.
+
+> [!INTERVIEW] Separate score computation, masking and value aggregation,
+> then name which resource an optimization changes.
+
+> [!CHECK] How do self- and cross-attention differ?
+>
+> Self-attention takes Q, K and V from one sequence; cross-attention takes
+> queries from one and keys/values from another.
+
+> [!CHECK] Why divide scores by the square root of dimension?
+>
+> It controls score scale so the softmax is less likely to saturate and
+> lose useful gradients.
+
+> [!CHECK] How can multiple heads keep the same overall compute scale?
+>
+> Each head operates in a narrower share of the total dimensionality
+> rather than adding a full-width attention independently.
+
 ## What to take away
 
 1. Attention is a soft lookup: query against keys, normalise, return a weighted
@@ -217,3 +256,34 @@ looks like an explanation is not necessarily the computation.
    explanatory.
 
 Next: what the representations inside these models are for.
+
+## Exercises
+
+> [!EXERCISE recall] What do the query, key and value contribute to a soft
+> lookup?
+>
+> **Solution:** The query expresses what is sought, keys express what
+> positions offer, and values supply the content blended according to
+> normalized query-key matches.
+
+> [!EXERCISE apply] At query position 2, raw scores for positions 1, 2 and
+> 3 are [4,4,100], with d=4. Their values are [(2,0),(0,6),(100,100)].
+> Apply a causal mask including the current position, then find weights
+> and output. Equal unmasked scores receive equal softmax weights.
+>
+> **Solution:** Use scaled scores = scores/sqrt(d), then mask forbidden
+> positions before softmax. sqrt(4)=2, so the scores are [2,2,50]; masking
+> the future position gives [2,2,−inf]. Normalization gives weights
+> [0.5,0.5,0]. Output = sum_i weights_i×v_i =
+> 0.5×(2,0)+0.5×(0,6)+0×(100,100) = (1,0)+(0,3)+(0,0) = (1,3). The large
+> future score must not influence the result.
+
+> [!EXERCISE stretch] A long-sequence run runs out of memory materializing
+> the attention matrix, but the team wants to preserve exact attention.
+> Recommend an approach and its limit.
+>
+> **Solution:** Use FlashAttention’s tiled computation to avoid
+> materializing the full matrix while preserving the attention result. A
+> weaker answer substitutes an approximate linear-attention rule and calls
+> it identical: that changes the computation. The exact memory improvement
+> does not make full attention’s arithmetic linear in sequence length.

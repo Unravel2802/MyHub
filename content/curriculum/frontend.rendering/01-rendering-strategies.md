@@ -9,6 +9,16 @@ are two separate questions, and every rendering strategy answers them
 differently. Confusing the strategies usually comes from not keeping those
 two questions apart.
 
+> [!WHY] A server-rendered page looks ready but its buttons do not respond
+> until a large client bundle hydrates. Delivering HTML early has not
+> removed the separate cost of making the interactive parts work.
+
+> [!GOALS]
+>
+> - Explain HTML delivery versus interactivity
+> - Choose rendering by page needs
+> - Design streaming around a slow section
+
 ## The spectrum
 
 ```text
@@ -110,6 +120,15 @@ two questions apart.
     wait for the slow one before seeing the nine.
 ```
 
+```mermaid
+flowchart TB
+  R[Request page] --> S[Send shell and fast sections]
+  R --> W[Slow widget fetch]
+  S --> P[Visible placeholder]
+  W --> C[Stream completed widget]
+  P --> C
+```
+
 ## Choosing by page type
 
 ```text
@@ -149,6 +168,26 @@ two questions apart.
     whole site.
 ```
 
+> [!PITFALL] Complete-looking HTML and completed hydration are not the
+> same state.
+
+> [!INTERVIEW] State when HTML is created, when bytes arrive and which
+> client regions must hydrate before calling a page fast.
+
+> [!CHECK] Where is SSG’s HTML produced?
+>
+> At build time, then served without per-request rendering work.
+
+> [!CHECK] What work does SSR add on each request?
+>
+> The server produces that request’s HTML before the client hydrates its
+> interactive parts.
+
+> [!CHECK] How can server components reduce client-side work?
+>
+> They ship no JavaScript for themselves, leaving only genuinely
+> interactive regions to pay client costs.
+
 ## What to take away
 
 1. Rendering strategy and interactivity timing are two separate questions —
@@ -166,3 +205,36 @@ two questions apart.
 5. These strategies commonly mix within one application — matching the
    strategy to what each page specifically needs beats picking one strategy
    site-wide.
+
+## Exercises
+
+> [!EXERCISE recall] Why does visible server-rendered HTML not establish
+> that client interactions are ready?
+>
+> **Solution:** Hydration still needs client JavaScript to load, parse and
+> attach the interactive model to existing HTML. The visible page can
+> precede that work, so first bytes, first paint and interaction readiness
+> are separate observations.
+
+> [!EXERCISE apply] Choose strategies for a public guide that updates
+> without a full rebuild, a personalised account dashboard and a highly
+> interactive design editor with little SEO need. State the decisive
+> requirement for each.
+>
+> **Solution:** ISR suits the guide’s prebuilt content with background
+> regeneration. SSR or CSR suits genuinely user-dependent dashboard data
+> rather than one identical build artifact for everyone. A CSR-heavy
+> editor can suit work dominated by interaction after loading. The
+> application can mix these strategies instead of enforcing one page model
+> everywhere.
+
+> [!EXERCISE stretch] One slow recommendations widget delays an otherwise
+> ready page. Recommend how to deliver useful content earlier and contrast
+> a weaker wait-for-everything policy.
+>
+> **Solution:** Stream the shell and ready sections while a placeholder
+> marks the slow widget, then fill it when its data arrives. A weaker
+> answer withholds all HTML until the slowest dependency resolves: it
+> makes users wait for unavailable secondary content before seeing
+> already-ready information. Streaming improves delivery timing; it does
+> not by itself erase hydration cost.

@@ -9,6 +9,16 @@ ships. Built in from the start, most of it is nearly free — semantic HTML
 and correct focus management cost little more than the alternative, and they
 determine whether a real percentage of users can use the product at all.
 
+> [!WHY] A checkout modal appears but keyboard focus remains on the page
+> underneath. A customer can see the next step yet cannot reach its
+> controls, so a visually complete flow still prevents completion.
+
+> [!GOALS]
+>
+> - Explain native button behaviour
+> - Trace focus through a modal lifecycle
+> - Choose contrast rules for readable text
+
 ## Semantic HTML is the foundation, not decoration
 
 ```text
@@ -76,6 +86,14 @@ determine whether a real percentage of users can use the product at all.
     RESTORED to whatever triggered it on close — three explicit
     steps, none of which happen automatically just from
     rendering a modal-looking div.
+```
+
+```mermaid
+flowchart TB
+  T[Trigger opens modal] --> M[Move focus inside]
+  M --> K[Keep keyboard focus within modal]
+  K --> C[Close modal]
+  C --> R[Restore actual trigger focus]
 ```
 
 ## ARIA: filling gaps, not a cure-all
@@ -153,6 +171,27 @@ determine whether a real percentage of users can use the product at all.
                                                it TWICE
 ```
 
+> [!PITFALL] A modal-looking overlay is not keyboard interaction; focus
+> must move in, remain contained and return on close.
+
+> [!INTERVIEW] Explain role, accessible name, keyboard operation and focus
+> lifecycle separately; a screenshot establishes none of them by itself.
+
+> [!CHECK] How should an icon-only delete button get a usable name?
+>
+> Give it an accessible name such as Delete item and keep the decorative
+> icon from duplicating that announcement.
+
+> [!CHECK] Does ARIA implement the behaviour implied by a role?
+>
+> No. It describes role and state; the actual keyboard behaviour must
+> exist too.
+
+> [!CHECK] What order should normal keyboard traversal follow?
+>
+> The page’s logical and visual order, rather than an independently
+> maintained positive-tabindex sequence.
+
 ## What to take away
 
 1. Reach for semantic HTML first — a button, nav, or label comes with free
@@ -172,3 +211,34 @@ determine whether a real percentage of users can use the product at all.
    either passes WCAG AA or it doesn't, and it's worth verifying before
    shipping a color pairing that looks clean but is genuinely unreadable for
    low vision.
+
+## Exercises
+
+> [!EXERCISE recall] What does choosing a native button supply that a
+> click handler on a div does not?
+>
+> **Solution:** It supplies native keyboard focusability, activation with
+> Space and Enter, and a button role for assistive technology. Recreating
+> the visual shape on a div does not implement those behaviours.
+
+> [!EXERCISE apply] Two buttons can open the same address editor. A
+> keyboard user opens it from the second button, tabs through the fields,
+> then closes it. Choose focus behaviour at all three stages and compare
+> tabindex=-1 with positive tabindex for a programmatically focused
+> heading.
+>
+> **Solution:** Move focus into the editor on open, keep Tab within its
+> controls while open, and return focus to the actual second trigger on
+> close. A heading can use tabindex=-1 for programmatic focus without
+> entering normal Tab order. A positive tabindex instead reorders the
+> page’s sequence and is not the mechanism needed for the heading.
+
+> [!EXERCISE stretch] A design uses 4:1 contrast for both normal and large
+> text and calls it acceptable because large text passes. Recommend a
+> review decision.
+>
+> **Solution:** Require at least 4.5:1 for the normal text; 4:1 already
+> exceeds the chapter’s 3:1 large-text threshold. Adjust the normal-text
+> colour pairing and measure it. A weaker answer approves every size using
+> the large-text rule, leaving normal text below its distinct requirement.
+> Visual cleanliness is not the numerical contrast test.

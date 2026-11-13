@@ -10,6 +10,17 @@ without a rewrite. Most i18n bugs aren't translation mistakes — they're
 layout and logic that quietly assumed English's specific rules were
 universal.
 
+> [!WHY] A translated action label wraps into an adjacent control while
+> spacing remains pinned to the left in an RTL locale. Translating strings
+> without designing for direction and expansion can make the localised
+> screen harder to use.
+
+> [!GOALS]
+>
+> - Explain internationalization versus localization
+> - Choose flexible direction-aware layout
+> - Choose locale-aware formatting and comparison
+
 ## Pluralization is not just "add an s"
 
 ```text
@@ -101,6 +112,14 @@ universal.
     manually overridden per-direction otherwise.
 ```
 
+```mermaid
+flowchart TB
+  L[Viewer locale] --> D[Reading direction]
+  D --> P[Logical inline spacing]
+  L --> T[Translated label lengths]
+  T --> F[Flexible layout]
+```
+
 ## Locale-aware sorting and comparison
 
 ```text
@@ -126,6 +145,28 @@ universal.
     argument is the fix, not a manual accent-stripping hack.
 ```
 
+> [!PITFALL] Physical left/right spacing and fixed English label widths do
+> not adapt just because the string was translated.
+
+> [!INTERVIEW] Distinguish translated text, plural rules, locale
+> formatting and layout direction; each carries a separate English-only
+> assumption to remove.
+
+> [!CHECK] Why does an English singular/plural ternary not generalise?
+>
+> Other locales use different plural categories, so delegate selection to
+> locale rules such as CLDR-backed handling.
+
+> [!CHECK] What is the chapter’s text-expansion lesson?
+>
+> Short English labels do not predict translated length; many translations
+> require substantially more space.
+
+> [!CHECK] Why can the same slash-form date be ambiguous?
+>
+> Different locales assign different month/day ordering to the same
+> numeric string.
+
 ## What to take away
 
 1. Pluralization rules vary far beyond English's two forms — delegate to a
@@ -144,3 +185,35 @@ universal.
    a human reader of a given language expects accented characters or
    language-specific ordering — `localeCompare` with the right locale is the
    fix.
+
+## Exercises
+
+> [!EXERCISE recall] How do internationalization and localization divide
+> the work?
+>
+> **Solution:** Internationalization builds the structure that permits
+> locale adaptation without a rewrite; localization supplies the actual
+> translations and locale-specific presentation. Hardcoded English
+> assumptions in layout or rules obstruct the latter.
+
+> [!EXERCISE apply] A settings row uses fixed-width labels and margin-left
+> between an icon and text. It must support longer translations and a
+> right-to-left reading direction. Choose changes and explain why
+> translating the labels alone is insufficient.
+>
+> **Solution:** Allow flexible minimum sizes and wrapping where
+> appropriate so expansion does not collide with neighbouring controls.
+> Replace physical left spacing with the relevant logical inline-start or
+> inline-end property and apply the document direction. Translation alone
+> changes text but leaves the old width and physical spacing assumptions
+> intact.
+
+> [!EXERCISE stretch] A multilingual report hardcodes slash dates and uses
+> default string sorting for accented names. Recommend a display contract.
+>
+> **Solution:** Format dates and numbers through Intl using the viewer’s
+> locale, and compare names with locale-aware collation such as
+> localeCompare for that locale. A weaker answer strips accents and keeps
+> one hardcoded numeric date format: it discards language information and
+> leaves an ambiguous date convention rather than respecting the reader’s
+> rules.

@@ -9,6 +9,16 @@ compatible if their SHAPES match, regardless of name. That single design
 choice explains most of what feels surprising coming from a nominally-typed
 language, and it's the foundation everything else in this chapter builds on.
 
+> [!WHY] An API response is marked any and a misspelled nested access
+> compiles. The apparent type-checking safety has been switched off at the
+> boundary where the data was least trustworthy.
+
+> [!GOALS]
+>
+> - Explain structural compatibility
+> - Choose typed states and unknown input handling
+> - Preserve valid narrowing across delayed work
+
 ## Structural typing
 
 ```text
@@ -104,6 +114,14 @@ language, and it's the foundation everything else in this chapter builds on.
     }
 ```
 
+```mermaid
+flowchart TB
+  U[Union value] --> C[Check current discriminant]
+  C --> S[Success: data]
+  C --> E[Error: message]
+  C --> W[Waiting]
+```
+
 ## `any` vs `unknown`
 
 ```text
@@ -135,9 +153,9 @@ language, and it's the foundation everything else in this chapter builds on.
 ## Modeling a domain the compiler checks
 
 ```text
-  this is the type-design chapter's illegal-states-
-  unrepresentable discipline, and TypeScript is simply where
-  this project applies it directly:
+  this is the type-design chapter's illegal-states-unrepresentable
+  discipline, and TypeScript is simply where this project applies
+  it directly:
 
     type LoadState<T> =
       | { status: "idle" }
@@ -176,6 +194,29 @@ language, and it's the foundation everything else in this chapter builds on.
     opt-in flag.
 ```
 
+> [!PITFALL] A cast at an async use site does not prove that a mutable
+> value still satisfies an earlier narrowing check.
+
+> [!INTERVIEW] Separate structural assignability, boundary validation and
+> control-flow narrowing; a compile-time annotation is not runtime
+> evidence about external bytes.
+
+> [!CHECK] What does a generic parameter let first<T> preserve?
+>
+> The input element type is reflected in the result without writing
+> separate implementations per concrete type.
+
+> [!CHECK] Why can excess-property checks differ for a direct literal and
+> a variable?
+>
+> The special excess check applies to a fresh literal, while a variable
+> can satisfy structural requirements with extra fields.
+
+> [!CHECK] What option surfaces missing array entries in indexing types?
+>
+> noUncheckedIndexedAccess adds possible absence so callers must handle an
+> out-of-range result.
+
 ## What to take away
 
 1. TypeScript's typing is structural — two types are compatible if their
@@ -193,3 +234,34 @@ language, and it's the foundation everything else in this chapter builds on.
 5. TypeScript checks what you told it, not what's actually guaranteed at
    runtime — plain array indexing is a real, known gap between the two
    unless `noUncheckedIndexedAccess` is enabled.
+
+## Exercises
+
+> [!EXERCISE recall] Why can an unrelated type satisfy a TypeScript
+> interface without declaring its name?
+>
+> **Solution:** Assignability depends on the required shape, not nominal
+> identity. A value with the required fields can be compatible even if
+> another library defined it under a different name.
+
+> [!EXERCISE apply] A download is waiting, ready with bytes, or failed
+> with an error string, and its initial HTTP data is unvalidated. Choose a
+> state shape and input type that prevent blindly reading success data
+> from failure.
+>
+> **Solution:** Use a discriminated union with only the relevant payload
+> per variant: waiting; ready with bytes; failed with error. Switch on its
+> status to narrow the payload. Treat external data as unknown and check
+> or parse the required shape before constructing trusted state rather
+> than using any to permit arbitrary access. The union controls internal
+> combinations; boundary checks establish the incoming value.
+
+> [!EXERCISE stretch] A string check on obj.value happens before
+> scheduling a callback, but another action may mutate obj.value before
+> the callback executes. Recommend where to establish the guarantee.
+>
+> **Solution:** Check and narrow the current value inside the callback
+> before invoking string operations. A weaker answer casts it to string
+> based on the earlier check: that suppresses the warning without ensuring
+> the mutable property still has the same type. The delayed execution
+> needs evidence valid at its use point.

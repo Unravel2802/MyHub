@@ -9,6 +9,16 @@ count) that correlated only loosely with what a user actually experiences.
 Core Web Vitals are the industry's answer: three metrics chosen specifically
 because each maps to a real, felt moment in loading a page.
 
+> [!WHY] A page paints its hero quickly but moves the purchase button when
+> an image arrives. A fast-looking load metric has not prevented an
+> unstable interface that causes users to click the wrong place.
+
+> [!GOALS]
+>
+> - Explain the three user-experience metrics
+> - Choose remedies from concrete symptoms
+> - Design representative performance measurement
+
 ## The three Core Web Vitals
 
 ```text
@@ -70,6 +80,14 @@ because each maps to a real, felt moment in loading a page.
     rather than letting layout react to content as it arrives.
 ```
 
+```mermaid
+flowchart TB
+  R[Image requested] --> D{Space reserved?}
+  D -->|yes| S[Stable geometry while loading]
+  D -->|no| A[Arrival claims new space]
+  A --> L[Existing content shifts]
+```
+
 ## What causes poor INP
 
 ```text
@@ -81,11 +99,10 @@ because each maps to a real, felt moment in loading a page.
 ```
 
 ```text
-  → break up long synchronous work (chunk it, defer non-
-    critical parts to `requestIdleCallback` or a microtask
-    boundary) so the main thread gets control back between
-    chunks, letting the browser paint an intermediate frame
-    instead of one long unresponsive block.
+  → break up long synchronous work (chunk it, defer non-critical parts to
+    `requestIdleCallback` or a microtask boundary) so the main thread gets
+    control back between chunks, letting the browser paint an intermediate
+    frame instead of one long unresponsive block.
 ```
 
 ## Bundle size and code splitting
@@ -128,13 +145,12 @@ because each maps to a real, felt moment in loading a page.
 ## Measuring on real devices, not just a fast laptop
 
 ```text
-  a page tested only on a developer's fast laptop, fast wifi,
-  and empty browser cache measures a scenario almost no real
-  user experiences — REAL USER MONITORING (RUM, collecting
-  actual field metrics from real visitors' actual devices and
-  connections) and DEVICE/NETWORK THROTTLING in devtools both
-  exist because lab conditions systematically understate real-
-  world performance.
+  a page tested only on a developer's fast laptop, fast wifi, and empty
+  browser cache measures a scenario almost no real user experiences — REAL
+  USER MONITORING (RUM, collecting actual field metrics from real visitors'
+  actual devices and connections) and DEVICE/NETWORK THROTTLING in devtools
+  both exist because lab conditions systematically understate
+  real-world performance.
 ```
 
 ```text
@@ -144,6 +160,26 @@ because each maps to a real, felt moment in loading a page.
     look great in testing and still be genuinely slow for the
     median real user.
 ```
+
+> [!PITFALL] A good first-paint result does not establish stable layout or
+> responsive interaction.
+
+> [!INTERVIEW] Translate the complaint into loading, responsiveness or
+> stability, and evaluate that mechanism on the affected devices.
+
+> [!CHECK] Why size an image for its actual display area?
+>
+> A much larger source transfers resolution that the viewer does not use.
+
+> [!CHECK] What does font-display swap trade?
+>
+> It makes fallback text readable immediately while the custom font loads,
+> trading invisible text for a possible font swap.
+
+> [!CHECK] Why can route splitting help even on a fast network?
+>
+> Unvisited route code also avoids parsing and execution work, not only
+> transfer.
 
 ## What to take away
 
@@ -162,3 +198,35 @@ because each maps to a real, felt moment in loading a page.
    understate real-world performance — real user monitoring and throttled
    testing represent the median user far better than a developer's own
    machine.
+
+## Exercises
+
+> [!EXERCISE recall] What distinct experiences do LCP, INP and CLS
+> describe?
+>
+> **Solution:** LCP describes when the largest visible content paints, INP
+> describes interaction-to-next-paint responsiveness, and CLS describes
+> unexpected visual movement. Strong performance on one does not prove the
+> others are good.
+
+> [!EXERCISE apply] A product page shows three symptoms: its hero is late,
+> its text jumps when an image loads, and a click handler performs a long
+> synchronous calculation. Choose a targeted investigation for each
+> instead of reporting one generic slow-page defect.
+>
+> **Solution:** Investigate hero delivery and display-size/format for the
+> loading issue. Reserve image dimensions for the shift so the browser
+> allocates space before bytes arrive. Reduce or break up the synchronous
+> interaction work for responsiveness. These map to different loading,
+> stability and response mechanisms, so fixing image transfer alone cannot
+> establish that the click handler is responsive.
+
+> [!EXERCISE stretch] A developer’s idle laptop benchmark improves but
+> real phone users still report delays. Recommend a measurement plan.
+>
+> **Solution:** Collect actual field metrics with RUM and test
+> representative device and network constraints with throttling or real
+> devices. A weaker answer repeats the same fast-laptop measurement until
+> its variance shrinks: it still samples a workload and hardware
+> environment unlike the affected users. Keep the metric tied to the
+> specific user complaint.

@@ -9,6 +9,17 @@ Offline and local-first design starts from the opposite assumption — the
 network is unreliable by default — and that single reversal changes almost
 every architectural decision downstream of it.
 
+> [!WHY] A traveller submits an edit as the train loses connectivity, then
+> the sync process restarts during replay. Without a durable local queue
+> and repeated-write protection, the edit can either disappear or be
+> applied twice.
+
+> [!GOALS]
+>
+> - Explain the service-worker boundary
+> - Choose offline caches and storage by resource
+> - Choose a conflict policy that preserves intent
+
 ## Service workers: a proxy the app controls
 
 ```text
@@ -28,14 +39,12 @@ every architectural decision downstream of it.
 ```
 
 ```text
-  → this is what makes "the app still loads with no network at
-    all" possible — the service worker serves the app's SHELL
-    (HTML, CSS, JS) from a local cache instead of failing when
-    the network request has nothing to reach. it runs even when
-    the page that registered it isn't open, which is also the
-    mechanism behind PUSH NOTIFICATIONS (the Mobile and Cross-
-    Platform chapter's PWA section) arriving while the app
-    isn't running at all.
+  → this is what makes "the app still loads with no network at all" possible
+    — the service worker serves the app's SHELL (HTML, CSS, JS) from a local
+    cache instead of failing when the network request has nothing to reach.
+    it runs even when the page that registered it isn't open, which is also
+    the mechanism behind PUSH NOTIFICATIONS (the Mobile and Cross-Platform
+    chapter's PWA section) arriving while the app isn't running at all.
 ```
 
 ## Caching strategies
@@ -105,6 +114,14 @@ every architectural decision downstream of it.
     system.
 ```
 
+```mermaid
+flowchart TB
+  E[Offline edit] --> Q[Durable local queue]
+  Q --> R[Connection returns]
+  R --> S[Replay with stable operation id]
+  S --> A[Server acknowledges outcome]
+```
+
 ## Conflict resolution
 
 ```text
@@ -118,14 +135,12 @@ every architectural decision downstream of it.
                           data, a real data-loss risk for
                           anything that matters
 
-    MERGE (CRDT-based)     the Collaborative Editing: OT & CRDTs
-                          chapter's mechanism, applied at the
-                          SAME scale this project's own
-                          collaborative-editing case study
-                          covers — both
-                          edits are preserved and merged
-                          automatically, avoiding last-write-
-                          wins' silent data loss
+    MERGE (CRDT-based)    the Collaborative Editing: OT & CRDTs chapter's
+                          mechanism, applied at the SAME scale this
+                          project's own collaborative-editing case study
+                          covers — both edits are preserved and merged
+                          automatically, avoiding last-write-wins' silent
+                          data loss
 
     MANUAL RESOLUTION       surface the conflict to the USER
                           explicitly ("you edited this offline,
@@ -143,6 +158,30 @@ every architectural decision downstream of it.
     picking the wrong one silently loses data users trusted the
     app to keep.
 ```
+
+> [!PITFALL] A sync connection returning does not resolve competing edits
+> by itself; the conflict policy decides what data survives.
+
+> [!INTERVIEW] Separate offline loading, durable local writes, replay
+> identity and conflict resolution before claiming an application works
+> offline.
+
+> [!CHECK] Why does an offline replay need idempotency keys?
+>
+> An interrupted sync can resend a queued write after its earlier attempt
+> already took effect.
+
+> [!CHECK] How does stale-while-revalidate differ from waiting for the
+> network?
+>
+> It serves a cached response immediately and refreshes the cache in the
+> background.
+
+> [!CHECK] Why is localStorage better suited to small preferences than a
+> large offline database?
+>
+> Its synchronous string-only operations and smaller practical capacity
+> are a poor match for structured application data at volume.
 
 ## What to take away
 
@@ -162,3 +201,36 @@ every architectural decision downstream of it.
    product decision as much as a technical one — last-write-wins silently
    discards data, which is fine for a low-stakes preference and a real risk
    for anything that matters.
+
+## Exercises
+
+> [!EXERCISE recall] How does a service worker make an application shell
+> load without a reachable network?
+>
+> **Solution:** It runs separately from the page and intercepts requests,
+> choosing a cached shell response rather than depending entirely on a
+> network fetch. The application can define different cache/network
+> behaviour for different resources.
+
+> [!EXERCISE apply] An offline field app has stable shell assets,
+> frequently updated reference data and a large structured collection of
+> pending edits. Choose a fetch policy and storage home for each rather
+> than putting every byte in localStorage.
+>
+> **Solution:** Use cache-first for the stable shell. Use network-first
+> with cached fallback for reference data that should be current when
+> connected. Keep structured pending edits in IndexedDB with asynchronous
+> indexed and transactional handling, rather than blocking string-only
+> localStorage at application-data volume. Replay queued changes when
+> connected using a stable operation identity.
+
+> [!EXERCISE stretch] Two devices change a low-stakes display preference
+> and a high-value shared record while offline. Recommend whether one
+> last-write-wins rule should cover both.
+>
+> **Solution:** Last-write-wins may be acceptable for the preference if
+> that loss is a deliberate product choice. For the important record, use
+> a trustworthy merge model or surface manual conflict resolution when
+> automatic merging cannot preserve intent. A weaker answer silently takes
+> the latest arriving sync for both: arrival order does not establish that
+> discarding the other device’s important change is acceptable.

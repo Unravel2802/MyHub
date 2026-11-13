@@ -10,6 +10,17 @@ do, not the component's internal structure. Following that one rule
 eliminates most of the fragile, refactor-breaking tests frontend suites
 accumulate.
 
+> [!WHY] A form test replaces the data hook entirely and always returns
+> success. The real component’s loading and failure transitions remain
+> untested even though the snapshot and internal-state assertions stay
+> green.
+
+> [!GOALS]
+>
+> - Explain component versus end-to-end evidence
+> - Design a network-boundary failure test
+> - Choose assertions that survive internal refactoring
+
 ## Query by what a user perceives, not implementation details
 
 ```text
@@ -142,6 +153,14 @@ accumulate.
     whether that logic actually works.
 ```
 
+```mermaid
+flowchart TB
+  U[Real user-like interaction] --> C[Real component logic]
+  C --> N[Fake at HTTP boundary]
+  N --> L[Loading and error transitions]
+  L --> A[Assert visible behaviour]
+```
+
 ## Component tests vs end-to-end tests
 
 ```text
@@ -169,6 +188,27 @@ accumulate.
     component test in isolation can't see across that boundary.
 ```
 
+> [!PITFALL] Mocking the component’s data hook can remove the very loading
+> and error logic the test claims to prove.
+
+> [!INTERVIEW] Name the user-visible result and the boundary being faked;
+> explain what the real component still executes before trusting the test.
+
+> [!CHECK] Why can a role-and-name query expose an accessibility gap?
+>
+> The control must have the discoverable role and name assistive
+> technology also uses.
+
+> [!CHECK] What can dispatching a single synthetic click miss?
+>
+> The focus and pointer-event sequence of a real interaction, including
+> behaviour tied to focus changes.
+
+> [!CHECK] Why retain a smaller set of whole-app browser flows?
+>
+> Critical navigation and multi-step integration cross boundaries an
+> isolated subtree cannot see.
+
 ## What to take away
 
 1. Query by role and accessible name, not test-id or CSS class — it's the
@@ -186,3 +226,36 @@ accumulate.
    E2E tests prove the whole system works together — the testing pyramid
    restated for frontend, with this project's own E2E suite as the
    substitute for human review on multi-step flows.
+
+## Exercises
+
+> [!EXERCISE recall] What can an isolated component test establish that
+> still leaves a reason for end-to-end testing?
+>
+> **Solution:** It can exercise that component’s observable behaviour
+> quickly with controlled inputs. It does not establish actual routing and
+> cross-component system integration, which a real browser flow can
+> observe.
+
+> [!EXERCISE apply] A save form should show loading, then a field error
+> when its HTTP write is rejected. Choose where to fake the failure and
+> how to exercise submission, rather than replacing the save hook with an
+> error object.
+>
+> **Solution:** Intercept the network response while keeping the
+> component’s real request, loading and error handling. Find the labelled
+> inputs and submit button through their accessible interface, use a
+> realistic interaction sequence including focus/blur where relevant, and
+> assert the visible loading and error outcome. Replacing the hook removes
+> the behaviour under test rather than checking how it responds to a
+> failed request.
+
+> [!EXERCISE stretch] A dialog changes its internal state shape and markup
+> classes but preserves its visible name and interactions. Recommend
+> whether tests should still assert isOpen and a specific CSS selector.
+>
+> **Solution:** Assert the visible dialog by role and accessible name and
+> test the user actions that open and close it. A weaker answer rewrites
+> assertions around the new private state or class names: the next valid
+> refactor breaks them again even when user behaviour is unchanged.
+> Perceptible semantics are the stable contract.

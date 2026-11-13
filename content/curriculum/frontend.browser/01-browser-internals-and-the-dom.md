@@ -9,6 +9,16 @@ the render pipeline: a specific, ordered sequence of stages the browser runs
 to turn HTML/CSS/JS into pixels. Knowing which stage a given operation
 touches is what separates "this feels slow" from knowing exactly why.
 
+> [!WHY] A table resize interleaves geometry reads with style writes for
+> every row. The browser repeatedly recalculates layout synchronously, so
+> a small-looking loop can stall interaction across the entire page.
+
+> [!GOALS]
+>
+> - Explain the ordered rendering pipeline
+> - Choose a read/write schedule that avoids thrashing
+> - Move heavy computation without moving DOM ownership
+
 ## The render pipeline
 
 ```text
@@ -97,6 +107,13 @@ touches is what separates "this feels slow" from knowing exactly why.
     iteration.
 ```
 
+```mermaid
+flowchart TB
+  R[Read all needed geometry] --> V[Store measurements]
+  V --> W[Apply all style writes]
+  W --> B[Browser batches rendering work]
+```
+
 ## The main thread and blocking
 
 ```text
@@ -152,6 +169,29 @@ touches is what separates "this feels slow" from knowing exactly why.
     on the parent, not on each row.
 ```
 
+> [!PITFALL] Extracting a blocking function does not move it off the main
+> thread, just as shortening a loop does not change its layout
+> dependencies.
+
+> [!INTERVIEW] Name the operation that invalidates geometry and the later
+> read that demands it synchronously; diagnose a pipeline mechanism rather
+> than calling the page janky.
+
+> [!CHECK] Which changes can skip layout while still repainting?
+>
+> Changes such as colour or background colour do not change geometry but
+> still change pixels.
+
+> [!CHECK] What event path does a click follow?
+>
+> Capture toward the target, target handling, then bubbling back through
+> ancestors.
+
+> [!CHECK] Why can one table listener handle rows added later?
+>
+> Delegation listens on the parent and uses bubbling and the event target
+> to find the clicked row.
+
 ## What to take away
 
 1. The render pipeline runs parse → style → layout → paint → composite in
@@ -169,3 +209,35 @@ touches is what separates "this feels slow" from knowing exactly why.
    one per row, automatically covering elements added later.
 5. Knowing which pipeline stage a given CSS/DOM operation touches turns
    "this feels slow" into a specific, checkable reason.
+
+## Exercises
+
+> [!EXERCISE recall] How do layout, paint and compositing transform the
+> output of earlier render stages?
+>
+> **Solution:** Layout computes geometry from styled visible nodes, paint
+> produces pixels for that geometry, and compositing combines painted
+> layers on screen. A change affecting an earlier stage can require
+> downstream stages to run again.
+
+> [!EXERCISE apply] A dashboard measures widths of six cards, then needs
+> to apply new widths based on those measurements. A proposal measures and
+> writes one card at a time. Choose a safer operation order and explain
+> why simply making the loop shorter does not fix it.
+>
+> **Solution:** Read all six required widths into variables first, then
+> apply all six style writes. Geometry reads after layout-affecting writes
+> can force immediate recalculation; separating phases lets the browser
+> batch work rather than alternating freshness demands. A shorter syntax
+> with the same read/write interleaving leaves that mechanism unchanged.
+
+> [!EXERCISE stretch] A large synchronous calculation freezes controls; a
+> teammate moves it into a different ordinary function but keeps calling
+> it on the main thread. Recommend a real execution boundary.
+>
+> **Solution:** Put genuinely heavy computation in a Web Worker and
+> exchange data through messages, leaving DOM access on the main thread. A
+> weaker answer only renames or extracts the same synchronous function: it
+> still occupies the thread responsible for interaction and rendering. A
+> worker has no direct DOM access, so return computed data for the page to
+> apply.

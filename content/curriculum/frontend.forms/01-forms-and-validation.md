@@ -10,6 +10,16 @@ controlled input that fights the user's typing, a multi-step flow that loses
 data on back. This chapter is the decisions that separate a form that feels
 smooth from one that feels like it's fighting you.
 
+> [!WHY] A multi-step registration flow discards the first step’s input
+> when the user goes back. The network may be fine, but remount-local
+> state makes the customer repeat work and distrust the form.
+
+> [!GOALS]
+>
+> - Explain controlled and uncontrolled ownership
+> - Choose validation timing during correction
+> - Preserve multi-step data and final validity
+
 ## Controlled vs uncontrolled inputs
 
 ```text
@@ -67,6 +77,15 @@ smooth from one that feels like it's fighting you.
     KEYSTROKE for THAT field specifically, so the error clears
     the moment they've actually fixed it, rather than waiting
     for them to blur again.
+```
+
+```mermaid
+flowchart TB
+  N[Untouched field] --> B[First check on blur]
+  B --> E{Error?}
+  E -->|yes| K[Recheck this field while typing]
+  K --> V[Clear error when corrected]
+  E -->|no| V
 ```
 
 ## Error messages someone can act on
@@ -151,6 +170,26 @@ smooth from one that feels like it's fighting you.
     guarantees.
 ```
 
+> [!PITFALL] Validating an earlier step once does not establish final
+> validity when later answers can change its constraints.
+
+> [!INTERVIEW] State where values survive, when the first error appears
+> and how correction clears it; these are separate form decisions.
+
+> [!CHECK] Why is a placeholder insufficient as a form label?
+>
+> It disappears during entry and does not replace an explicit programmatic
+> label association.
+
+> [!CHECK] When does controlled-input rerender cost become more
+> significant?
+>
+> In a form with hundreds of fields rather than a typical small form.
+
+> [!CHECK] What makes a validation message actionable?
+>
+> It identifies the field and the concrete rule the user must fix.
+
 ## What to take away
 
 1. Controlled inputs make validation and conditional logic straightforward
@@ -168,3 +207,34 @@ smooth from one that feels like it's fighting you.
 5. A placeholder is not a label — it disappears once typing starts and isn't
    reliably announced by a screen reader, despite looking like a label
    visually.
+
+## Exercises
+
+> [!EXERCISE recall] How do controlled and uncontrolled inputs differ in
+> value ownership and update cost?
+>
+> **Solution:** Controlled values come from React state and update it on
+> each change, making current values available to logic while rerendering.
+> Uncontrolled values live in the DOM and are read when needed, reducing
+> per-keystroke React work for very large forms.
+
+> [!EXERCISE apply] A user enters an unfinished email, leaves the field,
+> sees an error, then types the missing part. Choose when the first error
+> should appear, when it should clear, and where the message belongs.
+>
+> **Solution:** Do the first field check on blur rather than ambushing
+> incomplete typing. Once that field has an error, recheck it as the user
+> types so correction clears the error immediately. Put a specific rule
+> next to that field rather than making the user map a generic top-of-form
+> error list back to the input.
+
+> [!EXERCISE stretch] A later step changes an option that invalidates an
+> earlier answer, and going back remounts the earlier component. Recommend
+> a state and validation design.
+>
+> **Solution:** Keep the form’s values above the step components so back
+> navigation preserves input. Validate each step before Next and recheck
+> cross-step validity at final submit. A weaker answer stores all values
+> only inside each mounted step and trusts earlier validation forever:
+> remounting can lose data and later answers can invalidate earlier
+> assumptions.

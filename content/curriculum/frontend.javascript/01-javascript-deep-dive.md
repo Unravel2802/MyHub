@@ -10,6 +10,17 @@ effect, a promise that resolves in an unexpected order, an equality check
 that silently coerces. This chapter is those mechanics, deliberately deeper
 than "learn JS basics."
 
+> [!WHY] A timer keeps setting a counter to the same value because its
+> callback retained an earlier render’s state. The visible bug looks like
+> a framework failure but follows directly from which scope the callback
+> reads.
+
+> [!GOALS]
+>
+> - Explain a closure’s retained environment
+> - Trace nested microtasks before a timer
+> - Choose concurrent starts for independent requests
+
 ## Closures: not magic, just scope that outlives its call
 
 ```text
@@ -105,6 +116,14 @@ than "learn JS basics."
     was scheduled first.
 ```
 
+```mermaid
+flowchart TB
+  S[Synchronous stack] --> M[Drain pending microtasks]
+  M --> N{More microtasks queued?}
+  N -->|yes| M
+  N -->|no| T[Next timer or other task]
+```
+
 ## Promises and async/await
 
 ```text
@@ -175,12 +194,33 @@ than "learn JS basics."
 ```
 
 ```text
-  → this is why a bundler can eliminate unused exports from an
-    ES module but generally cannot from a CommonJS one — tree-
-    shaking needs the import graph to be knowable WITHOUT
-    running the code, and CommonJS's dynamic resolution makes
-    that determination impossible in the general case.
+  → this is why a bundler can eliminate unused exports from an ES module but
+    generally cannot from a CommonJS one — tree-shaking needs the import
+    graph to be knowable WITHOUT running the code, and CommonJS's dynamic
+    resolution makes that determination impossible in the general case.
 ```
+
+> [!PITFALL] An async function does not make two awaited calls concurrent
+> if the second call is not started until the first finishes.
+
+> [!INTERVIEW] State when each callback is queued and which captured
+> environment it reads before attributing the result to framework magic.
+
+> [!CHECK] How is a missing object property sought through inheritance?
+>
+> Lookup walks the prototype chain until the property is found or the
+> chain ends.
+
+> [!CHECK] Why does strict equality avoid one class of comparison
+> surprises?
+>
+> It does not coerce values to different types before comparison, unlike
+> loose equality.
+
+> [!CHECK] Why can static ES imports support tree shaking?
+>
+> Their dependency graph can be analysed without running conditional
+> require logic.
 
 ## What to take away
 
@@ -199,3 +239,34 @@ than "learn JS basics."
 5. Use `===` by default; `==`'s coercion rules produce genuinely
    counter-intuitive results (`[] == false`) that a linter can eliminate
    entirely rather than asking anyone to memorize them correctly every time.
+
+## Exercises
+
+> [!EXERCISE recall] What does a closure retain after its creating call
+> returns, and why can that produce a stale callback?
+>
+> **Solution:** It retains access to the environment it closed over rather
+> than rerunning against every later invocation’s locals. A callback
+> created for one render can continue reading that render’s value; an
+> updater can avoid depending on the old captured count.
+
+> [!EXERCISE apply] Synchronous code logs A, queues a zero-delay timer T,
+> queues promise callback P, then logs B. P logs P and queues another
+> promise callback Q. Trace the output and explain when T runs.
+>
+> **Solution:** The synchronous stack logs A then B. The microtask queue
+> then runs P, which logs P and queues Q. Q runs before the next timer
+> task because pending microtasks drain first. Output is A, B, P, Q, T. A
+> zero delay makes the timer eligible later; it does not interrupt
+> synchronous work or pending microtasks.
+
+> [!EXERCISE stretch] Independent requests take 70 ms and 120 ms, but the
+> second is started only after awaiting the first. Recommend a start/await
+> arrangement and compute ideal wait.
+>
+> **Solution:** Start both immediately and await them together with
+> Promise.all when neither input depends on the other. Sequential wait is
+> 70 + 120 = 190 ms; concurrent wait is the slower 120 ms, saving 70 ms
+> under the scenario’s assumptions. A weaker answer merely puts the
+> already-sequential calls in an async function: async syntax alone does
+> not change when each request starts.

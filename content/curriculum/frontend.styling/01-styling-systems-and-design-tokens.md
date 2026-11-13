@@ -10,6 +10,17 @@ determines whether a product's visuals stay coherent as it grows is whether
 there's a single, named layer of design tokens everything else refers back
 to.
 
+> [!WHY] A rebrand changes the accent in most screens but leaves old blue
+> values scattered through components. Shared raw colours were used for
+> different meanings, so a global replacement cannot safely express the
+> intended semantic change.
+
+> [!GOALS]
+>
+> - Explain semantic versus raw design tokens
+> - Choose a theme mapping without component branches
+> - Evaluate one-off spacing against a scale
+
 ## The styling approaches, briefly
 
 ```text
@@ -23,9 +34,9 @@ to.
                           component, can reference JS values
                           (props) directly in style rules
 
-  PLAIN CSS/MODULES        traditional stylesheets, scoped per-
-                          file via CSS Modules' auto-generated
-                          class names, no JS runtime cost
+  PLAIN CSS/MODULES       traditional stylesheets, scoped per-file via CSS
+                          Modules' auto-generated class names,
+                          no JS runtime cost
 ```
 
 ```text
@@ -84,6 +95,15 @@ to.
     ever hardcoded theme-specific logic in the first place.
 ```
 
+```mermaid
+flowchart TB
+  T[Selected theme] --> V[Semantic token values]
+  V --> A[Accent role]
+  V --> B[Background role]
+  A --> C[Components consume roles]
+  B --> C
+```
+
 ## Consistency vs one-off flexibility
 
 ```text
@@ -125,6 +145,27 @@ to.
     --blue-500 for a reason unrelated to being "the accent."
 ```
 
+> [!PITFALL] Equal raw values do not imply equal semantic roles; tying
+> them together can make a rebrand change the wrong interface meaning.
+
+> [!INTERVIEW] Explain the role a value serves and where its theme mapping
+> lives before debating the syntax used to apply it.
+
+> [!CHECK] Does utility CSS alone establish visual consistency?
+>
+> No. The common token layer is a separate decision from the styling
+> approach.
+
+> [!CHECK] What is a design token analogous to in ordinary code?
+>
+> A named constant replacing a repeated magic value.
+
+> [!CHECK] What maintenance cost follows hardcoded theme logic in every
+> component?
+>
+> Adding or changing a theme requires many component edits rather than one
+> token-value set.
+
 ## What to take away
 
 1. The styling approach (utility CSS, CSS-in-JS, plain stylesheets) is a
@@ -141,3 +182,37 @@ to.
 5. Components should reference semantic tokens, never raw ones directly — the
    indirection is what makes a rebrand a one-line change instead of a search
    across every component that happened to reference the same raw value.
+
+## Exercises
+
+> [!EXERCISE recall] Why should components request an accent or danger
+> token rather than a particular numbered colour?
+>
+> **Solution:** Semantic tokens describe the value’s role. The role can
+> point to a different raw palette entry without changing all consumers or
+> accidentally changing other uses of the old colour that meant something
+> different.
+
+> [!EXERCISE apply] Accent and informational text currently share a raw
+> blue value. A new theme makes accent purple but keeps information blue,
+> and a high-contrast theme is planned. Choose the token structure and
+> where theme differences should live.
+>
+> **Solution:** Give accent and information separate semantic tokens even
+> when their initial values coincide. Map accent to purple in the new
+> theme while leaving information mapped to blue; provide another value
+> set for high contrast. Components consume the semantic roles unchanged
+> instead of branching on theme or replacing every occurrence of the old
+> blue literal.
+
+> [!EXERCISE stretch] One card requests 14 px padding while the
+> established spacing scale supplies its nearby standard value. Recommend
+> how to judge an exception without abandoning consistency.
+>
+> **Solution:** Use the established scale unless a concrete requirement
+> justifies a deliberate exception or system-level adjustment. A weaker
+> answer grants arbitrary component values by default: each local
+> preference adds another spacing rhythm and the inconsistency compounds.
+> The scale’s constraint is real, so evaluate the requirement rather than
+> treating either rule-following or one-off precision as automatically
+> correct.

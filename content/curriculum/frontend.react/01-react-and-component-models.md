@@ -9,6 +9,17 @@ changed, what should the screen look like now? Understanding reconciliation
 — how React decides what actually changed — is what turns "why did this
 re-render" from a mystery into a predictable consequence of specific rules.
 
+> [!WHY] A reorderable list uses array positions as keys and moves an
+> in-progress input to another record. React has preserved state by the
+> identity it was given, but that identity described a position rather
+> than the actual item.
+
+> [!GOALS]
+>
+> - Explain render versus DOM mutation
+> - Trace stable identities through a reorder
+> - Choose server and client component boundaries
+
 ## The rendering model
 
 ```text
@@ -58,6 +69,14 @@ re-render" from a mystery into a predictable consequence of specific rules.
   → use a STABLE, UNIQUE identifier from the data itself (an
     id) as the key, never the array index, for any list that
     can reorder, filter, or have items inserted/removed.
+```
+
+```mermaid
+flowchart TB
+  O[Old items keyed by id] --> M[Match same ids after update]
+  N[New item order] --> M
+  M --> S[Preserve each item identity]
+  S --> D[Apply required DOM changes]
 ```
 
 ## Hooks: state and effects tied to a component's lifetime
@@ -165,6 +184,29 @@ re-render" from a mystery into a predictable consequence of specific rules.
     component.
 ```
 
+> [!PITFALL] An index key preserves a list position, which is not a stable
+> identity when insertion or reordering changes the data at that position.
+
+> [!INTERVIEW] Distinguish function execution, reconciled identity and
+> actual DOM changes before explaining why a component update behaved as
+> observed.
+
+> [!CHECK] Why can conditional hook calls break state matching?
+>
+> React associates hook state with call order, which conditional branches
+> can change between renders.
+
+> [!CHECK] What can happen when an effect omits a value it reads from its
+> dependency list?
+>
+> It can keep a closure from an older render instead of synchronising with
+> later values.
+
+> [!CHECK] How can composition avoid prop drilling?
+>
+> Pass the relevant child or use context so intermediate components need
+> not forward a value they do not use.
+
 ## What to take away
 
 1. A re-render means the component function ran again and produced a new
@@ -183,3 +225,34 @@ re-render" from a mystery into a predictable consequence of specific rules.
 5. A server component runs only on the server and ships no JavaScript for
    itself — it's a genuinely different execution model from a client
    component, not an early-running variant of the same thing.
+
+## Exercises
+
+> [!EXERCISE recall] Why can a component rerender without changing the
+> real DOM?
+>
+> **Solution:** Its function can produce a new element tree that is
+> equivalent to the previous one. Reconciliation compares the trees and
+> can find no DOM changes to apply; a function rerun and a DOM mutation
+> are different events.
+
+> [!EXERCISE apply] Rows with ids a and b are shown in that order, and b
+> has an edited input. A new row c is inserted at the front, producing c,
+> a, b. Compare index keys with id keys and choose an identity rule.
+>
+> **Solution:** Index keys previously assigned position 0 to a and
+> position 1 to b. After insertion those positions describe c and a, so
+> reused row state can follow the wrong data. With keys a, b and c, b
+> retains its identity and edited state despite moving to position 2. Use
+> the stable record id rather than the current index.
+
+> [!EXERCISE stretch] A detail page has a large static description and a
+> small interactive quantity picker. Recommend whether the whole page must
+> become a client component.
+>
+> **Solution:** Keep the noninteractive description in the server
+> component model and place the stateful picker behind a client boundary.
+> A weaker answer marks the whole tree client-only simply because one
+> control uses state: it ships and hydrates more client work than the
+> interactive part requires. The server component is a different execution
+> model, not an early client render.

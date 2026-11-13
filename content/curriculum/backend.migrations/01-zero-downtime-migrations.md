@@ -9,6 +9,16 @@ any system with continuous traffic. The techniques in this chapter aren't
 exotic SQL — they're a sequencing discipline for making a change land across
 multiple deploys, each one individually safe.
 
+> [!WHY] A column is dropped while an old application instance still reads
+> it. A cleanup that looked local to SQL becomes an outage because a
+> rolling deployment temporarily contains both schema expectations.
+
+> [!GOALS]
+>
+> - Explain mixed-version migration constraints
+> - Choose whether contraction is ready
+> - Plan a resumable backfill
+
 ## Why a single ALTER TABLE isn't safe
 
 ```text
@@ -120,6 +130,13 @@ multiple deploys, each one individually safe.
     running the code that no longer touches it.
 ```
 
+```mermaid
+flowchart TB
+  N[New column available] --> A[Deploy code without old dependency]
+  A --> V[Verify every reader and writer migrated]
+  V --> D[Drop old column in separate migration]
+```
+
 ## Backward-compatible ORM/application code
 
 ```text
@@ -141,6 +158,28 @@ multiple deploys, each one individually safe.
     window during its own rollout.
 ```
 
+> [!PITFALL] A successful backfill is not permission to drop a column that
+> still-deployed code reads or writes.
+
+> [!INTERVIEW] Describe the compatibility of each rollout stage, then
+> state the observation that makes the destructive contract step safe.
+
+> [!CHECK] Why inspect the database version as well as ALTER syntax?
+>
+> Lock and rewrite behaviour depends on the engine version and exact
+> operation.
+
+> [!CHECK] What is the chapter’s two-step validation discipline?
+>
+> Add an unvalidated check for future rows, then validate existing rows
+> separately instead of assuming a large immediate constraint scan is
+> cheap.
+
+> [!CHECK] What should transitional readers tolerate?
+>
+> The relevant old and new schema shapes, using a fallback where the
+> migration stage requires it.
+
 ## What to take away
 
 1. Whether a schema change locks the table depends on the specific operation
@@ -156,3 +195,34 @@ multiple deploys, each one individually safe.
 5. Application code deployed during a migration must tolerate both the old
    and new schema shapes, which is why the schema change and the code that
    depends on it ship as separate, ordered deploys.
+
+## Exercises
+
+> [!EXERCISE recall] Why must live schema changes be split into
+> independently safe application and database steps?
+>
+> **Solution:** Old and new code run simultaneously during rollout. Each
+> schema state must support the deployed readers and writers; adding a new
+> dependency and removing its old form in one step can leave part of the
+> fleet incompatible.
+
+> [!EXERCISE apply] A new column exists and is backfilled. New readers use
+> it, but some old instances still read the old column and one background
+> writer still updates it. Choose whether to drop the old column, and
+> state the evidence required before contraction.
+>
+> **Solution:** Do not drop it yet. Confirm every deployed reader and
+> writer, including the background job, no longer depends on the old
+> column. Finish the application rollout and verify those paths before a
+> separate removal migration. Backfill completion alone establishes
+> neither reader compatibility nor writer retirement.
+
+> [!EXERCISE stretch] A large backfill is interrupted halfway and the
+> proposed recovery restarts one full-table UPDATE. Recommend a more
+> operationally bounded plan.
+>
+> **Solution:** Track the last completed batch, resume in small committed
+> ranges and allow work between batches. A weaker answer restarts a giant
+> transaction: it repeats completed work and holds touched-row locks until
+> the whole transaction commits. Resumable batches reduce both recovery
+> cost and uninterrupted lock time.

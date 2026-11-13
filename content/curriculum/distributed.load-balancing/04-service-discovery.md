@@ -206,6 +206,14 @@ Next: traffic management — using all of this deliberately, to release safely.
 >
 > **Solution:** Use capacity-aware zone routing: give each zone its proportional share and spill the remainder when local capacity is insufficient. A naive local preference overloads A while B idles.
 
-> [!EXERCISE stretch] A team proposes always preferring the local zone to avoid cross-zone latency and data charges. Recommend a safer policy and name what the local-only answer misses.
+> [!EXERCISE stretch] A wedged service keeps its heartbeat thread alive
+> while its request workers are deadlocked. Recommend a registration and
+> health strategy; would faster heartbeats fix discovery?
 >
-> **Solution:** Keep local-zone preference but make it capacity-aware: send the local zone its proportional share and spill the remainder. The local-only answer misses uneven zone capacity; with two backends in A and ten in B, A can overload while B is idle.
+> **Solution:** Prefer third-party platform registration where available.
+> If self-registration is necessary, make the heartbeat depend on
+> resources the real request path needs, such as the connection pool. Pair
+> deregistration with stopping the process so stale clients cannot keep
+> reaching a removed instance. A weaker answer only increases heartbeat
+> frequency: a healthy heartbeat thread can still advertise a service that
+> cannot serve requests.

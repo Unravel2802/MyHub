@@ -11,6 +11,16 @@ SSRF — look unrelated on the surface; underneath, they're the same
 trust-boundary failure from the Security Foundations chapter, applied to a
 different sink.
 
+> [!WHY] A URL preview endpoint accepts an address that points at internal
+> infrastructure. A feature meant to fetch a picture can then expose
+> credentials using the server’s own network reach.
+
+> [!GOALS]
+>
+> - Explain structural separation of SQL syntax and data
+> - Choose controls for different untrusted-input sinks
+> - Design a cross-site request boundary
+
 ## Injection: data treated as code
 
 ```text
@@ -124,13 +134,12 @@ different sink.
 ```
 
 ```text
-  → the fix: an ALLOWLIST of permitted destination
-    hosts/schemes for any server-side fetch of a user-supplied
-    URL, and explicitly BLOCKING requests to internal/private IP
-    ranges — treating a user-supplied URL as fully trusted input
-    for the SERVER's own outbound request is the same trust-
-    boundary mistake as every other vulnerability in this
-    chapter, just with the server itself as the confused party.
+  → the fix: an ALLOWLIST of permitted destination hosts/schemes for any
+    server-side fetch of a user-supplied URL, and explicitly BLOCKING
+    requests to internal/private IP ranges — treating a user-supplied URL as
+    fully trusted input for the SERVER's own outbound request is the same
+    trust-boundary mistake as every other vulnerability in this chapter,
+    just with the server itself as the confused party.
 ```
 
 ## Deserialization: reconstructing an object from untrusted bytes
@@ -186,6 +195,37 @@ different sink.
     untrusted data eventually reaches.
 ```
 
+```mermaid
+flowchart TB
+  I[Attacker-controlled input] --> T[Trust boundary]
+  T --> S[Sensitive sink]
+  S --> Q[Query structure and parameters]
+  S --> D[DOM text rather than HTML]
+  S --> F[Restricted fetch destination]
+```
+
+> [!PITFALL] Escaping one observed attack string leaves the underlying
+> data-as-code boundary fragile.
+
+> [!INTERVIEW] Name the input, trust boundary and sink before proposing a
+> control.
+
+> [!CHECK] What makes CSRF different from a stolen session cookie?
+>
+> The browser sends its own valid cookie on a forged cross-site request;
+> the attacker need not possess the cookie.
+
+> [!CHECK] Why choose a data-only format at an untrusted deserialization
+> boundary?
+>
+> It has no mechanism for reconstructing executable behaviour as arbitrary
+> code objects.
+
+> [!CHECK] What does a guessed filename threaten?
+>
+> A traversal path can escape the intended uploads directory and reach
+> another filesystem location.
+
 ## What to take away
 
 1. SQL injection and XSS are the identical shape — attacker data treated as
@@ -206,3 +246,35 @@ different sink.
 5. Every vulnerability in this chapter is the same failure — attacker-controlled
    input reaching a sensitive operation without being treated as untrusted —
    applied to a different sink, not ten unrelated things to memorize.
+
+## Exercises
+
+> [!EXERCISE recall] Why do parameterized queries address more than one
+> malicious quote sequence?
+>
+> **Solution:** The driver keeps query structure separate from parameter
+> data. Input is not parsed as SQL syntax, rather than relying on a
+> hand-maintained list of characters to escape.
+
+> [!EXERCISE apply] A profile feature concatenates a display name into
+> SQL, assigns a comment to innerHTML, and fetches a user URL with
+> unrestricted server networking. Choose a control for each sink; would
+> parameterizing SQL fix all three?
+>
+> **Solution:** Use query parameters for the name, textContent or
+> default-escaping rendering for the comment, and a permitted host/scheme
+> allowlist plus blocking internal/private destinations for the fetch. SQL
+> parameterization only separates SQL syntax and data; it does not change
+> the DOM parser or the server’s outbound destination policy.
+
+> [!EXERCISE stretch] A state-changing endpoint treats any request with a
+> valid session cookie as intentional. The team proposes hiding the
+> action’s button from other sites. Recommend a server/browser boundary
+> that addresses the actual attack.
+>
+> **Solution:** Require a server-issued CSRF token that is checked on
+> submission, and use SameSite=Strict cookies as the complementary
+> browser-side defence described here. A weaker answer only hides the
+> button: a hostile page can induce a request while the browser carries
+> the user’s valid cookie. Cookie authentication alone does not establish
+> the user intentionally initiated this action.

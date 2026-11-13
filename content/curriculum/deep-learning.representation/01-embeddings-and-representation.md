@@ -9,6 +9,16 @@ geometric relationships in the vector space correspond to semantic ones. Almost
 every retrieval, recommendation and similarity system rests on getting that space
 right.
 
+> [!WHY] A search service builds its index with one embedding model and
+> silently switches only the query encoder to another. Similar vector
+> dimensions do not make the resulting geometry comparable.
+
+> [!GOALS]
+>
+> - Explain contrastive positive and negative design
+> - Choose bi-encoder retrieval and cross-encoder reranking
+> - Plan a consistent embedding-model change
+
 ## What a good embedding space has
 
 ```text
@@ -151,6 +161,14 @@ The architecture is chosen by whether precomputation is required, not by which i
 better — and that constraint is what produces the retrieve-then-rank funnel
 everywhere.
 
+```mermaid
+flowchart TB
+  C[Catalog items] --> B[Precompute bi-encoder vectors]
+  B --> R[Retrieve candidates]
+  Q[Query vector] --> R
+  R --> X[Joint cross-encoder reranking]
+```
+
 ## Practical use
 
 ```text
@@ -196,6 +214,27 @@ The bias point matters practically because embeddings are infrastructure: a bias
 embedding space affects search ranking, recommendations and classification
 simultaneously, and the effect is hard to trace back to its source.
 
+> [!PITFALL] Embeddings from different models are not interchangeable
+> merely because their dimensions match.
+
+> [!INTERVIEW] State whether representations must be precomputed before
+> deciding which encoder architecture fits.
+
+> [!CHECK] Why can a supervised representation discard useful information?
+>
+> Its label set shapes what it needs to retain, so details irrelevant to
+> those labels may be lost.
+
+> [!CHECK] What does Matryoshka training make possible?
+>
+> A vector prefix can serve as a valid smaller embedding, allowing a
+> quality/cost trade within the same trained representation.
+
+> [!CHECK] Why normalize embeddings for similarity search?
+>
+> Normalization makes cosine and dot-product comparisons agree, enabling
+> the cheaper equivalent comparison.
+
 ## What to take away
 
 1. A good embedding space makes similarity geometric, and encodes relationships as
@@ -212,3 +251,36 @@ simultaneously, and the effect is hard to trace back to its source.
    Matryoshka truncation to trade quality for cost with one index.
 
 Next: generative models.
+
+## Exercises
+
+> [!EXERCISE recall] Why do hard negatives teach finer distinctions than
+> random negatives?
+>
+> **Solution:** They are similar but wrong, so separating them requires
+> meaningful local structure rather than an easy coarse separation.
+> Positive-pair design determines what should be pulled together in the
+> first place.
+
+> [!EXERCISE apply] A catalog stage must precompute item representations
+> before queries arrive, while a later stage may jointly score a small
+> retrieved candidate list. Choose bi- or cross-encoders for each stage
+> and explain why swapping them is not a free accuracy upgrade.
+>
+> **Solution:** Use independent bi-encoder embeddings for catalog
+> retrieval because they can be precomputed and indexed. Use a
+> cross-encoder for the smaller reranking stage when joint query/item
+> interaction is affordable. Making the first stage a cross-encoder
+> removes the required precomputed item-only representation; making
+> reranking independent gives up its joint interaction. The access
+> constraint decides the architecture.
+
+> [!EXERCISE stretch] A new embedding model is ready, and the team
+> proposes keeping old item vectors while encoding new queries with the
+> new model. Recommend a transition criterion.
+>
+> **Solution:** Keep query and item representations in a consistent model
+> space, rebuilding/revalidating the index for the new encoder rather than
+> mixing incompatible geometries. A weaker answer checks only equal vector
+> length: equal dimensionality does not align the meanings of coordinates
+> across models.

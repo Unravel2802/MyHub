@@ -9,6 +9,17 @@ byte sent over a socket, every allocated page of memory passes through the
 operating system, which is what makes "my program" and "a running process"
 different concepts worth distinguishing precisely.
 
+> [!WHY] A worker process spawns far more runnable CPU threads than cores
+> and throughput falls. The scheduler must spend real time switching
+> state, so adding concurrency can consume capacity instead of creating
+> it.
+
+> [!GOALS]
+>
+> - Explain virtual-address translation and isolation
+> - Choose a consistent lock acquisition order
+> - Recommend a process or thread boundary
+
 ## Processes vs threads
 
 ```text
@@ -80,6 +91,15 @@ different concepts worth distinguishing precisely.
     ever reaches real memory.
 ```
 
+
+```mermaid
+flowchart TB
+  V[Virtual address] --> M[MMU page-table lookup]
+  M --> E{Valid mapping?}
+  E -->|yes| P[Physical access]
+  E -->|no| T[Trap into OS]
+```
+
 ## File systems and syscalls
 
 ```text
@@ -124,6 +144,29 @@ different concepts worth distinguishing precisely.
     entirely.
 ```
 
+> [!PITFALL] Threads share a memory space; moving unsafe work into a
+> second thread does not create a process isolation boundary.
+
+> [!INTERVIEW] Explain the isolation requirement before choosing processes
+> or threads. When discussing deadlock prevention, name which of the four
+> necessary conditions the policy breaks.
+
+> [!CHECK] Why do many runnable CPU-bound threads on few cores incur
+> overhead?
+>
+> The scheduler repeatedly saves and restores register state during
+> context switches instead of doing useful application work.
+
+> [!CHECK] Why can batching I/O improve performance?
+>
+> Each syscall pays a fixed user-to-kernel transition cost, so fewer
+> larger operations can reduce boundary crossings.
+
+> [!CHECK] Name the four deadlock conditions.
+>
+> Mutual exclusion, hold-and-wait, no preemption and circular wait;
+> breaking any one prevents that deadlock pattern.
+
 ## What to take away
 
 1. A process has its own isolated memory space; a thread shares its
@@ -143,3 +186,33 @@ different concepts worth distinguishing precisely.
    preemption, and circular wait — breaking any single one (a consistent
    lock order breaks circular wait) prevents it entirely, at the OS level
    the same way it does at the application level.
+
+## Exercises
+
+> [!EXERCISE recall] How do the OS and MMU make identical-looking virtual
+> addresses in separate processes refer to isolated memory?
+>
+> **Solution:** Each process uses its own address space and page-table
+> mappings. The MMU translates virtual to physical addresses under the
+> OS’s mappings, so an address in one process does not grant direct access
+> to another process’s memory.
+
+> [!EXERCISE apply] Worker A acquires locks X then Y; worker B acquires Y
+> then X. Show the stuck schedule and choose a revised order for both that
+> breaks a named deadlock condition.
+>
+> **Solution:** A acquires X, B acquires Y, A waits for Y and B waits for
+> X: a circular wait. Require both workers to acquire X before Y. If A
+> holds X, B waits before holding Y, so A can acquire Y and finish.
+> Consistent ordering breaks circular wait rather than relying on a
+> fortunate schedule.
+
+> [!EXERCISE stretch] An application runs untrusted, crash-prone plugins
+> beside important host state. Recommend whether plugins should be threads
+> in the host or separate processes, with the stated trade.
+>
+> **Solution:** Use separate processes when memory isolation is the
+> requirement. A thread shares the host’s address space, so a corrupting
+> plugin can damage unrelated host data. Threads are a weaker isolation
+> answer even if cheaper to create and switch; separate processes pay more
+> overhead to obtain the boundary the workload needs.

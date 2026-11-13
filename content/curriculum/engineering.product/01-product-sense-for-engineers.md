@@ -11,6 +11,16 @@ anything, flawlessly, but never asks whether it's worth building, is
 genuinely dangerous to a team's actual effectiveness, not merely
 incomplete.
 
+> [!WHY] A team delivers a polished feature on time, then discovers users
+> already had an adequate workaround. The engineering success leaves
+> maintenance and navigation costs without a corresponding solved need.
+
+> [!GOALS]
+>
+> - Explain costs beyond initial implementation
+> - Choose a smallest useful solution from user evidence
+> - Define observable product success
+
 ## The question that comes before "how"
 
 ```text
@@ -107,6 +117,13 @@ incomplete.
     question.
 ```
 
+```mermaid
+flowchart TB
+  N[Verify a real user need] --> W[Consider existing workaround]
+  W --> S[Choose smallest useful solution]
+  S --> O[Observe whether problem improves]
+```
+
 ## Saying no, and why it's a genuine engineering skill
 
 ```text
@@ -130,6 +147,27 @@ incomplete.
     reflexively building whatever was literally asked for.
 ```
 
+> [!PITFALL] A low implementation estimate leaves maintenance, user
+> complexity and opportunity cost unpaid rather than absent.
+
+> [!INTERVIEW] Identify the specific user and evidence of their problem
+> before selecting the feature shape.
+
+> [!CHECK] Why ask what happens if nothing is built?
+>
+> An existing workaround may adequately meet the need, changing whether
+> new complexity is worth adding.
+
+> [!CHECK] Why can excellent code still be wasted work?
+>
+> Technical quality does not establish that the implemented feature solves
+> a real problem.
+
+> [!CHECK] How does saying no well differ from a bare refusal?
+>
+> It explains the underlying concern and proposes an alternative that
+> addresses the actual need.
+
 ## What to take away
 
 1. "How should I build this" and "should this exist at all" are genuinely
@@ -150,3 +188,34 @@ incomplete.
    reflexively building the specific solution someone asked for — a real
    engineering skill, not stubbornness, and the alternative to a team that
    eventually drowns in accumulated, individually-reasonable complexity.
+
+## Exercises
+
+> [!EXERCISE recall] What costs remain after a feature’s code is written?
+>
+> **Solution:** Ongoing maintenance, complexity for users including
+> nonusers of the feature, and the opportunity cost of work that could
+> have been done instead.
+
+> [!EXERCISE apply] Users repeatedly export a report and email it to a
+> colleague. A proposal calls for a full collaboration workspace, but
+> observation shows the current pain is keeping that colleague’s copy up
+> to date. Choose a first version and name what evidence would justify
+> expanding it later.
+>
+> **Solution:** Test whether a simple shared current report view solves
+> the repeated export/email problem, and verify that both people can use
+> the updated information in their workflow. Expand only when observed
+> unresolved needs justify more collaboration features. Building the full
+> workspace first assumes a proposed solution is necessary and incurs
+> complexity before demonstrating value.
+
+> [!EXERCISE stretch] A team wants to declare success when a new feature
+> ships. Recommend a success condition for the user problem and a weaker
+> alternative to avoid.
+>
+> **Solution:** Define an observable signal that the intended users’
+> problem improved, such as whether support can now identify and intervene
+> in the cases the feature targets. A weaker answer counts only on-time
+> delivery or number of charts: those show implementation happened, not
+> that the underlying need was met.

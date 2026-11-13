@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 merged 2026-11-12; F1, F2, C, B, FE and I merged 2026-11-13 (see the reviews at the end); S, D and EP are next.
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 merged 2026-11-12; F1, F2, C, B, FE, I, S, D and EP merged 2026-11-13 (see the reviews at the end); MF and DL are next.
 
 ---
 
@@ -993,3 +993,48 @@ What holds:
 1,626 unit tests and 250 curriculum E2E tests pass. 206 of 339 chapters have
 openers and exercises. S (Security), D (Data Engineering) and EP
 (Engineering Practice) are next.
+
+### S, D and EP review — 2026-11-13 (Claude): approved and merged
+
+S (`curriculum-s`): 11 Security topics. D (`curriculum-d`): 11 Data
+Engineering topics. EP (`curriculum-ep`): 12 Engineering Practice topics.
+All are one-chapter topics with PR D's quotas. Codex ran the three batches
+unattended in their own worktrees.
+
+What holds:
+
+- **Correctness.** Every exercise was re-derived and is right:
+  - fraud policy costs of $1,120 against $920;
+  - an alert 50 minutes after the login and 46 after the reads;
+  - 10,000 MB of content against 12,800 bytes of DEKs to rewrap;
+  - net revenue of $230 against $220 (the late refund);
+  - a salted hot key at 2 million rows against 8 million;
+  - row groups A and D pruned for `price > 700`;
+  - a report ready at 01:37 (01:49 serially), missing a 01:35 deadline;
+  - a volume band of 800–1,200 against 1,450 rows;
+  - event-time windows placing A first, B second and C excluded;
+  - a 120× smaller scan;
+  - 17 engineer-weeks wanted against 12;
+  - 5 → 10 deploys a week with failure rising from 5% to 15%;
+  - 10 hours of paging against an 8-hour fix;
+  - 29 engineer-days against a capacity of 24.
+- **Shape.** Every opener is a concrete situation with a cost. Every GOALS
+  bullet is exercised, the three exercises ask different things, and each
+  Stretch recommends something and names a distinct weaker answer. The
+  mechanisms the exercises use (STRIDE, CSRF and SameSite, JWT `alg`
+  pinning, DEK/KEK, SBOMs, salting, watermarks, Type 2 dimensions, sensors,
+  Goodhart's law, calibration, unverifiable "% done" milestones) are in the
+  chapters' own text.
+- **Formatting.** All 24 re-wrapped fenced blocks keep their original words,
+  with even indentation.
+- **Gates.** Both `EXERCISE_TRACKS` lists, `security` (11), `data` (11) and
+  `engineering` (12) entries in the tracks spec, and a quota test per batch.
+
+Non-blocking nit: two solutions (`data.ingestion` Apply and
+`engineering.metrics` Apply) each have one source line longer than the rest.
+They render normally.
+
+**Status:** all three merged 2026-11-13. On the merged main: lint,
+typecheck, 1,629 unit tests and 287 curriculum E2E tests pass. 240 of 339
+chapters have openers and exercises. MF (ML Foundations) and DL (Deep
+Learning) are next.

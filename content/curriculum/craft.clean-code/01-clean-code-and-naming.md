@@ -10,6 +10,16 @@ read and understood in the first place. This chapter is that foundation:
 not a style guide, but the reasoning behind why certain habits make code
 easier to change later, and others make it harder regardless of intent.
 
+> [!WHY] A function named process both calculates a quote and writes it to
+> storage. A caller expecting a calculation changes persistent state, so
+> an imprecise name hides a costly behavioural surprise.
+
+> [!GOALS]
+>
+> - Explain when naming difficulty signals a design problem
+> - Separate abstraction levels in a function
+> - Choose comments that preserve intent
+
 ## Naming carries the design
 
 ```text
@@ -84,6 +94,14 @@ easier to change later, and others make it harder regardless of intent.
   function does in one sentence, without "and"?
 ```
 
+```mermaid
+flowchart TB
+  C[Dispatch workflow] --> W[Calculate package weight]
+  W --> E[Check eligibility]
+  E --> L[Record dispatch]
+  L --> D[Request carrier delivery]
+```
+
 ## Comments that earn their place
 
 ```text
@@ -143,6 +161,28 @@ easier to change later, and others make it harder regardless of intent.
     to justify a codebase-wide migration, not just one usage.
 ```
 
+> [!PITFALL] A shorter function is not automatically more coherent; line
+> count is a symptom rather than the responsibility rule.
+
+> [!INTERVIEW] Describe the function’s one job before proposing a shorter
+> body, and explain any comment through information the code cannot
+> convey.
+
+> [!CHECK] What is the useful function-size test beyond line count?
+>
+> Whether its coherent job can be described in one sentence without
+> unrelated “and” responsibilities.
+
+> [!CHECK] Why can a single novel idiom raise maintenance cost?
+>
+> Readers must learn another pattern for a job the codebase already
+> expresses consistently.
+
+> [!CHECK] What distinction should isValid and validate make clear?
+>
+> Whether calling the function asks a boolean question or performs a
+> command with behaviour.
+
 ## What to take away
 
 1. A name is a reader's first and cheapest piece of documentation — struggling
@@ -158,3 +198,34 @@ easier to change later, and others make it harder regardless of intent.
 5. Prefer the codebase's already-established boring pattern over a novel,
    technically-superior one for a single usage — consistency reduces the
    number of patterns every reader has to learn.
+
+## Exercises
+
+> [!EXERCISE recall] Why can failure to find a clear function name justify
+> splitting it rather than searching for a clever synonym?
+>
+> **Solution:** The function may combine unrelated jobs. A coherent
+> responsibility has a describable purpose; a name that must hide several
+> behaviours signals a structural problem, not merely a vocabulary gap.
+
+> [!EXERCISE apply] A dispatch function computes package weights inline,
+> checks eligibility, logs dispatch and calls a carrier. Choose what to
+> extract and name the resulting steps so the caller can read one
+> abstraction level.
+>
+> **Solution:** Extract the weight arithmetic into calculatePackageWeight.
+> Keep dispatch expressed as named orchestration steps: calculate weight,
+> check eligibility, record dispatch and request carrier delivery. The
+> arithmetic remains available in its own function rather than competing
+> with workflow-level calls. Do not split only to meet an arbitrary line
+> count.
+
+> [!EXERCISE stretch] A maintainer proposes replacing a comment explaining
+> an external protocol constraint with comments narrating every
+> assignment. Recommend a comment policy.
+>
+> **Solution:** Retain the non-obvious why and its constraint; remove
+> narration already conveyed by precise identifiers and statements. A
+> weaker answer adds a what-comment per line: those comments drift when
+> code changes and do not preserve why a seemingly redundant step must
+> remain.

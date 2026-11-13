@@ -9,6 +9,16 @@ problems with it kept recurring at scale — REST's rigid response shape, and
 REST's per-call overhead for service-to-service traffic. Each fix brings its
 own new failure mode, which is why neither has replaced REST outright.
 
+> [!WHY] A screen makes one GraphQL request but its resolver layer issues
+> a database query for every parent. Reducing browser round trips can
+> still multiply backend work and make the new endpoint slower under load.
+
+> [!GOALS]
+>
+> - Explain GraphQL and gRPC’s different benefits
+> - Compute resolver fan-out and choose batching
+> - Choose a protocol from client ownership
+
 ## GraphQL: solving over-fetching and under-fetching
 
 ```text
@@ -62,6 +72,14 @@ own new failure mode, which is why neither has replaced REST outright.
     with a one-to-many relationship.
 ```
 
+```mermaid
+flowchart TB
+  Q[Query teams and members] --> T[One teams query]
+  T --> I[Collect team ids]
+  I --> B[Batch member lookup]
+  B --> R[Resolve requested fields]
+```
+
 ## Query complexity as an attack surface
 
 ```text
@@ -100,12 +118,11 @@ own new failure mode, which is why neither has replaced REST outright.
 ```
 
 ```text
-  → binary + generated code removes JSON's parse cost and
-    REST's "read the docs, hand-write a client" step. the
-    trade: it is NOT human-readable on the wire (no curl-and-
-    read), and both ends need the SAME .proto — which is a
-    non-issue for two services you own, and a real one for a
-    public API where you don't control the caller's tooling.
+  → binary + generated code removes JSON's parse cost and REST's "read the
+    docs, hand-write a client" step. the trade: it is NOT human-readable on
+    the wire (no curl-and-read), and both ends need the SAME .proto — which
+    is a non-issue for two services you own, and a real one for a public API
+    where you don't control the caller's tooling.
 ```
 
 ## Streaming
@@ -145,6 +162,27 @@ own new failure mode, which is why neither has replaced REST outright.
     frontend — three protocols, three different jobs.
 ```
 
+> [!PITFALL] One client round trip does not imply one backend query or
+> bounded work.
+
+> [!INTERVIEW] Count resolver data fetches as well as browser requests,
+> and distinguish batching from the independent query-cost limit.
+
+> [!CHECK] What does a DataLoader-style request batch combine?
+>
+> Separate relationship lookups made within the request into a lookup for
+> the set of parent ids.
+
+> [!CHECK] Why bound GraphQL query depth and cost?
+>
+> Nested client-specified fields can multiply execution work into an abuse
+> path.
+
+> [!CHECK] What gRPC call shape fits one request watching resource
+> updates?
+>
+> Server streaming: one request followed by a stream of responses.
+
 ## What to take away
 
 1. GraphQL fixes REST's over-/under-fetching by letting the client shape the
@@ -159,3 +197,33 @@ own new failure mode, which is why neither has replaced REST outright.
    type safety — fine when you own both ends, a real cost for a public API.
 5. The three protocols solve different problems and commonly coexist in one
    system rather than replacing each other.
+
+## Exercises
+
+> [!EXERCISE recall] How do GraphQL and gRPC address different REST
+> trade-offs?
+>
+> **Solution:** GraphQL lets clients compose the fields and related
+> resources they need. gRPC uses schema-generated typed calls and a binary
+> format for controlled service-to-service traffic. Their flexibility and
+> tooling costs differ, so neither is a universal REST replacement.
+
+> [!EXERCISE apply] A query returns 35 teams, each with members. A naive
+> resolver loads teams once and members separately per team. Compute query
+> counts before and after one batched member lookup, and identify the
+> separate protection still needed for deeply nested queries.
+>
+> **Solution:** Naive execution uses 1 + 35 = 36 database queries. One
+> batch for all selected team ids reduces this to 1 + 1 = 2. Batching
+> addresses N+1, not unbounded client-constructed work; enforce depth and
+> computed cost limits before execution as a separate control.
+
+> [!EXERCISE stretch] An API serves unknown external clients while
+> internal services you own need high-volume typed streaming calls.
+> Recommend whether to force both through one protocol.
+>
+> **Solution:** Keep a debuggable public REST interface where its HTTP
+> semantics and diverse tooling fit, and use gRPC internally when
+> generated clients, shared schemas and streaming justify it. A weaker
+> answer moves the public edge wholesale to gRPC solely for binary
+> efficiency, ignoring client tooling and human-readable debugging costs.

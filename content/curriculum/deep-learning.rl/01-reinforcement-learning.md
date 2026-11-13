@@ -9,6 +9,17 @@ no labelled correct action. It is the framework behind game-playing systems,
 robotics and — most relevantly now — the alignment and reasoning training of
 language models.
 
+> [!WHY] A policy update improves the sampled objective but moves far from
+> the behaviour that collected the data. Large shifts can destroy the
+> working policy before the next expensive interaction cycle reveals the
+> damage.
+
+> [!GOALS]
+>
+> - Explain policy-dependent data and delayed credit
+> - Compute both signs of the clipped PPO objective
+> - Choose when full RL is justified
+
 ## The setup
 
 ```text
@@ -92,6 +103,14 @@ function, it samples a *group* of responses to the same prompt and uses their me
 reward as the baseline. That removes the value network — which is a large
 simplification and part of why reasoning RL became practical at scale.
 
+```mermaid
+flowchart TB
+  O[Policy collects interactions] --> A[Estimate advantage]
+  A --> R[New-to-old action probability ratio]
+  R --> C[Clipped objective]
+  C --> U[Controlled policy update]
+```
+
 ## Exploration
 
 ```text
@@ -168,6 +187,27 @@ against a learned preference model is limited by reward hacking; RL against "do
 the tests pass" is not, which is why reasoning training could be pushed orders of
 magnitude further.
 
+> [!PITFALL] A simulator’s cheap exploration does not imply that trying
+> poor actions on real users is equally cheap.
+
+> [!INTERVIEW] Name the state, action, reward and exploration cost before
+> selecting RL.
+
+> [!CHECK] What does an actor-critic combine?
+>
+> A policy and a learned value function, with the value estimate reducing
+> policy-gradient variance.
+
+> [!CHECK] How does GRPO replace the value-network baseline?
+>
+> It uses a group of sampled responses to a prompt and their mean reward
+> as the baseline.
+
+> [!CHECK] Why use a reference-model KL penalty for language-model RL?
+>
+> It limits departure from a strong pretrained policy rather than
+> exploring without that anchor.
+
 ## What to take away
 
 1. RL learns from a scalar reward with delayed credit and a data distribution that
@@ -184,3 +224,35 @@ magnitude further.
    short episodes, and — for reasoning — verifiable rewards.
 
 Next: graphs, audio, state space models and compression.
+
+## Exercises
+
+> [!EXERCISE recall] Why is RL’s data distribution a moving target, and
+> why does delayed reward complicate learning?
+>
+> **Solution:** The changing policy generates the observations it later
+> trains on. A reward after many actions also leaves the learner to assign
+> credit to the actions responsible rather than receiving a correct-action
+> label.
+
+> [!EXERCISE apply] Use epsilon=0.2. Compute L=min(ratio×A,
+> clip(ratio,1−epsilon,1+epsilon)×A) for case P with ratio=1.4 and A=2,
+> and case N with ratio=0.6 and A=−2. Show both branches before taking the
+> minimum.
+>
+> **Solution:** Use L=min(ratio×A, clip(ratio,1−epsilon,1+epsilon)×A). The
+> clipping interval is [1−0.2,1+0.2]=[0.8,1.2]. P: raw=1.4×2=2.8; clipped
+> ratio=1.2, so clipped branch=1.2×2=2.4; L=min(2.8,2.4)=2.4. N:
+> raw=0.6×(−2)=−1.2; clipped ratio=0.8, so clipped branch=0.8×(−2)=−1.6;
+> L=min(−1.2,−1.6)=−1.6. The negative advantage changes which
+> multiplication is more negative; do not substitute a maximum.
+
+> [!EXERCISE stretch] A business task has useful logged labels, no
+> affordable simulator, an unclear long-term reward and expensive
+> real-world exploration. Recommend a first formulation.
+>
+> **Solution:** Prefer supervised learning on the available logged data
+> where that answers the task; justify full RL only if future-state
+> consequences and affordable exploration earn its complexity. A weaker
+> answer selects RL merely because actions are being chosen: that ignores
+> reward quality, interaction cost and a simpler adequate formulation.

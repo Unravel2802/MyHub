@@ -10,6 +10,17 @@ speed by an order of magnitude, and the reason is almost never the algorithm
 underneath it. This chapter is that hardware, at the level of detail that
 explains the difference.
 
+> [!WHY] A matrix aggregation saturates memory access while CPU arithmetic
+> remains cheap. Rewriting the arithmetic leaves the delay intact if the
+> loop still jumps between distant rows instead of following contiguous
+> storage.
+
+> [!GOALS]
+>
+> - Explain spatial and temporal locality
+> - Choose a traversal to match storage layout
+> - Evaluate padding cost at collection scale
+
 ## The memory hierarchy
 
 ```text
@@ -53,6 +64,15 @@ explains the difference.
     for why array iteration is fast and pointer-chasing (a
     linked list, a tree with scattered allocations) is slow,
     even at identical Big-O.
+```
+
+
+```mermaid
+flowchart TB
+  A[Requested address] --> C{Cache line present?}
+  C -->|yes| H[Cache hit]
+  C -->|no| M[Fetch line from slower memory]
+  M --> N[Nearby values now cached]
 ```
 
 ## Row-major iteration: the classic cache-locality bug
@@ -156,6 +176,28 @@ explains the difference.
     waste from field ordering alone.
 ```
 
+> [!PITFALL] Identical Big-O does not imply identical speed: pointer
+> chasing and strided access can squander locality.
+
+> [!INTERVIEW] Explain the access pattern, not just Big-O. Say whether
+> neighbouring operations touch the same cache line and whether
+> dependencies or branch misses stall the CPU.
+
+> [!CHECK] Approximately how much slower is main memory than an L1 hit in
+> the table?
+>
+> 100 ns ÷ 1 ns ≈ 100 times.
+
+> [!CHECK] Why can a mispredicted branch cost time?
+>
+> The CPU discards speculative work and restarts; the chapter gives a
+> penalty often around 10–20 cycles.
+
+> [!CHECK] Why can a dependency chain limit instruction-level overlap?
+>
+> An instruction must wait for a previous result rather than executing
+> independently alongside other work.
+
 ## What to take away
 
 1. The memory hierarchy's roughly-10×-per-level cost gap is the entire
@@ -173,3 +215,35 @@ explains the difference.
 5. A struct's field order determines how much alignment padding is wasted —
    ordering fields by size can shrink a struct meaningfully at scale, with
    no change to the data it holds.
+
+## Exercises
+
+> [!EXERCISE recall] Distinguish spatial and temporal locality and explain
+> how fetching a cache line uses one of them.
+>
+> **Solution:** Temporal locality means recently accessed data is likely
+> to be reused. Spatial locality means nearby addresses are likely to be
+> accessed. Fetching a whole cache line brings nearby bytes in together,
+> exploiting spatial locality.
+
+> [!EXERCISE apply] A row-major 600 by 400 matrix is summed with column
+> index outermost and row index innermost. Choose loop order and contrast
+> the consecutive address steps in elements without claiming a new Big-O.
+>
+> **Solution:** Put row index i outside and column index j inside. In the
+> original inner loop, matrix[i][j] to matrix[i+1][j] jumps 400 elements
+> because each row holds 400. In the revised loop, matrix[i][j] to
+> matrix[i][j+1] steps one element. Both perform 600 × 400 = 240,000
+> additions and remain quadratic for square scaling; locality changes
+> elapsed time, not the addition count.
+
+> [!EXERCISE stretch] A layout review finds 4 avoidable padding bytes in
+> each of two million records. Recommend whether to investigate field
+> order and name a weaker argument based only on algorithmic complexity.
+>
+> **Solution:** Investigate reordering fields by alignment needs and
+> verify the resulting layout. The avoidable space is 4 × 2,000,000 =
+> 8,000,000 bytes, or 8 MB. Reducing record size can improve cache density
+> without changing held data. A weaker answer leaves the layout unchanged
+> because the algorithm is still O(n): Big-O omits both memory footprint
+> and cache behaviour.

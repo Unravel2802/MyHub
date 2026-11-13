@@ -10,6 +10,17 @@ failure mode (once an attacker is inside, they're trusted everywhere), and
 zero trust is the direct response: stop trusting location, and verify
 everything, everywhere, every time.
 
+> [!WHY] A phished laptop connects through the VPN and an internal service
+> accepts it solely because it is inside the network. A perimeter success
+> becomes lateral access unless verification continues at internal
+> boundaries.
+
+> [!GOALS]
+>
+> - Explain zero trust beyond network location
+> - Choose independent identity and network controls
+> - Design repeatable host hardening
+
 ## The perimeter model's failure mode
 
 ```text
@@ -55,13 +66,20 @@ everything, everywhere, every time.
 ```
 
 ```text
-  → a database segment that's UNREACHABLE from a compromised
-    web server's network segment at all is protected by BOTH
-    the network boundary AND whatever identity verification
-    exists — TWO independent layers, the same deliberate
-    redundancy the Security Foundations chapter's defense-in-
-    depth principle calls for, neither one alone assumed
-    sufficient.
+  → a database segment that's UNREACHABLE from a compromised web server's
+    network segment at all is protected by BOTH the network boundary AND
+    whatever identity verification exists — TWO independent layers, the same
+    deliberate redundancy the Security Foundations chapter's
+    defense-in-depth principle calls for, neither one alone
+    assumed sufficient.
+```
+
+```mermaid
+flowchart TB
+  R[Internal or external request] --> I[Verify identity]
+  I --> A[Authorize the call]
+  A --> S[Permitted network segment]
+  S --> D[Target service]
 ```
 
 ## WAFs: a layer that catches known patterns, imperfectly
@@ -72,14 +90,13 @@ everything, everywhere, every time.
   injection signature, a known exploit's specific shape) and
   blocking matches before they reach the application at all.
 
-  → a WAF is a REAL, useful layer — but it is NOT a substitute
-    for fixing the actual vulnerability in application code:
-    it catches KNOWN patterns, and a novel attack (or a known
-    pattern slightly obfuscated to evade signature matching)
-    can slip through — this is exactly the Web Application
-    Security chapter's parameterized-queries-fix-the-whole-
-    class point, restated: the WAF is ONE layer of defense in
-    depth, not a replacement for the actual, structural fix.
+  → a WAF is a REAL, useful layer — but it is NOT a substitute for fixing
+    the actual vulnerability in application code: it catches KNOWN patterns,
+    and a novel attack (or a known pattern slightly obfuscated to evade
+    signature matching) can slip through — this is exactly the Web
+    Application Security chapter's parameterized-queries-fix-the-whole-class
+    point, restated: the WAF is ONE layer of defense in depth, not a
+    replacement for the actual, structural fix.
 ```
 
 ## DDoS mitigation: absorbing scale you can't out-engineer
@@ -116,17 +133,37 @@ everything, everywhere, every time.
 ```
 
 ```text
-  → this is a genuinely ONGOING discipline, not a one-time setup
-    step: a host hardened correctly at PROVISIONING time
-    accumulates unused services, forgotten open ports, and
-    stale accounts over its actual OPERATIONAL life unless
-    hardening is periodically RE-VERIFIED — infrastructure as
-    code (declarative, reproducible provisioning) helps here
-    specifically because a host can be REBUILT from a known-
-    hardened definition rather than drifting slowly, in ways
-    nobody's tracking, over months or years of ad hoc manual
-    changes.
+  → this is a genuinely ONGOING discipline, not a one-time setup step: a
+    host hardened correctly at PROVISIONING time accumulates unused
+    services, forgotten open ports, and stale accounts over its actual
+    OPERATIONAL life unless hardening is periodically RE-VERIFIED —
+    infrastructure as code (declarative, reproducible provisioning) helps
+    here specifically because a host can be REBUILT from a known-hardened
+    definition rather than drifting slowly, in ways nobody's tracking, over
+    months or years of ad hoc manual changes.
 ```
+
+> [!PITFALL] A WAF’s known-pattern matching cannot replace a structural
+> application fix.
+
+> [!INTERVIEW] Explain which control still limits damage if another layer
+> is bypassed.
+
+> [!CHECK] Why does one IP block fail against a distributed denial of
+> service?
+>
+> Traffic comes from many sources; there is no single origin whose removal
+> stops the volume.
+
+> [!CHECK] Why disable an unused service?
+>
+> Removing it reduces the attack surface: a non-running service cannot
+> expose its runtime vulnerability.
+
+> [!CHECK] Why is a specialized DDoS provider often appropriate?
+>
+> Its shared aggregate absorption capacity can exceed what an individual
+> application can economically provision.
 
 ## What to take away
 
@@ -146,3 +183,34 @@ everything, everywhere, every time.
    infrastructure as code helps specifically because a host can be rebuilt
    from a known-hardened definition rather than drifting unnoticed over
    months of manual changes.
+
+## Exercises
+
+> [!EXERCISE recall] What does zero trust require of an internal service
+> call?
+>
+> **Solution:** Authenticate and authorize the call on its own merits
+> regardless of its network origin. Being inside the VPC is not evidence
+> of legitimacy by itself.
+
+> [!EXERCISE apply] A compromised frontend host attempts to reach a
+> database segment it never needs. Design A trusts all internal origins. B
+> verifies caller identity but permits every network path. C adds identity
+> verification and makes this database unreachable from the frontend
+> segment. Choose and explain the independent layers.
+>
+> **Solution:** Choose C. Verification checks who may act; segmentation
+> separately denies an unnecessary path. If the identity layer is
+> bypassed, the network boundary still limits this breach’s reach. A
+> grants trust from location, and B leaves only one layer on this path;
+> neither supplies C’s independent containment.
+
+> [!EXERCISE stretch] A host was hardened at launch but has accumulated
+> stale accounts and unused ports after manual changes. Recommend a
+> maintenance approach.
+>
+> **Solution:** Periodically re-verify services, ports, default
+> credentials and least privilege, and use a known-hardened declarative
+> definition to rebuild rather than preserve unexplained drift. A weaker
+> answer records that the launch checklist passed and leaves the current
+> host alone: the attack surface has changed since provisioning.

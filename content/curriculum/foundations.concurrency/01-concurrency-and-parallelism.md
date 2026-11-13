@@ -157,8 +157,8 @@ flowchart TB
 ## Async runtimes: concurrency without threads
 
 ```text
-    JavaScript's single-threaded event loop (the JavaScript deep-dive
-    chapter's mechanism) achieves CONCURRENCY (many
+  JavaScript's single-threaded event loop (the JavaScript
+  deep-dive chapter's mechanism) achieves CONCURRENCY (many
   in-flight operations) WITHOUT parallelism or threads at all —
   an async function yields control at each `await`, letting
   OTHER code run, then resumes later.

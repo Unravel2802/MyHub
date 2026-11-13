@@ -65,8 +65,8 @@ trains most modern machine learning models.
 ```
 
 ```text
-    → this is precisely why gzip barely compresses ALREADY-compressed or
-    genuinely random data (a JPEG, encrypted
+  → this is precisely why gzip barely compresses
+    ALREADY-compressed or genuinely random data (a JPEG, encrypted
     data, random noise) — such data is already close to
     MAXIMUM entropy for its size (no exploitable predictability
     left), so there's nothing left to compress — a compressor

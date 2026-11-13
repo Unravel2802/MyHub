@@ -114,9 +114,8 @@ what lets you recognize a new problem as an old one in disguise.
 ```
 
 ```text
-    → this is the Complexity and Analysis chapter's amortized-cost idea,
-    applied differently: the FIRST computation of
-    each
+  → this is the Complexity and Analysis chapter's amortized-cost
+    idea, applied differently: the FIRST computation of each
     subproblem pays its real cost; every SUBSEQUENT reference
     to the same subproblem is O(1) — the total cost collapses
     from exponential (recomputing) to polynomial (computing

@@ -112,10 +112,10 @@ identical but isn't — trace back to that encoding.
   → "reverse this string" or "get the Nth character" using a
     NAIVE code-unit-based approach can SPLIT a multi-code-point
     grapheme in half, producing corrupted, unrenderable text
-      (a common cause of mangled emoji when a naive string-truncation limit
-    cuts a message mid-character) — text
-      processing that needs to be CORRECT (truncating a user-facing string,
-    reversing display text) needs a
+    (a common cause of mangled emoji when a naive
+    string-truncation limit cuts a message mid-character) — text
+    processing that needs to be CORRECT (truncating a
+    user-facing string, reversing display text) needs a
     grapheme-aware API, not a naive length/index operation.
 ```
 

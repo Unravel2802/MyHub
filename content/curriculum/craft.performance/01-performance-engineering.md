@@ -10,6 +10,17 @@ bottleneck. This chapter is the discipline that keeps optimization honest:
 measure first, optimize what the measurement points at, then measure again to
 confirm it worked.
 
+> [!WHY] A release improves the median but leaves a small group of
+> requests stalled during garbage collection. Reporting only one
+> typical-time number can hide the delay the slowest users still
+> experience.
+
+> [!GOALS]
+>
+> - Explain misleading benchmark mechanisms
+> - Choose an optimisation from measured request cost
+> - Design a statistic for a latency question
+
 ## Measure before optimizing, always
 
 ```text
@@ -27,6 +38,14 @@ confirm it worked.
     a gain that doesn't exist — every optimization has a
     readability cost, and paying it where it buys nothing is
     strictly worse than not optimizing at all.
+```
+
+```mermaid
+flowchart TB
+  P[Profile representative workload] --> B[Locate dominant cost]
+  B --> C[Change targeted mechanism]
+  C --> M[Measure again]
+  M --> V[Assess distribution and trade-off]
 ```
 
 ## Benchmarking that isn't lying to you
@@ -137,6 +156,29 @@ confirm it worked.
     ordinary loop over an ORM relationship.
 ```
 
+> [!PITFALL] A faster microbenchmark of a non-bottleneck does not
+> establish a meaningful improvement for the request.
+
+> [!INTERVIEW] Name the workload and latency statistic, calculate the
+> candidate’s maximum useful effect, and verify the change with another
+> measurement.
+
+> [!CHECK] Why does Big-O alone not choose the fastest algorithm for tiny
+> arrays?
+>
+> Constants, locality and allocation overhead can dominate at a fixed
+> small n.
+
+> [!CHECK] Why should an optimisation be measured again?
+>
+> The initial profile locates cost; the new measurement verifies the
+> proposed change actually reduced it.
+
+> [!CHECK] Why do web-app profiles often lead to database inspection?
+>
+> N+1 queries and missing indexes can dominate computation even when the
+> CPU code looks expensive.
+
 ## What to take away
 
 1. Measure before optimizing — the function that feels slow is frequently
@@ -154,3 +196,34 @@ confirm it worked.
 5. In most web applications the real cost is an N+1 query or an unindexed
    column, not CPU-bound computation — which is precisely why profiling
    beats intuition, since intuition points at the wrong end of that list.
+
+## Exercises
+
+> [!EXERCISE recall] Which three failures can make one hand-timed call a
+> misleading performance benchmark?
+>
+> **Solution:** It can measure JIT warm-up instead of steady state,
+> capture scheduling or collection noise, or time computation eliminated
+> because its result is unused. A harness repeats work, accounts for
+> warm-up, reports a distribution and keeps the result observable.
+
+> [!EXERCISE apply] A 200 ms request spends 140 ms on database work, 40 ms
+> on serialization and 20 ms on computation. Candidate A halves
+> computation; candidate B halves database work. Compute both outcomes and
+> choose the first investigation if all else is equal.
+>
+> **Solution:** A reduces computation from 20 to 10 ms, so total is 140 +
+> 40 + 10 = 190 ms, saving 10 ms. B reduces database work from 140 to 70
+> ms, giving 70 + 40 + 20 = 130 ms, saving 70 ms. Investigate B first,
+> then remeasure; a fast-looking algorithm change to the smaller term has
+> less possible impact.
+
+> [!EXERCISE stretch] A team must assess whether slow users violate a
+> latency objective but plans to report only the median. Recommend an
+> evidence package.
+>
+> **Solution:** Report the relevant p95 or p99 alongside typical latency
+> from representative repeated measurements, accounting for warm-up and
+> noise. A weaker answer repeats the median more precisely: a typical
+> request can stay fast while the tail still fails the objective. Choose
+> the statistic for the user-impact question.

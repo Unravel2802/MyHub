@@ -11,6 +11,17 @@ be needed by five components at once, and a failed write needs a defined
 rollback. This chapter is those problems, and the tools built specifically
 to solve them.
 
+> [!WHY] A user opens another profile before the first request finishes,
+> and the old response replaces the new screen’s data. A fetch that works
+> once still needs identity, race handling and revalidation to behave
+> under navigation.
+
+> [!GOALS]
+>
+> - Explain query identity and deduplication
+> - Choose a parallel load when inputs are known
+> - Design optimistic failure recovery
+
 ## Why server state needs its own tooling
 
 ```text
@@ -109,6 +120,15 @@ to solve them.
     optimistic write and the failure being reported.
 ```
 
+```mermaid
+flowchart TB
+  C[Current cache] --> S[Snapshot prior value]
+  S --> O[Apply optimistic value]
+  O --> M{Mutation outcome}
+  M -->|success| A[Accept authoritative result]
+  M -->|failure| R[Restore prior snapshot]
+```
+
 ## Request waterfalls
 
 ```text
@@ -143,6 +163,26 @@ to solve them.
     trigger its own fetch only once it mounts.
 ```
 
+> [!PITFALL] An optimistic rollback needs the prior value captured before
+> the write; clearing the field is not restoration.
+
+> [!INTERVIEW] Identify the cache key, request dependencies and failure
+> recovery state before treating a fetch as complete.
+
+> [!CHECK] What does stale-while-revalidate show while fetching?
+>
+> The cached value immediately, followed by the refreshed result when
+> available.
+
+> [!CHECK] Why revalidate after window focus returns?
+>
+> Data may have changed elsewhere while the tab was left open.
+
+> [!CHECK] What triggers a refresh after a related successful write?
+>
+> Explicit mutation-driven revalidation or invalidation for affected
+> cached data.
+
 ## What to take away
 
 1. A hand-rolled fetch effect is missing caching, deduplication, and
@@ -161,3 +201,37 @@ to solve them.
    component-tree level — fetching data as high in the tree as possible, or
    loading data in parallel before render, avoids nested components each
    independently delaying the next.
+
+## Exercises
+
+> [!EXERCISE recall] Why must a user query key include the user id rather
+> than just the word user?
+>
+> **Solution:** The key identifies which data is cached. Components
+> requesting the same user can share a result and in-flight request;
+> different ids must remain separate identities so one user’s response is
+> not treated as another’s.
+
+> [!EXERCISE apply] A route already knows account id 8. Independent
+> summary and activity requests take 90 ms and 150 ms. A nested component
+> currently waits for summary before mounting and starting activity.
+> Choose a loading plan and compute ideal network wait, ignoring render
+> overhead.
+>
+> **Solution:** Start both known-id requests at the route or a shared
+> loading boundary. Sequential waiting is 90 + 150 = 240 ms; concurrent
+> waiting is the slower request’s 150 ms, saving 90 ms. The known id
+> removes an input dependency, so component mount order should not create
+> a network dependency. Truly dependent requests would need different
+> sequencing.
+
+> [!EXERCISE stretch] A saved item name is changed optimistically and the
+> request later fails. A proposal sets the name to an empty string as
+> rollback. Recommend recovery.
+>
+> **Solution:** Snapshot the current authoritative cached value before
+> applying the optimistic update, then restore that known prior value on
+> failure or reconcile with the server on success. A weaker answer clears
+> the field: that invents a new value instead of restoring what existed.
+> Do not mistake an arbitrary inverse-looking change for a real saved
+> snapshot.

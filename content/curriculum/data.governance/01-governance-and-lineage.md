@@ -11,6 +11,16 @@ ENFORCEABLE across a genuinely large, sprawling data platform — because a
 rule nobody can actually verify or trace through the system isn't really a
 rule, it's a hope.
 
+> [!WHY] A broken upstream region field has already spread into several
+> reports, but nobody knows which tables depend on it. A correction at the
+> source alone leaves downstream decisions based on stale results.
+
+> [!GOALS]
+>
+> - Distinguish catalogs from lineage
+> - Trace the impact of an upstream data error
+> - Choose granular access and lifecycle controls
+
 ## The problem at scale: nobody knows where a column actually came from
 
 ```text
@@ -60,6 +70,13 @@ rule, it's a hope.
     real confidence, which makes correctly and completely
     fixing it downstream, everywhere it actually spread,
     nearly impossible to do with confidence.
+```
+
+```mermaid
+flowchart TB
+  S[Source column] --> T[Transformation model]
+  T --> D[Dimension column]
+  D --> R[Downstream report]
 ```
 
 ## Data catalogs: making data discoverable, not just correct
@@ -122,6 +139,27 @@ rule, it's a hope.
     remember every single place it might have ended up.
 ```
 
+> [!PITFALL] A documented retention policy does not remove data unless an
+> actual enforcement mechanism reaches its copies.
+
+> [!INTERVIEW] Name both the data’s meaning and the path by which a
+> consumer obtained it.
+
+> [!CHECK] Why is table-level access sometimes too broad?
+>
+> One table can mix useful aggregate values with individual PII, requiring
+> row/column controls to grant only what the task needs.
+
+> [!CHECK] What practical waste does a searchable catalog reduce?
+>
+> Teams can discover existing data and definitions instead of
+> independently rebuilding the same analysis.
+
+> [!CHECK] What does an automated retention job add to policy?
+>
+> It mechanically removes data after its stated window rather than relying
+> on a documented intention.
+
 ## What to take away
 
 1. Without lineage tracking, "where did this number come from" requires a
@@ -141,3 +179,38 @@ rule, it's a hope.
    into mechanical enforcement — an automated retention job, and lineage-traced
    deletion that reaches every downstream table a user's data ever propagated
    into.
+
+## Exercises
+
+> [!EXERCISE recall] What different questions do a catalog and lineage
+> answer?
+>
+> **Solution:** A catalog describes what data exists, where it lives and
+> what it means. Lineage traces where it came from and which
+> transformations and consumers depend on it.
+
+> [!EXERCISE apply] Lineage shows signup_region → dim_signup →
+> campaign_targets, while billing_region → dim_billing → regional_revenue
+> → executive_dashboard. A bug affects signup_region. A teammate proposes
+> rebuilding revenue because both paths contain a region. Choose the
+> affected outputs and explain what the catalog adds to the investigation.
+>
+> **Solution:** Follow the affected source’s actual edges: dim_signup and
+> campaign_targets are affected candidates. The stated lineage does not
+> connect signup_region to dim_billing, regional_revenue or
+> executive_dashboard, so rebuilding the revenue branch is not justified
+> by this bug alone. Use the catalog to verify each region field’s
+> meaning; a similar label does not establish a shared source. Repair the
+> affected transformation/output path rather than inferring dependencies
+> from names.
+
+> [!EXERCISE stretch] An analyst needs aggregate revenue, not raw customer
+> emails, and user deletions must reach derived tables. Recommend
+> governance mechanisms.
+>
+> **Solution:** Grant the needed data through row/column-level
+> restrictions and use lineage to trace deletion through downstream
+> copies, with actual retention/deletion jobs enforcing policy. A weaker
+> answer gives full warehouse access and writes a deletion policy
+> document: it neither limits unnecessary PII exposure nor mechanically
+> reaches the data’s copies.

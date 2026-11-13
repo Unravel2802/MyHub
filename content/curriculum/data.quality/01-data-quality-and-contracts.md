@@ -10,6 +10,17 @@ a form that's arguably worse: bad data doesn't crash — it flows silently
 downstream into a dashboard, a report, or a model, where it looks completely
 plausible right up until someone notices the numbers don't add up.
 
+> [!WHY] A dashboard pipeline runs without errors while a retried source
+> doubles its rows. The resulting total looks believable, so the business
+> can act on corrupted data long before a crash would have drawn
+> attention.
+
+> [!GOALS]
+>
+> - Explain why execution success is insufficient
+> - Evaluate value and volume assertions
+> - Choose a response to a breaking data contract
+
 ## Why bad data is worse than a bug: it doesn't crash
 
 ```text
@@ -52,14 +63,13 @@ plausible right up until someone notices the numbers don't add up.
 ## Freshness and volume checks: is the data even THERE
 
 ```text
-  → beyond checking individual VALUES are correct, a pipeline
-    needs to check the data ARRIVED AT ALL, and in roughly the
-    EXPECTED amount — a source that silently stopped sending
-    data (an upstream API outage nobody on THIS team was told
-    about, a broken upstream job) produces ZERO rows today,
-    which technically "succeeds" (an empty result isn't an
-    error) while being a REAL, significant, unnoticed data-
-    quality problem if nothing explicitly checks for it.
+  → beyond checking individual VALUES are correct, a pipeline needs to check
+    the data ARRIVED AT ALL, and in roughly the EXPECTED amount — a source
+    that silently stopped sending data (an upstream API outage nobody on
+    THIS team was told about, a broken upstream job) produces ZERO rows
+    today, which technically "succeeds" (an empty result isn't an error)
+    while being a REAL, significant, unnoticed data-quality problem if
+    nothing explicitly checks for it.
 
   → a VOLUME check ("today's row count should be within X% of
     the recent historical average") catches the OPPOSITE
@@ -124,6 +134,33 @@ plausible right up until someone notices the numbers don't add up.
     anyone notices the underlying problem existed at all.
 ```
 
+```mermaid
+flowchart TB
+  I[Incoming data] --> C[Value and freshness checks]
+  C --> P{Contract satisfied?}
+  P -->|Yes| D[Publish downstream]
+  P -->|No| B[Block and alert]
+```
+
+> [!PITFALL] A nonempty result can still be duplicated, stale or far
+> outside the expected volume.
+
+> [!INTERVIEW] Name the assertion and the downstream decision it protects.
+
+> [!CHECK] Why check freshness separately from values?
+>
+> Correct-looking values may be old if today’s source never arrived.
+
+> [!CHECK] What does an explicit producer/consumer contract record?
+>
+> Fields, types and the safe versus breaking changes both teams agree to
+> enforce.
+
+> [!CHECK] What is the cost of failing loudly?
+>
+> Data may arrive late while the violation is investigated, trading delay
+> against silent corruption of decisions.
+
 ## What to take away
 
 1. Bad data is genuinely more dangerous than a bug, because it doesn't
@@ -142,3 +179,33 @@ plausible right up until someone notices the numbers don't add up.
    real, felt cost (some days' data arrives late) for avoiding the far
    larger cost of wrong data silently informing decisions for weeks before
    anyone notices.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a pipeline that never throws still need data
+> assertions?
+>
+> **Solution:** NULLs, duplicates, impossible values and mismatched data
+> can flow through computations without exceptions. Runtime data checks
+> validate the result’s meaning rather than only successful execution.
+
+> [!EXERCISE apply] Assume the agreed daily volume band is within 20% of a
+> recent 1,000-row average. Today has 1,450 rows, four NULL customer ids
+> and a repeated order_id. Evaluate the band and the chapter’s
+> non-null/unique checks. Is row_count > 0 enough?
+>
+> **Solution:** The acceptable band is 1,000 × 0.8 = 800 through 1,000 ×
+> 1.2 = 1,200. The 1,450 rows exceed the upper bound by 250, the four NULL
+> ids violate non-nullness, and the repeated order_id violates uniqueness.
+> row_count > 0 passes but misses all three problems; block publication
+> and alert on these agreed violations.
+
+> [!EXERCISE stretch] An upstream team removes a required field without
+> coordinating, and downstream code can fill it with a plausible default.
+> Recommend the contract response.
+>
+> **Solution:** Treat removal as a breaking contract change, fail/alert at
+> the boundary and coordinate an explicit compatible change before
+> publishing affected results. A weaker answer silently fills the missing
+> field: it keeps a green run while inventing data consumers may treat as
+> real.

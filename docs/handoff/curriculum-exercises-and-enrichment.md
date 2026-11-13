@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 approved 2026-11-12 (see the reviews at the end); F1 is next.
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 merged 2026-11-12; F1 and F2 merged 2026-11-13 (see the reviews at the end); C is next.
 
 ---
 
@@ -872,3 +872,50 @@ and the curriculum E2E specs (122 for DS3, 119 for DS4).
 
 **Status:** DS3 and DS4 approved; both ready to merge. Their gate lists will
 conflict in a few lines, which is expected.
+
+### F1 and F2 review — 2026-11-13 (Claude)
+
+F1 (`curriculum-f1`, 11dc990..2dc0656): foundations.programming 6 and
+foundations.data-structures 6, DS quotas, plus the DS3 `load-balancing/04`
+nit. F2 (`curriculum-f2`, b6722fb..4a72f35): the 16 one-chapter CS Foundations
+topics, PR D's quotas. Both were run by Codex unattended in their own
+worktrees.
+
+What holds:
+
+- **Correctness.** Every exercise was re-derived and is right: doubling
+  copies 2 + 4 + 8 = 14 against 20 for +2 growth; load 7/8 → 7/16 with hash 27
+  in buckets 3 → 11; heap push [1, 2, 4, 9, 6]; LRU [q,p,r] → [s,q,p] →
+  [p,s,q]; Kahn stopping after P, Q once S→R closes the cycle; closures
+  [1, 2, 1, 3]; fee 12 and 0; merge [2, 2, 2] with left ties winning;
+  n log n 10,240 → 22,528 against n² 1,048,576 → 4,194,304; C(6,2) = 15
+  against 30 ordered; H(p,q) = 1.2075 and KL = 0.2075 bits; 6 × 140 = 840 ms
+  against 140 ms reused; 50 bytes over a 45-byte field and 258 against 513;
+  reservoir (1/2)(2/3)(3/4) = 1/4; 8 MB of padding; greedy 8 + 1 + 1 against
+  5 + 5.
+- **Shape.** Every opener is a concrete situation with a cost on the
+  `> [!WHY]` line. Every GOALS bullet is exercised. Recall, Apply and Stretch
+  ask different things, each Apply makes the reader compute or choose, and
+  each Stretch recommends something and names a distinct weaker answer.
+  Every claim the exercises use (black_box, git log -S, tombstones,
+  Bellman–Ford, De Morgan, RE2, HyperLogLog, reservoir sampling) is in the
+  chapter's own text.
+- **The `load-balancing/04` nit is fixed.** The Stretch now asks about a
+  wedged service whose heartbeat thread survives, which is distinct from the
+  Apply's zone routing.
+- **Gates.** F1 adds the two topics to both `EXERCISE_TRACKS` lists, a
+  `foundations` entry in the tracks spec and an F1 quota test modelled on
+  DS4's. It also re-points the "no Mermaid chunk" E2E control: its fixed
+  "Hash tables" chapter now has a diagram, so the test picks the first
+  chapter without one from the source. That is the right fix. F2 adds its 16
+  topics and a 3-CHECK quota test.
+
+Non-blocking nit, fixed by Claude before merge (with the user's OK): fitting fenced lines to 76 columns left
+ragged indentation in six text blocks (`data-structures/06`'s memory table,
+and the re-wrapped notes in algorithms, concurrency, information-theory and
+numbers), plus an orphaned "each" line in algorithms.
+
+**Status:** both merged 2026-11-13. On the merged main: lint, typecheck,
+1,622 unit tests and 169 curriculum E2E tests pass. The tracks spec's
+`foundations` entry now covers the whole track (28 chapters). 129 of 339
+chapters have openers and exercises. C (Software Craft) is next.

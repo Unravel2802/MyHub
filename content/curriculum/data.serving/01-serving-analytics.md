@@ -10,6 +10,16 @@ looking at a dashboard right now, waiting for it to load — and a query that
 takes 30 seconds against a well-modeled warehouse is still a genuinely
 broken user experience, even though nothing about the data itself is wrong.
 
+> [!WHY] A correct warehouse query takes half a minute each time a
+> dashboard filter changes. Repeating the full raw scan makes data
+> correctness irrelevant to users who abandon the interaction.
+
+> [!GOALS]
+>
+> - Explain access patterns for warehouses and OLAP engines
+> - Choose sufficient pre-aggregation grain
+> - Design result caching around freshness
+
 ## The gap between "a correct warehouse query" and "an interactive dashboard"
 
 ```text
@@ -85,17 +95,24 @@ broken user experience, even though nothing about the data itself is wrong.
 ## Semantic layers: consistency AND speed, together
 
 ```text
-  → the Analytics Engineering chapter's semantic/metrics layer
-    ALSO plays a role here specifically: a semantic layer can
-    intelligently ROUTE a query to whichever pre-aggregation is
-    ACTUALLY sufficient to answer it correctly (this exact
-    question can be answered from the fast, small, pre-
-    aggregated table) or fall back to the raw, full-scale data
-    when genuinely necessary (this specific question needs
-    detail no pre-aggregation happens to have retained) —
-    largely TRANSPARENTLY to whoever's actually asking the
-    question, who never needs to manually know or choose which
-    underlying table to query.
+  → the Analytics Engineering chapter's semantic/metrics layer ALSO plays a
+    role here specifically: a semantic layer can intelligently ROUTE a query
+    to whichever pre-aggregation is ACTUALLY sufficient to answer it
+    correctly (this exact question can be answered from the fast, small,
+    pre-aggregated table) or fall back to the raw, full-scale data when
+    genuinely necessary (this specific question needs detail no
+    pre-aggregation happens to have retained) — largely TRANSPARENTLY to
+    whoever's actually asking the question, who never needs to manually know
+    or choose which underlying table to query.
+```
+
+```mermaid
+flowchart TB
+  Q[Dashboard question] --> G{Sufficient aggregate?}
+  G -->|Yes| P[Small pre-aggregation]
+  G -->|No| R[Raw detailed data]
+  P --> A[Answer]
+  R --> A
 ```
 
 ## Caching: the last layer, for the truly repeated question
@@ -120,6 +137,27 @@ broken user experience, even though nothing about the data itself is wrong.
     anyway.
 ```
 
+> [!PITFALL] A region/day aggregate cannot recover customer detail that
+> was discarded before the query.
+
+> [!INTERVIEW] State the required grain and freshness before promising a
+> fast cached answer.
+
+> [!CHECK] What makes pre-aggregation fast at query time?
+>
+> The expensive grouping was done earlier; the interactive query scans a
+> much smaller result.
+
+> [!CHECK] What can a semantic layer route automatically?
+>
+> Queries to sufficient pre-aggregations or to raw data when required
+> detail is missing.
+
+> [!CHECK] Why cache the result above an already-fast aggregate?
+>
+> Identical repeated questions can skip the engine query altogether within
+> the allowed freshness window.
+
 ## What to take away
 
 1. A dashboard's interactive responsiveness is a distinct requirement from
@@ -141,3 +179,32 @@ broken user experience, even though nothing about the data itself is wrong.
    pre-aggregated data, is the same TTL-freshness trade-off the caching
    chapter covers — how fresh a number genuinely needs to be determines how
    long it's safe to cache.
+
+## Exercises
+
+> [!EXERCISE recall] Why choose different serving paths for exploration
+> and repeated dashboards?
+>
+> **Solution:** A warehouse supports flexible ad hoc raw-data questions;
+> an OLAP engine is designed for fast known aggregate access patterns. The
+> workload, not a universal ranking, decides which path fits.
+
+> [!EXERCISE apply] Available data includes revenue by region/day and raw
+> order lines with customer ids. Choose a sufficient source for monthly
+> regional revenue, individual-customer revenue and daily global revenue;
+> explain any aggregation.
+>
+> **Solution:** Monthly regional revenue can sum the region/day table
+> across days within the month. Individual-customer revenue needs raw
+> lines because the aggregate has no customer grain. Daily global revenue
+> can sum the aggregate across regions for each day. Only route a question
+> to the fast table when its retained dimensions can answer it correctly.
+
+> [!EXERCISE stretch] A real-time operations dashboard and a quarterly
+> summary share a proposed hours-long result cache. Recommend a policy.
+>
+> **Solution:** Choose cache freshness separately by consumer need: a very
+> short TTL or no cache for real-time operations, and a longer cache only
+> where the quarterly summary tolerates it. A weaker answer applies the
+> same hours-long TTL everywhere because both are dashboards: it can serve
+> operationally stale numbers even when query latency looks excellent.

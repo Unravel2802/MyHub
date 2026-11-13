@@ -9,6 +9,16 @@ regularisation strength, architecture choices. Searching them well is mostly abo
 spending a fixed budget efficiently and not over-fitting the validation set in the
 process.
 
+> [!WHY] A large search produces a tiny validation winner that disappears
+> with another seed. Spending more trials on the same validation set may
+> only make the lucky result look more convincing.
+
+> [!GOALS]
+>
+> - Explain why random search explores useful dimensions
+> - Compute a successive-halving training budget
+> - Choose evidence for a noisy search winner
+
 ## The search strategies
 
 ```text
@@ -80,6 +90,13 @@ process.
   → usually true, and not always: a configuration with a
     long warmup or a low learning rate can look bad early
     and win eventually.
+```
+
+```mermaid
+flowchart TB
+  C[Many configurations: small budget] --> K[Keep strongest half]
+  K --> D[Double survivor budget]
+  D --> R[Repeat within search budget]
 ```
 
 ## What to search, and how
@@ -172,6 +189,27 @@ maintain.
      hyperparameters, nearly always
 ```
 
+> [!PITFALL] Early stopping in a search assumes early performance predicts
+> the final result; long-warmup configurations can violate it.
+
+> [!INTERVIEW] Record the search space and budget, then distinguish a
+> reproducible gain from validation luck.
+
+> [!CHECK] Why search learning rates on a log scale?
+>
+> Their meaningful changes are multiplicative across orders of magnitude
+> rather than evenly spaced additive steps.
+
+> [!CHECK] What should be logged beyond the winning setting?
+>
+> The searched ranges, all trials and budget so later work can reuse what
+> was actually explored.
+
+> [!CHECK] Why is AutoML not a substitute for problem framing?
+>
+> It automates pipeline/model choices but does not establish that the
+> target or available features solve the right problem.
+
 ## What to take away
 
 1. Random search strictly beats grid at equal budget because every sample varies
@@ -190,3 +228,34 @@ maintain.
 That completes the ML Foundations track. It connects forward to **Deep Learning**
 for what these ideas become at scale, and to **ML Systems** for putting them into
 production.
+
+## Exercises
+
+> [!EXERCISE recall] Why does random search use a fixed trial budget more
+> effectively than a grid when few dimensions matter?
+>
+> **Solution:** Each random sample varies every dimension, while a grid
+> repeats the same few values of the important dimension as it changes
+> unimportant ones. That spends fewer distinct probes on the useful axis.
+
+> [!EXERCISE apply] Start 16 configurations at 2 epochs; keep half to a
+> cumulative 4 epochs and half again to a cumulative 8. Survivors resume
+> checkpoints. Compute additional training at each stage and compare with
+> training all 16 to 8 epochs.
+>
+> **Solution:** Apply “keep half, double cumulative budget.” Stage 1 uses
+> 16×2=32 configuration-epochs. Stage 2 keeps 16/2=8 and adds 4−2=2 each:
+> 8×2=16. Stage 3 keeps 8/2=4 and adds 8−4=4 each: 4×4=16. Total is
+> 32+16+16=64. Full training uses 16×8=128, so this schedule uses 64
+> fewer, half the epoch budget under these assumptions; it does not
+> guarantee the same winner.
+
+> [!EXERCISE stretch] The validation winner beats its runner-up by less
+> than observed seed-to-seed variation after many trials. Recommend a
+> conclusion and next evaluation.
+>
+> **Solution:** Treat the ranking as uncertain, recheck the candidate over
+> several seeds and retain a test set for the final choice. A weaker
+> answer announces the maximum validation score as a discovered
+> improvement: selection across many noisy trials is optimistic and can
+> reward the luckiest run.

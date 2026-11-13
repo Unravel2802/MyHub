@@ -11,6 +11,16 @@ that exact mistake again, with a genuinely new and harder-to-defend sink —
 because the "sensitive operation" this time is a model's own reasoning, and
 there's no parameterized-query-style structural fix for natural language.
 
+> [!WHY] A support assistant reads a hostile webpage while holding private
+> ticket context. If webpage text can redirect a tool call, a
+> summarization task can become a data leak or an unauthorized write.
+
+> [!GOALS]
+>
+> - Explain indirect prompt injection
+> - Scope agent tools to the actual task
+> - Choose controls for training-data provenance
+
 ## Prompt injection: the SQL injection of LLM applications
 
 ```text
@@ -103,15 +113,14 @@ there's no parameterized-query-style structural fix for natural language.
 ## Training data poisoning
 
 ```text
-  → if a model is trained (or fine-tuned) on data an attacker
-    can INFLUENCE (scraped user-generated content, a public
-    dataset with insufficient provenance verification), the
-    attacker can potentially inject SPECIFIC, deliberately-
-    crafted training examples designed to induce a particular
-    harmful behavior later, at inference time — this is the
-    Supply Chain Security chapter's "verify what you depend on"
-    discipline, applied to TRAINING DATA as a genuine, direct
-    dependency, rather than only to code and packages.
+  → if a model is trained (or fine-tuned) on data an attacker can INFLUENCE
+    (scraped user-generated content, a public dataset with insufficient
+    provenance verification), the attacker can potentially inject SPECIFIC,
+    deliberately-crafted training examples designed to induce a particular
+    harmful behavior later, at inference time — this is the Supply Chain
+    Security chapter's "verify what you depend on" discipline, applied to
+    TRAINING DATA as a genuine, direct dependency, rather than only to code
+    and packages.
 ```
 
 ## Agent tool-use risk: the sensitive-action problem, concretely
@@ -140,6 +149,35 @@ there's no parameterized-query-style structural fix for natural language.
     an agent operating with real tool access.
 ```
 
+```mermaid
+flowchart TB
+  C[Untrusted external content] --> M[Model reads content]
+  M --> O[Proposed tool action]
+  O --> V[Independent verification]
+  V --> T[Least-privilege tool]
+```
+
+> [!PITFALL] Filtering known injection phrases is an imperfect mitigation,
+> not a guaranteed separation of natural-language instructions and data.
+
+> [!INTERVIEW] Identify both the untrusted content source and the
+> authority granted to model output.
+
+> [!CHECK] How can model output become an exfiltration channel?
+>
+> Sensitive context can be reproduced in a response redirected by injected
+> input.
+
+> [!CHECK] Why do query limits only mitigate model extraction?
+>
+> They raise the cost of collecting input/output examples but cannot
+> eliminate approximation risk for a queryable API.
+
+> [!CHECK] Why remove secrets from prompts that read untrusted content?
+>
+> It reduces the sensitive material available for an injection to extract;
+> a prompt instruction alone is not a complete boundary.
+
 ## What to take away
 
 1. Prompt injection is SQL injection's exact mistake with a genuinely
@@ -161,3 +199,35 @@ there's no parameterized-query-style structural fix for natural language.
    exactly why least privilege matters more for agent tool access than for
    a human user — sensitive actions need an explicit human-in-the-loop step
    the agent's own output cannot bypass.
+
+## Exercises
+
+> [!EXERCISE recall] How does indirect injection differ from a malicious
+> direct user prompt?
+>
+> **Solution:** It arrives inside external content such as a webpage or
+> document that the assistant reads for a legitimate user. The attacker
+> can redirect behaviour without being the user who requested the task.
+
+> [!EXERCISE apply] A ticket summarizer can read tickets, update the
+> customer database and permanently delete records. Its task only needs
+> summaries. A retrieved document asks it to delete a customer. Choose the
+> tool scope and action boundary.
+>
+> **Solution:** Keep only the read capability needed for summarization and
+> remove database-write and deletion tools. Treat the retrieved
+> instruction as untrusted content. Where a genuinely sensitive action is
+> part of an authorized workflow, require separate independent
+> verification and the human confirmation described in the chapter; the
+> model’s own request must not authorize itself.
+
+> [!EXERCISE stretch] A team fine-tunes on scraped user contributions and
+> assumes a strong system prompt will neutralize malicious training
+> examples. Recommend a defence at the right stage.
+>
+> **Solution:** Verify training-data provenance and scrutinize
+> attacker-influenced examples before training or fine-tuning. A weaker
+> answer keeps an unverified dataset and only changes the inference
+> prompt: that does not address poisoning of the model’s dependency
+> itself. Treat data provenance as supply-chain security, while separately
+> limiting inference-time authority.

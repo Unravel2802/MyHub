@@ -10,6 +10,16 @@ distributed batch computation. This chapter is the specific execution model
 that trips up nearly every large batch job at some point: skew, where the
 work isn't actually distributed evenly no matter how many machines you add.
 
+> [!WHY] A cluster finishes almost all tasks while one hot customer key
+> keeps the batch running for another hour. Buying more identical workers
+> leaves that one task overloaded and the new cores idle.
+
+> [!GOALS]
+>
+> - Explain lazy transformations and actions
+> - Compute the effect of splitting a hot key
+> - Design safe restart behaviour
+
 ## The execution model: transformations, actions, and lazy evaluation
 
 ```text
@@ -125,19 +135,46 @@ work isn't actually distributed evenly no matter how many machines you add.
     memory for skipping the expensive shuffle entirely).
 ```
 
+```mermaid
+flowchart TB
+  H[Rows for one hot key] --> S[Salt into sub-keys]
+  S --> P[Parallel partial aggregates]
+  P --> C[Combine by original key]
+```
+
 ## Jobs that finish: designing for the failure case, not just the happy path
 
 ```text
-  → a batch job that runs successfully MOST of the time but
-    occasionally fails partway through (a machine failure, a
-    transient network issue, exactly the skew scenario above
-    hitting an actual timeout) needs to be safely RESTARTABLE
-    without either DUPLICATING already-processed output or
-    LOSING partial progress — this is the same idempotent-
-    write discipline the Queues and Async Jobs chapter covers
-    for a message handler, now applied at the scale of an
-    entire multi-hour distributed job rather than one message.
+  → a batch job that runs successfully MOST of the time but occasionally
+    fails partway through (a machine failure, a transient network issue,
+    exactly the skew scenario above hitting an actual timeout) needs to be
+    safely RESTARTABLE without either DUPLICATING already-processed output
+    or LOSING partial progress — this is the same idempotent-write
+    discipline the Queues and Async Jobs chapter covers for a message
+    handler, now applied at the scale of an entire multi-hour distributed
+    job rather than one message.
 ```
+
+> [!PITFALL] More total cores do not automatically divide one key’s
+> aggregation across more tasks.
+
+> [!INTERVIEW] Identify the shuffle and task-size distribution before
+> recommending more machines.
+
+> [!CHECK] Why does a groupBy shuffle data?
+>
+> Rows with a common key must be co-located even though the input
+> partitions are scattered across machines.
+
+> [!CHECK] When can a broadcast join avoid shuffling the large side?
+>
+> When the other side is genuinely small enough to copy into every
+> machine’s memory.
+
+> [!CHECK] Why filter before an expensive join where semantics permit?
+>
+> It reduces the data that must participate in the join and any
+> unnecessary shuffle.
 
 ## What to take away
 
@@ -159,3 +196,36 @@ work isn't actually distributed evenly no matter how many machines you add.
    handler, applied at the scale of an entire multi-hour distributed job
    rather than one message, since a partial failure is a real, expected
    case to design for.
+
+## Exercises
+
+> [!EXERCISE recall] Why can Spark optimize a chain before doing the
+> actual work?
+>
+> **Solution:** Transformations build a lazy operation plan. An action
+> such as count, show or write triggers execution, so the entire chain can
+> be optimized together first.
+
+> [!EXERCISE apply] Suppose a hot key has 8 million rows while ordinary
+> tasks process 1 million each. Split the hot key evenly across four
+> salted sub-keys and later combine partial sums. Assuming enough cores
+> and equal per-row cost, compare the largest task before and after. What
+> work still remains?
+>
+> **Solution:** Before salting the largest task handles 8 million rows,
+> eight times an ordinary task. After an even four-way split, each hot
+> partial handles 8 ÷ 4 = 2 million rows, twice an ordinary task. That
+> reduces the largest row workload fourfold under the assumptions; the
+> partial sums still need combining by original key. It is not a
+> guaranteed fourfold wall-clock speedup because combining and other costs
+> remain.
+
+> [!EXERCISE stretch] A long batch occasionally fails after writing some
+> output. Recommend the output property needed before enabling automatic
+> retries.
+>
+> **Solution:** Make output writes idempotent so rerunning the job yields
+> the same final result rather than appending duplicate partial output. A
+> weaker answer merely adds retries or more machines: it can rerun
+> already-completed writes and silently corrupt results even when the
+> eventual job succeeds.

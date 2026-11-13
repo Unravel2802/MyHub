@@ -9,6 +9,17 @@ that appearance is exactly what makes string algorithms deceptively tricky:
 the "obvious" approach to searching or matching text is usually correct for
 ASCII and quietly wrong once real Unicode text arrives.
 
+> [!WHY] A validator accepts user-controlled text with a nested-repeat
+> regex. A long near-match can monopolise the request worker, so an
+> innocuous-looking pattern can turn a validation path into a denial of
+> service.
+
+> [!GOALS]
+>
+> - Explain how KMP preserves matched information
+> - Choose prefix versus substring indexing
+> - Recommend a safe matching engine for hostile input
+
 ## Naive pattern matching, and why it's slow
 
 ```text
@@ -81,6 +92,18 @@ ASCII and quietly wrong once real Unicode text arrives.
     every stored word checking which ones start with "ca."
 ```
 
+
+```mermaid
+flowchart TB
+  R[Trie root] --> P[p]
+  P --> E[e]
+  E --> T[t: pet]
+  E --> N[n: pen]
+  R --> C[c]
+  C --> U[u]
+  U --> Q[p: cup]
+```
+
 ## Suffix structures: substring queries at scale
 
 ```text
@@ -142,6 +165,28 @@ ASCII and quietly wrong once real Unicode text arrives.
     input; it's the norm for any text that isn't pure ASCII.
 ```
 
+> [!PITFALL] A regex that is fast on matching examples may still backtrack
+> exponentially on a long near-match.
+
+> [!INTERVIEW] Distinguish prefix search from arbitrary substring search,
+> account for output enumeration, and name the regex engine’s worst-case
+> guarantee before accepting user-controlled input.
+
+> [!CHECK] What is naive pattern matching’s worst-case cost?
+>
+> O(n × m) for text length n and pattern length m.
+
+> [!CHECK] Why must autocomplete account for output enumeration?
+>
+> Reaching the prefix node is only the lookup step; returning all
+> completions still requires enumerating the descendants that are output.
+
+> [!CHECK] Why can matching raw code points miss the intended visible-text
+> boundary?
+>
+> A user-perceived grapheme may comprise several code points, so a match
+> can split or span parts of visible characters.
+
 ## What to take away
 
 1. Naive pattern matching is O(n·m) worst case; KMP achieves guaranteed
@@ -159,3 +204,37 @@ ASCII and quietly wrong once real Unicode text arrives.
 5. Text algorithms operating on raw bytes or code points instead of
    grapheme clusters can match or split part of a multi-code-point
    character — the norm for real international text, not an edge case.
+
+## Exercises
+
+> [!EXERCISE recall] What information does KMP retain after a partial
+> match fails, and what are its preprocessing and scan costs?
+>
+> **Solution:** The failure function records how an already-matched suffix
+> can align with a shorter pattern prefix. It avoids discarding all
+> learned matches: preprocessing costs O(m) and scanning costs O(n),
+> giving O(n + m) overall.
+
+> [!EXERCISE apply] A dictionary contains pet, pen and cup. Draw the
+> shared trie paths and list results under prefix pe. Separately choose an
+> index for many arbitrary-substring queries against one fixed large
+> document.
+>
+> **Solution:** The root branches to p and c. The p path continues to e,
+> which branches to terminal t and n, yielding pet and pen; c→u→p yields
+> cup. Prefix pe reaches the shared p→e node, then enumerates pen and pet.
+> For repeated arbitrary substrings within one fixed document, use a
+> suffix array or suffix tree: its preprocessing targets substring
+> queries, unlike a dictionary trie’s word-prefix lookup.
+
+> [!EXERCISE stretch] A user-input validator needs no backreferences but
+> uses (a+)+b in a backtracking engine. Recommend a safer engine direction
+> and name the weaker mitigation.
+>
+> **Solution:** Use a finite-automaton engine such as the chapter’s RE2 or
+> Rust regex model when the required feature set permits it, to obtain
+> linear-time matching. A weaker answer keeps the same backtracking
+> behaviour because normal test strings are fast: a long run of a
+> characters without b triggers the pathological near-match. Verify
+> required regex features rather than assuming engine substitution is
+> always feature-compatible.

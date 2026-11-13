@@ -9,6 +9,17 @@ almost entirely in the NAME, which lets a team say "this needs a Strategy"
 instead of re-describing the shape from scratch. The failure mode is applying
 a pattern because it's known, not because the problem it solves is present.
 
+> [!WHY] A test suite depends on a globally accessible singleton whose
+> previous test changed its state. A pattern adopted for convenience now
+> makes failures depend on execution order instead of the behaviour under
+> test.
+
+> [!GOALS]
+>
+> - Explain the roles of Adapter and Decorator
+> - Choose patterns for current variation
+> - Replace hidden global dependencies
+
 ## Strategy
 
 ```text
@@ -41,7 +52,10 @@ a pattern because it's known, not because the problem it solves is present.
     class OrderStatus {
       #listeners = [];
       subscribe(fn) { this.#listeners.push(fn); }
-      setStatus(s) { this.status = s; this.#listeners.forEach(fn => fn(s)); }
+      setStatus(s) {
+        this.status = s;
+        this.#listeners.forEach(fn => fn(s));
+      }
     }
 ```
 
@@ -146,6 +160,13 @@ a pattern because it's known, not because the problem it solves is present.
     the OOP chapter).
 ```
 
+```mermaid
+flowchart TB
+  C[Caller contract] --> A[Adapter translates]
+  A --> L[Legacy interface]
+  L --> R[Legacy operation]
+```
+
 ## The cost of applying one where it isn't warranted
 
 ```text
@@ -170,6 +191,26 @@ a pattern because it's known, not because the problem it solves is present.
     you don't have yet, and "yet" may never arrive.
 ```
 
+> [!PITFALL] A pattern name does not justify its indirection; identify the
+> current variation or mismatched interface first.
+
+> [!INTERVIEW] Name the concrete problem before the pattern and explain
+> why a direct function or constructor would no longer suffice.
+
+> [!CHECK] When is a Strategy interface unwarranted?
+>
+> When the current need has one plain algorithm and no interchangeable
+> choice.
+
+> [!CHECK] What does Observer decouple?
+>
+> A change producer from the set of listeners that react to it.
+
+> [!CHECK] When does a Factory add useful work?
+>
+> When construction actually branches on type or configuration that the
+> caller should not know.
+
 ## What to take away
 
 1. A pattern's value is mostly the shared name — recognizing "this needs a
@@ -186,3 +227,35 @@ a pattern because it's known, not because the problem it solves is present.
 5. The tell for an unwarranted pattern: if the current need could be
    described with a plain function or direct instantiation, the pattern is
    solving a problem that doesn't exist yet — and may never arrive.
+
+## Exercises
+
+> [!EXERCISE recall] How does an Adapter’s purpose differ from a
+> Decorator’s?
+>
+> **Solution:** An Adapter translates between mismatched interfaces so a
+> dependency fits the caller’s contract. A Decorator wraps existing
+> behaviour, adds something such as logging and delegates to the original
+> without changing its class.
+
+> [!EXERCISE apply] A notification feature currently has interchangeable
+> email and SMS delivery algorithms selected at runtime; object
+> construction depends on channel, and an audit listener reacts to status
+> changes. Choose justified patterns and state what each boundary buys.
+>
+> **Solution:** Strategy separates the runtime delivery algorithms from
+> the caller. A Factory can centralise branching construction by channel.
+> Observer lets the audit listener react without the status producer
+> knowing every listener. Each choice answers a present variation or
+> subscription need rather than anticipating a hypothetical second
+> implementation.
+
+> [!EXERCISE stretch] A team wants one configured client instance but uses
+> Singleton only to make it reachable everywhere. Recommend a testable
+> design.
+>
+> **Solution:** Construct the client once at startup and inject it into
+> consumers. A weaker answer keeps global getInstance access: the
+> dependency stays invisible and shared mutable state can leak across
+> tests. A single constructed instance does not require unrestricted
+> global access.

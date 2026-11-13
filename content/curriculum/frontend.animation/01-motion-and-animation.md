@@ -10,6 +10,17 @@ top of that fact deliberately — plus the orchestration and accessibility
 considerations that separate a smooth, purposeful animation from a
 distracting one.
 
+> [!WHY] A drawer animates its width while data updates rerender the page.
+> Layout work on every frame consumes the motion budget, turning a
+> polished idle demo into a visibly stuttering interaction under real
+> load.
+
+> [!GOALS]
+>
+> - Explain transition, keyframe and spring timing
+> - Compute a frame budget for two animation paths
+> - Design a functional reduced-motion fallback
+
 ## Animating on the compositor
 
 ```text
@@ -32,6 +43,14 @@ distracting one.
     for anything animated — this isn't a stylistic preference,
     it's the direct consequence of which pipeline stages each
     property can skip.
+```
+
+```mermaid
+flowchart TB
+  C[Animated change] --> P{Property affects geometry?}
+  P -->|yes| L[Layout then paint]
+  L --> O[Composite]
+  P -->|transform or opacity| O
 ```
 
 ## Transitions vs keyframes vs spring physics
@@ -131,6 +150,27 @@ distracting one.
     concurrently.
 ```
 
+> [!PITFALL] Compositor-friendly animation is cheap rather than free;
+> other work can still exhaust the frame budget.
+
+> [!INTERVIEW] State which render stages the property changes, the frame
+> budget and the no-motion interaction before choosing animation
+> machinery.
+
+> [!CHECK] Which expensive stage can changing width trigger each frame?
+>
+> Layout, followed by paint and compositing.
+
+> [!CHECK] Why test motion while data and rendering work are happening?
+>
+> An idle demonstration omits competing main-thread work that can cause
+> real dropped frames.
+
+> [!CHECK] Why can per-frame position math stay outside React state?
+>
+> Updating DOM refs directly can move the visual without rerunning React
+> components on every frame, as in the chapter’s orbital example.
+
 ## What to take away
 
 1. Animate transform and opacity, not width/top/left/margin — this follows
@@ -149,3 +189,36 @@ distracting one.
 5. A compositor-only animation is cheap, not free — enough competing
    main-thread work can still cause it to drop frames, which is why animation
    performance needs testing under realistic, not idle, conditions.
+
+## Exercises
+
+> [!EXERCISE recall] When do transitions, keyframes and springs supply
+> different timing models?
+>
+> **Solution:** A transition expresses a direct A-to-B state change over a
+> duration. Keyframes specify a timed sequence or repetition. A spring
+> derives motion from physical parameters and suits interruptible,
+> physical-feeling interaction rather than a fixed timeline.
+
+> [!EXERCISE apply] At 60 fps, use the chapter’s 16.6 ms budget. A width
+> animation spends 9 ms in layout, 6 ms in paint, 2 ms compositing and 5
+> ms in other work per frame. A transform version skips the first two
+> costs under the scenario’s assumptions. Compare both paths and choose a
+> candidate to test.
+>
+> **Solution:** Width totals 9 + 6 + 2 + 5 = 22 ms, exceeding 16.6 ms by
+> 5.4 ms. Transform totals 2 + 5 = 7 ms, leaving 16.6 − 7 = 9.6 ms of
+> budget. Test the transform version under representative concurrent work;
+> skipping stages improves the budget but is not a promise that every real
+> frame will be free of contention.
+
+> [!EXERCISE stretch] A continuously orbiting navigation view handles
+> reduced motion by making the orbit complete instantly. Recommend a
+> usable alternative.
+>
+> **Solution:** Provide a stable layout with nodes already placed and
+> every navigation action still reachable, omitting the continuous orbit.
+> A weaker answer merely compresses the same movement into an instant
+> effect: it preserves neither the intended reduced-motion experience nor
+> a deliberate static fallback. The feature must function without the
+> motion.

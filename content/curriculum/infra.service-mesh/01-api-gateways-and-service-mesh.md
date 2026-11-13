@@ -10,6 +10,17 @@ it makes to every other service. Implementing all of that inside every
 service's own code, in every language a team uses, doesn't scale — a
 gateway and a mesh exist to move it somewhere shared instead.
 
+> [!WHY] A service mesh standardises encryption and retries but adds proxy
+> work to every internal hop. A small system can pay both latency and
+> operating cost before its duplicated service concerns are large enough
+> to justify the new layer.
+
+> [!GOALS]
+>
+> - Explain mutual service authentication
+> - Compute proxy overhead on a call path
+> - Design a reliable gateway boundary
+
 ## API gateways: one front door
 
 ```text
@@ -53,6 +64,13 @@ gateway and a mesh exist to move it somewhere shared instead.
     mesh-specific code in either one.
 ```
 
+```mermaid
+flowchart TB
+  A[Caller application] --> O[Outbound sidecar]
+  O --> I[Inbound sidecar]
+  I --> B[Callee application]
+```
+
 ## mTLS: mutual authentication between services
 
 ```text
@@ -94,13 +112,12 @@ gateway and a mesh exist to move it somewhere shared instead.
 ```
 
 ```text
-  → this is the SAME cross-cutting-concern-out-of-application-
-    code idea running through the whole chapter — canary
-    rollout logic, retry logic, mTLS, and observability all move
-    OUT of every individual service's code and INTO the shared
-    infrastructure layer, once, rather than being reimplemented
-    (and potentially reimplemented inconsistently) in every
-    service.
+  → this is the SAME cross-cutting-concern-out-of-application-code idea
+    running through the whole chapter — canary rollout logic, retry logic,
+    mTLS, and observability all move OUT of every individual service's code
+    and INTO the shared infrastructure layer, once, rather than being
+    reimplemented (and potentially reimplemented inconsistently) in
+    every service.
 ```
 
 ## The real cost: complexity and latency, paid on every call
@@ -115,15 +132,36 @@ gateway and a mesh exist to move it somewhere shared instead.
 ```
 
 ```text
-  → this is precisely why a service mesh is usually adopted at
-    a SPECIFIC scale of complexity (many services, many teams,
-    genuinely needing the consistency a shared layer provides)
-    rather than by default — for a handful of services, the
-    OPERATIONAL overhead of running a mesh can exceed the
-    benefit it provides, the same "don't add microservices-
-    style boundaries without a real reason" judgment the
-    Services and Modular Monoliths chapter applies one level up.
+  → this is precisely why a service mesh is usually adopted at a SPECIFIC
+    scale of complexity (many services, many teams, genuinely needing the
+    consistency a shared layer provides) rather than by default — for a
+    handful of services, the OPERATIONAL overhead of running a mesh can
+    exceed the benefit it provides, the same "don't add microservices-style
+    boundaries without a real reason" judgment the Services and Modular
+    Monoliths chapter applies one level up.
 ```
+
+> [!PITFALL] Consistent mesh policy does not make the gateway redundant or
+> remove proxy latency from the call path.
+
+> [!INTERVIEW] Identify which concern belongs at the edge or between
+> services, then account for both per-hop latency and control-plane
+> operations.
+
+> [!CHECK] Why can the sidecar model work across application languages?
+>
+> The co-located proxy handles network concerns outside the
+> language-specific application implementation.
+
+> [!CHECK] How can a mesh perform a canary shift?
+>
+> Change traffic policy configuration enforced by the proxies rather than
+> adding rollout branches to every service.
+
+> [!CHECK] What operational system accompanies the proxy data path?
+>
+> The mesh control plane must itself be operated, monitored and handled as
+> another system that can fail.
 
 ## What to take away
 
@@ -145,3 +183,35 @@ gateway and a mesh exist to move it somewhere shared instead.
    complexity — it's usually adopted at a specific scale of genuine need,
    not by default, the same judgment that governs adding any service
    boundary.
+
+## Exercises
+
+> [!EXERCISE recall] How does mTLS differ from ordinary
+> server-authenticated TLS?
+>
+> **Solution:** Both endpoints present and verify certificates in mTLS,
+> establishing the caller’s identity as well as the server’s. Encryption
+> alone is not the same as mutual identity verification.
+
+> [!EXERCISE apply] A sequential request path makes three internal calls.
+> Each adds an outbound and inbound sidecar costing 0.6 ms each; the
+> unmeshed path is 18 ms and the budget is 20 ms. Compute the meshed path
+> and evaluate adoption solely for code neatness.
+>
+> **Solution:** There are 3 × 2 = 6 proxy passages, adding 6 × 0.6 = 3.6
+> ms. Total is 18 + 3.6 = 21.6 ms, exceeding the budget by 1.6 ms under
+> the assumptions. Do not justify adoption only as cleaner code: assess
+> whether shared policy consistency at the actual service/team scale
+> warrants the latency and operating cost, and address the budget
+> explicitly.
+
+> [!EXERCISE stretch] All external requests pass through one gateway
+> instance, and a team assumes adding a mesh removes the availability
+> risk. Recommend an edge design.
+>
+> **Solution:** Provide gateway redundancy and monitor its own health and
+> latency because it remains on every external request path. A weaker
+> answer keeps the single gateway instance and relies on internal
+> sidecars: they do not create another working front door when that
+> instance fails. Shared cross-cutting policy and gateway availability are
+> separate requirements.

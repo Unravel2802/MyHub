@@ -10,6 +10,17 @@ below exists to solve a specific problem — knowing that problem is what lets
 you recognize when the principle doesn't apply, rather than applying it
 reflexively.
 
+> [!WHY] A consumer accepts a base object but one subtype throws for a
+> promised operation. Every caller now needs a subtype exception, so
+> inheritance that looked reusable has spread conditional knowledge across
+> the application.
+
+> [!GOALS]
+>
+> - Explain encapsulation through invariant ownership
+> - Choose capabilities that preserve substitution
+> - Evaluate a speculative abstraction
+
 ## Encapsulation: hiding decisions, not just data
 
 ```text
@@ -72,6 +83,14 @@ reflexively.
     honestly satisfy every promise the base type makes — the
     "favor composition over inheritance" advice exists because
     that condition is rarer in practice than it looks upfront.
+```
+
+```mermaid
+flowchart TB
+  C[Consumer needs export] --> E[Exportable capability]
+  E --> A[File exporter]
+  E --> B[Network exporter]
+  P[Preview consumer] --> V[Preview-only capability]
 ```
 
 ## SOLID, briefly and with the failure mode each guards against
@@ -143,6 +162,26 @@ reflexively.
     CLAUDE.md states directly for this codebase.
 ```
 
+> [!PITFALL] A subtype that cannot keep a base operation’s promise makes
+> every consumer compensate for a broken abstraction.
+
+> [!INTERVIEW] Identify the promised capability and the actual reason to
+> change before applying a SOLID principle or adding an inheritance layer.
+
+> [!CHECK] What change axis does Single Responsibility address?
+>
+> One coherent reason to change, rather than one method or field per
+> class.
+
+> [!CHECK] What does Interface Segregation avoid?
+>
+> Forcing consumers or implementations to depend on operations they do not
+> need.
+
+> [!CHECK] How can Dependency Inversion aid a service test?
+>
+> Depend on a gateway interface so a fake can replace a concrete SDK.
+
 ## What to take away
 
 1. Encapsulation's point is making an object the only path to changing its
@@ -161,3 +200,35 @@ reflexively.
 5. These principles solve problems that show up as code grows and changes —
    applying them where that growth isn't happening pays the indirection cost
    without the benefit.
+
+## Exercises
+
+> [!EXERCISE recall] How does encapsulation reduce the number of places
+> trusted to maintain an invariant?
+>
+> **Solution:** Make the object’s methods the only path to state change
+> and enforce the invariant there. Public mutable fields let every caller
+> bypass the rule; hiding decisions is more valuable than merely making a
+> field private.
+
+> [!EXERCISE apply] An exporter base promises export(), but a PreviewOnly
+> subtype throws because it can only render a preview. Design the
+> capability split and decide which objects an export-all caller may
+> accept.
+>
+> **Solution:** Separate Exportable with export() from a preview
+> capability. Only objects honestly supporting export implement
+> Exportable; PreviewOnly is usable by preview callers without pretending
+> to support export. export-all accepts Exportable values and needs no
+> special-case check for the unsupported subtype, preserving substitution.
+
+> [!EXERCISE stretch] A stable utility has one implementation and no
+> expected variation, yet a proposal adds an interface and several
+> delegating classes for SOLID. Recommend whether to accept it.
+>
+> **Solution:** Keep the direct cohesive utility unless an actual axis of
+> change or testing boundary justifies the abstraction. A weaker answer
+> adds the hierarchy solely to satisfy a slogan: it pays navigation and
+> indirection cost without a present flexibility benefit. Single
+> responsibility means a coherent reason to change, not the smallest
+> possible class.

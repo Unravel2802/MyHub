@@ -10,6 +10,16 @@ changed since you last looked. State is what makes programs useful and what
 makes them hard, and nearly every hard-to-reproduce bug is a state bug wearing
 a costume.
 
+> [!WHY] A timeout leads the caller to retry a charge that already
+> succeeded. Without repeat-safe state handling, recovering from a lost
+> response can debit the customer twice.
+
+> [!GOALS]
+>
+> - Explain purity and hidden inputs
+> - Separate decisions from effects
+> - Choose a retry-safe operation design
+
 ## The property that makes reasoning possible
 
 A function is **pure** when:
@@ -213,6 +223,13 @@ A useful signal: **if a test needs a mock, ask whether the logic could have been
 pure instead.** Mocks are usually a sign that effects have leaked into a place
 that only needed to make a decision.
 
+
+```mermaid
+flowchart TB
+  I[Read request and external state] --> C[Pure decision]
+  C --> O[Commit and publish effects]
+```
+
 ## Idempotence, and why distributed systems demand it
 
 An operation is **idempotent** if doing it twice has the same effect as doing it
@@ -258,6 +275,19 @@ order-sensitive operation into one that is safe to repeat.
    read-only views of internal state; do not rely on a comment asking nicely.
 6. **Assume every network-triggered operation runs twice.** Design for it.
 
+> [!PITFALL] A function can hide shared state in a mutable default
+> argument even when no global variable is visible.
+
+> [!CHECK] Why does counter += 1 lose updates across threads?
+>
+> Read, add and write are distinct operations; both readers can read the
+> same old value and both write the same incremented value.
+
+> [!CHECK] When is a Python mutable default list allocated?
+>
+> Once when def executes, so later calls reuse the same list unless the
+> function uses a sentinel and creates a fresh one.
+
 ## What to take away
 
 1. A pure function's output depends only on its arguments and it has no effects;
@@ -274,3 +304,32 @@ order-sensitive operation into one that is safe to repeat.
 
 Next: errors — how failure is represented, and why the paths you did not test
 are where systems actually break.
+
+## Exercises
+
+> [!EXERCISE recall] Why is reading the clock enough to make an otherwise
+> side-effect-free function impure, and how can its input become explicit?
+>
+> **Solution:** The same explicit arguments can produce different results
+> as time changes. Supply now as an argument so the decision depends only
+> on provided values.
+
+> [!EXERCISE apply] A delivery rule reads an order from the database,
+> waives a fee when total exceeds 150, saves the fee and emails the
+> customer. Split this into a functional core and imperative shell; decide
+> the fee for totals 140 and 180 with a normal fee of 12.
+>
+> **Solution:** The core fee_for(total, normal_fee) returns 0 if total >
+> 150 else normal_fee. For 140, 140 > 150 is false, so return 12; for 180
+> it is true, so return 0. The shell loads the order, invokes the core,
+> saves the result and sends email. The rule is testable without database
+> or email mocks.
+
+> [!EXERCISE stretch] The client times out after a charge may have
+> committed. Recommend a retry policy and server behaviour that avoids
+> repeating the effect.
+>
+> **Solution:** Retry with the same caller-generated idempotency key. The
+> server returns the stored response for a previously seen key instead of
+> charging again. A weaker answer generates a fresh key on every retry:
+> the server sees a new operation and can charge twice.

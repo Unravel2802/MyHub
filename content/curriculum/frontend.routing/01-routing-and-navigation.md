@@ -9,23 +9,25 @@ application STATE that happens to be shareable, bookmarkable, and
 back-button-able for free. Most routing bugs come from fighting that
 property instead of using it.
 
+> [!WHY] A user copies a filtered search view but the recipient sees the
+> default list. Keeping shareable selection only in component state made
+> the visible view disappear at the URL boundary.
+
+> [!GOALS]
+>
+> - Explain which view state belongs in a URL
+> - Design share and back-navigation behaviour
+> - Choose targeted prefetching
+
 ## URLs as state
 
 ```text
-  useState(false) for "is the filter panel open"     ✗ lost on
-                                                          refresh,
-                                                          not
-                                                          shareable
+  useState(false) for "is the filter panel open"
+    ✗ lost on refresh, not shareable
 
-  /products?filters=open                              ✓ refresh-
-                                                          safe,
-                                                          shareable,
-                                                          works
-                                                          with the
-                                                          browser
-                                                          back
-                                                          button
-                                                          automatically
+  /products?filters=open
+    ✓ refresh-safe, shareable, works with the browser
+      back button automatically
 ```
 
 ```text
@@ -74,14 +76,12 @@ property instead of using it.
 ```
 
 ```text
-  → this is frontend.build's tree-shaking idea applied at
-    ROUTE granularity rather than at the module level — a
-    router with built-in code splitting (most modern ones)
-    handles the mechanics; the design decision is which
-    boundaries actually deserve their own chunk (a rarely-
-    visited admin section, yes; two tabs a user flips between
-    constantly, probably not — a chunk boundary there adds a
-    loading flicker on every tab switch).
+  → this is frontend.build's tree-shaking idea applied at ROUTE granularity
+    rather than at the module level — a router with built-in code splitting
+    (most modern ones) handles the mechanics; the design decision is which
+    boundaries actually deserve their own chunk (a rarely-visited admin
+    section, yes; two tabs a user flips between constantly, probably not — a
+    chunk boundary there adds a loading flicker on every tab switch).
 ```
 
 ## Prefetching
@@ -122,6 +122,15 @@ property instead of using it.
     back far more often than they consciously notice.
 ```
 
+```mermaid
+flowchart TB
+  N[Navigation] --> K{History return or new link?}
+  K -->|back or forward| R[Restore entry scroll]
+  K -->|new page| T[Start at top]
+  R --> V[View state from URL]
+  T --> V
+```
+
 ## Route parameters and typed routing
 
 ```text
@@ -143,6 +152,26 @@ property instead of using it.
     compile error instead of a 404 discovered by a user.
 ```
 
+> [!PITFALL] Scrolling every navigation to the top loses the position
+> users expect when returning to a history entry.
+
+> [!INTERVIEW] Separate persistent view state, transient interaction state
+> and per-history-entry scroll before choosing router behaviour.
+
+> [!CHECK] Why do nested layouts preserve a shared shell across sibling
+> routes?
+>
+> Only the differing route region changes rather than remounting all
+> shared layout state.
+
+> [!CHECK] What cost can excessively fine route splitting introduce?
+>
+> A loading boundary or flicker on frequently used transitions.
+
+> [!CHECK] Why can params.id === 42 fail for /products/42?
+>
+> The route parameter is the string "42", not the number 42.
+
 ## What to take away
 
 1. A URL is state, not just a destination — the test for whether UI state
@@ -160,3 +189,35 @@ property instead of using it.
 5. A route parameter always arrives as a string, even for a numeric-looking
    segment — comparing it to a number with `===` silently fails with no
    coercion to save you.
+
+## Exercises
+
+> [!EXERCISE recall] What test decides whether a value belongs in URL
+> state rather than transient component state?
+>
+> **Solution:** Ask whether users should share, bookmark, reload or
+> navigate back to the exact view. Search terms, selected tabs and
+> pagination often qualify; a temporary hover or dropdown interaction
+> usually does not.
+
+> [!EXERCISE apply] A reader filters orders to pending on page 3, opens an
+> order, then presses Back. Design the state location and scrolling
+> behaviour, distinguishing an unrelated transient tooltip.
+>
+> **Solution:** Put the pending filter and page selection in the URL so
+> they survive share, reload and history navigation. Preserve scroll for
+> the previous history entry and restore it on Back; a forward link to a
+> new page should normally start at the top. Keep a temporary tooltip’s
+> visibility local rather than encoding every transient interaction in the
+> shareable view.
+
+> [!EXERCISE stretch] A page has many rarely visited links on a metered
+> connection. A proposal eagerly fetches every route and its data.
+> Recommend a navigation preparation policy.
+>
+> **Solution:** Prioritise likely next navigations, such as relevant
+> viewport or hover-triggered candidates, and choose chunk boundaries for
+> meaningful routes rather than every rapidly switched tab. A weaker
+> answer prefetches everything immediately: bandwidth is spent on routes
+> the user never opens, even though the goal was perceived responsiveness
+> for likely navigation.

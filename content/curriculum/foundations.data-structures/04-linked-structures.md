@@ -10,6 +10,16 @@ they are taught are real, and the reasons they are rarely the right answer are
 also real, and the gap between them is a lesson about how big-O relates to
 actual speed.
 
+> [!WHY] An LRU cache finds an entry quickly but scans a list to move it
+> to the front. The missing link between lookup and recency order makes
+> every cache hit more expensive as the cache grows.
+
+> [!GOALS]
+>
+> - Explain when constant-time splicing actually helps
+> - Trace LRU recency updates
+> - Choose between linked nodes and a deque
+
 ## The structure
 
 A linked list stores each element in its own **node**, which also holds a
@@ -120,6 +130,15 @@ copying. This structural sharing is what makes immutable data affordable at all.
 invalidates every pointer and iterator into it — a classic C++ bug. Nodes never
 move, so a reference to one stays valid for its lifetime.
 
+
+```mermaid
+flowchart TB
+  K[Cache key] --> M[Hash map to node]
+  M --> U[Unlink node]
+  U --> H[Relink at head]
+  H --> E[Evict tail if needed]
+```
+
 ## The deque, which is what you usually wanted
 
 Most reaches for a linked list are actually reaches for a **double-ended
@@ -181,6 +200,17 @@ to hide behind. The moves worth being fluent in:
 A strong answer notes the cache behaviour when asked to compare with an array;
 a weak one quotes the complexity table and stops there.
 
+> [!CHECK] Why can two O(n) traversals have very different elapsed times?
+>
+> An array exploits cache lines and prefetching; linked pointer hops can
+> each miss cache.
+
+> [!CHECK] How can prepending to an immutable linked list avoid copying
+> its tail?
+>
+> Create one new head pointing at the existing immutable tail, which is
+> safe to share.
+
 ## What to take away
 
 1. A linked list buys O(1) splicing at a position you already hold, and nothing
@@ -196,3 +226,31 @@ a weak one quotes the complexity table and stops there.
 
 Next: graphs — the structure that generalises all of these, and the one whose
 representation choice matters most.
+
+## Exercises
+
+> [!EXERCISE recall] What must already be available for a doubly linked
+> list’s O(1) removal to improve the complete operation?
+>
+> **Solution:** A reference to the target node. If the caller must first
+> search the list, the O(n) search dominates the constant-time splice.
+
+> [!EXERCISE apply] An LRU of capacity 3 has most-to-least recent order
+> [p, q, r]. Access q, insert s, then access p. Show each order, the
+> eviction and how each hit reaches its node.
+>
+> **Solution:** The map finds q directly; unlink and insert at the head to
+> get [q, p, r]. Inserting s gives [s, q, p, r], so evict tail r and
+> remove r from the map: [s, q, p]. The map finds p and moves it to the
+> head: [p, s, q]. The map supplies addresses; the list supplies recency
+> order.
+
+> [!EXERCISE stretch] A FIFO worker queue only pushes at the back and pops
+> at the front. Recommend a container and address a proposal to use linked
+> nodes because front deletion is O(1).
+>
+> **Solution:** Use a deque backed by a circular buffer: operations at
+> both ends are constant-time with locality and few allocations. Linked
+> nodes are a weaker default because their pointer chasing and per-node
+> allocation buy arbitrary splicing this workload does not need. An array
+> with pop(0) is also wrong because it shifts the remaining queue.

@@ -9,6 +9,17 @@ well is a separate skill, and it is the one that shows up in code review and in
 system design interviews. This chapter is the decision procedure, plus the
 places where the obvious answer is wrong.
 
+> [!WHY] A reviewer replaces a small array with a map for constant-time
+> lookup. If the collection fits in a cache line, extra hashing and
+> indirection can make the supposedly faster change slower while adding
+> complexity.
+
+> [!GOALS]
+>
+> - Explain why operation frequency precedes container choice
+> - Choose a composite for competing operations
+> - Design a representative measurement
+
 ## Start with the operations, not the structure
 
 The question is never "should this be a list or a set". It is:
@@ -102,9 +113,9 @@ overhead is larger than people expect:
   1,000,000 32-bit integers
 
   int array (contiguous) ........  4 MB
-  Python list of ints ........... 40+ MB   (8-byte pointers + 28-byte objects)
-  HashMap<Integer,Integer> ...... 80+ MB   (boxing, entry objects, load factor)
-  linked list of nodes .......... 40+ MB   (node + pointer + allocator header)
+  Python list of ints ........... 40+ MB (8-byte pointers + 28-byte objects)
+HashMap<Integer,Integer> ...... 80+ MB (boxing, entry objects, load factor)
+  linked list of nodes .......... 40+ MB (node + pointer + allocator header)
 ```
 
 A structure that does not fit in cache — or worse, does not fit in RAM — loses
@@ -185,6 +196,29 @@ store; a sorted tree becomes a B-tree index; a heap becomes a job queue. The
 concepts transfer directly, which is the real reason this chapter is worth
 knowing cold.
 
+
+```mermaid
+flowchart TB
+  O[Operations and frequencies] --> N[Realistic size]
+  N --> C[Choose candidate structures]
+  C --> M[Measure time and memory]
+```
+
+> [!INTERVIEW] State the actual workload and the assumption behind your
+> choice before naming a technique. Explain which requirement would change
+> your answer.
+
+> [!CHECK] Why is testing membership in a list inside a loop an accidental
+> quadratic?
+>
+> Each membership test scans O(n) items and the outer loop repeats O(n)
+> times, producing O(n²).
+
+> [!CHECK] What does a Bloom filter’s positive result establish?
+>
+> Only probable membership; false positives require checking the real
+> store. A negative rules membership out.
+
 ## What to take away
 
 1. Choose from the operations and their frequencies, not from the structure. Write
@@ -203,3 +237,34 @@ knowing cold.
 That completes Data Structures. Next in the track: **Complexity & Analysis**,
 which makes the cost reasoning here precise — and shows where big-O stops being
 the right tool.
+
+## Exercises
+
+> [!EXERCISE recall] Which three facts should be written down before
+> choosing a structure, and why can the operation considered first
+> mislead?
+>
+> **Solution:** List the operations, their frequencies and the realistic
+> size. Optimising insertion is a mistake if lookup dominates actual use;
+> the hot operation and n determine the useful trade.
+
+> [!EXERCISE apply] A job queue repeatedly extracts its minimum and
+> frequently changes a named job’s priority. Choose a composite and
+> explain how each operation locates and restores the right data.
+>
+> **Solution:** Use a heap plus a hash map from job id to heap index.
+> Minimum extraction uses the root; a named update first locates its index
+> through the map rather than scanning the heap. Restore heap order after
+> changes and keep index mappings consistent when items move. The heap
+> supplies priority order and the map supplies direct lookup.
+
+> [!EXERCISE stretch] A benchmark on a handful of sequential keys favours
+> an array, but production holds millions of irregular keys and performs
+> exact-key lookups. Recommend how to choose the production container.
+>
+> **Solution:** Start with a hash map for frequent exact-key lookup
+> without ranges, then benchmark realistic size and data and measure
+> memory as well as time. A weaker answer extrapolates the tiny
+> sequential-key result: small-n cache-resident scans do not establish
+> performance or memory behaviour at production scale. Profile first to
+> confirm container lookup is the bottleneck.

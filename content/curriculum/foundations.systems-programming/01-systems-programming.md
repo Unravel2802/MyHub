@@ -10,6 +10,17 @@ null dereference. Systems programming is what's underneath all of that: code
 with no safety net, where a mistake isn't caught and reported, it simply
 produces undefined behavior.
 
+> [!WHY] A C helper returns a pointer after freeing its allocation, and a
+> test still prints the expected value. A passing run does not keep the
+> lifetime alive; a later allocation can reuse those bytes and turn the
+> same code into corruption.
+
+> [!GOALS]
+>
+> - Explain the limits of undefined behaviour
+> - Trace ownership moves and borrowing choices
+> - Choose an auditable unsafe boundary
+
 ## Pointers: an address, nothing more
 
 ```text
@@ -115,6 +126,16 @@ produces undefined behavior.
   simply refuses to compile code where it could happen.
 ```
 
+
+```mermaid
+flowchart TB
+  A[Allocate owned value] --> O[One owner]
+  O --> M[Move to new owner]
+  M --> U[Old name unusable]
+  M --> D[Owner leaves scope]
+  D --> F[Release value]
+```
+
 ## `unsafe`: the escape hatch, used deliberately
 
 ```text
@@ -154,6 +175,28 @@ produces undefined behavior.
     provide, not just that they exist.
 ```
 
+> [!PITFALL] Appearing to work after free does not validate an access;
+> freed storage may be reused, and undefined behaviour has no dependable
+> outcome.
+
+> [!INTERVIEW] Track who owns the allocation and how long each reference
+> is valid. For unsafe code, identify the small operation whose safety the
+> compiler cannot prove and the obligation the wrapper must maintain.
+
+> [!CHECK] What does dereferencing a valid pointer do?
+>
+> It accesses the value at the address, interpreted using the pointer’s
+> associated type.
+
+> [!CHECK] What three lifetime obligations accompany a manual allocation?
+>
+> Release it exactly once, do not leak it, and never use it after release.
+
+> [!CHECK] Why does ownership not require a tracing collector?
+>
+> The compiler tracks the owner and prevents use after move or scope end;
+> cleanup follows ownership rather than a runtime reachability trace.
+
 ## What to take away
 
 1. A pointer is just an address with a type attached — nothing prevents it
@@ -172,3 +215,37 @@ produces undefined behavior.
 5. Rust's borrowing rule (many read-only borrows OR one mutable borrow,
    never both) makes a data race literally unrepresentable in safe code —
    the compiler refuses to compile it, rather than catching it at runtime.
+
+## Exercises
+
+> [!EXERCISE recall] Why is undefined behaviour a weaker guarantee than a
+> predictable runtime error, and why is a successful run not evidence of
+> safety?
+>
+> **Solution:** The language makes no guarantee once the program violates
+> its rules. It may appear to work, crash or corrupt memory depending on
+> compilation and execution. Observing one success does not establish that
+> the invalid access is permitted.
+
+> [!EXERCISE apply] A Rust String belongs to a; assignment let b = a moves
+> it, and a later line tries to print a. Decide which name remains usable.
+> Choose how a helper can inspect the same String while the caller retains
+> ownership, and whether a simultaneous mutable borrow is permitted.
+>
+> **Solution:** After the move b owns the String; using a is rejected at
+> compile time. Give the inspecting helper a read-only borrow of b rather
+> than transferring ownership. Multiple read-only borrows may coexist, but
+> a mutable borrow cannot coexist with them; code needing mutation must
+> respect the exclusive mutable-borrow rule.
+
+> [!EXERCISE stretch] A wrapper around a C library puts an entire Rust
+> module inside unsafe blocks for convenience. Recommend a reviewable
+> boundary and reject a specific weaker justification.
+>
+> **Solution:** Keep raw-pointer dereferences and FFI operations in small,
+> auditable unsafe blocks, documenting and maintaining the lifetime and
+> validity obligations around them. Keep the surrounding logic safe. A
+> weaker answer broadens unsafe because the code currently passes tests:
+> tests do not establish all memory-safety preconditions, and a broad
+> boundary makes the remaining risk harder to audit. unsafe also does not
+> turn off the entire type system.

@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 merged 2026-11-12; F1, F2, C and B merged 2026-11-13 (see the reviews at the end); FE and I are next.
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 merged 2026-11-12; F1, F2, C, B, FE and I merged 2026-11-13 (see the reviews at the end); S, D and EP are next.
 
 ---
 
@@ -955,3 +955,41 @@ What holds:
 1,624 unit tests and 213 curriculum E2E tests pass. 171 of 339 chapters have
 openers and exercises. FE (Frontend Engineering) and I (Infrastructure &
 Ops) are next.
+
+### FE and I review — 2026-11-13 (Claude): approved and merged
+
+FE (`curriculum-fe`, 21 commits): the 20 one-chapter Frontend Engineering
+topics. I (`curriculum-i`, 16 commits): the 15 one-chapter Infrastructure &
+Ops topics. All get PR D's quotas. Codex ran both unattended in their own
+worktrees.
+
+What holds:
+
+- **Correctness.** Every exercise was re-derived and is right: a width
+  animation at 22 ms against 7 ms for transform within 16.6 ms; 500 KB
+  monolithic against 320 KB split and 80 KB on a repeat visit; 240 ms
+  sequential against 150 ms parallel; content-box 308 px against
+  border-box 252 px of content; event-loop order A, B, P, Q, T; 1,400 req/s
+  needed so 1,500 fits, at $0.002 a request; canary 2% against 0.1%
+  (0.195% combined, below 1% but twenty times the baseline); 530 MB against
+  80 MB images; 280 wanted against 180 available, so 22 per instance;
+  detection 30 → 9 minutes against 28; traceroute's 66 ms jump between hops
+  2 and 4; 60 series becoming 60,000; 1,512 minutes (25.2 hours) of waiting;
+  a 21.6-minute budget with 7.1 left; cold starts averaging 74 ms; mesh
+  path 21.6 ms against a 20 ms budget.
+- **Shape.** Every opener is a concrete situation with a cost. Every GOALS
+  bullet is exercised, the three exercises ask different things, and each
+  Stretch recommends something and names a distinct weaker answer. The
+  thresholds and mechanisms the exercises use (4.5:1 and 3:1 contrast,
+  16.6 ms, ISR, microtasks, digests, PITR, SIGTERM, cardinality, base64
+  Secrets, sidecars) are in the chapters' own text.
+- **Formatting.** 29 fenced paragraphs were re-wrapped to fit 76 columns. A
+  word-for-word comparison confirms every one keeps its original text, with
+  even indentation.
+- **Gates.** Both `EXERCISE_TRACKS` lists, `frontend` (20) and `infra` (15)
+  entries in the tracks spec, and a quota test per batch.
+
+**Status:** both merged 2026-11-13. On the merged main: lint, typecheck,
+1,626 unit tests and 250 curriculum E2E tests pass. 206 of 339 chapters have
+openers and exercises. S (Security), D (Data Engineering) and EP
+(Engineering Practice) are next.

@@ -10,6 +10,17 @@ single most important discipline in this chapter, and it's the one that's
 hardest to follow under real pressure, when the instinct to "figure out what
 actually happened" is strongest.
 
+> [!WHY] A regression starts immediately after a deploy, but responders
+> spend the outage debating its root cause while an available rollback
+> sits unused. Every extra diagnostic minute prolongs avoidable user
+> impact.
+
+> [!GOALS]
+>
+> - Explain mitigation before diagnosis
+> - Compute detection versus repair impact
+> - Design actionable blameless follow-up
+
 ## Mitigate before you diagnose
 
 ```text
@@ -36,6 +47,14 @@ actually happened" is strongest.
     CI/CD chapter) are exactly the kind of pre-built mitigation
     paths that make "roll back fast" actually possible in the
     moment, rather than only in theory.
+```
+
+```mermaid
+flowchart TB
+  I[User-impacting incident] --> M[Apply available mitigation]
+  M --> S[Restore stable service]
+  S --> D[Diagnose root cause]
+  D --> A[Owned preventive actions]
 ```
 
 ## Detection: how you find out, and how fast
@@ -131,6 +150,29 @@ actually happened" is strongest.
     mitigated faster than this one was.
 ```
 
+> [!PITFALL] A detailed incident timeline without owned improvements
+> documents recurrence risk rather than reducing it.
+
+> [!INTERVIEW] Separate impact, detection, mitigation and later diagnosis,
+> then name the follow-up owner and completion evidence.
+
+> [!CHECK] Why separate incident commander from the person fixing the
+> problem?
+>
+> Coordination and stakeholder questions otherwise interrupt the focused
+> diagnosis or mitigation work.
+
+> [!CHECK] Why provide regular status updates even without new findings?
+>
+> Silence prompts independent requests for status, adding distraction and
+> uncertainty.
+
+> [!CHECK] What makes an instant rollback or kill switch useful during an
+> incident?
+>
+> It must already be built and reliable enough to restore service quickly,
+> rather than being merely a theoretical option.
+
 ## What to take away
 
 1. Mitigate before you diagnose — a rollback or kill switch that restores
@@ -148,3 +190,35 @@ actually happened" is strongest.
 5. A postmortem's real value is in specific, owned, tracked action items
    that get followed through on — a detailed timeline with no resulting
    changes is documentation, not improvement.
+
+## Exercises
+
+> [!EXERCISE recall] Why can rollback be the right first action even
+> before the root cause is known?
+>
+> **Solution:** The incident’s immediate job is restoring service and
+> ending user impact. A plausible reversible mitigation can stabilise the
+> system first, leaving diagnosis to happen without continuing harm. This
+> sequences investigation rather than abandoning it.
+
+> [!EXERCISE apply] An incident goes unnoticed for 24 minutes, then takes
+> six minutes to mitigate. Option A reduces detection to three minutes;
+> option B reduces mitigation to four. Compare total impact durations and
+> choose the larger reduction under these assumptions.
+>
+> **Solution:** The baseline is 24 + 6 = 30 minutes. A yields 3 + 6 = 9
+> minutes, saving 21. B yields 24 + 4 = 28 minutes, saving two. Improve
+> detection first for the larger stated benefit, while retaining
+> mitigation capability. This explains why the time before anyone notices
+> can dominate the visible repair work.
+
+> [!EXERCISE stretch] A postmortem concludes that one engineer should be
+> more careful and records only a timeline. Recommend a follow-up that
+> changes future outcomes.
+>
+> **Solution:** Identify the system condition that let the mistake reach
+> users and create specific owned, tracked actions, such as a missing
+> automated check or alert. A weaker answer retains only blame and
+> chronology: it neither changes the failure path nor encourages honest
+> reporting of future near-misses. Track completion rather than
+> considering the document itself the repair.

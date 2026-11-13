@@ -9,6 +9,17 @@ programming's own correctness arguments are written in. Every "this
 algorithm is correct" claim, every complexity bound, and every database
 schema's constraint is, underneath, a statement in this vocabulary.
 
+> [!WHY] A permission guard negates two requirements with the wrong
+> boolean operator. A user missing only one requirement can slip through,
+> so a small logical rewrite changes the access policy rather than merely
+> its spelling.
+
+> [!GOALS]
+>
+> - Explain induction as a correctness argument
+> - Compute combinations versus ordered selections
+> - Apply logical negation to a guard
+
 ## Propositional logic
 
 ```text
@@ -44,6 +55,14 @@ schema's constraint is, underneath, a statement in this vocabulary.
   → this is the exact rule behind "negating a compound
     condition" in code: !(a && b) is !a || !b, not !a && !b —
     a mistake here is a real, recurring bug in guard clauses.
+```
+
+
+```mermaid
+flowchart TB
+  A[Access requested] --> C{Active and paid?}
+  C -->|yes| Y[Permit]
+  C -->|no| N[Reject: inactive or unpaid]
 ```
 
 ## Sets
@@ -159,6 +178,27 @@ schema's constraint is, underneath, a statement in this vocabulary.
     call.
 ```
 
+> [!PITFALL] Negating a conjunction requires OR between the negated
+> operands; keeping AND changes the policy.
+
+> [!INTERVIEW] Say whether swapping two selected items changes the outcome
+> before choosing a counting formula. For a guard rewrite, test the case
+> where exactly one requirement fails.
+
+> [!CHECK] When is P implies Q false?
+>
+> Only when P is true and Q is false; a false antecedent makes the
+> implication vacuously true.
+
+> [!CHECK] How many subsets does a set of five elements have?
+>
+> Each element has include/exclude choices, so 2⁵ = 32 subsets.
+
+> [!CHECK] What graph property allows topological ordering of directed
+> dependencies?
+>
+> Acyclicity: the prerequisite graph must be a DAG.
+
 ## What to take away
 
 1. Implication's vacuous truth (P → Q is true whenever P is false) is the
@@ -176,3 +216,31 @@ schema's constraint is, underneath, a statement in this vocabulary.
 5. A graph is vertices plus edges, the single most reused structure in this
    curriculum — and induction (a base case plus an inductive step) is the
    exact logical shape behind proving a recursive function correct.
+
+## Exercises
+
+> [!EXERCISE recall] What are the two obligations in induction, and how do
+> they correspond to recursive correctness?
+>
+> **Solution:** Prove a base case and prove that truth for n implies truth
+> for n+1. For recursion, establish the stopping case and justify the
+> current call assuming the smaller recursive case is correct.
+
+> [!EXERCISE apply] Choose two reviewers from six engineers. Compute the
+> number of choices when their roles are interchangeable, then when one
+> must be primary and the other secondary.
+>
+> **Solution:** Interchangeable roles give C(6,2) = 6!/(2!4!) = (6 × 5)/2
+> = 15 pairs. Ordered roles give 6 choices for primary and 5 remaining for
+> secondary: 6 × 5 = 30. Swapping the selected people changes the second
+> outcome but not the first.
+
+> [!EXERCISE stretch] Access requires active AND paid. Recommend the
+> rejection guard and test a case that exposes the weaker rule not-active
+> AND not-paid.
+>
+> **Solution:** Reject when not-active OR not-paid, by De Morgan’s law. If
+> active is true and paid is false, access must be rejected: false OR true
+> is true. The weaker AND guard evaluates false AND true to false and
+> incorrectly permits access. Checking only the case where both
+> requirements fail would miss this defect.

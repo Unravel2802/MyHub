@@ -10,6 +10,16 @@ answer to a related question is uncomfortable — not "is this worth
 building" but "does building this cause real harm" — and an engineer's own
 judgment is frequently the actual last checkpoint before something ships.
 
+> [!WHY] A retention experiment makes cancellation harder and reports
+> fewer cancellations as success. Users who cannot find the exit pay the
+> cost hidden by the dashboard’s chosen objective.
+
+> [!GOALS]
+>
+> - Explain intent versus impact
+> - Redesign a manipulative interface choice
+> - Evaluate dual-use deployment context
+
 ## Harm isn't always the obvious, intended kind
 
 ```text
@@ -108,6 +118,14 @@ judgment is frequently the actual last checkpoint before something ships.
     genuinely higher-stakes question.
 ```
 
+```mermaid
+flowchart TB
+  F[Requested feature] --> H[Examine concrete harm]
+  H --> A[Propose alternative]
+  A --> D[Discuss and decide]
+  D --> E[Escalate serious unresolved harm]
+```
+
 ## Whistleblowing and escalation: when internal disagreement genuinely isn't enough
 
 ```text
@@ -130,6 +148,28 @@ judgment is frequently the actual last checkpoint before something ships.
     applies identically to every situation.
 ```
 
+> [!PITFALL] A technically successful optimization can increase harm even
+> when nobody intended that outcome.
+
+> [!INTERVIEW] Name who may be harmed, how, and what alternative addresses
+> the underlying need.
+
+> [!CHECK] Why can engagement-only optimization be harmful?
+>
+> It can promote content that drives the target while harming users,
+> because the objective does not encode their welfare.
+
+> [!CHECK] Why does implementing handed-down pixels still require
+> judgment?
+>
+> The engineer’s implementation has real effects on users even if someone
+> else specified the design.
+
+> [!CHECK] When may ordinary disagree-and-commit be inadequate?
+>
+> Serious harm or genuine illegality can exceed what that normal
+> disagreement process is designed to resolve; context matters.
+
 ## What to take away
 
 1. Intent and impact are different things — an algorithm optimizing purely
@@ -151,3 +191,35 @@ judgment is frequently the actual last checkpoint before something ships.
    — recognizing the rare situation that genuinely exceeds what that
    process can handle (genuine illegality, sufficiently serious harm) is
    itself a difficult, important judgment call with no universal bright line.
+
+## Exercises
+
+> [!EXERCISE recall] Why does “we did not intend harm” fail to settle
+> whether a feature is acceptable?
+>
+> **Solution:** Intent does not undo impact. Engineers must examine what
+> the deployed system actually optimizes and does to people, including
+> unintended consequences.
+
+> [!EXERCISE apply] An account-setup screen says an optional tracking
+> preference is required to continue, although the service works with
+> either choice. The team celebrates more enabled tracking as user
+> enthusiasm. Recommend an alternative and explain why the metric could be
+> misleading.
+>
+> **Solution:** Describe the preference truthfully as optional, explain
+> its effect clearly and let either choice continue setup. More enabled
+> tracking under the misleading screen may measure coerced navigation
+> rather than genuine preference. The alternative uses the same interface
+> skill to inform users rather than manipulate them, and lets the team
+> examine the choice people actually want.
+
+> [!EXERCISE stretch] A face-matching capability works for both a user
+> unlocking their own device and unconsented public surveillance.
+> Recommend what a deployment review must examine.
+>
+> **Solution:** Evaluate the specific use, affected people and plausible
+> harms, and propose a narrower beneficial deployment or raise a reasoned
+> objection where appropriate. A weaker answer approves solely because the
+> underlying technology is neutral: unchanged technical capability can
+> have sharply different effects depending on context.

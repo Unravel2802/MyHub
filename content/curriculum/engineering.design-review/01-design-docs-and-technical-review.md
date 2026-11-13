@@ -10,6 +10,16 @@ around that document: running the review it's meant to trigger, disagreeing
 productively inside it, and the specific, recurring ways a review process
 goes wrong even when the document itself is well written.
 
+> [!WHY] A review spends most of its meeting on naming while an unverified
+> concurrency assumption receives no scrutiny. Catching that assumption
+> after implementation turns a cheap conversation into a rewrite.
+
+> [!GOALS]
+>
+> - Explain what keeps a design decision open
+> - Prioritize review questions by consequence
+> - Respond to a missing design alternative
+
 ## A design doc exists to get a decision made, not to record one already made
 
 ```text
@@ -131,6 +141,35 @@ goes wrong even when the document itself is well written.
     never even considered.
 ```
 
+```mermaid
+flowchart TB
+  D[Draft options and assumptions] --> R[Review while choice is open]
+  R --> G{Ready for decision?}
+  G -->|No| W[Revise missing reasoning]
+  W --> R
+  G -->|Yes| C[Record decision]
+```
+
+> [!PITFALL] A review cannot change a decision that was privately locked
+> before reviewers saw the document.
+
+> [!INTERVIEW] Ask a specific failure-case question rather than stating a
+> bare dislike.
+
+> [!CHECK] What is the facilitator responsible for?
+>
+> Making sure consequential questions, alternatives and builders’ concerns
+> are examined rather than letting the loudest voice set the agenda.
+
+> [!CHECK] Why raise concerns before implementation?
+>
+> Changing a design then costs discussion rather than rebuilding code
+> already based on the assumption.
+
+> [!CHECK] What makes a concurrent-write objection actionable?
+>
+> It names a concrete scenario the author can analyze, confirm or rebut.
+
 ## What to take away
 
 1. A design doc's review needs to happen while the decision is still
@@ -151,3 +190,34 @@ goes wrong even when the document itself is well written.
    alternative, an unexamined assumption — is a good outcome, not a failed
    review, since it's the exact gap the Technical Writing chapter's options
    section exists to catch before publication.
+
+## Exercises
+
+> [!EXERCISE recall] How can you test whether a review is real
+> consultation?
+>
+> **Solution:** Ask whether the review could actually change the outcome.
+> If no reasoning can change the already-fixed choice, it is an
+> announcement rather than an open decision process.
+
+> [!EXERCISE apply] A 40-minute review allocates 25 minutes to names, 10
+> to a fragile recovery assumption and 5 to an unexamined alternative.
+> Recommend a revised agenda with explicit time allocation and explain its
+> priority.
+>
+> **Solution:** One reasonable allocation is 20 minutes for the recovery
+> assumption, 15 for the alternative and 5 for names, still totalling 40.
+> Put consequential and uncertain decisions ahead of low-stakes
+> preferences. The exact split is not a universal rule; the facilitator
+> should protect time for assumptions, genuine alternatives and
+> implementer concerns rather than let easy opinions dominate.
+
+> [!EXERCISE stretch] Reviewers discover a simpler alternative the
+> document never evaluated. The author wants immediate approval because
+> the meeting is ending. Recommend the next step.
+>
+> **Solution:** Revise the options and consequences before making the
+> decision if the missing alternative matters. Treat the gap’s discovery
+> as useful review work. A weaker answer approves to mark the meeting
+> successful: it records a choice without examining an option future
+> maintainers will need to understand.

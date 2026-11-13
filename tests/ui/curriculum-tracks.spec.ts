@@ -142,6 +142,18 @@ const EXERCISE_TRACKS = [
   "data.serving",
   "data.streaming",
   "data.warehouse",
+  "engineering.career",
+  "engineering.collaboration",
+  "engineering.design-review",
+  "engineering.ethics",
+  "engineering.hiring",
+  "engineering.leadership",
+  "engineering.mentoring",
+  "engineering.metrics",
+  "engineering.oncall",
+  "engineering.process",
+  "engineering.product",
+  "engineering.scoping",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -177,6 +189,7 @@ const tracks = [
   { prefix: "infra", expectedChapters: 15 },
   { prefix: "security", expectedChapters: 11 },
   { prefix: "data", expectedChapters: 11 },
+  { prefix: "engineering", expectedChapters: 12 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

@@ -11,6 +11,16 @@ ownership, structured disagreement) exist specifically to replace what a
 hallway conversation used to handle informally, at a scale where informal
 stops being reliable.
 
+> [!WHY] A teammate wakes in another timezone to a decision request saying
+> only “as discussed.” The missing context costs another day of handoffs
+> before anyone can evaluate the choice.
+
+> [!GOALS]
+>
+> - Explain reasoned disagreement
+> - Write an actionable asynchronous decision request
+> - Choose ownership by consequence and bottleneck cost
+
 ## Async-first: writing for someone who isn't there yet
 
 ```text
@@ -37,6 +47,14 @@ stops being reliable.
     completeness a good commit message needs: the full context,
     not "as we discussed" referencing a conversation the reader
     wasn't actually part of.
+```
+
+```mermaid
+flowchart TB
+  C[Full context and reasoning] --> W[Written async request]
+  W --> R[Later reader can respond]
+  R --> D[Recorded decision]
+  D --> E[Execute together]
 ```
 
 ## Code ownership: a spectrum, not a binary
@@ -143,6 +161,28 @@ stops being reliable.
     written down instead.
 ```
 
+> [!PITFALL] An async message that depends on an undocumented hallway
+> conversation still requires synchronous repair.
+
+> [!INTERVIEW] State a specific concern and its reasoning so others can
+> examine it.
+
+> [!CHECK] What should happen after a genuinely discussed decision is
+> made?
+>
+> Commit to executing it rather than quietly under-executing or repeatedly
+> re-litigating the choice.
+
+> [!CHECK] Why is overlap time scarce in a distributed team?
+>
+> Only part of each timezone’s working day overlaps, so routine updates
+> can consume the window needed for difficult live discussion.
+
+> [!CHECK] What is collective ownership’s accountability risk?
+>
+> Without a required owner, nobody may feel deeply responsible for an
+> area’s long-term health.
+
 ## What to take away
 
 1. Async-first communication is the technical-writing discipline applied to
@@ -164,3 +204,34 @@ stops being reliable.
    resource — defaulting to async for what can be async, and reserving
    overlap for what actually needs synchronous discussion, is the practical
    response to that structural constraint.
+
+## Exercises
+
+> [!EXERCISE recall] How does attaching reasoning change a disagreement?
+>
+> **Solution:** It gives the other person an examinable scenario or
+> assumption to respond to. Bare competing preferences provide no new
+> evidence that could resolve the conflict.
+
+> [!EXERCISE apply] A handoff says “Use A as discussed; need your answer.”
+> The absent reader never attended the discussion. A handles a retry edge
+> case, while B is simpler but its retry behaviour is unverified. Draft a
+> replacement that supports an async decision.
+>
+> **Solution:** For example: “We need to choose how this operation handles
+> retries. I recommend A because it handles repeated attempts; B is
+> simpler, but we have not verified that case. Can you assess whether B
+> handles retries, or identify another trade-off before we decide?” It
+> supplies the problem, options, recommendation, reasoning and specific
+> missing input instead of requiring the reader to reconstruct a private
+> conversation.
+
+> [!EXERCISE stretch] One ownership rule is proposed for both critical
+> migration contracts and ordinary low-stakes UI edits. Recommend a
+> policy.
+>
+> **Solution:** Use tighter explicit owner review for high-blast-radius
+> contracts and looser collective changes where an owner bottleneck costs
+> more than the accountability benefit. A weaker answer makes all areas
+> fully open simply to eliminate waiting: it ignores the consequences of
+> errors in critical boundaries.

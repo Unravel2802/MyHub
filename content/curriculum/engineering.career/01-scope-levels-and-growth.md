@@ -11,6 +11,16 @@ whole answer is precisely what makes career growth feel confusing and
 arbitrary — because the thing that's actually changing is scope, and it's
 rarely stated that plainly.
 
+> [!WHY] An engineer’s promotion case lists years of excellent
+> implementation but no examples of resolving broader ambiguity. More code
+> of the same scope leaves the evidence gap unchanged.
+
+> [!GOALS]
+>
+> - Explain scope as a level differentiator
+> - Classify evidence of independent problem ownership
+> - Choose a deliberate specialist or generalist path
+
 ## What "level" actually measures
 
 ```text
@@ -63,6 +73,13 @@ rarely stated that plainly.
     SCOPE, and scope (not code quality in isolation) is what
     the higher levels of most ladders are actually measuring,
     explicitly or not.
+```
+
+```mermaid
+flowchart TB
+  T[Well-specified task] --> F[Feature ambiguity]
+  F --> P[Problem and team scope]
+  P --> O[Cross-team direction]
 ```
 
 ## Promotion: evidence of ALREADY operating at the next level, not a reward for past work
@@ -132,6 +149,27 @@ rarely stated that plainly.
     work.
 ```
 
+> [!PITFALL] A title without the underlying decision-making scope is not
+> evidence of broader impact.
+
+> [!INTERVIEW] Describe what ambiguity you resolved and who benefited,
+> rather than only how much code you wrote.
+
+> [!CHECK] Does code quality stop mattering at higher levels?
+>
+> No; it remains a prerequisite even when scope and ambiguity become the
+> differentiators.
+
+> [!CHECK] Why is longevity alone a weak promotion case?
+>
+> Promotion normally recognizes demonstrated next-level operation rather
+> than time spent at the current level.
+
+> [!CHECK] How can scope grow beyond one person’s feature?
+>
+> It can shape a team’s roadmap, multiple teams or organizational
+> direction.
+
 ## What to take away
 
 1. What actually differentiates levels is the size and ambiguity of problem
@@ -152,3 +190,35 @@ rarely stated that plainly.
    hollow even when it technically succeeds — seeking growing scope and
    ambiguity first is the more reliable path, with the title tending to
    follow.
+
+## Exercises
+
+> [!EXERCISE recall] What does a scope-based ladder measure beyond coding
+> ability?
+>
+> **Solution:** The size and ambiguity of the problem a person can take
+> on, including deciding what needs solving rather than only implementing
+> a prescribed solution.
+
+> [!EXERCISE apply] Compare two evidence statements: A implemented a fully
+> specified log parser flawlessly; B was handed repeated support-handoff
+> delays, investigated their cause and established a missing ownership
+> agreement instead of writing code. Which demonstrates more unresolved
+> problem scope, and what evidence would strengthen that claim?
+>
+> **Solution:** B starts with a problem rather than a prescribed task and
+> must determine what solution is appropriate, matching the chapter’s
+> broader scope. A demonstrates valuable execution and quality but within
+> a defined task. Strengthen B with concrete examples of the ambiguity
+> resolved and resulting impact; the statement alone does not establish a
+> company-specific promotion decision.
+
+> [!EXERCISE stretch] An engineer is choosing between deep performance
+> expertise and connecting work across many systems. Recommend how to
+> judge the paths without ranking titles.
+>
+> **Solution:** Choose deliberately based on where their strengths and
+> desired impact fit: specialization can solve unusually hard
+> area-specific problems, while generalism can connect and scope work
+> across boundaries. A weaker answer insists broadness is inherently more
+> senior: the chapter treats both as legitimate routes to growing impact.

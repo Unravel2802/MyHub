@@ -11,6 +11,16 @@ honest measurement — gets aimed at a scope that spans multiple teams, with
 no direct reporting line giving anyone the authority to simply mandate the
 outcome.
 
+> [!WHY] A cross-team technical direction is announced, but another team
+> drops it as soon as its own deadline tightens. Formal compliance did not
+> make the shared goal valuable enough to survive competing priorities.
+
+> [!GOALS]
+>
+> - Explain influence without reporting authority
+> - Choose a strategy under finite capacity
+> - Build alignment around legitimate team priorities
+
 ## Influence without authority: the actual mechanism
 
 ```text
@@ -52,14 +62,13 @@ outcome.
 ```
 
 ```text
-  → this is the Capacity Planning chapter's headroom-as-trade-
-    off idea, one final time, at the largest scale this entire
-    curriculum ever reaches: an organization has a
-    genuinely FINITE amount of engineering capacity, and a
-    real technical strategy is an explicit, examinable STATEMENT
-    about where that finite, scarce capacity should actually go
-    — not merely a list of things that would each, individually,
-    be nice to eventually have someday.
+  → this is the Capacity Planning chapter's headroom-as-trade-off idea, one
+    final time, at the largest scale this entire curriculum ever reaches: an
+    organization has a genuinely FINITE amount of engineering capacity, and
+    a real technical strategy is an explicit, examinable STATEMENT about
+    where that finite, scarce capacity should actually go — not merely a
+    list of things that would each, individually, be nice to eventually
+    have someday.
 ```
 
 ## Alignment across teams: the coordination problem, at its largest scale
@@ -91,6 +100,14 @@ outcome.
     will.
 ```
 
+```mermaid
+flowchart TB
+  G[Shared technical goal] --> V[Value to each team]
+  V --> D[Reasoned joint decision]
+  D --> B[Durable buy-in]
+  B --> S[Shared standards and outcomes]
+```
+
 ## Multiplying impact: mentoring's idea, extended past direct reports
 
 ```text
@@ -105,12 +122,11 @@ outcome.
 ```
 
 ```text
-  → this is the SAME "impact scales past individual output"
-    idea from the Scope, Levels, and Growth chapter, carried all
-    the way through to its logical, final endpoint: the highest-
-    leverage engineering work in this entire curriculum often
-    involves writing very LITTLE code personally, while shaping,
-    through influence and demonstrated judgment, how a great
+  → this is the SAME "impact scales past individual output" idea from the
+    Scope, Levels, and Growth chapter, carried all the way through to its
+    logical, final endpoint: the highest-leverage engineering work in this
+    entire curriculum often involves writing very LITTLE code personally,
+    while shaping, through influence and demonstrated judgment, how a great
     deal of OTHER code across an entire organization eventually
     gets written.
 ```
@@ -130,6 +146,27 @@ outcome.
     possible to build the RIGHT thing, with the RIGHT people,
     sustainably, in a way that lasts.
 ```
+
+> [!PITFALL] A list of individually desirable initiatives is not a
+> strategy until it makes capacity trade-offs explicit.
+
+> [!INTERVIEW] Explain the goal in terms that connect to each team’s
+> actual incentives.
+
+> [!CHECK] Why does writing become central at cross-team scope?
+>
+> Reasoned documents and trustworthy disagreement help decisions happen
+> without a direct mandate.
+
+> [!CHECK] How can leadership multiply impact beyond personal code?
+>
+> Adopted decisions, testing discipline and standards shape how many teams
+> work.
+
+> [!CHECK] What limits a wishlist of directions?
+>
+> Engineering capacity is finite; pursuing one direction consumes capacity
+> unavailable to alternatives.
 
 ## What to take away
 
@@ -154,3 +191,35 @@ outcome.
    multiply-others'-output idea carried to its logical endpoint, and where
    this curriculum's technical foundation and this track's judgment finally
    meet.
+
+## Exercises
+
+> [!EXERCISE recall] What gives a technical leader influence without
+> formal authority?
+>
+> **Solution:** Persuasive reasoning, a demonstrated record of good
+> decisions and relationships built on earned trust, rather than an
+> ability to order another team to comply.
+
+> [!EXERCISE apply] Assume a quarter has 12 engineer-weeks available.
+> Shared deployment work needs 8, a storage rewrite needs 7, and
+> evaluating an uncertain interface needs 2. A proposed strategy promises
+> all three. Evaluate feasibility and propose an explicit capacity choice,
+> naming what is deferred.
+>
+> **Solution:** All three require 8 + 7 + 2 = 17 engineer-weeks, exceeding
+> 12 by 5. One coherent choice is deployment work plus the interface
+> evaluation, using 10 and leaving 2 for other needs; defer the 7-week
+> rewrite rather than pretending it also fits. The choice must be
+> justified by organizational goals, not by arithmetic alone; another
+> priority can lead to a different explicit plan.
+
+> [!EXERCISE stretch] A platform direction improves shared reliability but
+> conflicts with a product team’s immediate delivery goal. Recommend an
+> alignment approach.
+>
+> **Solution:** Make the reliability goal’s concrete value and costs
+> legible to that team, examine its legitimate priority and reach a
+> reasoned commitment it can sustain. A weaker answer only issues a
+> mandate: minimum compliance can disappear at the first inconvenience
+> without durable buy-in.

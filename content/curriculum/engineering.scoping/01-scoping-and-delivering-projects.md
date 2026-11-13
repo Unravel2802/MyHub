@@ -10,6 +10,17 @@ gap between "we decided what to build" and "it's actually running in
 production" is where most of a project's real risk and most of its genuine
 schedule uncertainty actually live.
 
+> [!WHY] A project builds all the familiar screens before testing its
+> unfamiliar integration. Discovering the integration cannot support the
+> plan late in the schedule makes the visible progress expensive to
+> discard.
+
+> [!GOALS]
+>
+> - Explain incremental delivery’s feedback value
+> - Sequence work to retire named risk
+> - Define independently verifiable milestones
+
 ## Breaking work down: smaller than feels natural, on purpose
 
 ```text
@@ -136,6 +147,35 @@ schedule uncertainty actually live.
     response to it.
 ```
 
+```mermaid
+flowchart TB
+  A[Name unverified assumption] --> T[Test it early]
+  T --> D{Assumption holds?}
+  D -->|Yes| I[Deliver incremental milestone]
+  D -->|No| R[Revise while time remains]
+```
+
+> [!PITFALL] A percentage-complete estimate does not identify a state
+> another person can independently verify.
+
+> [!INTERVIEW] Name the assumption that could overturn the plan and show
+> where the schedule tests it.
+
+> [!CHECK] Why split a project into smaller tasks?
+>
+> Independent, estimable and testable pieces expose a clearer shape for
+> execution and tracking.
+
+> [!CHECK] Why are familiar tasks tempting to do first?
+>
+> They show comfortable visible progress, but can defer the uncertainty
+> most likely to threaten the project.
+
+> [!CHECK] Why name risk rather than relying on intuition?
+>
+> Explicit assumptions can guide sequencing and deliberate validation
+> before much work depends on them.
+
 ## What to take away
 
 1. Breaking work into genuinely independent, estimable, testable tasks is
@@ -155,3 +195,34 @@ schedule uncertainty actually live.
    the riskiest assumptions first is what prevents discovering a silently
    wrong assumption only after real work has already been built on top of
    it.
+
+## Exercises
+
+> [!EXERCISE recall] Why ship pieces incrementally rather than only break
+> them into internal tasks?
+>
+> **Solution:** Actual delivery produces real feedback before the entire
+> project is integrated, bounding how long a mistaken assumption can
+> remain uncorrected.
+
+> [!EXERCISE apply] A reporting migration needs familiar screens and an
+> unfamiliar import library assumed to preserve timestamps across a round
+> trip. Losing that information would invalidate historical reports.
+> Choose the first validation task and describe what result changes the
+> remaining sequence.
+>
+> **Solution:** Run a focused import/export round-trip check on
+> representative timestamped data before building the screens around the
+> library. If the required information survives, continue incremental
+> end-to-end delivery; otherwise revise the import approach while schedule
+> remains. Starting with familiar screens defers the assumption that could
+> invalidate the reporting plan.
+
+> [!EXERCISE stretch] A milestone says “checkout 80% done.” Recommend a
+> replacement that an independent reviewer can verify.
+>
+> **Solution:** Use a concrete demonstrable state, such as “the checkout
+> API returns real data for the happy path,” with a way to exercise that
+> behaviour. A weaker answer changes the estimate to a more detailed
+> percentage: it still reports subjective effort rather than a checkable
+> system state.

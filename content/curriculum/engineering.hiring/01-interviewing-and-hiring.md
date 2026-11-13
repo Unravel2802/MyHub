@@ -10,6 +10,17 @@ actually perform in a job, from a few hours of conversation. Most of what
 makes interviewing hard is the same thing that makes any measurement hard —
 noise, bias, and a signal that's easy to contaminate without realizing it.
 
+> [!WHY] Two interviewers give opposite ratings to the same candidate
+> because their private meanings of “strong” differ. Sharing a senior
+> interviewer’s rating first can then make the remaining scores look
+> aligned without adding independent evidence.
+
+> [!GOALS]
+>
+> - Explain the limits of interview signal
+> - Design a loop for distinct independent signals
+> - Choose a response to inconsistent rating meaning
+
 ## What an interview is actually trying to measure
 
 ```text
@@ -117,6 +128,14 @@ noise, bias, and a signal that's easy to contaminate without realizing it.
     to "just be objective" does not, in practice, actually work.
 ```
 
+```mermaid
+flowchart TB
+  Q[Shared questions and rubric] --> I[Independent observations]
+  I --> S[Submit scores privately]
+  S --> C[Compare and calibrate]
+  C --> D[Hiring decision]
+```
+
 ## What a good interview loop actually tests
 
 ```text
@@ -131,6 +150,27 @@ noise, bias, and a signal that's easy to contaminate without realizing it.
     time re-confirming something an earlier interview in the
     SAME loop already established with reasonable confidence.
 ```
+
+> [!PITFALL] Agreement after seeing an influential rating may reflect
+> anchoring rather than independent confirmation.
+
+> [!INTERVIEW] Connect each rating to observable rubric evidence instead
+> of a culture-fit impression.
+
+> [!CHECK] What is affinity bias?
+>
+> Favoring someone who resembles the interviewer in background or
+> interests rather than assessing the job evidence.
+
+> [!CHECK] Why does a diverse panel help?
+>
+> It reduces shared blind spots that a homogeneous group may carry into
+> the same evaluation.
+
+> [!CHECK] Why are structured candidates easier to compare?
+>
+> They face common core questions and explicit criteria instead of
+> substantively different conversations.
 
 ## What to take away
 
@@ -152,3 +192,36 @@ noise, bias, and a signal that's easy to contaminate without realizing it.
    different, maximizing the total distinct signal gathered from a
    candidate's necessarily limited time rather than redundantly re-testing
    what an earlier interview already established.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a few-hour interview remain a noisy measure
+> of later job performance?
+>
+> **Solution:** It samples a limited, artificial, high-pressure
+> conversation rather than sustained work in the actual job. Improve the
+> relevant signal and reduce bias without claiming the observation can
+> eliminate uncertainty.
+
+> [!EXERCISE apply] A three-round loop repeats the same coding puzzle each
+> time, and later interviewers see the first rating before scoring.
+> Redesign the loop using this chapter’s principles.
+>
+> **Solution:** Assign distinct dimensions such as coding, system-design
+> judgment and communication/collaboration, using shared core questions
+> and explicit criteria for each dimension. Require independent scores
+> before revealing others’ ratings. Repetition wastes limited candidate
+> time on already-sampled evidence, while early rating exposure
+> contaminates independence through anchoring.
+
+> [!EXERCISE stretch] A loop already has structured questions, but
+> interviewers assign opposite labels to the same recorded performance. A
+> manager proposes averaging their labels without discussion. Recommend a
+> response.
+>
+> **Solution:** Run calibration sessions using independent scores on past
+> performances, examining the observable rubric evidence behind
+> disagreements and clarifying the shared criteria. A weaker answer only
+> averages labels: it hides incompatible meanings of strong hire rather
+> than aligning what the ratings measure. Repeat calibration as
+> interpretations drift.

@@ -9,6 +9,17 @@ browser tracks, diffs, and re-renders individually. That model breaks down
 past a few thousand elements — Canvas and WebGL exist for exactly that
 breaking point, trading the DOM's convenience for raw drawing throughput.
 
+> [!WHY] A dense plot creates a DOM element for every observation and
+> becomes unusable as the dataset grows. Moving to pixels can reduce
+> per-point bookkeeping, but it also removes the semantics and event
+> conveniences the DOM supplied.
+
+> [!GOALS]
+>
+> - Explain retained versus immediate drawing
+> - Choose a renderer and scale for dense data
+> - Design an accessible alternative to pixels
+
 ## Retained mode vs immediate mode
 
 ```text
@@ -39,19 +50,18 @@ breaking point, trading the DOM's convenience for raw drawing throughput.
 ## When Canvas is the right tool
 
 ```text
-  ✓  a chart/visualization with thousands of data points (a
-     scatter plot, a dense time-series) — the DOM element-per-
-     point approach hits real performance limits well before
-     Canvas does
-  ✓  a game, or anything needing frame-by-frame redraw of
-     custom visuals
+  ✓  a chart/visualization with thousands of data points (a scatter plot, a
+     dense time-series) — the DOM element-per-point approach hits real
+     performance limits well before Canvas does
+
+  ✓  a game, or anything needing frame-by-frame redraw of custom visuals
+
   ✓  pixel-level manipulation (image filters, a drawing app)
 
-  ✗  interactive UI with a small, bounded number of elements —
-     the DOM's accessibility (frontend.a11y), event handling,
-     and CSS styling are FREE there and have to be manually
-     rebuilt on Canvas, which draws only pixels with no
-     semantic structure a screen reader can announce
+  ✗  interactive UI with a small, bounded number of elements — the DOM's
+     accessibility (frontend.a11y), event handling, and CSS styling are FREE
+     there and have to be manually rebuilt on Canvas, which draws only
+     pixels with no semantic structure a screen reader can announce
 ```
 
 ```text
@@ -93,6 +103,14 @@ breaking point, trading the DOM's convenience for raw drawing throughput.
     geospatial data) rather than writing raw WebGL shader code,
     the same way most web development doesn't hand-write
     assembly.
+```
+
+```mermaid
+flowchart TB
+  V[Vertices] --> S[Vertex shader]
+  S --> R[Rasterization]
+  R --> F[Fragment shader]
+  F --> P[Pixels]
 ```
 
 ## Scales and axes: the actual hard part of a chart
@@ -147,6 +165,28 @@ breaking point, trading the DOM's convenience for raw drawing throughput.
     unusably slow.
 ```
 
+> [!PITFALL] A fast pixel renderer does not supply the accessible semantic
+> structure that individual DOM elements had.
+
+> [!INTERVIEW] State the dataset size, scale and accessible representation
+> before choosing a graphics API; drawing throughput is only one
+> requirement.
+
+> [!CHECK] What does a vertex shader principally transform here?
+>
+> Vertex positions toward screen coordinates, before rasterization and
+> fragment colouring.
+
+> [!CHECK] Why use a time scale for irregular dates?
+>
+> Actual temporal intervals need not match evenly spaced category
+> positions.
+
+> [!CHECK] Why downsample a million points for a narrow display?
+>
+> Many raw points land in the same pixel columns, so drawing all of them
+> repeats invisible work at that zoom.
+
 ## What to take away
 
 1. The DOM is retained-mode (persistent, trackable elements); Canvas is
@@ -167,3 +207,36 @@ breaking point, trading the DOM's convenience for raw drawing throughput.
    reduction) is what makes a million-point chart viable — the naive
    draw-every-point approach looks obviously correct and is exactly why it's
    unusably slow without this step.
+
+## Exercises
+
+> [!EXERCISE recall] What remains after a Canvas draw command, and how
+> does that differ from a DOM shape?
+>
+> **Solution:** Canvas retains pixels rather than a persistent selectable
+> shape object. The application redraws to change the scene; the DOM
+> instead tracks persistent elements, their styles, events and layout
+> participation.
+
+> [!EXERCISE apply] A plot has 80,000 observations with positive
+> magnitudes 1, 1000 and 1000000, and must make the three magnitude groups
+> visible. Choose a rendering and scale approach; explain the equal-ratio
+> spacing.
+>
+> **Solution:** Use Canvas or a suitable GPU-backed drawing approach to
+> avoid one DOM object per observation. Use a log scale for the magnitude
+> spread: 1000/1 = 1000 and 1000000/1000 = 1000, so the two intervals
+> receive equal pixel distance. A linear scale would compress the small
+> values near the origin. Pre-aggregate at the current display resolution
+> when many observations share pixels.
+
+> [!EXERCISE stretch] A canvas chart has no textual data and a proposal
+> adds only a generic chart role. Recommend an alternative users can
+> actually inspect.
+>
+> **Solution:** Provide an accessible data table or meaningful textual
+> summary alongside the drawing, keeping it aligned with the presented
+> data. A weaker answer labels the canvas chart and stops: a role does not
+> create per-point semantic values or expose information that exists only
+> as pixels. Small ordinary controls can remain in the DOM rather than
+> rebuilding their accessibility on Canvas.

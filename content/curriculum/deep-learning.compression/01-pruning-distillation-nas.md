@@ -31,7 +31,7 @@ under an explicit budget.
                         ✓ a REAL speedup — the tensor is genuinely smaller
                         ✗ more accuracy loss at equal sparsity
 
-  2:4 SEMI-STRUCTURED    exactly 2 of every 4 weights zero
+  2:4 SEMI-STRUCTURED   exactly 2 of every 4 weights zero
                         ✓ ~2× on Ampere+ tensor cores, hardware supported
                         ✓ the practical middle ground
 ```

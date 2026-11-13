@@ -68,7 +68,7 @@ different systems.
                          FPR is computed against an enormous negative
                          class
 
-  PRECISION-RECALL      precision vs recall across thresholds
+  PRECISION-RECALL     precision vs recall across thresholds
                        ✓ the right curve for imbalanced problems
                        → baseline AUC = the positive rate, not 0.5
 ```

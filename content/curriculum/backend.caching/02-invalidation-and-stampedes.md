@@ -10,6 +10,16 @@ Writing to a cache is easy. Deciding when an entry stops being true is the hard
 part, and the two ways it goes wrong at scale — stampedes and avalanches — are
 worth recognising before you meet them at 3am.
 
+> [!WHY] A popular entry expires and every waiting request recomputes it
+> at once. A cache that was protecting the database suddenly concentrates
+> a burst of identical queries onto it.
+
+> [!GOALS]
+>
+> - Explain cache-aside and write-through placement
+> - Choose separate stampede and avalanche defences
+> - Design invalidation with a recovery backstop
+
 ## Three ways to write
 
 **Cache-aside** (lazy loading) is the default, and what most application code
@@ -75,6 +85,15 @@ and is now handling a thousand at once. Three standard defences:
 - **Serve stale while revalidating** — return the expired value immediately and
   refresh in the background. The best option whenever slightly-stale beats slow.
 
+```mermaid
+flowchart TB
+  E[Hot key expires] --> M[Concurrent misses]
+  M --> L[One refresh owns single-flight]
+  L --> D[One source query]
+  D --> C[Cache refreshed]
+  C --> R[Waiting readers reuse result]
+```
+
 ## Avalanche
 
 The same failure, one level up: a large set of keys expires at the same moment,
@@ -101,6 +120,23 @@ Watch the eviction rate alongside the hit rate. A cache evicting heavily is
 undersized, and a cache with a high hit rate _and_ heavy eviction is one
 traffic spike away from a stampede.
 
+> [!PITFALL] Identical TTLs across a bulk warm-up create an avalanche;
+> one-key stampede protection does not spread those expiries.
+
+> [!INTERVIEW] Distinguish one hot key’s stampede from many keys’
+> avalanche, and explain the freshness trade before choosing
+> stale-while-revalidate.
+
+> [!CHECK] When can write-behind lose an acknowledged update?
+>
+> It acknowledges before asynchronously flushing to the database, so a
+> crash before that flush can lose the write.
+
+> [!CHECK] Which eviction policy resists one-off scans displacing
+> long-term popular entries?
+>
+> LFU favours long-window frequency, unlike recency-only LRU.
+
 ## What to take away
 
 1. TTL is self-healing; explicit invalidation is fresher. Use both.
@@ -109,3 +145,36 @@ traffic spike away from a stampede.
    stale-while-revalidate.
 4. Always jitter TTLs.
 5. Alert on hit rate and eviction rate, not just on cache latency.
+
+## Exercises
+
+> [!EXERCISE recall] How do cache-aside and write-through differ in when
+> the cache is populated and what unnecessary work they can avoid or
+> incur?
+>
+> **Solution:** Cache-aside fills on a miss, so it stores only requested
+> data but misses pay source cost. Write-through updates cache as part of
+> a write, improving read-after-write freshness but also caching data that
+> may never be read.
+
+> [!EXERCISE apply] One popular key attracts 120 concurrent misses on
+> expiry; a nightly warm-up also gives thousands of unrelated keys
+> identical expiry times. Choose defences for both symptoms and state the
+> ideal recomputation count for the single key under coalescing.
+>
+> **Solution:** Use single-flight or serve-stale-while-revalidating for
+> the popular key so one recomputation supplies the waiting readers
+> instead of 120 identical queries. Add TTL jitter across the
+> independently warmed keys to spread their expiries. Coalescing one key
+> does not spread many keys, while jitter alone does not guarantee only
+> one worker recomputes a hot miss.
+
+> [!EXERCISE stretch] Two writers update a cached value after database
+> writes, and invalidation paths sometimes miss a key. Recommend a safer
+> cache-maintenance policy.
+>
+> **Solution:** Prefer deleting affected keys rather than racing value
+> updates, and retain a TTL backstop so a missed invalidation eventually
+> expires. A weaker answer extends TTL indefinitely to improve hits: it
+> can preserve the missed invalidation forever and does not repair
+> concurrent writers leaving an inconsistent value.

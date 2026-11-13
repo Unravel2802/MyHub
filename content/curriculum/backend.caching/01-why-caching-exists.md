@@ -12,6 +12,16 @@ Every caching decision is a position on that trade, and the ones that go wrong
 in production are almost always the ones taken without noticing a trade was
 being made.
 
+> [!WHY] A profile update succeeds in the database but the next screen
+> shows an old cached value. The user retries an edit that was never lost,
+> paying for a freshness decision the interface did not make explicit.
+
+> [!GOALS]
+>
+> - Explain the freshness contract of a cache
+> - Compute weighted latency to choose a target hit rate
+> - Choose whether to fix a query before caching
+
 ## The numbers that motivate it
 
 Approximate, and worth memorising — Back-of-Envelope Estimation uses them
@@ -95,6 +105,29 @@ Measure the hit rate. A cache you are not measuring is a cache you cannot
 reason about — and, in the worst case, one that is adding a round trip on every
 request while returning nothing.
 
+```mermaid
+flowchart TB
+  R[Read requested] --> C{Cache hit?}
+  C -->|yes| H[Return cached value]
+  C -->|no| D[Read source of truth]
+  D --> P[Populate cache]
+  P --> H
+```
+
+> [!PITFALL] A cache can hide a missing index until a cold start sends
+> every request back to the slow source query.
+
+> [!CHECK] What consistency issue appears when a write goes to the
+> database and a following read uses an old cache entry?
+>
+> Read-your-own-writes fails: the user sees an earlier value after a
+> successful change.
+
+> [!CHECK] What is the trade between in-process and shared caches?
+>
+> In-process avoids a network hop but instances can disagree; a shared
+> cache offers a common copy at the cost of a round trip.
+
 ## What to take away
 
 1. A cache trades freshness for latency. Name what you are trading each time.
@@ -102,3 +135,33 @@ request while returning nothing.
 3. A cache over a missing index hides a bug and fails when it hurts most.
 4. Read-your-own-writes is the default failure mode; plan for it.
 5. Instrument the hit rate before you tune anything.
+
+## Exercises
+
+> [!EXERCISE recall] What promise may a cache make about the value it
+> returns, and how should that shape the decision to cache a call site?
+>
+> **Solution:** It may return a value that was correct in the past. Use it
+> only where that staleness is acceptable; a call requiring current
+> authoritative state needs a faster source of truth or an explicit
+> consistency answer rather than an unnoticed stale copy.
+
+> [!EXERCISE apply] Misses cost 80 ms and hits cost 2 ms. Two cache sizes
+> yield hit rates of 75% and 95%. Compute average latency for each and
+> choose which satisfies an average below 10 ms, ignoring maintenance
+> cost.
+>
+> **Solution:** At 75%, average is 0.75 × 2 + 0.25 × 80 = 1.5 + 20 = 21.5
+> ms. At 95%, it is 0.95 × 2 + 0.05 × 80 = 1.9 + 4 = 5.9 ms. Only the 95%
+> candidate meets the stated target. Measure the realised hit rate because
+> a cache adds little if most requests still miss.
+
+> [!EXERCISE stretch] A slow endpoint lacks a useful database index. A
+> proposal adds a cache and declares the query fixed. Recommend an order
+> of investigation.
+>
+> **Solution:** Inspect and improve the source query first, then add a
+> cache only for a measured repeat-read benefit and acceptable staleness.
+> A weaker answer hides the unindexed query behind a warm cache: a deploy,
+> restart or eviction storm exposes the slow query precisely when the
+> system is under stress.

@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 merged 2026-11-12; F1 and F2 merged 2026-11-13 (see the reviews at the end); C is next.
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 merged 2026-11-12; F1, F2, C and B merged 2026-11-13 (see the reviews at the end); FE and I are next.
 
 ---
 
@@ -919,3 +919,39 @@ numbers), plus an orphaned "each" line in algorithms.
 1,622 unit tests and 169 curriculum E2E tests pass. The tracks spec's
 `foundations` entry now covers the whole track (28 chapters). 129 of 339
 chapters have openers and exercises. C (Software Craft) is next.
+
+### C and B review — 2026-11-13 (Claude): approved and merged
+
+C (`curriculum-c`, 21 commits): the 20 one-chapter Software Craft topics,
+PR D's quotas. B (`curriculum-b`, 22 commits): the 21 Backend Engineering
+topics, 22 chapters. `backend.caching` has two chapters and gets the DS
+quotas; the rest get PR D's. Codex ran both unattended in their own
+worktrees.
+
+What holds:
+
+- **Correctness.** Every exercise was re-derived and is right: semver ^4.3.0
+  admits 4.3.7 and 4.4.0 while ~4.3.0 admits only 4.3.7; halving the
+  140 ms database term gives 130 ms against 190 ms for halving computation;
+  a 30-token bucket admits 30 of 40 and throttles 10; hit rates of 75% and
+  95% give 21.5 ms and 5.9 ms; replay gives 95 against a lagging 55;
+  4 × 250 = 1,000 MB buffered; N+1 goes from 36 to 2 queries and from 25 to
+  2; ETag v12/v11 give 304, 200 and 412; postings intersect to [3, 6];
+  1,700 cents split [284, 284, 283, 283, 283, 283].
+- **Shape.** Every opener is a concrete situation with a cost on the
+  `> [!WHY]` line. Every GOALS bullet is exercised. Recall, Apply and Stretch
+  ask different things, and each Stretch recommends something and names a
+  distinct weaker answer. The claims the exercises use (token buckets,
+  half-open breakers, 412, no-cache, single-flight, TTL jitter, SSE,
+  monotonic clocks, RLS, `npm ci`, AGPL, CLAs, bisect, coverage-guided
+  fuzzing) are in the chapters' own text.
+- **Formatting.** The F1/F2 lesson took hold: every fenced line Codex
+  shortened was re-wrapped as a whole paragraph with even indentation.
+- **Gates.** Both `EXERCISE_TRACKS` lists, `craft` (20) and `backend` (22)
+  entries in the tracks spec, and a quota test per batch. B's test applies
+  the DS rule to caching and PR D's rule to the other topics.
+
+**Status:** both merged 2026-11-13. On the merged main: lint, typecheck,
+1,624 unit tests and 213 curriculum E2E tests pass. 171 of 339 chapters have
+openers and exercises. FE (Frontend Engineering) and I (Infrastructure &
+Ops) are next.

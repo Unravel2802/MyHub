@@ -14,6 +14,17 @@ The practical skill is twofold: recognising that a problem is a graph problem �
 which is most of the difficulty — and picking a representation, because the same
 algorithm can be fast or unusably slow depending on how you stored the edges.
 
+> [!WHY] A dependency runner has free workers but no runnable tasks
+> because its prerequisites form a cycle. Treating dependencies as a graph
+> gives the runner a way to detect the blocked plan before waiting
+> forever.
+
+> [!GOALS]
+>
+> - Explain sparse graph representation costs
+> - Trace a topological ordering
+> - Choose traversal from the path requirement
+
 ## The vocabulary that matters
 
 ```text
@@ -114,7 +125,7 @@ minimum number of hops.
   start at A:
 
   level 0:  A
-  level 1:  B  C          ← everything one hop away, before anything two hops
+  level 1: B  C          ← everything one hop away, before anything two hops
   level 2:  D  E
   level 3:  F
 
@@ -207,6 +218,16 @@ dependency_ and tells you exactly which items are in it. This is precisely how
 `assignLayers` in this app's own curriculum layout works — layering the topic
 graph and reporting whatever a cycle stranded.
 
+
+```mermaid
+flowchart TB
+  I[Compute in-degrees] --> Q[Queue zero-degree vertices]
+  Q --> E[Emit one vertex]
+  E --> D[Decrement successors]
+  D --> Q
+  Q --> C[If stuck early: cycle]
+```
+
 ## Recognising a graph problem
 
 The framing is most of the work. Signals that a problem is a graph problem even
@@ -225,6 +246,16 @@ though nobody said "graph":
 That last reframing is the one that unlocks a whole class of interview problems.
 The graph is implicit; the skill is seeing it.
 
+> [!CHECK] When should BFS mark a vertex seen?
+>
+> On enqueue, preventing several predecessors from queueing the same
+> vertex before its first dequeue.
+
+> [!CHECK] What is the traversal cost for BFS or DFS with adjacency lists?
+>
+> O(V + E): each vertex is visited and each edge examined a bounded number
+> of times.
+
 ## What to take away
 
 1. A graph is vertices plus edges, and almost every structure and dependency
@@ -240,3 +271,32 @@ The graph is implicit; the skill is seeing it.
 
 Next: putting all of this together — how to actually choose a data structure
 under real constraints.
+
+## Exercises
+
+> [!EXERCISE recall] Why is an adjacency list the default for sparse
+> graphs, and when is a matrix still appropriate?
+>
+> **Solution:** A list stores O(V + E) space and visits only actual
+> neighbours. A matrix always costs O(V²) but gives constant-time edge
+> tests and suits small, dense or linear-algebra workloads.
+
+> [!EXERCISE apply] Tasks have edges P→R, Q→R and R→S. Run Kahn’s
+> algorithm, breaking queue ties alphabetically. Then add S→R and say
+> which vertices can still be emitted.
+>
+> **Solution:** Initial in-degrees are P=0, Q=0, R=2, S=1. Queue [P,Q];
+> emit P and lower R to 1, then emit Q and lower R to 0. Emit R, lower S
+> to 0, then emit S: [P,Q,R,S]. Adding S→R raises R’s initial in-degree to
+> 3. P and Q emit, but R remains at 1 and S at 1, so processing stops
+> after two vertices, detecting a cycle.
+
+> [!EXERCISE stretch] A route planner changes from equal-cost hops to
+> non-negative travel times. Recommend whether its BFS queue remains
+> sufficient, and name the next boundary of your choice.
+>
+> **Solution:** Use Dijkstra with a min-priority queue so exploration
+> follows accumulated cost rather than hop count. Keeping FIFO BFS is
+> weaker because fewer hops need not mean lower travel time. If negative
+> weights are later introduced, Dijkstra’s finalisation assumption fails;
+> the chapter gives Bellman–Ford for that case.

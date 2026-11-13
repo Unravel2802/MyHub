@@ -27,6 +27,8 @@ export const EXERCISE_TRACKS: string[] = [
   "distributed.membership",
   "distributed.crdt",
   "distributed.scheduling",
+  "foundations.programming",
+  "foundations.data-structures",
 ];
 const DS3_VISUAL_TRACKS = [
   "distributed.messaging",
@@ -191,8 +193,10 @@ function violations(source: string, requireOpeners = false) {
                 : solutionAt >= 0
                   ? solutionAt
                   : content.length;
-            const prompt =
-              `${text.slice(marker[0].length)}${content.slice(0, promptEnd).map(hastText).join("")}`.trim();
+            const prompt = `${text.slice(marker[0].length)}${content
+              .slice(0, promptEnd)
+              .map(hastText)
+              .join("")}`.trim();
             const solution =
               solutionAt < 0
                 ? ""
@@ -344,7 +348,11 @@ describe("curriculum visual content gates", () => {
     ).not.toHaveLength(0);
     expect(
       violations(
-        `${exercise("recall")}\n\n${section(exercise("recall"), exercise("apply"), exercise("stretch"))}`,
+        `${exercise("recall")}\n\n${section(
+          exercise("recall"),
+          exercise("apply"),
+          exercise("stretch"),
+        )}`,
       ).exercises,
     ).not.toHaveLength(0);
     expect(
@@ -358,12 +366,20 @@ describe("curriculum visual content gates", () => {
     ).not.toHaveLength(0);
     expect(
       violations(
-        `${section(exercise("recall"), exercise("apply"), exercise("stretch"))}\n\n## Later\nMore`,
+        `${section(
+          exercise("recall"),
+          exercise("apply"),
+          exercise("stretch"),
+        )}\n\n## Later\nMore`,
       ).exercises,
     ).not.toHaveLength(0);
     expect(
       violations(
-        `${section(exercise("recall"), exercise("apply"), exercise("stretch"))}\nStray prose`,
+        `${section(
+          exercise("recall"),
+          exercise("apply"),
+          exercise("stretch"),
+        )}\nStray prose`,
       ).exercises,
     ).not.toHaveLength(0);
   });
@@ -467,6 +483,58 @@ describe("curriculum visual content gates", () => {
       topics.includes(relative(ROOT, file).split("/")[0]),
     );
     expect(chapters).toHaveLength(18);
+    const count = (source: string, pattern: RegExp) =>
+      [...source.matchAll(pattern)].length;
+    for (const file of chapters) {
+      const source = readFileSync(file, "utf8");
+      const name = relative(ROOT, file);
+      // Count fences in the source, not in fence-stripped prose.
+      expect(count(source, /^```mermaid\s*$/gm), name).toBeLessThanOrEqual(2);
+      expect(count(source, /^```chart\s*$/gm), name).toBeLessThanOrEqual(1);
+      expect(count(source, /^```widget\s*$/gm), name).toBe(0);
+      const prose = source.replace(/^```[^\n]*\n[\s\S]*?^```[^\n]*$/gm, "");
+      expect(count(prose, /^> \[!KEY\]/gm), name).toBeLessThanOrEqual(2);
+      const checks = [...prose.matchAll(/^> \[!CHECK\]/gm)];
+      expect(checks, name).toHaveLength(2);
+      const recapAt = prose.indexOf("## What to take away");
+      expect(
+        checks.every((check) => check.index < recapAt),
+        name,
+      ).toBe(true);
+      const why = /^> \[!WHY\] (.+)$/m.exec(prose);
+      expect(why?.[1].trim(), name).toBeTruthy();
+      expect(prose, name).not.toMatch(/[A-Za-z]-[ \t]*\n/);
+      expect(prose, name).not.toMatch(/[A-Za-z]\n-[a-z]/);
+      for (const fence of source.matchAll(/^```([^\n]*)\n([\s\S]*?)^```/gm)) {
+        for (const line of fence[2].trimEnd().split("\n")) {
+          expect(line.length, `${name}: ${line}`).toBeLessThanOrEqual(76);
+        }
+        if (fence[1].trim() === "mermaid") {
+          const diagram = fence[2];
+          if (/^flowchart /m.test(diagram)) {
+            expect(diagram, name).toMatch(/^flowchart TB$/m);
+          }
+        }
+      }
+    }
+    for (const topic of topics) {
+      const source = chapters
+        .filter((file) => relative(ROOT, file).split("/")[0] === topic)
+        .map((file) => readFileSync(file, "utf8"))
+        .join("\n");
+      const pitfalls = count(source, /^> \[!PITFALL\]/gm);
+      expect(pitfalls, topic).toBeGreaterThanOrEqual(1);
+      expect(pitfalls, topic).toBeLessThanOrEqual(3);
+      expect(count(source, /^> \[!INTERVIEW\]/gm), topic).toBe(1);
+    }
+  });
+
+  it("enforces the F1 visual quotas and source formatting", () => {
+    const topics = ["foundations.programming", "foundations.data-structures"];
+    const chapters = files.filter((file) =>
+      topics.includes(relative(ROOT, file).split("/")[0]),
+    );
+    expect(chapters).toHaveLength(12);
     const count = (source: string, pattern: RegExp) =>
       [...source.matchAll(pattern)].length;
     for (const file of chapters) {

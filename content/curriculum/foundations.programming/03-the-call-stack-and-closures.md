@@ -11,6 +11,17 @@ maintains as your program runs. Understanding it explains stack overflows,
 closure capture bugs, why tail recursion matters in some languages and not
 others, and what an `async` function actually does differently.
 
+> [!WHY] A callback runs after the loop that created it and updates the
+> wrong item. Every callback captured the same variable, so the delayed
+> work can silently repeat the last item instead of processing the
+> intended set.
+
+> [!GOALS]
+>
+> - Explain the return address in a stack frame
+> - Trace independent and shared closure cells
+> - Choose a safe strategy for deep Python recursion
+
 ## A frame per call
 
 When a function is called, a **stack frame** is pushed. It holds everything that
@@ -48,6 +59,15 @@ It is also why buffer overflows on the stack are so dangerous. Writing past the
 end of a local array writes over the saved return address, and `ret` then jumps
 wherever the attacker chose. Stack canaries, ASLR and non-executable stacks are
 all defences against exactly this picture.
+
+
+```mermaid
+flowchart TB
+  C[Call] --> F[Push frame and return address]
+  F --> E[Execute callee]
+  E --> R[Pop frame]
+  R --> N[Resume caller]
+```
 
 ## What a call actually costs
 
@@ -252,6 +272,16 @@ had to learn to reconstruct it.
 - **Repeated frames** mean recursion; a `[Previous line repeated 996 more times]`
   is a base-case bug.
 
+> [!CHECK] Why can a closure’s captured environment outlive the function
+> that created it?
+>
+> The environment lives on the heap rather than in the popped stack frame.
+
+> [!CHECK] Why do async locals need storage beyond an ordinary call frame?
+>
+> Suspension returns control without completing the function; a heap state
+> machine retains locals and the resume state.
+
 ## What to take away
 
 1. A call pushes a frame holding parameters, locals and a return address. Walking
@@ -269,3 +299,30 @@ had to learn to reconstruct it.
 
 Next: types — what a type system is actually checking, and what you get for the
 cost of writing them down.
+
+## Exercises
+
+> [!EXERCISE recall] How does the return address let a call resume its
+> caller, and what does a stack trace reconstruct?
+>
+> **Solution:** call records the next instruction’s address and jumps; ret
+> restores that address into the program counter. Walking saved frames and
+> return addresses reconstructs the caller chain.
+
+> [!EXERCISE apply] Using make_counter from this chapter, set a =
+> make_counter(); b = make_counter(); c = a. Evaluate a(), c(), b(), a()
+> in order and explain the captured cells.
+>
+> **Solution:** a() increments its cell from 0 to 1. c is the same
+> closure, so c() makes that cell 2. b has a separate cell, so b() returns
+> 1. The last a() makes its cell 3. Results are [1, 2, 1, 3].
+
+> [!EXERCISE stretch] A Python traversal of a user-sized chain overflows
+> the stack. A teammate proposes an accumulator to make it tail-recursive.
+> Recommend a reliable fix.
+>
+> **Solution:** Use an explicit loop or explicit work stack rather than
+> depending on tail-call elimination. Python does not eliminate tail
+> calls, so the accumulator version still grows a frame per call. Raising
+> the recursion guard is another weaker answer: it does not enlarge the OS
+> stack and merely moves the crash boundary.

@@ -10,6 +10,16 @@ An array is the only data structure the hardware gives you directly. Everything
 else in this track is built on top of it, so it is worth understanding exactly
 what it is before adding abstractions.
 
+> [!WHY] A queue inserts every new item at the front of a growing array.
+> Each insertion shifts the existing workload, so a design that passed a
+> tiny test can spend its time moving elements as traffic grows.
+
+> [!GOALS]
+>
+> - Explain the address formula for array access
+> - Compute growth and copying under doubling
+> - Choose an array strategy from the operation mix
+
 ## The one-line definition
 
 An array is a **contiguous block of memory** holding `n` elements of equal size
@@ -67,6 +77,16 @@ every `k` appends, giving `n/k` resizes averaging `n/2` copies each — O(n²)
 total. The doubling is not an implementation detail; it is what makes the
 amortized bound hold.
 
+
+```mermaid
+flowchart TB
+  A[Append requested] --> F{Capacity full?}
+  F -->|yes| G[Double and copy]
+  F -->|no| W[Write at end]
+  G --> W
+  W --> L[Increase length]
+```
+
 ## Why arrays are faster than their big-O suggests
 
 Big-O counts operations, not time. Arrays win on constants for a reason
@@ -81,6 +101,19 @@ A linked list with identical asymptotic complexity for traversal is routinely
 several times slower in practice, because each node may sit anywhere in memory
 and every step is a potential cache miss.
 
+> [!PITFALL] Growing capacity by a constant increment loses the amortized
+> O(1) append bound.
+
+> [!CHECK] For base address 400, element size 8 and index 6, what address
+> is used?
+>
+> 400 + 6 × 8 = 448.
+
+> [!CHECK] Is every append into a dynamic array O(1)?
+>
+> No. A resize copies O(n) elements, but doubling spreads that cost so
+> append is amortized O(1).
+
 ## What to take away
 
 1. Random access is O(1) _because_ the elements are contiguous.
@@ -90,3 +123,32 @@ and every step is a potential cache miss.
    says otherwise.
 
 Next: hash tables, which buy O(1) _search_ by giving up ordering.
+
+## Exercises
+
+> [!EXERCISE recall] Why do equal-sized contiguous elements give
+> constant-time indexing but not constant-time insertion at the front?
+>
+> **Solution:** Index i is at A + i × s, one fixed calculation. Inserting
+> at the front must move every existing element to preserve contiguity and
+> order.
+
+> [!EXERCISE apply] A dynamic array starts empty with capacity 2 and
+> doubles only when full. Append nine values. List every capacity increase
+> and copied-element count, then compare with growing capacity by 2.
+>
+> **Solution:** Doubling grows 2 → 4 at append 3, copying 2; 4 → 8 at
+> append 5, copying 4; 8 → 16 at append 9, copying 8. Total copied = 2 + 4
+> + 8 = 14. Growth by 2 gives capacities 2 → 4 → 6 → 8 → 10 and copies 2 +
+> 4 + 6 + 8 = 20. The fixed increment keeps paying increasingly large
+> copies at fixed intervals; doubling spaces them out geometrically.
+
+> [!EXERCISE stretch] An append-heavy dataset is scanned sequentially and
+> rarely changes in the middle. Recommend whether occasional resize copies
+> justify replacing its array with linked nodes.
+>
+> **Solution:** Keep the dynamic array unless measurement shows a binding
+> requirement otherwise. Doubling gives amortized constant-time append,
+> while contiguous scans benefit from cache lines and prefetching. A
+> weaker answer chooses linked nodes solely because one append can be
+> O(n), ignoring the total sequence cost and traversal locality.

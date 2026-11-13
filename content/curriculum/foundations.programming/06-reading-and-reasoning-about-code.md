@@ -11,6 +11,16 @@ familiar. It is a learnable skill with actual technique, and it is the skill
 that separates someone who is productive in a new codebase in a week from
 someone who is productive in a quarter.
 
+> [!WHY] A maintainer deletes a redundant-looking retry while fixing an
+> unrelated bug. If that line was an outage workaround, a small cleanup
+> can restore the production failure it once prevented.
+
+> [!GOALS]
+>
+> - Explain invariants and where to find them
+> - Trace boundary inputs concretely
+> - Choose evidence before removing strange code
+
 ## Why reading is harder than writing
 
 When you write, you have the intent in your head and you are producing text
@@ -54,7 +64,7 @@ class RingBuffer:
     # invariants, holding before and after every public method:
     #   0 <= self._count <= len(self._items)
     #   0 <= self._head  <  len(self._items)
-    #   the live elements are _items[(_head + i) % cap] for i in range(_count)
+    # the live elements are _items[(_head + i) % cap] for i in range(_count)
 ```
 
 Method bodies are allowed to break invariants _temporarily_ — that is what a
@@ -111,6 +121,14 @@ not:
 
 Bugs live at boundaries. Tracing the happy path confirms what you already
 believed; tracing the boundary is where you learn something.
+
+
+```mermaid
+flowchart TB
+  Q[Correctness question] --> I[Find invariants]
+  I --> T[Trace concrete boundaries]
+  T --> V[Check restoration before return]
+```
 
 ## Reading a codebase you have never seen
 
@@ -225,6 +243,20 @@ highest-yield readability change available.
 Neither metric is a target to optimise. They are smoke detectors: useful for
 noticing, useless as a goal.
 
+> [!INTERVIEW] State the actual workload and the assumption behind your
+> choice before naming a technique. Explain which requirement would change
+> your answer.
+
+> [!CHECK] Where should you start when investigating a performance
+> complaint?
+>
+> Profile before reading code to guess the bottleneck.
+
+> [!CHECK] Why do guard clauses reduce reading cost?
+>
+> They make preconditions explicit with early returns and reduce nesting
+> around the happy path.
+
 ## What to take away
 
 1. Reading dominates writing, is harder than writing, and has technique.
@@ -242,3 +274,33 @@ noticing, useless as a goal.
 That completes the programming fundamentals. Next in the track: **Data
 Structures**, where the question shifts from "how does a program run" to "how
 should the data be arranged so the operations you need are cheap".
+
+## Exercises
+
+> [!EXERCISE recall] What must an invariant hold across, and which three
+> sources help reconstruct an undocumented one?
+>
+> **Solution:** It holds at the specified boundary, such as before and
+> after every public method, even if temporarily broken inside a method.
+> Constructors establish it, assertions and guards expose it, and tests
+> provide executable claims.
+
+> [!EXERCISE apply] Trace merge from this chapter for a = [2, 2] and b =
+> [2]. Track i, j and out; then check a = [] and b = [2]. Which input wins
+> ties?
+>
+> **Solution:** Start i = j = 0 and out = []. Since 2 <= 2, take a[0]: i =
+> 1, j = 0, out = [2]. Take a[1] next: i = 2, out = [2, 2]. Exit and
+> append b[0:] to obtain [2, 2, 2]. With empty a the loop never runs and b
+> is returned through concatenation: [2]. The left input wins ties,
+> preserving its relative precedence.
+
+> [!EXERCISE stretch] A null check looks redundant but has no explanation.
+> Recommend an investigation before deleting it and identify a weaker
+> review argument.
+>
+> **Solution:** Find callers and boundary tests, then use git log -S on
+> the strange line and inspect why it was introduced. Remove it only after
+> the original reason is demonstrably gone, recording that reason in the
+> commit. A weaker answer deletes it because the happy-path trace never
+> needs it; that says nothing about the boundary failure it may guard.

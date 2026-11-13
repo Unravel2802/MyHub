@@ -9,6 +9,17 @@ different things — how much a compiler can prove, and how much you have to
 write down — treated as one. Separating them makes the whole debate tractable,
 and turns "types" from a chore into the cheapest correctness tool available.
 
+> [!WHY] A network payload is cast to a TypeScript interface and reaches
+> the UI with an invalid field. The build stays green because erased types
+> do not inspect incoming bytes, leaving the customer to discover the
+> broken assumption.
+
+> [!GOALS]
+>
+> - Explain the three independent typing axes
+> - Design a discriminated union for legal states
+> - Choose a parsing boundary for untrusted input
+
 ## What a type actually is
 
 A type is a **set of values plus the operations valid on them**. `bool` is
@@ -209,7 +220,7 @@ class Email:
             raise ValueError(f"not an email: {raw!r}")
         self.value = raw
 
-def send(to: Email):                # cannot be called with an unchecked string
+def send(to: Email):             # cannot be called with an unchecked string
     ...
 ```
 
@@ -219,6 +230,15 @@ check happens once, at the edge, where the untrusted string arrives.
 
 This is the same idea as the discriminated union, applied to scalars: move the
 guarantee from a convention you must remember into a type the compiler enforces.
+
+
+```mermaid
+flowchart TB
+  R[Untrusted bytes] --> P[Parse and check]
+  P -->|valid| T[Guaranteed type]
+  P -->|invalid| E[Reject at boundary]
+  T --> D[Downstream typed operations]
+```
 
 ## What types cannot do
 
@@ -252,6 +272,16 @@ is the only realistic path for an existing codebase. Two rules make it work:
    in CI that forbid _new_ untyped code even while old code is grandfathered. A
    gradual migration with no ratchet stays at 40% forever.
 
+> [!CHECK] What does strict null checking force a caller to handle?
+>
+> Absence is a separate nullable or option case that must be handled
+> before using the value.
+
+> [!CHECK] Can a type-correct comparator still break sorting?
+>
+> Yes. Ordinary types do not prove behavioural properties such as
+> transitivity.
+
 ## What to take away
 
 1. A type is a set of values plus valid operations; a type error is a proof that
@@ -269,3 +299,34 @@ is the only realistic path for an existing codebase. Two rules make it work:
 
 Next: state and mutation — the other half of correctness, and the reason two
 identical-looking functions can behave completely differently.
+
+## Exercises
+
+> [!EXERCISE recall] Separate static versus dynamic, strong versus weak,
+> and explicit versus inferred typing. Why does static not imply safe?
+>
+> **Solution:** They describe when checks run, how much implicit coercion
+> is allowed, and who supplies annotations. C is static yet permits weak
+> coercions and casts; the timing of checking alone does not establish
+> safety.
+
+> [!EXERCISE apply] Model a file export with exactly three legal states:
+> running, ready with a path, or failed with an error. Choose fields so
+> ready data cannot coexist with failure data, and say how adding
+> cancelled should affect rendering.
+>
+> **Solution:** Use a sum type: {status: "running"} | {status: "ready";
+> path: string} | {status: "failed"; error: Error}. Each variant carries
+> only its own payload. A switch narrows by status; a never exhaustiveness
+> branch must fail checking when cancelled is added until rendering
+> handles it.
+
+> [!EXERCISE stretch] An email sender accepts a raw string after a boolean
+> validation helper was called elsewhere. Recommend an interface that
+> keeps the guarantee downstream.
+>
+> **Solution:** Parse the untrusted string once into an Email value
+> through a validating constructor, and make send accept Email. A weaker
+> answer keeps send(string) and relies on callers remembering the boolean
+> check; the type no longer records whether the string passed validation.
+> A cast alone is also insufficient at a runtime boundary.

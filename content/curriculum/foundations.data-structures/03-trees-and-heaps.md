@@ -10,6 +10,16 @@ Arrays give you position. Hash tables give you lookup. Trees give you **ordered*
 data you can still search quickly — which is what you need the moment a question
 becomes "the smallest key above X" rather than "the value for exactly X".
 
+> [!WHY] A scheduler sorts all waiting jobs again whenever it needs the
+> next one. A structure that maintains only the minimum can avoid paying
+> for a complete ordering the scheduler never uses.
+
+> [!GOALS]
+>
+> - Explain the distinct BST and heap invariants
+> - Trace heap insertion in array form
+> - Choose an ordered structure for a workload
+
 ## Binary search trees
 
 A binary search tree keeps an invariant at every node:
@@ -76,6 +86,16 @@ def push(heap, value):
 Building from `n` items is O(n), not O(n log n): most nodes are near the bottom
 and sift down only a level or two, and the sum converges.
 
+
+```mermaid
+flowchart TB
+  A[Append new value] --> P[Compare with parent]
+  P --> S{Parent larger?}
+  S -->|yes| U[Swap and move upward]
+  U --> P
+  S -->|no| D[Heap restored]
+```
+
 ## Choosing between them
 
 - Need exact-key lookup only → **hash table**.
@@ -86,3 +106,46 @@ and sift down only a level or two, and the sum converges.
 The heap is the data structure behind priority queues, and priority queues are
 behind Dijkstra's algorithm, A*, event simulation and every scheduler — which is
 where Algorithms picks this up.
+
+> [!CHECK] What happens when sorted keys are inserted into a naive BST?
+>
+> Its height can become n, reducing search and updates to O(n); balancing
+> maintains logarithmic height.
+
+> [!CHECK] Why is bottom-up heap construction O(n), not O(n log n)?
+>
+> Most nodes are near the bottom and move only a few levels, so the total
+> sift work is linear.
+
+## What to take away
+
+A balanced BST supports ordered search; a heap maintains only the extreme.
+Use a B-tree when reducing storage round trips matters.
+
+## Exercises
+
+> [!EXERCISE recall] Compare the ordering guarantees of a BST and a
+> min-heap. Why does only one support efficient ordered key search?
+>
+> **Solution:** A BST orders every left subtree below the node and every
+> right subtree above it, allowing a search to discard a side. A heap only
+> orders each parent before its children; it does not order siblings or
+> subtrees, so arbitrary key search lacks that guarantee.
+
+> [!EXERCISE apply] Run push on heap [2, 6, 4, 9] with value 1. Show
+> indices, parent comparisons and the final array.
+>
+> **Solution:** Append 1 at index 4: [2, 6, 4, 9, 1]. Parent (4 − 1)//2 =
+> 1 holds 6, so swap: [2, 1, 4, 9, 6]. Now i = 1, parent = 0 holds 2;
+> swap: [1, 2, 4, 9, 6]. At i = 0 stop. The minimum is 1 at the root.
+
+> [!EXERCISE stretch] A service needs both repeated minimum extraction and
+> arbitrary range queries. A teammate proposes one heap for everything.
+> Recommend a choice and the trade-off.
+>
+> **Solution:** Use a balanced ordered tree when range queries are
+> essential; it retains ordered search and can find extremes while updates
+> remain logarithmic. A heap is the weaker single-structure answer for
+> this workload: its cheap minimum does not provide subtree ordering for
+> ranges. On disk, the chapter’s high-branching B-tree reduces read round
+> trips.

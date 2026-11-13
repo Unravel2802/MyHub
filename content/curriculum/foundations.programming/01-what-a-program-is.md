@@ -12,6 +12,17 @@ line that cannot possibly be wrong. Every one of those is a question about the
 gap between the text you wrote and the instructions that ran. This chapter
 closes that gap.
 
+> [!WHY] A CLI benchmark looks fast after thousands of calls, but users
+> wait on every fresh invocation. Confusing steady-state JIT speed with
+> startup cost can send the team into a rewrite that does not fix the
+> delay.
+
+> [!GOALS]
+>
+> - Explain the as-if rule and observable behaviour
+> - Choose an execution model for a workload
+> - Design a benchmark that survives optimisation
+
 ## The only thing a CPU can do
 
 A CPU executes a loop. It has a register holding an address — the _program
@@ -79,7 +90,7 @@ a data structure derived from the source. Classic Ruby, older Python and shell
 scripts work this way.
 
 ```text
-  script.py ──▶ [parse] ──▶ AST ──▶ [walk the tree, doing what each node says]
+script.py ──▶ [parse] ──▶ AST ──▶ [walk the tree, doing what each node says]
 ```
 
 There is no separate build step, the source is what ships, and the same file
@@ -127,6 +138,15 @@ up measures the interpreter.
 Notice that "compiled vs interpreted" is a property of an _implementation_, not
 of a language. There are C interpreters and Python compilers. The question is
 always "what does this toolchain do", never "what kind of language is this".
+
+
+```mermaid
+flowchart TB
+  S[Source] --> B[Bytecode]
+  B --> V[VM interprets]
+  V --> H[Hot code observed]
+  H --> J[JIT machine code]
+```
 
 ## What the compiler is allowed to change
 
@@ -246,6 +266,19 @@ you use them or not. Understanding what you are paying for is the point.
 - When startup latency matters — a CLI, a serverless function — you know the
   runtime and the JIT warm-up are the things to look at, before your own code.
 
+> [!PITFALL] An unused benchmark result can let the optimiser delete the
+> work being timed.
+
+> [!CHECK] What does a CPU do after fetching and decoding an instruction?
+>
+> It executes it and updates the program counter; a jump selects another
+> address.
+
+> [!CHECK] Why can buffering output help without changing the language?
+>
+> It reduces expensive crossings of the syscall boundary; arithmetic speed
+> is irrelevant if those crossings dominate.
+
 ## What to take away
 
 1. Hardware executes a fetch-decode-execute loop over tiny instructions. Every
@@ -262,3 +295,32 @@ you use them or not. Understanding what you are paying for is the point.
 
 Next: what a _value_ is once you look underneath — and why "a variable holds a
 value" is the single most misleading sentence in programming.
+
+## Exercises
+
+> [!EXERCISE recall] What does the as-if rule preserve, and when does its
+> guarantee stop applying?
+>
+> **Solution:** It preserves observable behaviour for programs obeying the
+> language rules. Undefined behaviour breaks that premise; the compiler
+> need not preserve a meaningful result.
+
+> [!EXERCISE apply] A tool runs briefly on each invocation; another stays
+> alive processing a hot loop. Choose between AOT and bytecode plus JIT
+> for each, and identify the deployment trade.
+>
+> **Solution:** For the short-lived tool choose AOT to avoid warm-up; ship
+> a binary for each architecture and OS. For the long-lived service a JIT
+> can specialise the hot loop after observing real types and branches;
+> portable bytecode and fast steady state come with warm-up and higher
+> peak memory.
+
+> [!EXERCISE stretch] A benchmark times a calculation but discards its
+> result and reports less than one cycle. Recommend a repair before
+> treating this as evidence for a language rewrite.
+>
+> **Solution:** Make the result observable through the benchmark harness’s
+> black_box or DoNotOptimize primitive, and account for JIT warm-up when
+> relevant. Re-run representative work. A weaker answer merely repeats the
+> same timing more often: a deleted computation remains deleted, so the
+> number cannot justify a rewrite.

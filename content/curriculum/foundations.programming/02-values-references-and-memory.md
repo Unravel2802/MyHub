@@ -12,6 +12,16 @@ Comparing two things that look identical and getting `false`. These are not
 language quirks to memorise separately. They are one idea, and once you have it
 the whole class disappears.
 
+> [!WHY] A configuration preview changes the live configuration after
+> making a shallow copy. The nested list is still shared, so an apparently
+> isolated edit can change the next request’s behaviour.
+
+> [!GOALS]
+>
+> - Explain why immutable aliases are harmless
+> - Trace nested mutation and rebinding
+> - Choose an ownership boundary for mutable data
+
 ## Two questions, always
 
 For any name in any language, ask:
@@ -105,6 +115,14 @@ A shallow copy copies one level. Everything it contained is still shared. This
 is the correct default — deep copying is expensive and often wrong, since it
 duplicates things that were deliberately shared — but it means "I made a copy"
 is never sufficient information. The question is _how deep_.
+
+
+```mermaid
+flowchart TB
+  O[Original dict] --> L[Shared tags list]
+  C[Shallow dict copy] --> L
+  D[Deep dict copy] --> N[New tags list]
+```
 
 ## Pass by value, pass by reference, and the phrase that causes the trouble
 
@@ -239,6 +257,17 @@ right".
    do mean it — cycle detection, cache keys, "is this the same node" — say so in
    a comment, because the next reader will assume it is a bug.
 
+> [!CHECK] Can a Python callee rebind the caller’s variable by assigning a
+> new object to its parameter?
+>
+> No. The parameter is a local copy of the reference; mutation through it
+> can affect the shared object, but rebinding it cannot rebind the caller.
+
+> [!CHECK] Why is returning a pointer to a stack local invalid in C?
+>
+> The frame dies on return, so the pointer reaches memory whose lifetime
+> has ended.
+
 ## What to take away
 
 1. Every name either holds data or holds a pointer to data; every type is either
@@ -257,3 +286,31 @@ right".
 
 Next: the call stack in detail — how a function call actually works, what a
 closure captures, and why recursion has a depth limit.
+
+## Exercises
+
+> [!EXERCISE recall] Why can many names safely share an immutable object
+> while sharing a mutable one is observable?
+>
+> **Solution:** No operation changes an immutable object in place.
+> Mutation through one alias of a mutable object changes what the other
+> aliases observe; rebinding a name alone does not.
+
+> [!EXERCISE apply] In Python, cfg = {"tags": ["x"]}; preview =
+> cfg.copy(). First preview["tags"].append("y"), then preview = {"tags":
+> []}. What does cfg contain after each step, and why?
+>
+> **Solution:** The copy creates a new outer dict but shares the tags
+> list. Appending changes that list to ["x", "y"], so cfg is {"tags":
+> ["x", "y"]}. Rebinding preview then points only that local name at a new
+> dict; cfg still contains ["x", "y"].
+
+> [!EXERCISE stretch] An API retains a caller’s mutable settings and
+> returns its live internal list. Recommend a boundary policy without
+> blindly deep-copying everything.
+>
+> **Solution:** Copy mutable input at the retention boundary and return a
+> copy or immutable view. Choose the required depth explicitly when nested
+> values remain mutable; preserve intentional sharing where safe. A weaker
+> answer copies just the outer container and declares isolation: inner
+> aliases can still violate the API’s invariants.

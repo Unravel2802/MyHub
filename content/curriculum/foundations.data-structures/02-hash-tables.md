@@ -10,6 +10,16 @@ A hash table gives you O(1) _average_ lookup by key. It is the workhorse of
 practical programming — dictionaries, sets, caches, database indexes and symbol
 tables are all hash tables underneath.
 
+> [!WHY] A cache changes a field used to hash an existing key. The entry
+> still consumes memory but lookup can no longer reach it, turning a
+> harmless-looking object edit into missing cached data.
+
+> [!GOALS]
+>
+> - Explain the equality and hash contract
+> - Compute load factor and resize placement
+> - Choose safe handling for collisions and mutable keys
+
 ## The idea
 
 Store values in an array of `m` buckets. To find where a key lives, compute:
@@ -40,6 +50,15 @@ bucket 3 -> ("cat", 1) -> ("tac", 9)
 free slot on collision. It is more cache-friendly, but deletion needs care —
 removing an entry can break the probe chain for others, so implementations mark
 tombstones instead of clearing slots.
+
+
+```mermaid
+flowchart TB
+  K[Key] --> H[Compute hash]
+  H --> B[Select bucket modulo m]
+  B --> E[Compare candidate keys]
+  E --> R[Return matching value]
+```
 
 ## Load factor and resizing
 
@@ -80,9 +99,46 @@ collision. But equal objects with different hashes will land in different
 buckets and the table will contain both, which is a bug that surfaces as "my
 lookup returns nothing" long after the insertion that caused it.
 
+> [!CHECK] If every key hashes into one bucket, what happens to lookup?
+>
+> It can degrade to O(n), despite the usual average O(1) claim.
+
+> [!CHECK] Why should iteration order not be assumed stable across runs?
+>
+> Hash seeding and implementation details can change it unless the
+> language explicitly guarantees an order.
+
 ## What to take away
 
 1. O(1) is _average_ case, conditional on a good hash and a bounded load factor.
 2. Collisions are normal; the strategy for handling them is a real design choice.
 3. Keys must be immutable and must honour the hash/equality contract.
 4. Do not rely on iteration order.
+
+## Exercises
+
+> [!EXERCISE recall] What must equal keys guarantee about their hashes,
+> and why is the reverse implication unnecessary?
+>
+> **Solution:** Equal keys must have equal hashes so lookup reaches the
+> same bucket. Unequal keys may share a hash; collision handling
+> distinguishes them by equality.
+
+> [!EXERCISE apply] A chaining table has 8 buckets and 6 entries, and
+> resizes when load exceeds 0.75. Insert a seventh key with hash 27.
+> Determine whether resizing is needed, the new load after doubling, and
+> its bucket before and after the resize.
+>
+> **Solution:** Before insertion α = 6/8 = 0.75. Seven entries give 7/8 =
+> 0.875, crossing the threshold. Doubling gives 16 buckets and α = 7/16 =
+> 0.4375. Hash 27 maps to 27 mod 8 = 3 before resizing and 27 mod 16 = 11
+> after; every existing key must also be rehashed.
+
+> [!EXERCISE stretch] An open-addressed map proposes clearing a deleted
+> slot and using mutable record fields as keys. Recommend two changes and
+> explain the failed shortcut.
+>
+> **Solution:** Use tombstones to preserve probe chains, and immutable
+> keys whose equality and hash agree. A weaker answer only increases the
+> bucket count: more space does not repair a broken probe chain or a key
+> whose hash changes after insertion.

@@ -11,6 +11,16 @@ process" or "too little" — it's process that outlived the problem it was
 invented for, still being followed out of habit long after anyone
 remembers why.
 
+> [!WHY] A daily standup continues as a manager status recital while
+> blocked work waits for days. The meeting consumes everyone’s time
+> without solving the coordination problem that justified it.
+
+> [!GOALS]
+>
+> - Explain short feedback cycles
+> - Make cumulative scope additions explicit
+> - Evaluate whether a ceremony still serves its purpose
+
 ## Agile as a response to a real, specific failure
 
 ```text
@@ -117,6 +127,14 @@ remembers why.
     spends some of it, whether or not anyone says so out loud.
 ```
 
+```mermaid
+flowchart TB
+  A[Proposed addition] --> C[Make capacity trade-off explicit]
+  C --> D{Accept change?}
+  D -->|Yes| R[Revise scope or date]
+  D -->|No| K[Keep current commitment]
+```
+
 ## Process vs. ceremony: the actual test
 
 ```text
@@ -135,6 +153,27 @@ remembers why.
     its risk profile, and its own specific coordination needs —
     never a fixed, universal, one-size-fits-every-team answer.
 ```
+
+> [!PITFALL] Individually reasonable additions can collectively exceed the
+> delivery budget without one obviously unreasonable decision.
+
+> [!INTERVIEW] Name the coordination problem a ceremony solves before
+> defending its schedule.
+
+> [!CHECK] Why is software estimation intrinsically uncertain?
+>
+> Important complexity can remain unknown until meaningful work has
+> already begun.
+
+> [!CHECK] What do relative story points avoid claiming?
+>
+> They avoid the false precision of a confident hour figure when the
+> underlying effort remains uncertain.
+
+> [!CHECK] Why should process change as a team grows?
+>
+> Coordination needs, risk and overhead change with size; a once-useful
+> practice may stop fitting.
 
 ## What to take away
 
@@ -155,3 +194,32 @@ remembers why.
    problem it was adopted for, for this specific team, right now — the
    right amount of process scales with team size and risk, never a fixed
    universal answer.
+
+## Exercises
+
+> [!EXERCISE recall] How do short iterations bound the cost of a wrong
+> product assumption?
+>
+> **Solution:** They put something real before users sooner and allow
+> correction after each feedback cycle, rather than discovering the
+> mistake only after a long all-at-once project.
+
+> [!EXERCISE apply] Assume a team has 24 engineer-days of capacity and 20
+> already committed. Three requested additions need 3, 2 and 4 days.
+> Evaluate accepting all, and propose an explicit choice while keeping the
+> fixed capacity.
+>
+> **Solution:** All additions total 3 + 2 + 4 = 9 days, taking the plan to
+> 29 and exceeding 24 by 5. For example, accept only the 4-day addition,
+> reaching 24, and defer the 3- and 2-day items; or displace existing
+> scope explicitly if a different priority is worth it. Judging each
+> addition as small does not remove their cumulative cost.
+
+> [!EXERCISE stretch] A standup has become a daily progress recital and
+> fails to surface blockers. Recommend a process change.
+>
+> **Solution:** Refocus it on exposing and resolving blockers quickly, and
+> reconsider its format if another mechanism better solves that need for
+> this team. A weaker answer keeps the recital unchanged because standups
+> are part of the methodology: a ceremony’s continued existence is not
+> evidence it still coordinates useful work.

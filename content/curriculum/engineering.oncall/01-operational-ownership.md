@@ -10,6 +10,16 @@ structural question underneath that: WHO is on the hook for a 3am page, and
 what makes that arrangement sustainable across months and years rather than
 something that burns people out within a quarter.
 
+> [!WHY] The same known failure wakes the rotation repeatedly, and every
+> shift fixes it manually again. Without scheduled engineering time, the
+> service consumes sleep and delivery capacity indefinitely.
+
+> [!GOALS]
+>
+> - Explain build-and-run incentive alignment
+> - Prioritize recurring operational toil
+> - Design escalation and runbook support
+
 ## "You build it, you run it": the accountability shift
 
 ```text
@@ -124,6 +134,35 @@ something that burns people out within a quarter.
     natural mechanism that reliably self-corrects on its own.
 ```
 
+```mermaid
+flowchart TB
+  P[Recurring page] --> M[Measure response toil]
+  M --> F[Prioritize root-cause work]
+  F --> R[Reduce recurring burden]
+  R --> H[Healthier rotation]
+```
+
+> [!PITFALL] A runbook first tested during an incident may fail at the
+> moment its reader can least afford to debug it.
+
+> [!INTERVIEW] Treat sustainable shifts, handoffs and escalation as system
+> design rather than personal heroics.
+
+> [!CHECK] What structure supports a sustainable rotation?
+>
+> Bounded shifts, clear handoffs, compensation or time off, and a real
+> escalation path.
+
+> [!CHECK] Why test a runbook with someone besides the author?
+>
+> They can expose unclear or wrong steps before an exhausted responder
+> relies on them in a live incident.
+
+> [!CHECK] Why measure burden explicitly?
+>
+> A worsening rotation has no automatic correction; visible toil can be
+> prioritized alongside features.
+
 ## What to take away
 
 1. "You build it, you run it" aligns incentives directly — an engineer who
@@ -144,3 +183,35 @@ something that burns people out within a quarter.
    prioritization alongside feature work — the same toil-measurement
    discipline from platform engineering, applied to on-call specifically,
    since nothing self-corrects a silently worsening rotation on its own.
+
+## Exercises
+
+> [!EXERCISE recall] How does “you build it, you run it” change design
+> incentives?
+>
+> **Solution:** The people making architectural choices also bear
+> operational consequences, giving them a direct incentive to build robust
+> systems instead of handing fragility to a separate team.
+
+> [!EXERCISE apply] Assume a recurring known issue causes 6 pages a week,
+> each taking 25 minutes of response work. A proposed root-cause fix takes
+> 8 engineer-hours and is expected to remove those pages. Estimate four
+> weeks of response work and compare, without treating the forecast as
+> certainty.
+>
+> **Solution:** Weekly response work is 6 × 25 = 150 minutes, or 2.5
+> hours. Four weeks costs 600 minutes = 10 hours. The 8-hour fix is 2
+> hours less than that projected response effort and also reduces
+> recurring disruption if effective. Validate the fix’s impact and
+> schedule it explicitly; a runbook can help response but does not itself
+> remove the recurring cause.
+
+> [!EXERCISE stretch] A primary responder is stuck during a live incident
+> and hesitates to wake backup because asking feels like failure.
+> Recommend a response policy.
+>
+> **Solution:** Use the genuine escalation path promptly once stuck,
+> supported by tested runbooks and clear handoff expectations. A weaker
+> answer rewards solving every page alone: it prolongs actual user impact
+> and makes sustainability depend on heroics rather than the rotation’s
+> design.

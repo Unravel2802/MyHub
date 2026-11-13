@@ -9,6 +9,16 @@ list instead of operations on a specific data structure. Once the structure
 is clear — a directed acyclic graph of commits, each pointing at its
 parent(s) — nearly every command's behavior follows from it directly.
 
+> [!WHY] A developer rebases commits a colleague already used as a base.
+> The new hashes turn a local cleanup into divergent shared history,
+> creating recovery work for everyone who pulled the originals.
+
+> [!GOALS]
+>
+> - Explain branches and HEAD in the commit graph
+> - Trace working, staged and committed snapshots
+> - Choose a safe regression investigation
+
 ## The DAG
 
 ```text
@@ -86,10 +96,17 @@ parent(s) — nearly every command's behavior follows from it directly.
 ```
 
 ```text
-  → `git add` is not "mark this file as part of git" (a one-
-    time thing) — it's "update the staging area's snapshot of
-    this file to its current state," and can be run again
-    after further edits, before committing.
+  → `git add` is not "mark this file as part of git" (a one-time thing) —
+    it's "update the staging area's snapshot of this file to its current
+    state," and can be run again after further edits, before committing.
+```
+
+```mermaid
+flowchart TB
+  H[HEAD snapshot A] --> I[Index snapshot B]
+  I --> W[Working file C]
+  I --> C[Commit records B]
+  W --> D[Unstaged difference remains]
 ```
 
 ## Bisect
@@ -153,6 +170,28 @@ parent(s) — nearly every command's behavior follows from it directly.
     already built on.
 ```
 
+> [!PITFALL] Rebasing commits others may have pulled replaces the
+> identities their work depends on.
+
+> [!INTERVIEW] Describe which two snapshots a Git command compares and
+> whether the affected commits are shared before recommending a history
+> operation.
+
+> [!CHECK] How do merge and rebase differ in commit identity?
+>
+> Merge ties existing histories together; rebase recreates feature commits
+> on a new base with new hashes.
+
+> [!CHECK] What can recover a recently lost local commit?
+>
+> The local reflog records recent HEAD positions, subject to expiry;
+> inspect it to find the commit.
+
+> [!CHECK] Why does bisect reduce regression tests?
+>
+> It halves the candidate commit range rather than checking every revision
+> sequentially.
+
 ## What to take away
 
 1. A branch is a movable pointer to a commit, not a copy of the code — nearly
@@ -169,3 +208,34 @@ parent(s) — nearly every command's behavior follows from it directly.
 5. The reflog records everywhere HEAD has pointed recently and is usually how
    a "lost" commit is recovered — but it's local, time-limited, and not a
    substitute for pushing shared work.
+
+## Exercises
+
+> [!EXERCISE recall] What is a branch, and how does HEAD differ in
+> attached versus detached state?
+>
+> **Solution:** A branch is a movable pointer to a commit, not a separate
+> stored code copy. Attached HEAD points to the current branch; detached
+> HEAD points directly to a commit.
+
+> [!EXERCISE apply] A file contains A at HEAD. Edit it to B, stage it,
+> then edit it to C without staging again. State what git diff, git diff
+> --staged and a commit now contain.
+>
+> **Solution:** The working file is C, the index snapshot is B and HEAD is
+> A. git diff compares C with B. git diff --staged compares B with A.
+> Committing records B and moves HEAD to the new commit; C remains an
+> unstaged edit. git add snapshots the file when run, not every later
+> modification.
+
+> [!EXERCISE stretch] A shared branch contains a regression among many
+> commits. A teammate proposes rebasing published history while trying
+> changes manually. Recommend an investigation that preserves
+> collaborators’ bases.
+>
+> **Solution:** Use bisect between a known good and bad revision, with a
+> reproducible pass/fail script where practical, to narrow the introducing
+> commit. Keep published history intact and make a deliberate fix. A
+> weaker answer rewrites the shared commits to make the story cleaner:
+> collaborators may already rely on their hashes and now face divergent
+> histories.

@@ -9,6 +9,16 @@ yourself, entirely" and "the runtime manages it for you, entirely" —
 understanding where a given language sits, and what that costs, explains a
 whole category of behavior that otherwise looks like magic or mystery.
 
+> [!WHY] A service’s heap grows even after request objects become
+> unreachable. If those objects retain each other in a cycle, counting
+> references alone can keep paying for dead requests indefinitely.
+
+> [!GOALS]
+>
+> - Explain why reference cycles evade plain counting
+> - Trace reachability from roots
+> - Choose a response to collector pause costs
+
 ## Stack vs heap
 
 ```text
@@ -114,6 +124,15 @@ whole category of behavior that otherwise looks like magic or mystery.
     not.
 ```
 
+
+```mermaid
+flowchart TB
+  R[Root set] --> T[Trace reachable objects]
+  T --> K[Keep marked objects]
+  T --> U[Find unmarked objects]
+  U --> F[Reclaim unreachable cycles too]
+```
+
 ## The pause: stop-the-world
 
 ```text
@@ -161,6 +180,28 @@ whole category of behavior that otherwise looks like magic or mystery.
                             construction
 ```
 
+> [!PITFALL] Reference counts describe incoming references, not
+> reachability from live roots; unreachable cycles can retain nonzero
+> counts.
+
+> [!INTERVIEW] Draw the object graph and mark the roots. Explain why
+> reference counts and root reachability differ before choosing a
+> reclamation model and discussing pause costs.
+
+> [!CHECK] Which memory region has scope-bound frame cleanup?
+>
+> The stack; heap objects support lifetimes not tied to the creating call.
+
+> [!CHECK] What distinguishes a leak from use-after-free?
+>
+> A leak fails to release allocated memory; use-after-free accesses memory
+> after its lifetime ended.
+
+> [!CHECK] Why does a naive tracer pause the application?
+>
+> It cannot safely walk a graph that the application is simultaneously
+> mutating without additional collector machinery.
+
 ## What to take away
 
 1. A value must live on the heap if it needs to outlive the function call
@@ -179,3 +220,36 @@ whole category of behavior that otherwise looks like magic or mystery.
 5. A naive tracer must stop the program to walk the graph safely — a real,
    user-visible latency cost that generational and concurrent collection
    exist specifically to shrink, not eliminate.
+
+## Exercises
+
+> [!EXERCISE recall] Why does an unreachable two-object cycle defeat plain
+> reference counting but not tracing?
+>
+> **Solution:** Each object still has a reference from the other, so
+> neither count reaches zero. A tracer starts at roots; with no path from
+> a root to either object, both are garbage regardless of their internal
+> cycle.
+
+> [!EXERCISE apply] Roots reach A; A points to B; B points to A.
+> Separately C points to D and D to C, and no root reaches C or D. Which
+> objects survive tracing? Then remove the root’s only reference to A and
+> compare plain reference counting.
+>
+> **Solution:** Initially tracing marks A, then B, then stops revisiting
+> A; A and B survive. C and D are unreachable and collectible. Removing
+> the root link makes A and B unreachable too, so tracing can collect
+> them. Plain counting leaves each of these cycle members with the other
+> member’s reference, so dropping outside roots alone does not free them.
+
+> [!EXERCISE stretch] A latency-sensitive service sees pauses under a
+> naive stop-the-world tracer. Recommend a collector direction and reject
+> the claim that manual allocation is automatically safer.
+>
+> **Solution:** Investigate generational collection when short-lived
+> objects dominate and concurrent or incremental tracing to reduce visible
+> pause time, accounting for complexity and overhead. A weaker answer
+> switches blindly to manual free: it removes GC pauses but introduces
+> leak, use-after-free and double-free responsibilities. Choose against
+> measured latency and safety needs rather than assuming every form of
+> reclamation has the same cost.

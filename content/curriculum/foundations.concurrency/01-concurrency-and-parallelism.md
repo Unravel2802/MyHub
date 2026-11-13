@@ -10,6 +10,17 @@ in-flight, possibly interleaved on one core); parallelism is about EXECUTION
 (multiple tasks genuinely running simultaneously, on multiple cores). A
 single-core machine can be concurrent; it cannot be parallel.
 
+> [!WHY] A service publishes a ready flag before another worker can see
+> the associated data. Passing casual tests does not make the
+> unsynchronised publication safe; a stale read can send a response built
+> from the wrong state.
+
+> [!GOALS]
+>
+> - Explain concurrency versus parallelism
+> - Trace a compare-and-swap retry
+> - Choose synchronisation for publication
+
 ## The race condition
 
 ```text
@@ -107,6 +118,14 @@ single-core machine can be concurrent; it cannot be parallel.
     famous gotcha specific to this approach).
 ```
 
+```mermaid
+flowchart TB
+  R[Read old value] --> N[Compute replacement]
+  N --> C{CAS succeeds?}
+  C -->|no| R
+  C -->|yes| D[Update complete]
+```
+
 ## Memory models: what "happens before" actually means
 
 ```text
@@ -137,8 +156,8 @@ single-core machine can be concurrent; it cannot be parallel.
 ## Async runtimes: concurrency without threads
 
 ```text
-  JavaScript's single-threaded event loop (the JavaScript deep-
-  dive chapter's mechanism) achieves CONCURRENCY (many
+  JavaScript's single-threaded event loop (the JavaScript
+  deep-dive chapter's mechanism) achieves CONCURRENCY (many
   in-flight operations) WITHOUT parallelism or threads at all —
   an async function yields control at each `await`, letting
   OTHER code run, then resumes later.
@@ -151,6 +170,29 @@ single-core machine can be concurrent; it cannot be parallel.
     race, because the DATABASE is the shared mutable state, not
     a JS variable in one process).
 ```
+
+> [!PITFALL] A plain shared flag is not a publication barrier; source
+> order alone does not establish happens-before.
+
+> [!INTERVIEW] Name the shared state and the synchronisation relationship.
+> Explain whether you need mutual exclusion, a single atomic update or
+> ordered publication rather than saying threads are safe.
+
+> [!CHECK] Which failure mode involves continual activity without
+> progress?
+>
+> Livelock; deadlock involves circular waiting, and starvation denies a
+> particular thread the resource it needs.
+
+> [!CHECK] Which failure mode does a fair acquisition policy directly
+> address?
+>
+> Starvation, rather than circular-wait deadlock.
+
+> [!CHECK] What can CAS fail to notice in the ABA problem?
+>
+> A value changed from A to B and back to A between a read and the CAS;
+> equality with A does not reveal the intervening changes.
 
 ## What to take away
 
@@ -171,3 +213,33 @@ single-core machine can be concurrent; it cannot be parallel.
    synchronization, is what actually guarantees another thread sees writes
    in order — a plain unsynchronized shared variable often appears to work
    in testing while providing no real guarantee.
+
+## Exercises
+
+> [!EXERCISE recall] Can a single-core event loop be concurrent without
+> parallel execution, and what external race remains possible?
+>
+> **Solution:** Yes. Tasks interleave at awaits while only one runs at a
+> time. Concurrent requests can still read and write shared external
+> state, such as the same database row, in a racing order.
+
+> [!EXERCISE apply] A counter is 7. Threads A and B both read 7 and plan
+> CAS(7, 8). A succeeds first; B fails. Trace B’s correct retry and
+> contrast an ordinary stale write.
+>
+> **Solution:** A’s CAS changes 7 to 8. B’s CAS expects 7 but sees 8, so
+> it changes nothing. B rereads 8, computes 9 and tries CAS(8, 9); if no
+> other write intervenes it succeeds. Final counter is 9. An ordinary
+> write of B’s stale 8 would overwrite rather than add the second
+> increment.
+
+> [!EXERCISE stretch] A producer writes data then sets a plain shared
+> ready flag; a reviewer says source order guarantees consumers see both.
+> Recommend a publication rule.
+>
+> **Solution:** Establish a happens-before relationship with a lock or
+> correctly ordered atomic synchronisation before consumers use the data.
+> A weaker answer keeps the plain flag because testing never observed
+> failure: compiler and CPU reordering and visibility rules are not proved
+> by successful runs. Merely checking the flag more frequently does not
+> establish ordering.

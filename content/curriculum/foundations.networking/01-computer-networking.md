@@ -9,6 +9,16 @@ problem the layer above doesn't have to think about — until something goes
 wrong, and knowing which layer actually made which guarantee is what turns
 "the network is being weird" into a diagnosable problem.
 
+> [!WHY] A client repeats short requests over fresh encrypted connections
+> and spends its latency budget before useful data flows. Connection setup
+> can dominate even when server processing is fast.
+
+> [!GOALS]
+>
+> - Explain the transport trade between TCP and UDP
+> - Compute repeated connection setup overhead
+> - Choose a diagnostic from the failure layer
+
 ## The layers, and what each one guarantees
 
 ```text
@@ -80,6 +90,14 @@ wrong, and knowing which layer actually made which guarantee is what turns
     again on every single one.
 ```
 
+```mermaid
+flowchart TB
+  C[Client] --> S[Send SYN]
+  S --> A[Server sends SYN-ACK]
+  A --> K[Client sends ACK]
+  K --> D[Application data]
+```
+
 ## DNS: a name resolves through a chain of authority
 
 ```text
@@ -148,6 +166,31 @@ wrong, and knowing which layer actually made which guarantee is what turns
     time on the wrong layer.
 ```
 
+> [!PITFALL] A DNS failure, refused connection, TLS error and HTTP 5xx
+> point to different layers; treating them as one network fault wastes
+> investigation.
+
+> [!INTERVIEW] Name the last layer known to have succeeded. Distinguish
+> DNS, connection setup, certificate verification and application response
+> before recommending a retry or configuration change.
+
+> [!CHECK] What addresses identify the endpoints at transport versus
+> network level?
+>
+> Ports identify processes at transport level; IP addresses identify
+> machines for routing.
+
+> [!CHECK] Why can a changed DNS record still return its previous address?
+>
+> Caches may legitimately serve a copy until its remaining TTL expires.
+
+> [!CHECK] What does connection refused suggest compared with a silent
+> connection timeout?
+>
+> Refusal suggests a reachable host with no listener on the port; a
+> timeout warrants investigating reachability or dropped packets along the
+> path.
+
 ## What to take away
 
 1. Each network layer adds a guarantee the one below doesn't make — TCP is
@@ -166,3 +209,38 @@ wrong, and knowing which layer actually made which guarantee is what turns
    a completely different cause — DNS failure, connection refused, connection
    timeout, TLS failure, and an HTTP 5xx are five different problems, not
    interchangeable symptoms of "the network is down."
+
+## Exercises
+
+> [!EXERCISE recall] Why might a real-time application deliberately accept
+> UDP’s weaker guarantees rather than TCP’s ordered retransmission?
+>
+> **Solution:** It can value a fresh update more than a late recovered
+> one. UDP does not automatically recover loss or establish ordered
+> connection state; the application accepts or handles those costs in
+> exchange for lower setup and delivery overhead.
+
+> [!EXERCISE apply] Six sequential commands require a reliable ordered
+> byte stream. Each opens fresh TCP and TLS connections on a 70 ms
+> round-trip path; assume one setup round trip for TCP and one for TLS.
+> Choose between switching to bare UDP and reusing the encrypted TCP
+> connection, and compute the setup budget before and after, excluding
+> request processing.
+>
+> **Solution:** Reuse encrypted TCP: bare UDP does not supply the required
+> reliability and ordering. Each fresh connection pays 1 + 1 = 2 setup
+> round trips, or 2 × 70 = 140 ms. Six connections pay 6 × 140 = 840 ms.
+> One reused connection pays 140 ms once, avoiding 840 − 140 = 700 ms of
+> setup. Application exchanges and processing are excluded; the
+> one-round-trip TLS cost is the scenario’s assumption.
+
+> [!EXERCISE stretch] A client resolves the hostname and reaches the port,
+> then fails certificate verification. Recommend where to investigate and
+> name a weaker diagnosis.
+>
+> **Solution:** Investigate TLS certificate validity, hostname and trusted
+> issuer. A weaker answer changes DNS or adds application retries because
+> the network is down: resolution and connection already succeeded, and
+> neither fixes the certificate failure. Distinguish this from an HTTP
+> 5xx, which arrives after lower layers worked and points at the
+> application.

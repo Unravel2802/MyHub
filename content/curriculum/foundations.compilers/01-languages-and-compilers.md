@@ -11,6 +11,17 @@ confusing compiler error into a diagnosable one — the error message usually
 tells you exactly which stage failed, if you know what each stage is
 looking for.
 
+> [!WHY] A build error says an operation has incompatible types, but the
+> developer keeps changing parentheses. Locating the failing compiler
+> stage avoids spending the debugging session repairing grammar that
+> already parsed correctly.
+
+> [!GOALS]
+>
+> - Explain why IR separates frontends from targets
+> - Trace precedence and identify failing stages
+> - Choose evidence before hand-optimising source
+
 ## The pipeline
 
 ```text
@@ -41,6 +52,16 @@ looking for.
     is a SEMANTIC ANALYSIS failure — these happen at genuinely
     different stages, and knowing which one you're looking at
     tells you what kind of mistake to look for.
+```
+
+```mermaid
+flowchart TB
+  S[Source] --> L[Lex tokens]
+  L --> P[Parse AST]
+  P --> A[Semantic analysis]
+  A --> I[Generate IR]
+  I --> O[Optimise IR]
+  O --> C[Generate target code]
 ```
 
 ## Lexing and parsing
@@ -159,6 +180,26 @@ looking for.
                    version.
 ```
 
+> [!PITFALL] A syntax error and a type error belong to different stages;
+> changing syntax cannot repair an already-parsed type mismatch.
+
+> [!INTERVIEW] Place an error in the pipeline before proposing a fix:
+> tokens and grammar, then names and types, then the IR and target code.
+
+> [!CHECK] What does lexing produce before parsing?
+>
+> Tokens such as identifiers, numbers and operators, without the AST’s
+> grammatical structure.
+
+> [!CHECK] Which optimisation replaces 2 + 3 with 5 before execution?
+>
+> Constant folding.
+
+> [!CHECK] Why should a JIT benchmark account for warm-up?
+>
+> Early calls may execute interpreted or unoptimised code; only later hot
+> calls reach compiled steady-state performance.
+
 ## What to take away
 
 1. The compiler pipeline's stages (lexing, parsing, semantic analysis, IR
@@ -166,7 +207,7 @@ looking for.
    — a syntax error and a type error fail at genuinely different stages.
 2. A parser's grammar encodes operator precedence directly into how it
    builds the AST, which is why `5 + y * 2` correctly parses as `5 +
-   (y*2)` rather than needing precedence applied as an afterthought.
+(y*2)` rather than needing precedence applied as an afterthought.
 3. A type error is caught at semantic analysis, before code generation ever
    runs — which is exactly why it surfaces at compile time rather than as a
    runtime crash.
@@ -178,3 +219,34 @@ looking for.
    which is why hand-optimizing source that "should" help can measure as
    identical, and why measuring before optimizing applies at the
    source-code level too.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a shared IR reduce the number of compiler
+> components needed for many source languages and machine targets?
+>
+> **Solution:** Each source frontend emits the shared IR and each backend
+> consumes it. N frontends plus M backends replace N × M direct
+> language-target compilers; optimisation passes can also operate on the
+> shared form.
+
+> [!EXERCISE apply] Parse x = 7 + y * 3 assuming y is numeric. Show the
+> operator nesting and the value if y = 4. Then identify the stage that
+> rejects an undeclared y versus a missing closing parenthesis.
+>
+> **Solution:** The assignment’s right side is +(7, *(y, 3));
+> multiplication is deeper because it binds more tightly. With y = 4, the
+> product is 4 × 3 = 12 and the sum is 7 + 12 = 19. An undeclared y fails
+> name resolution in semantic analysis; a missing parenthesis fails
+> grammar checking during parsing.
+
+> [!EXERCISE stretch] A developer manually hoists a loop calculation and
+> sees no speedup. Recommend the next step rather than expanding the
+> rewrite.
+>
+> **Solution:** Measure and inspect whether the compiler already performed
+> loop-invariant code motion on the IR. Keep a source rewrite only when
+> evidence supports its value and meaning is preserved. A weaker answer
+> duplicates the same manual optimisation throughout the codebase:
+> unchanged output performance may simply reflect that the compiler had
+> already done the work.

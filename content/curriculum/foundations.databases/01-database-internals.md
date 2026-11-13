@@ -11,6 +11,17 @@ faster to write and slower to read than others, why a crash doesn't corrupt
 committed data, and why a query planner sometimes makes a choice that looks
 wrong until you see the statistics behind it.
 
+> [!WHY] A committed write survives in the log but not yet in its final
+> data page when the database crashes. Recovery depends on the ordering of
+> durable logging and acknowledgement, not on hoping the page write
+> finished first.
+
+> [!GOALS]
+>
+> - Explain the durability ordering of WAL
+> - Choose B-tree or LSM from a workload
+> - Evaluate a surprising query plan
+
 ## B-trees: the classic index structure
 
 ```text
@@ -113,6 +124,14 @@ wrong until you see the statistics behind it.
     information to reconstruct it if the process crashes first.
 ```
 
+```mermaid
+flowchart TB
+  W[Incoming write] --> L[Durably append WAL]
+  L --> C[Acknowledge commit]
+  L --> P[Update data page later]
+  L --> R[Replay after crash if needed]
+```
+
 ## MVCC: reads that never block writes
 
 ```text
@@ -152,6 +171,28 @@ wrong until you see the statistics behind it.
     the schema wouldn't reveal.
 ```
 
+> [!PITFALL] An index does not automatically make a low-selectivity query
+> faster; fetching most rows individually can lose to a sequential scan.
+
+> [!INTERVIEW] Connect the access pattern to where work is paid: sorted
+> page maintenance for a B-tree, or flushes, read fan-out and compaction
+> for an LSM. State what must be durable before acknowledgement.
+
+> [!CHECK] Why can an identical second query be faster?
+>
+> Its pages may now be in the buffer pool instead of requiring disk reads.
+
+> [!CHECK] Why do B-tree nodes have high branching factors?
+>
+> Page-sized nodes keep the number of levels and storage reads small.
+
+> [!CHECK] How can MVCC let a reader avoid waiting for a concurrent
+> writer?
+>
+> It reads an appropriate retained row version rather than contending for
+> the writer’s current physical row; versions no longer needed can later
+> be cleaned up.
+
 ## What to take away
 
 1. A B-tree's branching factor is chosen specifically to keep its depth
@@ -170,3 +211,34 @@ wrong until you see the statistics behind it.
 5. MVCC lets a reader see a consistent snapshot without blocking against a
    concurrent writer, which is the actual mechanism behind Postgres's
    default isolation level not making readers wait on writes.
+
+## Exercises
+
+> [!EXERCISE recall] What must be durable before commit is acknowledged in
+> the WAL model, and how is an unfinished data-page write recovered?
+>
+> **Solution:** The intended change must be durably appended to the log
+> before commit is acknowledged. Final data pages may be written later;
+> recovery replays the log to reconstruct changes not yet reflected in
+> them.
+
+> [!EXERCISE apply] Choose an index family for an event collector
+> dominated by writes and another for a service dominated by point reads.
+> Explain where each pays its deferred work.
+>
+> **Solution:** Choose an LSM for write-heavy collection: update the
+> memtable and WAL, flush immutable SSTables, then compact by merging.
+> Reads may check memory and multiple tables. Choose a B-tree for
+> read-heavy point lookup: writes maintain sorted balanced pages, trading
+> more write work for a simpler read path. The workload, rather than a
+> universal speed ranking, decides.
+
+> [!EXERCISE stretch] A query selects most of a table, yet a reviewer
+> insists the existing index must beat a sequential scan. Recommend a way
+> to judge the plan.
+>
+> **Solution:** Inspect EXPLAIN and the planner’s statistics on
+> selectivity and distribution. A sequential scan can be appropriate when
+> most rows match, avoiding individual indexed row fetches. A weaker
+> answer forces the index because it exists: that ignores the access
+> pattern and the statistics on which the planner chose its method.

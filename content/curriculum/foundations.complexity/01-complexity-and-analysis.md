@@ -9,6 +9,16 @@ loops, write the formula. Its actual purpose is predicting how an
 algorithm's cost SCALES before you've run it on real-sized input, which is a
 genuinely different skill than counting operations in a specific example.
 
+> [!WHY] A feature works on a test list but performs nested scans on the
+> production dataset. Growth analysis can reject that design before the
+> team spends days polishing constant factors in a quadratic path.
+
+> [!GOALS]
+>
+> - Explain amortized versus individual cost
+> - Compare growth for a larger workload
+> - Choose a measurement after asymptotic filtering
+
 ## What Big-O actually promises
 
 ```text
@@ -139,6 +149,35 @@ genuinely different skill than counting operations in a specific example.
     input size doesn't need a benchmark to rule out.
 ```
 
+```mermaid
+flowchart TB
+  A[Proposed algorithm] --> G[Estimate growth]
+  G --> R{Feasible at expected size?}
+  R -->|no| D[Change approach]
+  R -->|yes| M[Measure time and memory]
+```
+
+> [!PITFALL] An average-case bound and an amortized bound answer different
+> questions; neither says every individual operation is cheap.
+
+> [!INTERVIEW] State the case and the input scale with every bound.
+> Separate amortized sequence cost from worst individual latency, then
+> explain which constants measurement must resolve.
+
+> [!CHECK] What happens to 3n + 100 in Big-O notation?
+>
+> It is O(n); constants and lower-order terms are dropped.
+
+> [!CHECK] Why is quicksort is O(n log n) incomplete?
+>
+> That is the average case; a naive pivot can produce O(n²) worst-case
+> behaviour.
+
+> [!CHECK] What is memoization’s space trade?
+>
+> It retains subproblem results in extra memory to avoid repeated
+> computation, often reducing exponential time to polynomial time.
+
 ## What to take away
 
 1. Big-O describes growth rate as input size increases without bound, not
@@ -157,3 +196,35 @@ genuinely different skill than counting operations in a specific example.
 5. Estimating complexity before implementing is a cheap first filter for
    catching an obviously-bad design, distinct from — and not a replacement
    for — measuring real performance before optimizing.
+
+## Exercises
+
+> [!EXERCISE recall] How can append be amortized O(1) while a particular
+> append is O(n), and why does doubling matter?
+>
+> **Solution:** A full array needs a linear copy for one resize, but
+> geometric capacities make total copied elements linear across a sequence
+> of appends. Dividing that total by the number of appends gives constant
+> amortized work; additive growth does not space out expensive copies
+> enough.
+
+> [!EXERCISE apply] Compare n log₂ n and n² work estimates at n = 1024 and
+> n = 2048. Which candidate’s growth is more concerning, assuming
+> comparable units of work?
+>
+> **Solution:** At 1024, log₂ n = 10, so n log₂ n = 10,240 and n² =
+> 1,048,576. At 2048, log₂ n = 11, so n log₂ n = 22,528 and n² =
+> 4,194,304. Doubling n multiplies these estimates by 2.2 and 4
+> respectively. The quadratic candidate grows faster; these are work
+> estimates, not measured seconds.
+
+> [!EXERCISE stretch] For a small fixed production input, a measured O(n
+> log n) implementation beats an O(n) alternative. Recommend a decision
+> and reject a specific weaker argument.
+>
+> **Solution:** Use representative measurements and include memory cost
+> when choosing for that actual workload; keep the measured winner if the
+> benchmark reflects production and scaling needs. A weaker answer
+> switches solely because O(n) is asymptotically smaller: Big-O drops
+> constants and predicts eventual growth, not the winner at a fixed small
+> n.

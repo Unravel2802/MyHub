@@ -28,6 +28,22 @@ const EXERCISE_TRACKS = [
   "distributed.scheduling",
   "foundations.programming",
   "foundations.data-structures",
+  "foundations.algorithms",
+  "foundations.architecture",
+  "foundations.compilers",
+  "foundations.complexity",
+  "foundations.computability",
+  "foundations.concurrency",
+  "foundations.databases",
+  "foundations.discrete-math",
+  "foundations.information-theory",
+  "foundations.memory-management",
+  "foundations.networking",
+  "foundations.numbers",
+  "foundations.os",
+  "foundations.randomized",
+  "foundations.strings",
+  "foundations.systems-programming",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -55,8 +71,7 @@ const tracks = [
   },
   {
     prefix: "foundations",
-    topics: ["programming", "data-structures"],
-    expectedChapters: 12,
+    expectedChapters: 28,
   },
 ];
 const chapters = tracks.flatMap((track) => {

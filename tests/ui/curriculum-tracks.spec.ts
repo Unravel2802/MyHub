@@ -44,6 +44,26 @@ const EXERCISE_TRACKS = [
   "foundations.randomized",
   "foundations.strings",
   "foundations.systems-programming",
+  "craft.ai-assisted",
+  "craft.architecture-styles",
+  "craft.build-tooling",
+  "craft.clean-code",
+  "craft.code-review",
+  "craft.debugging",
+  "craft.design-patterns",
+  "craft.docs",
+  "craft.error-handling",
+  "craft.formal-methods",
+  "craft.functional",
+  "craft.licensing",
+  "craft.oop-design",
+  "craft.performance",
+  "craft.property-testing",
+  "craft.refactoring",
+  "craft.tdd",
+  "craft.testing",
+  "craft.type-design",
+  "craft.version-control",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -73,6 +93,7 @@ const tracks = [
     prefix: "foundations",
     expectedChapters: 28,
   },
+  { prefix: "craft", expectedChapters: 20 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

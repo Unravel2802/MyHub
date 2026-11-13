@@ -9,6 +9,17 @@ if the symptom goes away. Debugging done well is closer to a scientific
 method: form a specific, falsifiable hypothesis about the cause, find the
 fastest way to test it, and let the result actually change what you believe.
 
+> [!WHY] A crash surfaces while reading an id, and a patch simply
+> suppresses that access. If the invalid value originated earlier in the
+> call chain, the patch can hide the symptom while leaving corrupted input
+> flowing through the system.
+
+> [!GOALS]
+>
+> - Explain evidence-driven debugging
+> - Design a falsifiable diagnostic
+> - Choose a profiling target from observed cost
+
 ## The hypothesis loop
 
 ```text
@@ -36,6 +47,15 @@ fastest way to test it, and let the result actually change what you believe.
     isn't actually the fix — the underlying bug can resurface
     under a slightly different input, having never been
     understood in the first place.
+```
+
+```mermaid
+flowchart TB
+  O[Observe exact symptom] --> H[Form testable hypothesis]
+  H --> T[Focused diagnostic]
+  T --> C{Confirmed?}
+  C -->|no| H
+  C -->|yes| F[Fix known cause]
 ```
 
 ## Reading a stack trace
@@ -134,6 +154,29 @@ fastest way to test it, and let the result actually change what you believe.
     measure before optimizing, never the reverse.
 ```
 
+> [!PITFALL] A symptom disappearing after a random edit does not confirm
+> that the underlying cause was found.
+
+> [!INTERVIEW] State the observed input and output, your hypothesis and
+> the smallest observation that could disprove it before proposing a
+> rewrite.
+
+> [!CHECK] In this chapter’s JavaScript stack trace, what does the top
+> frame locate?
+>
+> Where the exception surfaced; lower frames show the caller path that
+> delivered the bad value.
+
+> [!CHECK] When can logging beat an attached debugger?
+>
+> When failure is intermittent or only reproducible in production where
+> debugger attachment is impractical.
+
+> [!CHECK] Why halve a failing dataset rather than scan rows sequentially?
+>
+> Each observation can remove half the candidate causes, following a
+> binary-search strategy.
+
 ## What to take away
 
 1. Debugging is a hypothesis loop — observe precisely, hypothesize
@@ -149,3 +192,33 @@ fastest way to test it, and let the result actually change what you believe.
    wins for something that only reproduces in production or intermittently.
 5. A flamegraph shows where time actually goes, which is frequently not
    where intuition points — profile before optimizing, never the reverse.
+
+## Exercises
+
+> [!EXERCISE recall] What should happen to your belief when a focused test
+> disproves a debugging hypothesis?
+>
+> **Solution:** Rule out that explanation and narrow the next hypothesis.
+> A failed hypothesis is useful information; changing code until the
+> symptom disappears does not establish a cause.
+
+> [!EXERCISE apply] A profile endpoint intermittently shows an old address
+> after an update. Suspect either stale cached data or a rendering
+> mistake. Choose the fastest observation that distinguishes them and
+> describe both possible next steps.
+>
+> **Solution:** Observe the value returned by the cache at the exact read
+> boundary and compare it with the expected updated value. If it is old,
+> inspect invalidation on write. If it is current, follow the value into
+> rendering rather than rewriting the cache. This tests a specific
+> boundary before changing either implementation.
+
+> [!EXERCISE stretch] A profile attributes 65% of request time to a
+> database query and 5% to a visually complex loop. Recommend the first
+> optimisation investigation.
+>
+> **Solution:** Investigate the measured query cost and remeasure after a
+> targeted change. A weaker answer rewrites the loop first because it
+> looks complicated: even eliminating that loop cannot address the
+> observed dominant query cost. The profile, rather than source
+> appearance, chooses the target.

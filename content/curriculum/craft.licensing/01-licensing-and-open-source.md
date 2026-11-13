@@ -9,6 +9,17 @@ not, and that license is a real legal constraint on what you can do with the
 code — not a formality. This chapter is enough to recognize the questions
 that need a real answer, not enough to substitute for one.
 
+> [!WHY] A release includes a library introduced several dependency levels
+> down, but the team reviewed only direct packages. Discovering its
+> obligations after packaging can block shipment and force expensive
+> dependency replacement.
+
+> [!GOALS]
+>
+> - Explain why usage context matters to license review
+> - Plan a transitive dependency audit
+> - Choose a contribution review boundary
+
 ## Permissive vs copyleft
 
 ```text
@@ -91,6 +102,14 @@ that need a real answer, not enough to substitute for one.
                    deep, that nobody deliberately chose
 ```
 
+```mermaid
+flowchart TB
+  D[Direct dependencies] --> T[Resolved transitive tree]
+  T --> L[Identify licenses and usage]
+  L --> R[Approved process or legal review]
+  R --> A[Verify artifact attribution]
+```
+
 ## Contributing to open source
 
 ```text
@@ -110,6 +129,27 @@ that need a real answer, not enough to substitute for one.
     outside project.
 ```
 
+> [!PITFALL] A permissive direct dependency does not make every transitive
+> dependency permissive or remove attribution checks.
+
+> [!INTERVIEW] State the distribution model, full dependency tree and
+> outstanding review questions; do not present package popularity as
+> license clearance.
+
+> [!CHECK] Are permissive licenses necessarily free of notice obligations?
+>
+> No. Keeping copyright or license notices can remain required.
+
+> [!CHECK] What does a full-tree scanner catch that a direct list misses?
+>
+> License obligations from transitive dependencies introduced several
+> levels below deliberate package choices.
+
+> [!CHECK] Why use an approved license list?
+>
+> It makes compatibility review a deliberate process rather than each
+> engineer guessing from popularity.
+
 ## What to take away
 
 1. Copyleft's obligation is almost always triggered by distribution (or, for
@@ -127,3 +167,37 @@ that need a real answer, not enough to substitute for one.
 5. Code written as part of a job may not be yours to contribute or relicense
    — check your employment agreement's IP assignment before contributing
    work-adjacent code to an outside project.
+
+## Exercises
+
+> [!EXERCISE recall] Why does this chapter ask about distribution and
+> network use before categorising a license obligation?
+>
+> **Solution:** The way code is used or shipped affects which obligations
+> may be triggered, including the chapter’s AGPL network-use distinction.
+> License names alone do not settle a product-specific question; legal
+> interpretation needs appropriate review.
+
+> [!EXERCISE apply] A closed-source desktop release uses a permissive
+> direct package that pulls in an unreviewed copyleft dependency; its
+> minifier also strips headers. Choose the audit inputs and release
+> questions rather than assuming the direct package’s approval is
+> sufficient.
+>
+> **Solution:** Scan the full resolved dependency tree, identify the
+> transitive license and how its code is incorporated and distributed, and
+> route compatibility questions through the approved-license or legal
+> process. Check attribution preservation in the built artifact because
+> stripped notices can create an independent obligation issue.
+> Direct-package approval does not cover every transitive package or build
+> transformation.
+
+> [!EXERCISE stretch] An engineer wants to contribute code written at work
+> and sign the project’s CLA. Recommend a decision process before
+> contribution.
+>
+> **Solution:** Check the employment IP assignment and permission to
+> contribute, then read the rights the CLA grants. A weaker answer signs
+> immediately because the target repository is open source: public
+> availability says nothing about who owns the work-created contribution
+> or which rights the engineer can grant.

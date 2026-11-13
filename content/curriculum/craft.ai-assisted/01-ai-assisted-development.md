@@ -9,6 +9,16 @@ code becomes nearly free; understanding, verifying, and taking responsibility
 for what it produced does not become any cheaper — and treating the two as
 equally solved is where most of the real risk in this workflow lives.
 
+> [!WHY] A generated validation patch looks polished but skips an
+> authorisation edge case. Cheap typing can turn into an expensive release
+> defect when fluent output substitutes for verification.
+
+> [!GOALS]
+>
+> - Explain why polished output still needs verification
+> - Write an unambiguous implementation request
+> - Choose an autonomy boundary by reversibility
+
 ## What actually gets faster
 
 ```text
@@ -67,6 +77,14 @@ equally solved is where most of the real risk in this workflow lives.
        output flagging the gap
 ```
 
+```mermaid
+flowchart TB
+  O[Generated output] --> C[Check actual contract]
+  C --> A[Verify APIs and edge cases]
+  A --> T[Run meaningful checks]
+  T --> R[Review boundary and design]
+```
+
 ## Where an agent should and shouldn't operate autonomously
 
 ```text
@@ -85,14 +103,12 @@ equally solved is where most of the real risk in this workflow lives.
 ```
 
 ```text
-  → this project's own CLAUDE.md is a real-world instance of
-    this exact judgment: it explicitly delegates full
-    implementation to an agent for MOST of the codebase, while
-    keeping migrations, published contracts, and correctness-
-    critical domain logic as the parts a human (or a more
-    careful review pass) still owns directly — the split isn't
-    "AI vs. no AI," it's "which changes are cheap to reverse if
-    wrong."
+  → this project's own CLAUDE.md is a real-world instance of this exact
+    judgment: it explicitly delegates full implementation to an agent for
+    MOST of the codebase, while keeping migrations, published contracts, and
+    correctness-critical domain logic as the parts a human (or a more
+    careful review pass) still owns directly — the split isn't "AI vs. no
+    AI," it's "which changes are cheap to reverse if wrong."
 ```
 
 ## Prompting as a design skill, not a trick
@@ -120,6 +136,28 @@ equally solved is where most of the real risk in this workflow lives.
     not a special "prompting trick."
 ```
 
+> [!PITFALL] Fluent formatting is not evidence that the requested problem
+> or its security edge cases were handled.
+
+> [!INTERVIEW] Explain the acceptance case and the reversible scope before
+> delegating; separate implementation speed from evidence that the result
+> is correct.
+
+> [!CHECK] Does faster code production establish that the design is right?
+>
+> No. Choosing boundaries and judging the data model still require
+> evaluation.
+
+> [!CHECK] Why can a vague prompt produce a plausible but wrong patch?
+>
+> It leaves the rule or outcome unspecified, so the assistant chooses an
+> interpretation.
+
+> [!CHECK] What is the ordinary review bar for generated code?
+>
+> Correctness, edge cases, established codebase patterns and appropriate
+> abstractions, just as for human-written code.
+
 ## What to take away
 
 1. An AI assistant makes typing code cheap; it does not make the underlying
@@ -138,3 +176,34 @@ equally solved is where most of the real risk in this workflow lives.
 5. A vague prompt gets a plausible guess, the same way a vague ticket does
    from a human — the fix is the same specificity a human teammate would
    need, not a special prompting trick.
+
+## Exercises
+
+> [!EXERCISE recall] Which three AI-specific failure modes should code
+> review explicitly check?
+>
+> **Solution:** Check for nonexistent APIs, a plausible solution to a
+> different problem, and silently omitted security-relevant cases such as
+> validation or authorisation.
+
+> [!EXERCISE apply] An assistant receives “fix signup” and adds only an
+> email format check, while the intended change is a missing-field error.
+> Rewrite the task so another developer can choose the right
+> implementation without guessing.
+>
+> **Solution:** Specify the missing-field rule, the error type or
+> machine-readable result, the field it identifies, and the existing error
+> pattern to follow. For example: reject an absent signup email with the
+> existing field-specific validation error and add a missing-email test;
+> retain the existing format rule. This distinguishes absence from
+> malformed input and supplies an observable acceptance case.
+
+> [!EXERCISE stretch] An agent can edit a local form or run a migration
+> against shared production data. Recommend how their autonomy should
+> differ.
+>
+> **Solution:** Allow reversible local edits and test iteration within the
+> assigned contract. Put an explicit checkpoint around the shared
+> migration because reversal and blast radius differ. A weaker answer
+> grants equal autonomy because both actions are short commands; command
+> length says nothing about recovery cost.

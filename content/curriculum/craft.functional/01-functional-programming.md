@@ -10,6 +10,16 @@ itself, is dramatically easier to reason about, test, and run concurrently
 than one that doesn't make that promise. This chapter is that claim, and
 where it's worth the discipline.
 
+> [!WHY] A cart preview mutates the same items array used by checkout. An
+> apparently local edit changes another caller’s total, making a
+> predictable transformation depend on who touched the object first.
+
+> [!GOALS]
+>
+> - Explain pure functions and hidden inputs
+> - Build an immutable transformation pipeline
+> - Choose when mutation is justified
+
 ## Pure functions
 
 ```text
@@ -133,6 +143,13 @@ where it's worth the discipline.
     function level instead of the module level.
 ```
 
+```mermaid
+flowchart TB
+  I[Shell reads external state] --> P[Pure data transformations]
+  P --> D[Decisions returned]
+  D --> O[Shell applies I/O effects]
+```
+
 ## Where imperative still wins
 
 ```text
@@ -154,6 +171,27 @@ where it's worth the discipline.
     shell, deliberately.
 ```
 
+> [!PITFALL] An immutable update that reuses and mutates the caller’s
+> inner collection still exposes shared changes.
+
+> [!INTERVIEW] Identify hidden inputs and observable effects first; choose
+> pure transformations where they simplify reasoning rather than treating
+> a style as universal.
+
+> [!CHECK] What do map, filter and reduce communicate?
+>
+> Transformation, selection and accumulation rather than an unspecified
+> loop mechanism.
+
+> [!CHECK] How do persistent structures limit immutable-update copying?
+>
+> They share unchanged structure and allocate only the changed path.
+
+> [!CHECK] What belongs in an impure shell?
+>
+> I/O such as reading a file, calling an API and writing a database, with
+> plain data passed to a pure core.
+
 ## What to take away
 
 1. A pure function's entire behavior is visible in its signature and body —
@@ -170,3 +208,34 @@ where it's worth the discipline.
    universal replacement — code that's inherently about state changing over
    time (a game loop, a state machine) often reads more clearly in an
    imperative shape.
+
+## Exercises
+
+> [!EXERCISE recall] Which promises make a function pure and easy to test
+> without mocks?
+>
+> **Solution:** Its output depends only on supplied inputs and it has no
+> observable effects outside returning. Tests provide arguments directly
+> rather than arranging hidden state or external services.
+
+> [!EXERCISE apply] Given people Ana(age 21, active), Bo(age 16, active)
+> and Cy(age 24, inactive), choose filter/map steps for active adult
+> emails. Explain how to add the resulting list to a new report without
+> mutating the caller’s people array.
+>
+> **Solution:** Filter by adult age, retaining Ana and Cy; filter active,
+> retaining Ana; map the remaining person to her email. Construct a new
+> report object with that new emails list. Do not push onto or edit the
+> caller’s people array; selection and mapping express the transformation
+> while preserving the input.
+
+> [!EXERCISE stretch] A tight loop repeatedly updates a huge internal
+> buffer and copying dominates its measured cost. Recommend whether
+> immutability should be imposed on every iteration.
+>
+> **Solution:** Keep controlled mutation in the performance-critical loop
+> when it makes the state changes clearer and avoids measured allocation
+> cost; preserve pure transformations and effect boundaries elsewhere. A
+> weaker answer allocates a full new buffer on every step solely to follow
+> a paradigm, ignoring the chapter’s large, frequently updated structure
+> trade-off.

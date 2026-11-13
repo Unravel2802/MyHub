@@ -10,6 +10,17 @@ moment a "refactor" changes what the code does, it's no longer a refactor —
 it's a rewrite wearing a refactor's name, and it needs a rewrite's scrutiny,
 not a refactor's.
 
+> [!WHY] A tidy rewrite removes a strange branch that encoded an old
+> production fix. Without tests recording the current behaviour,
+> structural cleanup can quietly restore the very bug the branch
+> prevented.
+
+> [!GOALS]
+>
+> - Explain behaviour-preserving refactoring
+> - Create a test seam before restructuring
+> - Choose an incremental replacement strategy
+
 ## Refactoring requires a safety net
 
 ```text
@@ -106,6 +117,15 @@ not a refactor's.
     until the host is no longer needed.
 ```
 
+```mermaid
+flowchart TB
+  R[Incoming request] --> C{Function migrated?}
+  C -->|yes| N[New implementation]
+  C -->|no| O[Legacy implementation]
+  N --> V[Verify observable behaviour]
+  O --> V
+```
+
 ## Why a full rewrite is usually the wrong call
 
 ```text
@@ -129,6 +149,29 @@ not a refactor's.
     real value, even when it's illegible.
 ```
 
+> [!PITFALL] A clean rewrite can lose accumulated correctness hidden in
+> ugly edge-case handling.
+
+> [!INTERVIEW] Separate the smallest substitution seam, the
+> current-behaviour test and the later behaviour change; explain what each
+> diff proves.
+
+> [!CHECK] Why run tests after each small refactoring step?
+>
+> A failure can be associated with one reversible structural change rather
+> than a large batch.
+
+> [!CHECK] What is a seam?
+>
+> A point where behaviour or a dependency can be substituted without
+> editing the consuming code.
+
+> [!CHECK] Should a characterization test immediately correct an existing
+> quirk?
+>
+> Its first job is to record current behaviour; correction can follow
+> under the new safety net as an explicit change.
+
 ## What to take away
 
 1. Refactoring means changing structure without changing behavior — the
@@ -145,3 +188,33 @@ not a refactor's.
    are invisible in its structure — a full rewrite tends to silently drop
    them, which is why incremental refactoring (or a strangler fig migration)
    usually beats a rewrite for something already working.
+
+## Exercises
+
+> [!EXERCISE recall] What distinguishes a refactor from a behaviour
+> change, and what is the test suite’s practical limit?
+>
+> **Solution:** Refactoring changes internal structure while preserving
+> observable behaviour. Existing tests mechanically check the behaviour
+> they cover; green tests do not establish untested behaviour, so a
+> behaviour change deserves separate scrutiny.
+
+> [!EXERCISE apply] A receipt sender constructs its database inside the
+> function and has no tests. Plan the smallest step that allows a fake,
+> then order characterization and cleanup work.
+>
+> **Solution:** Move construction to a parameter with the existing real
+> database as the default, preserving current callers’ behaviour. Inject a
+> fake to capture the sender’s existing observable result, including known
+> quirks. Once characterization exists, make small named refactors and run
+> tests after each; fix a known bug as a separate behavioural change.
+
+> [!EXERCISE stretch] A working legacy service is messy but cannot stop
+> serving users while replacement is built. Recommend migration versus a
+> big-bang rewrite.
+>
+> **Solution:** Route migrated functionality to a new implementation and
+> keep remaining operations on the old system, replacing incrementally
+> until nothing needs the old path. A weaker answer rewrites everything
+> before switching: undocumented edge-case fixes can disappear together
+> and the whole replacement must be trusted at once.

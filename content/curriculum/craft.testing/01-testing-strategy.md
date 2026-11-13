@@ -10,6 +10,16 @@ database integration is broken — this project's own history has exactly that
 incident on record. This chapter is choosing the right proof for the right
 risk.
 
+> [!WHY] A repository’s mocked tests stay green while a real database
+> constraint rejects every write. The suite proves the mock’s assumptions,
+> leaving users to discover the integration it never exercised.
+
+> [!GOALS]
+>
+> - Explain what each test layer proves
+> - Choose tests for a concrete integration risk
+> - Replace a flaky timing assumption
+
 ## The pyramid, and what each layer actually proves
 
 ```text
@@ -50,6 +60,12 @@ risk.
     slow to run and unreliable to trust, while one that's
     entirely unit tests can be green while the real
     integration between pieces is broken.
+```
+
+```mermaid
+flowchart TB
+  U[Unit: isolated logic] --> I[Integration: real component contract]
+  I --> E[E2E: user-visible flow]
 ```
 
 ## What a mock actually proves — and doesn't
@@ -154,6 +170,27 @@ risk.
     produces exactly the hollow test above.
 ```
 
+> [!PITFALL] A mock’s green test does not validate the real dependency’s
+> schema or behaviour.
+
+> [!INTERVIEW] Name the failure risk and select the test layer that can
+> observe it; explain what mocking would leave unproved.
+
+> [!CHECK] What does 100% line coverage establish by itself?
+>
+> That every line executed; it does not establish meaningful assertions or
+> correctness.
+
+> [!CHECK] Why assert sorted output instead of a quicksort spy call?
+>
+> Output is the behaviour; a different valid sort should not break the
+> test.
+
+> [!CHECK] Why is a pyramid usually cheaper than a suite dominated by E2E?
+>
+> Isolated tests are fast, while system-level tests pay for more real
+> components, timing and external interactions.
+
 ## What to take away
 
 1. Unit, integration, and E2E tests prove different things — a suite that's
@@ -170,3 +207,35 @@ risk.
    state) or delete it, never auto-retry it into silence.
 5. Coverage is a floor for finding untested code, not a target — a fully
    covered function can still have zero real assertions.
+
+## Exercises
+
+> [!EXERCISE recall] How do unit, integration and E2E tests divide their
+> evidence?
+>
+> **Solution:** Unit tests check isolated logic, integration tests check
+> real components and dependency contracts together, and E2E tests
+> exercise a user flow through the system. A mocked dependency does not
+> prove the real dependency behaves like the mock.
+
+> [!EXERCISE apply] A new signup path calculates a display label, writes
+> through a repository and shows confirmation in a browser. The suspected
+> regression is a real database uniqueness constraint. Choose the smallest
+> useful set of test layers and explain what each establishes.
+>
+> **Solution:** Use unit tests for the label calculation, a real-database
+> repository integration test for the uniqueness constraint and
+> round-trip, and a small browser flow for visible signup and error
+> handling. The integration test directly addresses the suspected
+> constraint risk; adding only more mocked unit cases cannot establish
+> that the real write succeeds or fails as required.
+
+> [!EXERCISE stretch] An async test sleeps for a fixed delay and fails
+> under load. Recommend a deterministic replacement rather than
+> retry-until-green.
+>
+> **Solution:** Wait for the operation’s actual completion signal or
+> observable finished state, isolate test data and control time or
+> randomness when they influence the result. A weaker answer increases
+> retries: it hides timing failures and trains the team to distrust real
+> failures rather than repairing the race.

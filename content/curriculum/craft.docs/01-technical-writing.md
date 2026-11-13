@@ -10,6 +10,16 @@ unless it was written down. This chapter is writing for that eventual reader,
 who is often you, six months later, with no memory of the meeting where this
 got decided.
 
+> [!WHY] A departing engineer leaves a config note saying only “as
+> discussed.” Months later a replacement cannot tell which values were
+> intentional and risks undoing the workaround that kept requests working.
+
+> [!GOALS]
+>
+> - Explain why rejected options belong in design records
+> - Write a change rationale for a cold reader
+> - Choose a useful README order
+
 ## The design doc / RFC
 
 ```text
@@ -40,6 +50,13 @@ got decided.
     already have that reader's exact question anticipated and
     answered — the alternative's real trade-off, not a
     strawman version dismissed in one line.
+```
+
+```mermaid
+flowchart TB
+  C[Context and problem] --> O[Options and real trade-offs]
+  O --> D[Decision and reasons]
+  D --> K[Consequences for future changes]
 ```
 
 ## Commit messages
@@ -108,6 +125,27 @@ got decided.
     version feel sufficient when you wrote it.
 ```
 
+> [!PITFALL] Writing as though the future reader attended the meeting
+> leaves the most important reasoning unavailable.
+
+> [!INTERVIEW] Explain the rejected alternative and the cost accepted by
+> the chosen option; a decision name alone does not preserve its
+> rationale.
+
+> [!CHECK] What four parts organise the chapter’s design doc?
+>
+> Context, options, decision and consequences.
+
+> [!CHECK] Why is a commit message valuable beside git blame?
+>
+> It preserves reasoning beside the exact changed lines when the diff
+> shows only the result.
+
+> [!CHECK] What makes “update as discussed” insufficient?
+>
+> A cold reader lacks the meeting context, file, values and reasoning
+> needed to act.
+
 ## What to take away
 
 1. A design doc's options section — including the alternative you didn't
@@ -122,3 +160,34 @@ got decided.
    the reader who was in the meeting where this got decided.
 5. Documentation is the only place a system's "why" survives past the person
    who made the decision leaving — code alone only ever shows the "what."
+
+## Exercises
+
+> [!EXERCISE recall] Why should a design document preserve the seriously
+> considered option that lost?
+>
+> **Solution:** A future reader will ask why the simpler or familiar
+> alternative was not chosen. Its real trade-off and rejection reason
+> preserve the decision context and prevent repeatedly reopening the same
+> choice.
+
+> [!EXERCISE apply] A commit changes a timeout after repeated upstream
+> stalls, but its message is “update config.” Write a reviewable subject
+> and body outline without inventing evidence the prompt does not supply.
+>
+> **Solution:** Use a subject such as “Adjust upstream timeout after
+> repeated stalls.” Explain the observed stall situation, name the actual
+> config file and old/new values when recording the real change, and state
+> the decision’s consequence for callers. Do not claim a measured
+> improvement or a root cause that has not been established. The outline
+> records why and the mechanism instead of merely describing edited
+> config.
+
+> [!EXERCISE stretch] A README opens with a long feature catalogue while
+> newcomers cannot find a working launch command. Recommend an order and
+> contrast a weaker revision.
+>
+> **Solution:** Lead with what the project is, then the fewest working run
+> commands, then non-obvious structure and pointers to more detail. A
+> weaker answer merely expands the catalogue: it increases reading before
+> answering the newcomer’s immediate “can I run it” question.

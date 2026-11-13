@@ -10,6 +10,17 @@ codebases. This chapter treats it as a design decision on the same footing as
 the happy path — because a caller's experience of failure is as much your
 API's surface as its success case.
 
+> [!WHY] A batch upload returns one exception after several records were
+> already saved. The caller cannot distinguish committed progress from
+> missing work, so a retry can repeat successes while still failing to
+> repair the original item.
+
+> [!GOALS]
+>
+> - Explain expected versus unexpected failure
+> - Design a partial-success result
+> - Choose retries by failure category
+
 ## Exceptions vs result types
 
 ```text
@@ -116,6 +127,15 @@ API's surface as its success case.
     explicitly, not one the function should make silently.
 ```
 
+```mermaid
+flowchart TB
+  B[Batch input] --> I[Process each item]
+  I --> S[Collect successes]
+  I --> F[Collect item-specific failures]
+  S --> R[Return both result lists]
+  F --> R
+```
+
 ## Invariants: crash rather than continue wrong
 
 ```text
@@ -136,6 +156,27 @@ API's surface as its success case.
     state.
 ```
 
+> [!PITFALL] Best effort without a partial-success result silently
+> discards information the caller needs to recover.
+
+> [!INTERVIEW] State the failure category and whether earlier items
+> committed before recommending retry or fail-fast behaviour.
+
+> [!CHECK] How does a Result advertise failure to callers?
+>
+> Its signature includes an error case that must be handled before
+> extracting the success value.
+
+> [!CHECK] What should an actionable validation error identify?
+>
+> The specific rule and field, with appropriate diagnostic context rather
+> than an unhelpful undifferentiated failure.
+
+> [!CHECK] Why assert an invariant where it breaks?
+>
+> Immediate failure preserves the offending state and is easier to
+> diagnose than downstream failure after continuing incorrectly.
+
 ## What to take away
 
 1. A Result type makes "this can fail" visible in the function signature and
@@ -153,3 +194,35 @@ API's surface as its success case.
 5. An invariant violation should crash immediately, at the exact point it
    broke — catching it three calls downstream, after execution limped
    forward on corrupted state, is far harder to debug.
+
+## Exercises
+
+> [!EXERCISE recall] Why does an expected validation failure fit a Result
+> value while an impossible invariant failure should be treated
+> differently?
+>
+> **Solution:** An expected outcome belongs in the public success/error
+> shape so callers handle it deliberately. An unexpected invariant
+> violation is a programming defect; allowing execution to continue with
+> corrupted state hides the bug instead of safely recovering.
+
+> [!EXERCISE apply] A best-effort import of records a, b, c and d saves a
+> and c, while b and d fail validation. Design the returned result and
+> explain why throwing only d’s error is insufficient.
+>
+> **Solution:** Return succeeded: [a, c] and failed: [{item: b, error:
+> validationB}, {item: d, error: validationD}]. The caller can identify
+> both successful effects and both repairs. Throwing only d’s error loses
+> the earlier failure and the already-completed progress; it does not
+> represent the chosen best-effort semantics.
+
+> [!EXERCISE stretch] A generic retry wrapper treats timeouts and
+> invalid-input errors identically. Recommend a policy and identify the
+> weaker all-or-nothing choices.
+>
+> **Solution:** Distinguish transient from permanent failure in the error
+> type or retryable field. Retry transient failures where the operation’s
+> retry contract permits it and return permanent validation failures for
+> correction. Retrying every invalid request is weaker because identical
+> permanent input keeps failing; refusing all retries instead discards
+> recoverable cases.

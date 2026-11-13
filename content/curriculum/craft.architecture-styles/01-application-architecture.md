@@ -10,6 +10,16 @@ a change in one place from requiring understanding of everywhere else? Each
 style answers that differently, and the right one depends on which kind of
 change the system needs to make cheap.
 
+> [!WHY] A controller embeds a query that later appears in several other
+> endpoints. A schema change now requires finding scattered copies, so the
+> location of the boundary directly increases maintenance cost.
+
+> [!GOALS]
+>
+> - Explain ports and adapters
+> - Choose architecture at two different scales
+> - Separate models by bounded context
+
 ## Layered architecture
 
 ```text
@@ -61,18 +71,25 @@ change the system needs to make cheap.
 ```
 
 ```text
-  → the domain defines PORTS (interfaces — "a PaymentGateway
-    port," "an OrderRepository port") and never imports a
-    concrete implementation; ADAPTERS on the outside implement
-    those ports for a specific technology. this is Dependency
-    Inversion, from the OOP chapter, applied as a whole-
-    application architecture rather than one class's
-    dependency.
+  → the domain defines PORTS (interfaces — "a PaymentGateway port," "an
+    OrderRepository port") and never imports a concrete implementation;
+    ADAPTERS on the outside implement those ports for a specific technology.
+    this is Dependency Inversion, from the OOP chapter, applied as a
+    whole-application architecture rather than one class's dependency.
 
   → the payoff: the domain can be tested with a TEST ADAPTER
     (an in-memory fake) with ZERO real infrastructure, and
     swapping Postgres for a different database means writing
     a new adapter — the domain code doesn't change at all.
+```
+
+```mermaid
+flowchart TB
+  H[HTTP or CLI adapter] --> P[Domain ports]
+  P --> D[Domain rules]
+  D --> R[Repository port]
+  A[Database adapter] --> R
+  F[Test fake] --> R
 ```
 
 ## Modular monolith
@@ -147,6 +164,29 @@ change the system needs to make cheap.
     whole app vs. one module) and commonly compose.
 ```
 
+> [!PITFALL] A shared noun does not require a shared model across
+> unrelated business contexts.
+
+> [!INTERVIEW] Name the change you want to make cheap, then distinguish
+> module boundaries from the layered or hexagonal structure inside a
+> module.
+
+> [!CHECK] What does skipping data-access boundaries in a controller
+> encourage?
+>
+> Query logic spreads across callers instead of living in its owning
+> layer.
+
+> [!CHECK] What network cost does a modular monolith avoid?
+>
+> Modules communicate inside one deployable rather than through a service
+> network hop.
+
+> [!CHECK] When can layered ceremony outweigh its benefit?
+>
+> A trivial CRUD action may pass through layers that add no meaningful
+> policy.
+
 ## What to take away
 
 1. Layered architecture's rule (depend only downward) exists to keep query
@@ -165,3 +205,33 @@ change the system needs to make cheap.
    itself a design mistake.
 5. These styles operate at different scales and commonly compose — a modular
    monolith's individual modules can each be internally layered or hexagonal.
+
+## Exercises
+
+> [!EXERCISE recall] What does the domain know about a port versus its
+> concrete adapter?
+>
+> **Solution:** The domain defines and depends on the port interface, not
+> the concrete database, HTTP or queue implementation. An outside adapter
+> implements the port and can be replaced or faked.
+
+> [!EXERCISE apply] A single deployable contains subscriptions and
+> fulfilment; fulfilment rules need tests without a real database, while
+> subscriptions is mostly simple CRUD. Choose an overall structure and
+> internal styles without imposing the same ceremony everywhere.
+>
+> **Solution:** Use a modular monolith for the separate business-domain
+> slices and explicit inter-module boundaries. Give fulfilment ports and
+> adapters so a fake can test its valuable rules in isolation. A simpler
+> layered organisation can suit subscriptions. The whole-app boundary and
+> each module’s internal style operate at different scales and can
+> compose.
+
+> [!EXERCISE stretch] Sales and billing both use the word Customer but
+> need different histories. Recommend whether they must share one class
+> containing every field.
+>
+> **Solution:** Keep distinct bounded-context models with explicit
+> translation at the boundary. A weaker answer forces one shared Customer
+> class because the name matches: unrelated sales and billing needs then
+> accumulate in a bloated shared model.

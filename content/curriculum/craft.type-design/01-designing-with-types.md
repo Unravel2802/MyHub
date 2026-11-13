@@ -9,6 +9,17 @@ make an entire category of bug impossible to write, rather than merely
 possible to catch. This chapter is that deliberate use: designing the shape
 of your data so the compiler enforces invariants a comment could only ask for.
 
+> [!WHY] A renderer receives success with no payload because independent
+> optional fields allowed that shape. Each caller adds another defensive
+> branch for a state that a better type could have excluded at
+> construction.
+
+> [!GOALS]
+>
+> - Explain how parsing carries validation proof
+> - Design a legal-state union
+> - Choose distinct types for risky same-shaped values
+
 ## Making illegal states unrepresentable
 
 ```text
@@ -48,6 +59,13 @@ of your data so the compiler enforces invariants a comment could only ask for.
   chapter's error-body spirit generalizes to any modeled
   state — status codes distinguish response shapes; a
   discriminated union's tag does the same for in-memory data.
+```
+
+```mermaid
+flowchart TB
+  E[Export state] --> Q[Queued]
+  E --> R[Ready with path]
+  E --> F[Failed with message]
 ```
 
 ## Parse, don't validate
@@ -148,6 +166,28 @@ of your data so the compiler enforces invariants a comment could only ask for.
     highest-value place to apply it.
 ```
 
+> [!PITFALL] The same brand on two argument roles does not distinguish
+> those roles from each other.
+
+> [!INTERVIEW] Show the concrete invalid value the proposed type prevents,
+> and identify the runtime boundary that establishes its guarantee.
+
+> [!CHECK] What two mechanisms can enforce a non-empty value at
+> construction?
+>
+> A private constructor plus a validating factory that rejects empty
+> input.
+
+> [!CHECK] What does narrowing by a union discriminant provide?
+>
+> Fields appropriate to the selected variant without unrelated optional
+> payload checks.
+
+> [!CHECK] When can precision in types stop paying off?
+>
+> When complex constraints create maintenance work without preventing
+> plausible shape-related bugs.
+
 ## What to take away
 
 1. A discriminated union eliminates illegal state combinations at the type
@@ -165,3 +205,34 @@ of your data so the compiler enforces invariants a comment could only ask for.
 5. This pays off most where a value's shape is the actual source of bugs —
    applying it uniformly to everything just moves validation's maintenance
    burden into the type system instead of eliminating it.
+
+## Exercises
+
+> [!EXERCISE recall] Why is parseEmail returning Email or null different
+> from validateEmail returning boolean?
+>
+> **Solution:** A successful parse produces a more specific value that
+> carries the checked guarantee through downstream signatures. A boolean
+> result leaves the original string type unchanged, so later code must
+> recheck or trust a convention.
+
+> [!EXERCISE apply] Model an export that is queued, ready with a download
+> path, or failed with a message. Choose a shape that prevents a ready
+> value without a path and prevents simultaneous ready and failure
+> payloads.
+>
+> **Solution:** Use a discriminated union: {status: "queued"} | {status:
+> "ready"; path: string} | {status: "failed"; message: string}. Each
+> variant has only its appropriate payload. A status switch narrows fields
+> to the current case; independent optional path and message fields would
+> permit the invalid combinations again.
+
+> [!EXERCISE stretch] A transfer API accepts two AccountId values and
+> callers keep swapping source and destination. Recommend whether branding
+> both as AccountId alone solves the role mix-up.
+>
+> **Solution:** Use distinct role types for source and destination if that
+> confusion is a demonstrated risk, constructed at the appropriate
+> boundary. A weaker answer gives both arguments the same AccountId brand
+> and declares the swap impossible: that separates ids from strings but
+> still allows the two identically branded roles to be interchanged.

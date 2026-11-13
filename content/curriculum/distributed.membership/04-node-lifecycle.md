@@ -8,6 +8,14 @@ Membership theory is short; the operational sequences built on it are where
 clusters lose data. This chapter is the lifecycle as a set of procedures, with
 the specific step in each that gets skipped.
 
+> [!WHY] A deployment terminates a node as soon as it becomes unready. Clients still routing to it see errors, and removing its disk before replication is restored leaves the next failure able to lose data.
+
+> [!GOALS]
+>
+> - Choose a safe initial bootstrap procedure
+> - Repair the order of a node-removal runbook
+> - Choose identity handling when replacing a failed node
+
 ## The states
 
 ```text
@@ -112,6 +120,17 @@ Step 5 is the one that loses data. Removing a node before its data is
 re-replicated reduces the replication factor silently, and the next failure is the
 one that loses the last copy. Verify restoration; do not assume it.
 
+> [!PITFALL] Closing a node immediately after marking it unready still breaks clients with stale routing information. Wait for propagation before draining.
+
+```mermaid
+flowchart TB
+  U[Mark unready] --> W[Wait for client propagation]
+  W --> D[Drain requests and transfer leadership]
+  D --> R[Restore replication elsewhere]
+  R --> M[Remove through consensus]
+  M --> T[Terminate]
+```
+
 ## Rolling restarts
 
 The most frequent operation, and the one where the ordering discipline matters:
@@ -151,7 +170,7 @@ does not have.
 The corollary: **automation must know which case it is in.** A replacement
 instance with a new empty volume is case two even though its hostname may be
 identical, and a StatefulSet that reattaches the original volume is case one.
-Identity should be tied to the *data*, not to the hostname.
+Identity should be tied to the _data_, not to the hostname.
 
 ## Detecting a split cluster
 
@@ -167,7 +186,7 @@ explicitly, because each half looks healthy from inside:
   □  monitor cross-node clock skew — it precedes lease problems
 ```
 
-Every one of these requires comparing *across* nodes. A per-node dashboard cannot
+Every one of these requires comparing _across_ nodes. A per-node dashboard cannot
 see a split, because each side is individually fine — which is exactly why splits
 are discovered late.
 
@@ -188,6 +207,14 @@ The majority-loss procedure is the one to write down while calm. It involves
 forcing a new cluster from surviving data and accepting data loss, and it is not
 something to read for the first time during an incident.
 
+> [!CHECK] What must a rolling restart wait for before proceeding to the next node?
+>
+> The restarted node must rejoin and catch up, and redundancy must be restored. A fixed timer or a Running pod is not sufficient.
+
+> [!CHECK] Why must bootstrap flags be removed after initial formation?
+>
+> Bootstrap is a single-use operation. Re-running it against an existing cluster can create another cluster or wipe state.
+
 ## What to take away
 
 1. JOINING and SUSPECT exist so that a node which cannot contribute is not
@@ -205,3 +232,17 @@ something to read for the first time during an incident.
    disk is a new member.
 
 Next: the operational consequences of all of this at scale.
+
+## Exercises
+
+> [!EXERCISE recall] What are the two safe bootstrap approaches, and why is forming a cluster after a discovery timeout unsafe?
+>
+> **Solution:** Wait for an expected number of nodes to discover one another, or designate exactly one initiator and have others join it. Independent timeout-based formation can create separate clusters during a network blip; bootstrap flags must be removed after formation.
+
+> [!EXERCISE apply] A scale-down runbook says: mark unready, terminate, remove membership, then check replicas. Replace it with the chapter’s safe sequence, including propagation, in-flight work and leadership.
+>
+> **Solution:** Mark unready; wait for the load balancer and clients to notice; finish in-flight requests; transfer leadership; re-replicate data and verify the replication factor is restored; remove through consensus; finally terminate. This keeps stale routing from hitting a closed process and verifies redundancy before removing its copy.
+
+> [!EXERCISE stretch] A replacement machine has the old hostname but a new empty disk. Should it reuse the old member identity? Contrast this with a restart that reattaches the original durable volume.
+>
+> **Solution:** Give the empty-disk replacement a new identity and remove the old member; it must join and catch up as new. A restart with intact durable state may reuse its identity and resume. Reusing identity based only on hostname is weaker: it falsely claims past votes and data that the empty disk no longer contains.

@@ -10,6 +10,14 @@ same set of updates hold the same value, regardless of the order they arrived in
 how they were batched, or how many times each was delivered. No coordination, no
 transformation, no server.
 
+> [!WHY] An offline permission editor uses an add-wins set and reports a successful revocation. A concurrent addition can preserve the permission on merge, so a mathematically convergent result can still violate the product’s security intent.
+
+> [!GOALS]
+>
+> - Explain delta-state delivery and monotonic removals
+> - Compute an idempotent G-Counter merge
+> - Choose data types whose conflict semantics match the product
+
 ## The mathematics, briefly
 
 The state-based formulation rests on a **join-semilattice**: a partially ordered
@@ -33,7 +41,7 @@ CALM theorem from the coordination topic, showing up as a design constraint:
 **you can build a coordination-free type exactly when its updates are monotonic.**
 
 That constraint is why "delete" is the hard operation in every CRDT below.
-Removing something moves state *down*, which the lattice forbids — so every CRDT
+Removing something moves state _down_, which the lattice forbids — so every CRDT
 that supports removal does it by adding something (a tombstone, a remove-set)
 rather than by subtracting.
 
@@ -53,7 +61,7 @@ rather than by subtracting.
 ```
 
 **Delta-state CRDTs** are the practical hybrid used in production: send only the
-*changed part* of the state, but merge it with the state-based function — small
+_changed part_ of the state, but merge it with the state-based function — small
 messages with state-based robustness. This is what modern libraries implement.
 
 ## The catalogue
@@ -148,7 +156,7 @@ text nested inside it.
 
 ## Sequences: the hard one
 
-Text needs an *ordered* sequence, and this is where CRDTs get genuinely
+Text needs an _ordered_ sequence, and this is where CRDTs get genuinely
 intricate. The core idea replaces integer indices with **immutable identifiers**
 that carry their own ordering.
 
@@ -184,6 +192,16 @@ Automerge's RGA variant both take this approach.
 **Deletion is a tombstone**, for the monotonicity reason above: a deleted
 character is marked rather than removed, because removing it would leave dangling
 "insert after" references and would move state down the lattice.
+
+> [!PITFALL] An add-wins set can converge correctly while preserving a revoked permission. Check whether its conflict policy matches the product’s safety requirement.
+
+```mermaid
+flowchart TB
+  I[Insert references immutable element ID] --> S[Sequence structure]
+  D[Delete adds tombstone] --> S
+  S --> M[Merge replica state]
+  M --> V[Visible ordered text]
+```
 
 ## The metadata problem
 
@@ -251,10 +269,18 @@ And the questions to ask before reaching for one at all:
      the merge properties must be PROVED, not assumed)
 ```
 
-The second question is the one that catches people. A CRDT's merge is *a* correct
-answer, not necessarily *the desired* answer. An add-wins set means that when one
+The second question is the one that catches people. A CRDT's merge is _a_ correct
+answer, not necessarily _the desired_ answer. An add-wins set means that when one
 admin revokes a permission while another edits the same group, the permission
 survives — which is convergent, provable, and a security bug.
+
+> [!CHECK] Why does a PN-Counter keep separate positive and negative G-Counters?
+>
+> Decrementing the visible value becomes an increase in negative state. Both underlying counters remain monotonic and merge with per-replica maximums.
+
+> [!CHECK] Why can a sequence CRDT not simply erase every deleted character immediately?
+>
+> Other operations may still reference the character’s identity. Tombstones preserve those references until garbage collection is known to be safe.
 
 ## What to take away
 
@@ -274,3 +300,17 @@ survives — which is convergent, provable, and a security bug.
    on a permission set is convergent and a security bug.
 
 Next: building a real collaborative application with these pieces.
+
+## Exercises
+
+> [!EXERCISE recall] How do delta-state CRDTs reduce payload while keeping state-based merge robustness, and why are removals represented by added information?
+>
+> **Solution:** They send changed portions of state and merge them using the state-based function. State must advance monotonically; a removal therefore records additional information such as tombstones or observed removed tags rather than simply subtracting knowledge.
+
+> [!EXERCISE apply] Two G-Counter replicas hold {A: 4, B: 2} and {A: 3, B: 6}. Compute the merged state and visible value, then merge the first state into the result again. Does the visible total change?
+>
+> **Solution:** Take per-replica maxima: A = max(4, 3) = 4 and B = max(2, 6) = 6. The state is {A: 4, B: 6}, so the value is 4 + 6 = 10. Merging {A: 4, B: 2} again gives max(4, 4) = 4 and max(6, 2) = 6, still 10. Summing received totals instead would double-count duplicates.
+
+> [!EXERCISE stretch] A cart should preserve a concurrent addition, while a permission list must not silently preserve a revoked grant. Should both use the chapter’s add-wins OR-Set?
+>
+> **Solution:** Use the OR-Set for the cart if observed-remove add-wins matches user intent. Reject that same semantics for revocation-sensitive permissions and require a policy that satisfies the security requirement before choosing a type. Applying the OR-Set to both merely because it converges is weaker: convergence proves agreement, not that a surviving permission is authorised.

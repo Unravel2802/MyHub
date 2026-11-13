@@ -9,6 +9,14 @@ editing, published in 1989, and it powered Google Docs and most collaborative
 editors for two decades. Its idea is elegant. Its correctness conditions are
 demanding enough that several published algorithms turned out to be wrong.
 
+> [!WHY] An editor adds structured operations to a small OT operation set. The team must implement and test transformations against every existing type, or rare concurrent edits can silently diverge.
+
+> [!GOALS]
+>
+> - Distinguish TP1 from TP2 and explain server sequencing
+> - Transform a deletion against a concurrent insertion
+> - Choose OT under explicit deployment constraints
+
 ## The idea
 
 Keep integer positions, and when a remote operation arrives that was generated
@@ -50,7 +58,8 @@ def transform(op_a, op_b):
                 if op_a.site_id > op_b.site_id else op_a)
 
     if op_a.type == INSERT and op_b.type == DELETE:
-        return Insert(op_a.char, op_a.pos - 1) if op_b.pos < op_a.pos else op_a
+        return (Insert(op_a.char, op_a.pos - 1)
+                if op_b.pos < op_a.pos else op_a)
 
     if op_a.type == DELETE and op_b.type == INSERT:
         return Delete(op_a.pos + 1) if op_b.pos <= op_a.pos else op_a
@@ -130,6 +139,19 @@ transforms incoming server operations against that buffer before applying them.
 That buffer is what allows local edits to apply instantly while the server
 catches up, and managing it is most of the client's complexity.
 
+> [!INTERVIEW] State the deployment constraints before choosing OT: a central server, stable operation set and compact metadata can justify it; long offline peer sync points elsewhere.
+
+```mermaid
+sequenceDiagram
+  participant A as Client A
+  participant S as Sequencing server
+  participant B as Client B
+  A->>S: Local operation
+  S->>B: Sequenced operation
+  B->>S: Concurrent operation
+  S->>A: Transformed operation
+```
+
 ## Undo, and why it is hard here
 
 ```text
@@ -188,6 +210,14 @@ mostly choose CRDTs because the constraints have shifted — offline support and
 peer sync are now expected, and memory is cheap enough that metadata overhead
 matters less than correctness.
 
+> [!CHECK] What must a deterministic tie-break accomplish for concurrent inserts at the same position?
+>
+> Every replica must order the inserts identically; inconsistent tie-breaks make the replicas diverge.
+
+> [!CHECK] Why does collaborative undo target a user’s operation rather than the globally latest one?
+>
+> The latest global operation may belong to another writer. Selective undo inverts the user’s operation and transforms it past subsequent operations.
+
 ## What to take away
 
 1. OT keeps integer positions and transforms incoming operations against
@@ -206,3 +236,17 @@ matters less than correctness.
    systems.
 
 Next: CRDTs — abandoning indices entirely so no transformation is needed.
+
+## Exercises
+
+> [!EXERCISE recall] What does TP1 require, what extra issue does TP2 address, and how does a central sequencer simplify the problem?
+>
+> **Solution:** TP1 requires equivalent results after two concurrent operations are transformed and applied in either order. TP2 requires transformation against two others to be order-independent for triples. A central server imposes a linear history so clients transform against sequenced operations rather than arbitrary concurrent orders.
+
+> [!EXERCISE apply] The original document is "door". A remote operation deletes the character at index 2. Locally, an insertion of "X" at index 1 has already produced "dXoor". Using the chapter’s delete-against-insert rule, compute the transformed delete index and final text.
+>
+> **Solution:** The prior insertion is at 1, which is ≤ the delete position 2, so the delete shifts right by one: 2 + 1 = 3. Index 3 in "dXoor" is the second "o", the original target. Deleting it produces "dXor".
+
+> [!EXERCISE stretch] A mature server-mediated editor has large documents, a small stable operation set and no peer-sync requirement. Should the team replace working OT solely because new systems often use CRDTs?
+>
+> **Solution:** Retain the working OT design under these constraints: compact metadata, a permanent server and a stable operation set are its defensible case. Automatically migrating to CRDTs is a weaker answer because it ignores the existing correctness investment and metadata constraints. Reconsider if long offline work, peer sync or expanding operation types become requirements.

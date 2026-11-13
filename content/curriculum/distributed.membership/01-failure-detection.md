@@ -10,6 +10,14 @@ observe silence, and silence is produced equally by a crashed node, a slow node,
 and a working node behind a broken network link. A failure detector is a
 deliberate, tunable guess.
 
+> [!WHY] A network pause makes a healthy leader look dead. An aggressive failover pays warm-up cost and risks split brain, while the same suspicion could cheaply stop new request routing first.
+
+> [!GOALS]
+>
+> - Explain how a phi-accrual detector adapts to observed variance
+> - Compute a suspicion score and choose consumer-specific actions
+> - Design detection safeguards against eviction cascades
+
 ## The two properties, and the trade between them
 
 ```text
@@ -98,7 +106,7 @@ tuning.
 
 A traditional detector outputs a boolean: alive or dead. A phi-accrual detector
 outputs a **suspicion level** — a number that rises the longer silence
-continues, computed from the *distribution* of past heartbeat intervals.
+continues, computed from the _distribution_ of past heartbeat intervals.
 
 ```text
   φ = -log10(probability that a heartbeat this late is normal,
@@ -181,6 +189,15 @@ The refutation path is what makes this valuable. A node that was merely paused
 gets to say "I am here" and rejoin without the cluster having paid for a
 failover, a rebalance and a warm-up.
 
+> [!PITFALL] A heartbeat from a healthy dedicated thread can hide a deadlocked request path. Probe the resources used by real requests.
+
+```mermaid
+stateDiagram-v2
+  Alive --> Suspect: missed probes
+  Suspect --> Alive: refutation
+  Suspect --> Dead: timeout without refutation
+```
+
 ## Choosing timeouts
 
 The procedure, since the answer is always "it depends":
@@ -226,10 +243,18 @@ The first is the same panic-threshold idea as the load balancer's minimum-health
 rule, and for the same reason: **when most of the fleet looks broken, the
 detector is more likely wrong than the fleet.**
 
+> [!CHECK] What distinguishes completeness from accuracy in failure detection?
+>
+> Completeness means crashed nodes are eventually suspected; accuracy means correct nodes are not wrongly suspected. Timeouts trade between them.
+
+> [!CHECK] Why should a heartbeat use the same executor or connection pool as real work?
+>
+> A dedicated heartbeat thread can stay healthy while requests are wedged. Sharing the work resources makes the probe test the path users need.
+
 ## What to take away
 
 1. Completeness and accuracy trade against each other; choose the point from the
-   *cost of a false positive* for that specific consumer.
+   _cost of a false positive_ for that specific consumer.
 2. Push heartbeats can survive a wedged process — make the heartbeat depend on
    the resources real work uses.
 3. Fixed timeouts are wrong in both directions; derive them from the observed RTT
@@ -242,3 +267,17 @@ detector is more likely wrong than the fleet.**
    dead, the detector is more likely wrong than the fleet.
 
 Next: gossip — spreading membership information without a central authority.
+
+## Exercises
+
+> [!EXERCISE recall] Why can the same silence produce different phi scores on a stable network and a high-variance network?
+>
+> **Solution:** Phi measures how abnormal the delay is under observed heartbeat intervals. Silence is rarer on a stable network, so suspicion rises faster; the same delay is more normal on a variable network, so suspicion rises more slowly.
+
+> [!EXERCISE apply] The estimated probability of a heartbeat being this late under normal conditions is 0.0001. Compute φ = −log10(probability). With routing stopped at φ=3 and failover at φ=8, choose the actions now.
+>
+> **Solution:** 0.0001 = 10⁻⁴, so φ = −(−4) = 4. The score exceeds the routing threshold of 3, so stop new routing. It is below 8, so do not trigger failover yet; continue probing and allow refutation.
+
+> [!EXERCISE stretch] Under high load, many nodes become slow and begin failing probes. Should automation immediately evict all suspects? Recommend safeguards.
+>
+> **Solution:** Cap the fraction suspected, back off aggressiveness under load, use indirect probes and a refutation window, and monitor false positives. Immediately evicting every suspect is a weaker policy: shifting their work overloads survivors, causing further suspicions and potentially evicting the whole cluster.

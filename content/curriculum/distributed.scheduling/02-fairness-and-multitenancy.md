@@ -9,6 +9,14 @@ want more than their share. Deciding what is fair is straightforward when
 everyone wants the same resource and genuinely subtle when they do not — which,
 in a multi-dimensional cluster, is always.
 
+> [!WHY] A training job holds only part of its required GPUs while another job holds the rest. Both allocations consume scarce capacity without making progress, so fairness in individual placements still needs an all-or-nothing job policy.
+
+> [!GOALS]
+>
+> - Explain why allocation needs runtime isolation
+> - Compute and compare dominant resource shares
+> - Choose a starvation-free reservation policy with gang placement
+
 ## Why single-resource fairness is not enough
 
 ```text
@@ -25,7 +33,7 @@ in a multi-dimensional cluster, is always.
 
 Equal CPU produced an allocation where one user hit a wall and the other could
 not use the remaining CPU. The question "what is a fair share?" has no answer
-until you say fair *in what*.
+until you say fair _in what_.
 
 ## Dominant Resource Fairness
 
@@ -148,7 +156,7 @@ Two mechanisms address it:
 **Reservation.** Hold resources for the pending large job as they free up, rather
 than giving them to the next small job. Costs utilisation — reserved resources sit
 idle while accumulating — which is why it is usually paired with **backfill**:
-allow a small job to use reserved capacity if it will *finish before* the
+allow a small job to use reserved capacity if it will _finish before_ the
 reservation is needed.
 
 ```text
@@ -197,6 +205,17 @@ the default scheduler places pods individually and will happily create the
 deadlock above. If you run distributed training on Kubernetes, gang scheduling is
 not optional.
 
+> [!PITFALL] Partial allocations can deadlock training jobs: each holds GPUs while waiting for the rest. Reserve and launch the complete gang.
+
+```mermaid
+flowchart TB
+  J[Distributed training job] --> R[Reserve complete gang]
+  R --> C{All required workers fit?}
+  C -->|yes| L[Launch together]
+  C -->|no| W[Keep waiting without partial allocation]
+  W --> R
+```
+
 ## Isolation: fairness that survives a bad neighbour
 
 Allocation is a promise; **isolation** is enforcement.
@@ -227,9 +246,17 @@ The practical answer where latency matters: **do not co-locate**. Dedicate hosts
 or use anti-affinity to keep batch off latency-sensitive machines. Perfect
 isolation is not achievable, so separation is the reliable defence.
 
+> [!CHECK] What distinguishes a guarantee from a limit and borrowed capacity?
+>
+> A guarantee is the entitled minimum, a limit is the maximum, and usage above the guarantee is borrowed and reclaimable.
+
+> [!CHECK] Why does backfill require an enforced runtime estimate?
+>
+> A backfilled task must finish before reserved capacity is needed. An unenforced overrun delays the reserved job and defeats the reservation.
+
 ## What to take away
 
-1. Fairness is undefined until you say fair in *which* resource; equal CPU
+1. Fairness is undefined until you say fair in _which_ resource; equal CPU
    produces stranded capacity when users have different resource profiles.
 2. Dominant Resource Fairness equalises each user's largest resource share, and is
    sharing-incentive, strategy-proof, envy-free and Pareto-efficient.
@@ -244,3 +271,17 @@ isolation is not achievable, so separation is the reliable defence.
    separation beats co-location for latency-sensitive work.
 
 Next: preemption, autoscaling, and how real schedulers put this together.
+
+## Exercises
+
+> [!EXERCISE recall] Why is a fair allocation insufficient without isolation, and why do CPU and memory enforcement differ?
+>
+> **Solution:** Allocation promises a share; isolation enforces it against bad neighbours. CPU is compressible and excess use can be throttled. Memory is incompressible and crossing its hard limit means OOM-killing. Disk, network and cache isolation can remain weak, motivating workload separation.
+
+> [!EXERCISE apply] A cluster has 20 CPUs and 100 GB RAM. Tenant A uses 4 CPUs and 30 GB; B uses 8 CPUs and 10 GB. Compute both dominant shares and decide which tenant has the smaller share for the next DRF allocation opportunity, assuming a feasible task exists.
+>
+> **Solution:** A uses 4/20 = 0.20 CPU and 30/100 = 0.30 memory, so its dominant share is 0.30. B uses 8/20 = 0.40 CPU and 10/100 = 0.10 memory, so its dominant share is 0.40. A has the smaller share and receives the next opportunity; actual allocation still requires a fitting task.
+
+> [!EXERCISE stretch] A large distributed training job keeps losing free GPUs to small jobs. Recommend a policy that lets it start while allowing safe use of its reserved capacity before launch.
+>
+> **Solution:** Reserve the complete gang, allow backfill only for jobs that finish before the reservation is needed, and enforce runtime estimates; aging can also raise waiting priority. Continuously placing small jobs while launching whichever training workers fit is weaker: the large job may starve or hold partial resources without progress.

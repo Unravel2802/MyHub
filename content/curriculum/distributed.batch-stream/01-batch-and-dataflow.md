@@ -9,6 +9,14 @@ write the result. The engineering problem is not the transformation — it is do
 it across hundreds of machines where some will fail, and doing it in a way where
 a failure does not mean starting over.
 
+> [!WHY] A nightly report joins before filtering and spills intermediate data to disk. Reordering the graph can shrink the shuffle; choosing the wrong recovery boundary can make a late failure repeat the expensive work.
+
+> [!GOALS]
+>
+> - Explain why a DAG enables pipelining and whole-job optimisation
+> - Choose filter placement and classify narrow and wide dependencies
+> - Choose checkpoint locations from recovery cost
+
 ## MapReduce, and the idea that mattered
 
 ```text
@@ -98,6 +106,17 @@ statistics.
 **Lazy evaluation.** Nothing runs until a result is demanded, so the engine sees
 the complete graph before choosing a plan.
 
+> [!PITFALL] A retried task that appends directly to the destination duplicates output; write temporary results and commit only after the job succeeds.
+
+```mermaid
+flowchart TB
+  R[Read partitions] --> F[Filter and project]
+  F --> J[Shuffle by join key]
+  J --> A[Aggregate]
+  A --> T[Temporary task outputs]
+  T --> C[Atomic metadata commit]
+```
+
 ## Narrow and wide dependencies
 
 The distinction that predicts a job's cost.
@@ -183,7 +202,7 @@ produce output atomically, when tasks fail and are retried?
 ```
 
 This is why object-store commit protocols are a recurring source of subtlety:
-rename is atomic on HDFS and *not* on S3, where it is a copy. Modern table
+rename is atomic on HDFS and _not_ on S3, where it is a copy. Modern table
 formats (Iceberg, Delta) solve it properly by committing a new metadata pointer
 atomically, which is the same "one atomic single-row write is the decision" trick
 as Percolator.
@@ -209,6 +228,14 @@ automatically only when they can estimate the size — which they often cannot a
 a few transformations. Telling the engine explicitly is frequently the largest
 single speedup available.
 
+> [!CHECK] Why can a failed deterministic map task be retried without restarting the job?
+>
+> Its output is a function of its input, so another machine can recompute that task while completed tasks remain usable.
+
+> [!CHECK] What makes speculative execution unsafe for a task that appends directly to its destination?
+>
+> Both copies can append the same output. Tasks need idempotent, side-effect-free execution and temporary outputs followed by an atomic commit.
+
 ## What to take away
 
 1. MapReduce's contribution was a fault-tolerance model where deterministic tasks
@@ -226,3 +253,17 @@ single speedup available.
    tasks with an atomic output commit.
 
 Next: shuffles, skew and joins — where batch jobs actually spend their time.
+
+## Exercises
+
+> [!EXERCISE recall] Why can a dataflow engine optimise a chain of operations in ways separate MapReduce jobs cannot?
+>
+> **Solution:** It sees the whole DAG before execution. It can pipeline narrow operations without intermediate materialisation, push filters and projections ahead of joins, and plan wide dependencies as stage boundaries.
+
+> [!EXERCISE apply] A product report reads records, joins them by customer, filters a field available in the original records, and aggregates by region. Assuming the filter does not depend on the join, choose its position and classify the filter and key redistribution as narrow or wide.
+>
+> **Solution:** Put the filter before the join so fewer records reach the expensive join shuffle. The filter is narrow: each output partition depends on one input partition. Redistributing records by a join or aggregation key is wide and moves data between partitions, creating a stage boundary.
+
+> [!EXERCISE stretch] A long iterative job has a cheap map followed by an expensive shuffle in each iteration. Should it rely entirely on lineage or introduce checkpoints? Recommend a boundary and explain the trade.
+>
+> **Solution:** Checkpoint after expensive wide operations and periodically along the long iterative chain. This pays durable-write cost but truncates recomputation after a late failure. Relying entirely on lineage is a weaker choice here: it saves happy-path writes but may repeat expensive shuffles from the beginning.

@@ -9,6 +9,14 @@ that is a million messages per interval. Gossip solves this by having each node
 talk to a few random peers and letting information spread the way a rumour does:
 exponentially, robustly, and with no coordinator.
 
+> [!WHY] During a migration, partitioned nodes gossip conflicting views of which peer is alive. Using those views to grant the migration lock can start two writers, so cheap dissemination must be separated from the exclusive decision.
+
+> [!GOALS]
+>
+> - Compare push, pull and push-pull dissemination
+> - Estimate gossip convergence under the doubling model
+> - Choose which decisions require consensus instead of gossip
+
 ## The mechanism
 
 ```text
@@ -75,8 +83,8 @@ information that must survive everything else being broken — membership.
               best of both. what real implementations use.
 ```
 
-The reason to know this: convergence is exponential in the *early* phase and
-becomes a coupon-collector problem in the *late* phase, where the last few
+The reason to know this: convergence is exponential in the _early_ phase and
+becomes a coupon-collector problem in the _late_ phase, where the last few
 uninformed nodes are hard to reach by pushing at random. Pull fixes the tail.
 
 ## Anti-entropy versus rumour-mongering
@@ -151,6 +159,21 @@ applied to membership claims, so nodes cannot be wrongly evicted by an old rumou
 **Piggybacking** is the fourth: membership updates ride along on the ping and ack
 messages rather than being sent separately, so dissemination is nearly free.
 
+> [!INTERVIEW] Use gossip for eventually shared observations and consensus for unique decisions. A converged rumour is not a distributed lock.
+
+```mermaid
+sequenceDiagram
+  participant A as Observer A
+  participant B as Target B
+  participant C as Helper C
+  A->>B: PING
+  Note over A,B: No direct ACK
+  A->>C: Probe B indirectly
+  C->>B: PING
+  B->>C: ACK
+  C->>A: B is reachable
+```
+
 ## What gossip is good for, and what it is not
 
 ```text
@@ -201,7 +224,7 @@ ones usually do not.
 
 **Partition creates two converged worlds.** Each side gossips internally and
 converges on a view where the other side is dead. On healing, incarnation numbers
-resolve the conflict — but any *action* taken on the wrong view during the
+resolve the conflict — but any _action_ taken on the wrong view during the
 partition has already happened.
 
 **Gossip storms.** A rapidly flapping node generates a stream of alive/suspect
@@ -215,6 +238,14 @@ then between racks — restores it.
 **Clock-free but not order-free.** Gossip carries no ordering by itself, so
 version or incarnation numbers are mandatory on every piece of state, or an old
 value overwrites a new one on merge.
+
+> [!CHECK] What lets a SWIM refutation defeat an old suspicion?
+>
+> The node increments its incarnation number. A refutation with the higher number wins when membership state merges.
+
+> [!CHECK] Why pair rumour-mongering with anti-entropy?
+>
+> Rumours propagate updates cheaply but may die out early. Periodic state reconciliation repairs updates missed by that fast path.
 
 ## What to take away
 
@@ -231,5 +262,19 @@ value overwrites a new one on merge.
 6. Suspicion timeouts must scale with log(n), and every gossiped value needs a
    version number or merges will regress it.
 
-Next: what membership *means* — strong versus weak views, and the operations that
+Next: what membership _means_ — strong versus weak views, and the operations that
 depend on the difference.
+
+## Exercises
+
+> [!EXERCISE recall] Why is push effective early and pull useful near the end of gossip dissemination?
+>
+> **Solution:** Early on, most targets are uninformed, so pushes spread knowledge rapidly. Late on, random pushes often reach nodes that already know; uninformed nodes pulling from informed peers finish the tail efficiently. Push-pull combines the two.
+
+> [!EXERCISE apply] A new 64-node cluster uses the chapter’s idealised doubling model, starting with one informed node and a 0.5-second interval. Estimate rounds and elapsed time to inform everyone, and say whether this is an exact delivery deadline.
+>
+> **Solution:** The informed counts are 1, 2, 4, 8, 16, 32 and 64: six rounds because 2⁶ = 64. At 0.5 seconds per round the estimate is 6 × 0.5 = 3 seconds. This is an idealised estimate, not a deadline; random contacts and the dissemination tail make agreement probabilistic.
+
+> [!EXERCISE stretch] A team wants gossip to publish configuration and grant an exclusive migration lock. Recommend which function can stay on gossip and which must move.
+>
+> **Solution:** Configuration that tolerates brief divergence can use gossip. Put the unique migration-lock decision through consensus. Using gossip for both is weaker: eventual probabilistic agreement cannot guarantee exactly one current holder, especially while partitions have different views.

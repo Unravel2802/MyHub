@@ -9,6 +9,14 @@ the network during shuffles, and whether the work is evenly divided. The second
 is the more common cause of a job that "used to take twenty minutes" taking
 seven hours.
 
+> [!WHY] A reporting stage leaves the cluster idle while one partition keeps spilling. Buying more machines does not divide that key, so the bill rises while the completion deadline still slips.
+
+> [!GOALS]
+>
+> - Explain the network and disk work in a shuffle
+> - Compute shuffle fetches from map and reduce counts
+> - Choose a skew remedy that preserves aggregation semantics
+
 ## What a shuffle actually does
 
 ```text
@@ -42,6 +50,16 @@ shuffle.** Filter early, project only needed columns, and pre-aggregate — a
 combiner that partially aggregates on the map side can cut shuffle volume by
 orders of magnitude for a `groupBy` with few distinct keys.
 
+> [!PITFALL] Adding machines does not split a single hot key. Check skew and spill before increasing cluster size.
+
+```mermaid
+flowchart TB
+  M[Map outputs] --> H[Partition by key]
+  H --> D[Write local shuffle files]
+  D --> N[Reducers fetch their partitions]
+  N --> A[Aggregate each key]
+```
+
 ## Data skew
 
 The dominant practical problem. Partitions should be roughly equal; real key
@@ -67,8 +85,8 @@ distributions are not.
        ALSO processing 40 GB
 ```
 
-That last point is diagnostic. Speculative execution fixes a *slow machine*; it
-does nothing for a *large partition*, because both copies do the same work.
+That last point is diagnostic. Speculative execution fixes a _slow machine_; it
+does nothing for a _large partition_, because both copies do the same work.
 
 ### Where skew comes from
 
@@ -107,7 +125,7 @@ df.withColumn("salted", concat(col("user_id"), lit("#"),
 ```
 
 Two-stage aggregation: partial results per salt bucket, then combined. Works for
-any *associative* aggregation (sum, count, min, max) and not for ones that need
+any _associative_ aggregation (sum, count, min, max) and not for ones that need
 all values at once (exact median, exact distinct).
 
 **3. Separate the heavy keys.** Process the top-N keys as their own job with a
@@ -175,7 +193,7 @@ shuffle-free — the same idea as co-partitioning in the partitioning topic.
 ```
 
 **The small-files problem** is the write-side version and it bites later: a job
-writing 10,000 partitions produces 10,000 files, and the *next* job reading them
+writing 10,000 partitions produces 10,000 files, and the _next_ job reading them
 spends all its time on file listing and open calls. Coalesce before writing.
 
 ## The diagnostic order
@@ -197,10 +215,18 @@ Step 6 is deliberately last. Adding machines to a skewed job does nothing — th
 one enormous partition still runs on one core — and it is the most common
 response to a slow job.
 
+> [!CHECK] Why does running a second copy of a skewed task fail to fix the tail?
+>
+> The duplicate processes the same oversized partition. Speculation helps a slow machine, not an excessive amount of work for one key.
+
+> [!CHECK] When is a broadcast join safe for the small side?
+>
+> When the small side fits in every executor’s memory; it can then be sent to each executor so the large side does not shuffle.
+
 ## What to take away
 
 1. A shuffle moves the whole dataset across the network with a disk write and
-   read on each side; reducing data *before* it beats optimising it.
+   read on each side; reducing data _before_ it beats optimising it.
 2. Skew is the dominant practical problem, and one oversized partition determines
    the whole job's runtime.
 3. Speculative execution does not fix skew — both copies process the same large
@@ -212,3 +238,17 @@ response to a slow job.
    10× win the engine misses; bucketing removes it permanently for repeated joins.
 
 Next: stream processing, where the dataset never ends.
+
+## Exercises
+
+> [!EXERCISE recall] What happens between map output and reduce input during a shuffle, and why should filtering precede it?
+>
+> **Solution:** Map tasks partition by key, sort and write output locally. Each reducer fetches its partition from every mapper, incurring network transfer, disk work, encoding and potentially spill. Filtering, projection and pre-aggregation reduce the data paying those costs.
+
+> [!EXERCISE apply] A new stage has 12 map tasks and 5 reduce tasks. Under this chapter’s all-to-all fetch model, compute the number of fetches. If early filtering halves the bytes but leaves task counts unchanged, what happens to the fetch count?
+>
+> **Solution:** The count is M × R = 12 × 5 = 60 fetches. Halving bytes does not change 12 or 5, so there are still 60 fetches, each transferring less data in aggregate. It reduces volume rather than the number of map-reducer pairs.
+
+> [!EXERCISE stretch] A required customer key dominates a sum aggregation. Choose between salting, speculative copies and adding machines. Would you apply the same two-stage recipe to an exact median?
+>
+> **Solution:** Salt the heavy key, sum within salt buckets, then combine the partial sums by the original key. Sum is associative. Speculative copies are a weaker answer: each repeats the same oversized partition, and more machines alone do not split it. Do not combine partial medians using this recipe; exact median needs information beyond those partial scalar results.

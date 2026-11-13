@@ -10,6 +10,14 @@ that took hours to build, and losing them means recomputing from the beginning o
 retention. This chapter is how that state is kept, and the observation that
 dissolves the batch/streaming distinction entirely.
 
+> [!WHY] A stateful job recovers its counters correctly after a crash but appends the replayed outputs again. Correct internal checkpoints still leave duplicated external results unless the sink cooperates.
+
+> [!GOALS]
+>
+> - Explain how stream changes and table state represent the same information
+> - Compute replay volume and choose a replay-safe sink
+> - Choose replay or a separate batch correction path
+
 ## Where state lives
 
 ```text
@@ -86,7 +94,7 @@ barrier's position defines consistency rather than a global pause.
 ```
 
 That is **exactly-once state**, and the caveat from the delivery-semantics chapter
-applies unchanged: events *are* reprocessed, so external side effects happen
+applies unchanged: events _are_ reprocessed, so external side effects happen
 twice unless the sink cooperates.
 
 ```text
@@ -102,6 +110,15 @@ twice unless the sink cooperates.
 interval to your output latency — results are invisible until the checkpoint
 commits — and adds a distributed transaction to every checkpoint. An upsert keyed
 by (window, key) achieves the same result with none of that.
+
+```mermaid
+flowchart TB
+  B[Barrier reaches all operator inputs] --> S[Snapshot state]
+  S --> F[Forward barrier]
+  F --> C[All sinks reached: checkpoint complete]
+  C --> R[On failure: restore state and source offsets]
+  R --> P[Replay events after checkpoint]
+```
 
 ## Checkpoint tuning
 
@@ -218,6 +235,14 @@ with reprocessing done by replay.
 The one place a separate batch path survives legitimately: correcting data older
 than your retention, or joining against datasets that were never in the stream.
 
+> [!CHECK] Why does exactly-once operator state not guarantee exactly-once external effects?
+>
+> Recovery reprocesses events after the checkpoint. External writes can repeat unless the sink is idempotent or participates transactionally.
+
+> [!CHECK] How does Kappa replace a separate batch implementation during a code change?
+>
+> Run new code from the retained log into a new output table, let it catch up, switch readers, then delete the old output.
+
 ## What to take away
 
 1. Local state plus a compacted changelog is the standard design — local reads
@@ -237,3 +262,17 @@ than your retention, or joining against datasets that were never in the stream.
 That completes batch and stream processing. Next in the track: **membership and
 failure detection** — how a cluster agrees on which nodes exist and which are
 alive.
+
+## Exercises
+
+> [!EXERCISE recall] How do compaction and CDC illustrate the stream-table duality, and where does batch fit?
+>
+> **Solution:** Compaction folds a stream of changes into current values, like a table. CDC unfolds table changes into a stream. Batch is the same computation over a bounded input that eventually ends.
+
+> [!EXERCISE apply] A checkpoint records source offset 400. Before a crash the job processes offsets 401 through 425 inclusive. How many events replay after restoring the checkpoint? Choose an append-only or keyed-upsert sink for recomputed window totals.
+>
+> **Solution:** The replay range is 401 through 425, so 425 − 401 + 1 = 25 events. Restore both operator state and source position, then replay those events. Choose an upsert keyed by window and key: a repeated total replaces its prior output, whereas append-only output can duplicate effects.
+
+> [!EXERCISE stretch] A correction needs history older than the log retention. Should the team claim Kappa replay alone is sufficient, or keep a separate correction path?
+>
+> **Solution:** Use a batch correction path over the older data if it is available outside the retained stream. The chapter explicitly allows this exception. Claiming replay alone is sufficient is weaker: offsets cannot reconstruct events that retention has already removed. Future replay requirements should inform retention, but increasing it now does not restore missing history.

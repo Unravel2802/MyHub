@@ -8,6 +8,14 @@ Membership protocols that work comfortably at ten nodes behave differently at a
 thousand, and differently again at ten thousand. The changes are not gradual —
 they are specific thresholds where an assumption stops holding.
 
+> [!WHY] A brief zone-link outage triggers mass data movement in a large cluster. Rebalancing saturates the same network used by probes, so the attempted repair creates more apparent failures and more movement.
+
+> [!GOALS]
+>
+> - Explain why hierarchical gossip and a small consensus layer serve different roles
+> - Compute heartbeat and metadata costs as membership grows
+> - Choose guarded rebalance triggers for a large fleet
+
 ## What breaks as n grows
 
 ```text
@@ -65,6 +73,15 @@ chatter across zones is a surprisingly common line item.
 **Convergence stays fast.** log(300) within a zone plus a hop between zones beats
 log(900) over a flat topology with expensive links.
 
+```mermaid
+flowchart TB
+  C[Small authoritative consensus group] --> A[Zone A gossip]
+  C --> B[Zone B gossip]
+  A <-->|limited cross-zone exchange| B
+  A --> N[Local members]
+  B --> M[Local members]
+```
+
 ## Churn
 
 At scale the cluster is never static:
@@ -81,7 +98,7 @@ consequences:
 **Membership changes must be cheap.** If adding a node triggers a full rebalance,
 you are rebalancing continuously and never converging. This is why fixed partition
 counts with wholesale assignment (from the partitioning topic) matter so much at
-scale — a membership change moves partition *assignments*, not data layout.
+scale — a membership change moves partition _assignments_, not data layout.
 
 **Rebalancing must be rate-limited and, crucially, not triggered automatically on
 suspicion.** The rebalance storm from the partitioning chapter is a large-scale
@@ -186,6 +203,14 @@ Systems that gossip everything get split brain. Systems that reach consensus on
 everything do not scale. The ones that work put a small consensus group in charge
 of the decisions and let gossip carry everything else.
 
+> [!CHECK] Why should membership gossip carry digests rather than application state?
+>
+> Small digests keep repeated exchanges cheap; details can be fetched on mismatch. Application data bloats every exchange and slows membership convergence.
+
+> [!CHECK] Which measurement reveals a split that per-node health can miss?
+>
+> Compare member lists or cluster-size views across nodes. Both halves can look healthy locally while disagreeing globally.
+
 ## What to take away
 
 1. All-to-all heartbeating is O(n²) and untenable past a few hundred nodes;
@@ -197,7 +222,7 @@ of the decisions and let gossip carry everything else.
 4. Constant churn means membership changes must be cheap; automate the rebalance
    mechanism but gate the trigger with delays, concurrency caps and a
    fraction-of-cluster circuit breaker.
-5. Monitor cluster size *per node's view* to detect splits, and the
+5. Monitor cluster size _per node's view_ to detect splits, and the
    false-positive rate as the feedback loop on detector tuning.
 6. Prefer regional clusters with federation to one global membership, and separate
    what must be agreed (consensus) from what may be observed (gossip).
@@ -205,3 +230,17 @@ of the decisions and let gossip carry everything else.
 That completes membership and failure detection. Next in the track:
 **collaborative editing with OT and CRDTs** — letting many writers change the same
 data with no lock at all.
+
+## Exercises
+
+> [!EXERCISE recall] Why combine zone-local gossip with a small authoritative consensus group instead of putting every observation through consensus?
+>
+> **Solution:** Local gossip keeps most repeated traffic on cheap low-latency links and disseminates observations at scale. The small consensus group commits decisions such as membership and shard assignments. Logging every liveness change through it makes churn a bottleneck.
+
+> [!EXERCISE apply] For 200 nodes, compute directed all-to-all heartbeat messages per interval using n(n−1). If each node carries 2 KB of metadata, compute the full member-state size in decimal KB and MB.
+>
+> **Solution:** Each of 200 nodes contacts 199 others: 200 × 199 = 39,800 messages per interval. Metadata is 200 × 2 KB = 400 KB = 0.4 MB using 1,000 KB per MB. Repeatedly exchanging full state carries that payload; digests avoid sending unchanged details.
+
+> [!EXERCISE stretch] After a WAN blip, many nodes are suspected at once. Recommend a rebalance trigger policy and explain why fully automatic immediate repair is unsafe.
+>
+> **Solution:** Automate movement but gate its trigger with a delay, concurrent-movement and fraction-of-fleet caps, plus a circuit breaker that stops and pages when too many nodes look dead. Immediate rebalance on every suspicion is weaker: false positives generate network saturation, which causes more false positives and a rebalance storm.

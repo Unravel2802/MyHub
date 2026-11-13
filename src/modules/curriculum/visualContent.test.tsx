@@ -23,6 +23,10 @@ export const EXERCISE_TRACKS: string[] = [
   "distributed.coordination",
   "distributed.load-balancing",
   "distributed.failure",
+  "distributed.batch-stream",
+  "distributed.membership",
+  "distributed.crdt",
+  "distributed.scheduling",
 ];
 const DS3_VISUAL_TRACKS = [
   "distributed.messaging",
@@ -426,16 +430,86 @@ describe("curriculum visual content gates", () => {
       const recapAt = markdown.indexOf("## What to take away");
       const checks = [...markdown.matchAll(/^>\s*\[!CHECK\]/gm)];
       expect(checks, relativePath).toHaveLength(2);
-      expect(checks.every((match) => (match.index ?? Infinity) < recapAt), relativePath).toBe(true);
+      expect(
+        checks.every((match) => (match.index ?? Infinity) < recapAt),
+        relativePath,
+      ).toBe(true);
     }
     for (const topic of DS3_VISUAL_TRACKS) {
       const source = chapters
         .filter((file) => relative(ROOT, file).startsWith(topic))
-        .map((file) => readFileSync(file, "utf8").replace(/^```[\s\S]*?^```\s*$/gm, ""))
+        .map((file) =>
+          readFileSync(file, "utf8").replace(/^```[\s\S]*?^```\s*$/gm, ""),
+        )
         .join("\n");
-      expect([...source.matchAll(/^>\s*\[!PITFALL\]/gm)].length, topic).toBeGreaterThanOrEqual(1);
-      expect([...source.matchAll(/^>\s*\[!PITFALL\]/gm)].length, topic).toBeLessThanOrEqual(3);
-      expect([...source.matchAll(/^>\s*\[!INTERVIEW\]/gm)].length, topic).toBe(1);
+      expect(
+        [...source.matchAll(/^>\s*\[!PITFALL\]/gm)].length,
+        topic,
+      ).toBeGreaterThanOrEqual(1);
+      expect(
+        [...source.matchAll(/^>\s*\[!PITFALL\]/gm)].length,
+        topic,
+      ).toBeLessThanOrEqual(3);
+      expect([...source.matchAll(/^>\s*\[!INTERVIEW\]/gm)].length, topic).toBe(
+        1,
+      );
+    }
+  });
+
+  it("enforces the DS4 visual quotas and source formatting", () => {
+    const topics = [
+      "distributed.batch-stream",
+      "distributed.membership",
+      "distributed.crdt",
+      "distributed.scheduling",
+    ];
+    const chapters = files.filter((file) =>
+      topics.includes(relative(ROOT, file).split("/")[0]),
+    );
+    expect(chapters).toHaveLength(18);
+    const count = (source: string, pattern: RegExp) =>
+      [...source.matchAll(pattern)].length;
+    for (const file of chapters) {
+      const source = readFileSync(file, "utf8");
+      const name = relative(ROOT, file);
+      // Count fences in the source, not in fence-stripped prose.
+      expect(count(source, /^```mermaid\s*$/gm), name).toBeLessThanOrEqual(2);
+      expect(count(source, /^```chart\s*$/gm), name).toBeLessThanOrEqual(1);
+      expect(count(source, /^```widget\s*$/gm), name).toBe(0);
+      const prose = source.replace(/^```[^\n]*\n[\s\S]*?^```[^\n]*$/gm, "");
+      expect(count(prose, /^> \[!KEY\]/gm), name).toBeLessThanOrEqual(2);
+      const checks = [...prose.matchAll(/^> \[!CHECK\]/gm)];
+      expect(checks, name).toHaveLength(2);
+      const recapAt = prose.indexOf("## What to take away");
+      expect(
+        checks.every((check) => check.index < recapAt),
+        name,
+      ).toBe(true);
+      const why = /^> \[!WHY\] (.+)$/m.exec(prose);
+      expect(why?.[1].trim(), name).toBeTruthy();
+      expect(prose, name).not.toMatch(/[A-Za-z]-[ \t]*\n/);
+      expect(prose, name).not.toMatch(/[A-Za-z]\n-[a-z]/);
+      for (const fence of source.matchAll(/^```([^\n]*)\n([\s\S]*?)^```/gm)) {
+        for (const line of fence[2].trimEnd().split("\n")) {
+          expect(line.length, `${name}: ${line}`).toBeLessThanOrEqual(76);
+        }
+        if (fence[1].trim() === "mermaid") {
+          const diagram = fence[2];
+          if (/^flowchart /m.test(diagram)) {
+            expect(diagram, name).toMatch(/^flowchart TB$/m);
+          }
+        }
+      }
+    }
+    for (const topic of topics) {
+      const source = chapters
+        .filter((file) => relative(ROOT, file).split("/")[0] === topic)
+        .map((file) => readFileSync(file, "utf8"))
+        .join("\n");
+      const pitfalls = count(source, /^> \[!PITFALL\]/gm);
+      expect(pitfalls, topic).toBeGreaterThanOrEqual(1);
+      expect(pitfalls, topic).toBeLessThanOrEqual(3);
+      expect(count(source, /^> \[!INTERVIEW\]/gm), topic).toBe(1);
     }
   });
 });

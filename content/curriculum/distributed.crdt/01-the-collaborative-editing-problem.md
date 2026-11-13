@@ -10,6 +10,14 @@ will drop, and the result must be something both people recognise as their
 document. None of the mechanisms so far — locks, leaders, transactions — survive
 those requirements.
 
+> [!WHY] A shared editor replaces the whole document with the last arriving version. Both replicas agree, but one writer’s paragraph disappears; convergence alone has not preserved the work the product exists to protect.
+
+> [!GOALS]
+>
+> - Distinguish convergence from intention preservation
+> - Compute how an insertion invalidates another edit’s index
+> - Choose an editing approach from offline and metadata constraints
+
 ## Why the usual answers fail
 
 ```text
@@ -114,6 +122,18 @@ OT adjusts the operation to fit the new state. CRDTs make the operation
 state-independent so no adjustment is needed. The next two chapters take each in
 turn.
 
+> [!PITFALL] A shared final value is not enough: a last-write-wins document can converge while deleting another writer’s paragraph.
+
+```mermaid
+flowchart TB
+  D[Shared starting document] --> A[Local edit on replica A]
+  D --> B[Local edit on replica B]
+  A --> O[OT: transform state-relative operations]
+  B --> O
+  A --> C[CRDT: reference immutable identities]
+  B --> C
+```
+
 ## What convergence requires, formally
 
 For any approach to converge without coordination, the merge operation must have
@@ -188,6 +208,14 @@ The counter-argument, which is real: CRDTs carry more metadata, and for text
 specifically the metadata can dwarf the document. That is the subject of the
 fourth chapter.
 
+> [!CHECK] Why does immediate local editing guarantee concurrent conflicts?
+>
+> An edit takes effect before other replicas hear about it, so another replica may independently edit the same earlier state.
+
+> [!CHECK] Which network behaviours do commutative, associative and idempotent merges tolerate?
+>
+> Commutativity tolerates reordering, associativity tolerates regrouping or batching, and idempotence tolerates duplicates.
+
 ## What to take away
 
 1. Local-first editing makes concurrent conflicting edits guaranteed rather than
@@ -206,3 +234,17 @@ fourth chapter.
 
 Next: operational transformation — the original approach, and why it is so hard
 to get right.
+
+## Exercises
+
+> [!EXERCISE recall] How can a collaborative document converge and still fail its users?
+>
+> **Solution:** Convergence only says replicas reach the same state. A rule such as last-write-wins can make them agree by discarding someone’s work. Intention preservation asks whether that agreed result reflects what each writer meant, which requires product semantics beyond agreement.
+
+> [!EXERCISE apply] Against the original string "lamp", one writer inserts "red " at index 0 while another inserts "!" at original index 4. After applying the first edit, compute the transformed index that preserves the second writer’s end-of-string intent and give the result.
+>
+> **Solution:** The first insertion adds 4 characters before the second position. The adjusted index is 4 + 4 = 8 in "red lamp". Inserting at 8 produces "red lamp!". Keeping index 4 would put the exclamation before "lamp", demonstrating that an index depends on its source document state.
+
+> [!EXERCISE stretch] A task-list editor must support long offline edits and peer sync, and can accept identity metadata. Choose OT or CRDT as the starting family.
+>
+> **Solution:** Recommend CRDTs: immutable identities and merge rules support offline replicas and peer-to-peer exchange without a central sequencer. Choosing conventional server-ordered OT solely for smaller operations is weaker here: its server dependency and limited offline buffering conflict with the stated requirements.

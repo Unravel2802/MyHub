@@ -26,6 +26,8 @@ const EXERCISE_TRACKS = [
   "distributed.membership",
   "distributed.crdt",
   "distributed.scheduling",
+  "foundations.programming",
+  "foundations.data-structures",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -50,6 +52,11 @@ const tracks = [
       "scheduling",
     ],
     expectedChapters: 83,
+  },
+  {
+    prefix: "foundations",
+    topics: ["programming", "data-structures"],
+    expectedChapters: 12,
   },
 ];
 const chapters = tracks.flatMap((track) => {

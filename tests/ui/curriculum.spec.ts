@@ -664,10 +664,27 @@ test("chapters without Mermaid make no Mermaid chunk request, with a positive co
     if (mermaidChunks.has(pathname)) requested.push(pathname);
   });
   await mockSupabaseCurriculum(page, new FakeCurriculumDb());
-  await page.goto(`/curriculum/${DS}/${CHAPTERS[1]}`);
-  await expect(
-    page.getByRole("heading", { name: "Hash tables", exact: true }),
-  ).toBeVisible();
+  // Enrichment can add diagrams to any formerly plain chapter.
+  // Pick the negative control from its source rather than a fixed topic.
+  const contentRoot = path.join(process.cwd(), "content/curriculum");
+  const plainChapter = readdirSync(contentRoot)
+    .filter((topic) => /^[a-z-]+\.[a-z-]+$/.test(topic))
+    .flatMap((topic) =>
+      readdirSync(path.join(contentRoot, topic))
+        .filter((file) => /^\d{2}-.+\.md$/.test(file))
+        .map((file) => ({ topic, file })),
+    )
+    .find(
+      ({ topic, file }) =>
+        !/^```mermaid\s*$/m.test(
+          readFileSync(path.join(contentRoot, topic, file), "utf8"),
+        ),
+    );
+  expect(plainChapter).toBeDefined();
+  await page.goto(
+    `/curriculum/${plainChapter!.topic}/${plainChapter!.file.replace(/\.md$/, "")}`,
+  );
+  await expect(page.locator("article")).toBeVisible();
   await page
     .getByRole("button", { name: "Revisit later", exact: true })
     .click();
@@ -904,7 +921,7 @@ test.describe("chapter reader visual rhythm", () => {
   });
 
   test("a lone Unlocks card spans the header", async ({ page }) => {
-    const header = page.locator("[data-curriculum-reader] header");
+    const header = page.locator("[data-curriculum-reader] header:not([class])");
     await expect(header.getByText("Builds on", { exact: true })).toHaveCount(0);
     const card = header.getByText("Unlocks", { exact: true }).locator("..");
     const headerBox = await header.boundingBox();
@@ -916,7 +933,7 @@ test.describe("chapter reader visual rhythm", () => {
 
   test("the opening paragraph has one header gap", async ({ page }) => {
     const header = await page
-      .locator("[data-curriculum-reader] header")
+      .locator("[data-curriculum-reader] header:not([class])")
       .boundingBox();
     const paragraph = await page
       .locator(".curriculum-main > p")

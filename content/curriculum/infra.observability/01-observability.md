@@ -9,6 +9,16 @@ which misses the point: the three pillars — logs, metrics, and traces —
 exist because they answer three genuinely different questions, and a system
 that only has one of them has real blind spots for the other two.
 
+> [!WHY] A metric label is extended with user ids for debugging, and the
+> monitoring backend’s series count explodes. More identifying detail has
+> made the aggregate signal expensive precisely when operators need it.
+
+> [!GOALS]
+>
+> - Explain logs, metrics and traces
+> - Compute label cardinality and choose a data home
+> - Restore cross-service tracing context
+
 ## The three pillars, and what each one actually answers
 
 ```text
@@ -98,11 +108,10 @@ that only has one of them has real blind spots for the other two.
                                   [Service C: 200ms] →
             response (total: 250ms)
 
-  → a TRACE shows this ENTIRE path, with a SPAN per service
-    hop, and its DURATION — this answers "WHERE in a multi-
-    service request did the time actually go" directly, where
-    metrics alone tell you the TOTAL was 250ms but nothing
-    about WHICH of the three services actually caused it.
+  → a TRACE shows this ENTIRE path, with a SPAN per service hop, and its
+    DURATION — this answers "WHERE in a multi-service request did the time
+    actually go" directly, where metrics alone tell you the TOTAL was 250ms
+    but nothing about WHICH of the three services actually caused it.
 ```
 
 ```text
@@ -114,6 +123,14 @@ that only has one of them has real blind spots for the other two.
     trace at that point, and the very useful "where did the
     time go" picture becomes gap in exactly the place it's
     needed most.
+```
+
+```mermaid
+flowchart TB
+  A[Request enters A] --> I[Create or retain trace context]
+  I --> B[Pass context to B]
+  B --> C[Pass context to C]
+  C --> T[Link timed spans in one trace]
 ```
 
 ## Dashboards that answer real questions
@@ -133,6 +150,29 @@ that only has one of them has real blind spots for the other two.
     artifact than one built by graphing every metric that
     happened to be available.
 ```
+
+> [!PITFALL] A request id or user id that helps debug an event can be a
+> destructive high-cardinality metric dimension.
+
+> [!INTERVIEW] Name the operational question and its unit of observation,
+> then bound label combinations or propagate request context as
+> appropriate.
+
+> [!CHECK] Why use structured fields rather than a free-text event
+> sentence?
+>
+> A platform can directly filter and aggregate named fields instead of
+> parsing inconsistent prose.
+
+> [!CHECK] What does a span contribute to a trace?
+>
+> A timed segment associated with a particular part of the request path,
+> revealing where time was spent.
+
+> [!CHECK] What test makes an incident dashboard useful?
+>
+> It answers whether the situation is improving, which service is
+> implicated and what to check next.
 
 ## What to take away
 
@@ -154,3 +194,35 @@ that only has one of them has real blind spots for the other two.
 5. A useful dashboard is designed backward from real incident questions
    ("is this better or worse," "which service," "what next") — a wall of
    graphs that doesn't map to those questions is observability theater.
+
+## Exercises
+
+> [!EXERCISE recall] What different questions do logs, metrics and traces
+> answer?
+>
+> **Solution:** Logs describe a specific event, metrics describe aggregate
+> behaviour over time, and traces follow one request’s causal path across
+> service boundaries. One pillar cannot stand in for every kind of
+> investigation.
+
+> [!EXERCISE apply] A metric has four endpoint values, five status values
+> and three regions; assume every combination appears. Compute its series
+> count, then the result of adding 1000 user ids. Choose where those ids
+> should go instead.
+>
+> **Solution:** The bounded metric has 4 × 5 × 3 = 60 series. Adding user
+> ids produces 60 × 1000 = 60000 possible series, a thousandfold increase.
+> Keep aggregate labels low-cardinality and put identifying user data in
+> structured logs or traces where per-event investigation belongs, rather
+> than multiplying the metrics backend’s time-series footprint.
+
+> [!EXERCISE stretch] A request’s trace stops at a service boundary even
+> though all services log timing separately. Recommend a repair rather
+> than another wall of aggregate graphs.
+>
+> **Solution:** Propagate the request’s trace context to downstream calls
+> and attribute each span to that same trace. A weaker answer adds
+> aggregate latency graphs alone: they show totals or trends but do not
+> reconstruct which timed spans belong to the specific failed request.
+> Individual timing logs without shared context leave the causal path
+> disconnected.

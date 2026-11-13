@@ -10,6 +10,17 @@ quantifiable amount of accuracy for a dramatic reduction in time or memory —
 and for many real questions, that trade is not a compromise, it's obviously
 correct.
 
+> [!WHY] A deduplication service drops an event solely because a Bloom
+> filter says it has been seen. A false positive can discard a new event,
+> so a memory optimisation can become data loss if a probabilistic
+> pre-check becomes the final answer.
+
+> [!GOALS]
+>
+> - Explain a Bloom filter’s one-sided error
+> - Compute reservoir sampling probabilities
+> - Choose approximation only where exactness is optional
+
 ## Hashing, and why a good hash function matters probabilistically
 
 ```text
@@ -51,6 +62,15 @@ correct.
     real disk I/O), and only pays for the expensive check on a
     "maybe" — the false-positive rate is tuned by the filter's
     size, trading MORE memory for FEWER false positives.
+```
+
+
+```mermaid
+flowchart TB
+  K[Lookup key] --> B{Bloom result?}
+  B -->|definitely absent| N[Skip expensive read]
+  B -->|possibly present| S[Check definitive store]
+  S --> R[Return exact answer]
 ```
 
 ## HyperLogLog: counting distinct items without storing them
@@ -141,6 +161,28 @@ correct.
      exactness is the actual requirement.
 ```
 
+> [!PITFALL] Probably present must not become definitely duplicate; a
+> Bloom false positive can otherwise discard unseen data.
+
+> [!INTERVIEW] State exactly which error is permitted and where the
+> definitive answer comes from. Expected runtime, approximate counts and
+> one-sided membership errors are different contracts.
+
+> [!CHECK] Why does a random hash seed help with attacker-chosen keys?
+>
+> It makes deliberate collision construction harder; average lookup
+> depends on distributing keys rather than putting them into one bucket.
+
+> [!CHECK] What is quickselect’s expected cost versus sorting first?
+>
+> Expected O(n) versus O(n log n) for sorting before selecting.
+
+> [!CHECK] Does randomising the pivot eliminate every bad quickselect
+> case?
+>
+> No. It changes the probability and expected cost rather than giving a
+> guarantee that every run avoids the worst case.
+
 ## What to take away
 
 1. A hash table's average-case O(1) is a probabilistic claim about roughly
@@ -159,3 +201,33 @@ correct.
 5. Randomization in algorithms like quickselect doesn't eliminate a bad
    case — it makes its probability negligible, a genuinely different and
    often sufficient guarantee from eliminating it entirely.
+
+## Exercises
+
+> [!EXERCISE recall] Why is a Bloom filter safe as a negative pre-check
+> but insufficient as a definitive positive membership test?
+>
+> **Solution:** A negative rules out membership under the filter’s
+> contract; a positive can result from other items setting the same bits.
+> Use a definitive store after a positive to distinguish actual membership
+> from a false positive.
+
+> [!EXERCISE apply] A reservoir samples one item from a four-item stream.
+> Compute the final probability that the second item is selected, and
+> compare with the fourth item.
+>
+> **Solution:** The second item replaces the first with probability 1/2.
+> It must survive item 3, probability 1 − 1/3 = 2/3, and item 4,
+> probability 1 − 1/4 = 3/4. Multiply: (1/2)(2/3)(3/4) = 1/4. The fourth
+> is selected directly with probability 1/4. Both have equal probability
+> without knowing the final length in advance.
+
+> [!EXERCISE stretch] One product needs an approximate daily
+> distinct-visitor dashboard; another needs an exact per-customer count.
+> Recommend whether both should share a HyperLogLog-only implementation.
+>
+> **Solution:** Use HyperLogLog for the dashboard if its bounded
+> estimation error meets the business question and memory savings matter.
+> Keep an exact structure for the product requiring exact counts. A weaker
+> answer uses HyperLogLog for both because its memory is small: an
+> understood error rate still does not satisfy an exactness requirement.

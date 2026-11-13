@@ -44,6 +44,27 @@ const EXERCISE_TRACKS = [
   "foundations.randomized",
   "foundations.strings",
   "foundations.systems-programming",
+  "backend.api-hardening",
+  "backend.auth",
+  "backend.caching",
+  "backend.event-sourcing",
+  "backend.files",
+  "backend.graphql-grpc",
+  "backend.http",
+  "backend.integrations",
+  "backend.jobs-scheduling",
+  "backend.migrations",
+  "backend.multitenancy",
+  "backend.nosql",
+  "backend.queues",
+  "backend.realtime",
+  "backend.rest",
+  "backend.search",
+  "backend.serialization",
+  "backend.services",
+  "backend.sql",
+  "backend.time-money",
+  "backend.transactions",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -73,6 +94,7 @@ const tracks = [
     prefix: "foundations",
     expectedChapters: 28,
   },
+  { prefix: "backend", expectedChapters: 22 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

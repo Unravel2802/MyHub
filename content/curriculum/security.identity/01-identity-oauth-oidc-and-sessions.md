@@ -10,6 +10,16 @@ mechanisms go wrong in practice — because each one has a well-known failure
 mode that keeps reappearing across unrelated systems, precisely because it's
 subtle enough to miss without knowing to look for it.
 
+> [!WHY] A user’s access is revoked while a signed access token still has
+> time left to run. Treating a valid signature as an immediate revocation
+> mechanism leaves a real access window.
+
+> [!GOALS]
+>
+> - Explain refresh-token reuse detection
+> - Choose identity controls for distinct failure modes
+> - Design urgent token revocation
+
 ## JWT pitfalls beyond "the payload is readable"
 
 ```text
@@ -116,6 +126,13 @@ subtle enough to miss without knowing to look for it.
     family.
 ```
 
+```mermaid
+flowchart TB
+  R[Refresh token presented] --> V{Still valid?}
+  V -->|Yes| N[Invalidate and replace]
+  V -->|Old token reused| F[Investigate and revoke family]
+```
+
 ## Multi-factor authentication: layers, and where each one is weak
 
 ```text
@@ -141,6 +158,27 @@ subtle enough to miss without knowing to look for it.
     "we have MFA" isn't a single fact; WHICH factor matters.
 ```
 
+> [!PITFALL] The JWT header is attacker-controlled input until
+> verification; it cannot choose the verifier’s allowed algorithm.
+
+> [!INTERVIEW] Name the lifetime and revocation requirement separately
+> from signature validity.
+
+> [!CHECK] What closes session fixation at login?
+>
+> Issue a brand-new session id rather than upgrading the existing
+> pre-login id.
+
+> [!CHECK] Why does a redirect prefix check fail?
+>
+> An attacker-controlled address can share a trusted-looking prefix;
+> validation must use the exact registered allowlist.
+
+> [!CHECK] Why does the specific MFA factor matter?
+>
+> SMS is exposed to SIM swapping, while biometrics cannot simply be
+> rotated after compromise; factors have different weaknesses.
+
 ## What to take away
 
 1. A JWT verifier must specify and enforce exactly which algorithm it
@@ -158,3 +196,31 @@ subtle enough to miss without knowing to look for it.
    which both bounds a leaked token's value and gives a detection signal
    when both a legitimate client and an attacker try to use the same
    now-stale token.
+
+## Exercises
+
+> [!EXERCISE recall] How does rotating a refresh token turn reuse into a
+> compromise signal?
+>
+> **Solution:** Each successful refresh invalidates and replaces the old
+> token. Later use of that stale token by another holder indicates
+> possible compromise and can trigger revocation of the token family.
+
+> [!EXERCISE apply] An app accepts the alg named by each token, reuses a
+> pre-login session id after login, and accepts any redirect beginning
+> with its domain text. Map each flaw to its own correction.
+>
+> **Solution:** Configure and enforce the expected JWT algorithm in the
+> verifier; issue a new session id at successful authentication; and
+> require an exact pre-registered redirect URI match. These are separate
+> trust decisions: correcting redirect validation does not make an
+> unsigned token trustworthy or replace a known session id.
+
+> [!EXERCISE stretch] A compromised access token has not expired, but
+> access must stop immediately. Recommend a design and its cost.
+>
+> **Solution:** Add an explicit revocation denylist check for the urgent
+> invalidation requirement, accepting the lookup cost. Short expiry and
+> refresh rotation still bound ordinary exposure. A weaker answer only
+> shortens future token lifetimes: the already-issued token remains usable
+> until expiry without an immediate revocation path.

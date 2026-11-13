@@ -10,6 +10,16 @@ happens. That inversion is convenient — and it means the caller is, by
 definition, outside your control, which is where every pattern in this
 chapter comes from.
 
+> [!WHY] A webhook handler completes an update but times out before
+> acknowledging it. The provider retries the same event, so a receiver
+> that assumes one delivery can apply the update twice.
+
+> [!GOALS]
+>
+> - Explain webhook authenticity checks
+> - Design a fast duplicate-safe receive path
+> - Choose recovery for an external API change
+
 ## Receiving a webhook
 
 ```text
@@ -81,6 +91,15 @@ chapter comes from.
     to avoid.
 ```
 
+```mermaid
+flowchart TB
+  R[Receive public POST] --> V[Verify signature]
+  V --> Q[Enqueue accepted event]
+  Q --> A[Respond promptly]
+  Q --> W[Worker checks event identity]
+  W --> E[Apply effect idempotently]
+```
+
 ## Replay for recovery
 
 ```text
@@ -133,6 +152,27 @@ chapter comes from.
     service you version together with.
 ```
 
+> [!PITFALL] A quick 200 does not establish single delivery or eliminate
+> the need for event-id deduplication.
+
+> [!INTERVIEW] Explain authentication, acknowledgement timing and
+> idempotent processing as separate parts of the webhook contract.
+
+> [!CHECK] Why enqueue before doing lengthy webhook work?
+>
+> A slow synchronous response can trigger provider retries, compounding
+> the same load.
+
+> [!CHECK] What should outgoing webhook delivery offer beyond retries?
+>
+> Signed payloads, a bounded retry window and visible delivery status for
+> consumers.
+
+> [!CHECK] Why must recovery replay preserve event ids?
+>
+> The receiver needs the same identity to recognise work already processed
+> instead of repeating effects.
+
 ## What to take away
 
 1. A webhook receiver is a publicly reachable endpoint by definition and
@@ -150,3 +190,36 @@ chapter comes from.
 5. Depend on a third-party API with the same hardening as an internal one
    (timeout, circuit breaker, fallback), plus defensive parsing — a field can
    vanish on the provider's schedule, with no compatibility guarantee.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a webhook endpoint need signature
+> verification rather than trusting its public URL or claimed sender name?
+>
+> **Solution:** Anyone can POST to the reachable URL. Recompute and verify
+> the signed payload using the shared secret, rejecting missing or
+> incorrect signatures before trusting or acting on the contents.
+
+> [!EXERCISE apply] A provider delivers event k twice and event m once;
+> processing each event takes longer than the sender’s response window.
+> Choose the receive and worker sequence, and state which effects should
+> occur.
+>
+> **Solution:** Verify authenticity first, enqueue accepted work and
+> respond promptly rather than waiting for long processing. Workers use
+> event ids to recognise processed events, so k’s intended effect occurs
+> once despite repeated delivery and m’s occurs once. Persist processing
+> outcomes under the idempotency discipline rather than assuming fast
+> acknowledgement prevents all duplicate deliveries.
+
+> [!EXERCISE stretch] A provider removes a response field during your
+> deployment, and the integration starts crashing internally. Recommend
+> resilience and recovery behaviour.
+>
+> **Solution:** Defensively parse at the external boundary, handle
+> unavailable or incompatible data deliberately, and apply timeouts,
+> breaker and a fallback for calls. A weaker answer trusts the old
+> response shape everywhere and only retries: repeating the same
+> incompatible payload does not restore the removed field. For failed
+> inbound work, provider replay is useful only with an idempotent
+> receiver.

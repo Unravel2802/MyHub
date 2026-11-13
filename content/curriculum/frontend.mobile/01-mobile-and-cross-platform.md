@@ -10,6 +10,16 @@ a phone isn't a small desktop; it has a fundamentally different input model
 constraints (battery, a smaller viewport, an OS-level back gesture) that
 never come up building for a desktop browser.
 
+> [!WHY] A menu is revealed only on hover and works on a desktop demo. On
+> a phone the action is unreachable, so shrinking the viewport has
+> preserved the picture while losing the interaction.
+
+> [!GOALS]
+>
+> - Explain React Native’s reused and different layers
+> - Choose touch-usable interaction and layout
+> - Choose a platform by required capability
+
 ## Responsive design: beyond media queries
 
 ```text
@@ -36,12 +46,11 @@ never come up building for a desktop browser.
 ## Touch input is not "click with extra steps"
 
 ```text
-  a MOUSE has HOVER (a state with no touch equivalent at all)
-  and a single precise pointer; TOUCH has none of hover, but
-  DOES have gestures a mouse never produces: swipe, pinch-to-
-  zoom, multi-touch, and — critically — a 300ms tap-delay some
-  browsers historically added to distinguish a tap from the
-  start of a double-tap-to-zoom gesture.
+  a MOUSE has HOVER (a state with no touch equivalent at all) and a single
+  precise pointer; TOUCH has none of hover, but DOES have gestures a mouse
+  never produces: swipe, pinch-to-zoom, multi-touch, and — critically — a
+  300ms tap-delay some browsers historically added to distinguish a tap from
+  the start of a double-tap-to-zoom gesture.
 ```
 
 ```text
@@ -71,6 +80,15 @@ never come up building for a desktop browser.
     app's needs fit within what the web platform actually
     exposes; genuinely native-only capability requirements push
     toward React Native or a fully native app instead.
+```
+
+```mermaid
+flowchart TB
+  N[Product needs] --> W{Fits web capabilities?}
+  W -->|yes| P[PWA with offline support]
+  W -->|no| A[Native platform approach]
+  P --> T[Test touch and network constraints]
+  A --> T
 ```
 
 ## React Native: one component model, two render targets
@@ -129,6 +147,28 @@ never come up building for a desktop browser.
     browser's is.
 ```
 
+> [!PITFALL] A responsive picture does not supply a touch equivalent for
+> hover-only functionality.
+
+> [!INTERVIEW] Identify the required input and platform capability, then
+> test battery, network and viewport constraints instead of treating
+> mobile as a resize.
+
+> [!CHECK] Why stop unnecessary continuous background work on a phone?
+>
+> Timers, animation and active location watches consume limited battery.
+
+> [!CHECK] Why test variable or throttled connectivity?
+>
+> Metered, unreliable and higher-latency networks are normal mobile
+> conditions, not a rare exception.
+
+> [!CHECK] What does mobile-first design force before adding desktop
+> space?
+>
+> Prioritisation of the constrained layout and the functions that actually
+> matter.
+
 ## What to take away
 
 1. Mobile-first design (constrained layout first, then add complexity) tends
@@ -148,3 +188,35 @@ never come up building for a desktop browser.
 5. Battery, metered/variable network, and limited viewport are the norm on
    mobile, not edge cases — designing and testing against these constraints
    directly matters more than assuming "responsive" alone covers them.
+
+## Exercises
+
+> [!EXERCISE recall] What does React Native reuse from React, and what
+> does it render instead of HTML?
+>
+> **Solution:** It reuses the component model, state and hooks, but
+> renders native platform views such as View and Text instead of the DOM.
+> Platform navigation, safe areas and permissions can still require
+> platform-specific handling.
+
+> [!EXERCISE apply] A narrow-screen screen puts a critical action in a
+> hover-only menu with tiny pointer-sized buttons and a crowded permanent
+> sidebar. Choose an interaction and layout revision.
+>
+> **Solution:** Provide an explicit tap-triggered path to the action and
+> physically usable touch targets, not only hover. Prioritise the
+> essential content in the constrained layout and add secondary navigation
+> as space permits, rather than compressing the full desktop sidebar. Test
+> gestures and actual touch use as well as viewport width.
+
+> [!EXERCISE stretch] A product needs offline forms and installation,
+> while another requirement explicitly depends on a native-only
+> integration unavailable on its target web platform. Recommend whether a
+> PWA alone settles both cases.
+>
+> **Solution:** A manifest and service worker can fit installation and
+> offline web work. For the stated native-only capability, evaluate a
+> native or React Native implementation and its platform-specific
+> requirements. A weaker answer promises unchanged web code will cover
+> every target: responsive layout and installation do not expand the web
+> platform’s available API surface.

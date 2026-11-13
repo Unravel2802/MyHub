@@ -9,6 +9,17 @@ Conflating them is where most access-control bugs come from — a system that
 checks identity carefully and then trusts a client-supplied role, or one that
 enforces roles correctly but on a session that was never really verified.
 
+> [!WHY] A server verifies a session but trusts an admin role supplied in
+> the request body. Knowing who sent the request does not justify the
+> requested privilege, so one edited field can turn a valid login into an
+> access-control failure.
+
+> [!GOALS]
+>
+> - Explain session and JWT revocation trade-offs
+> - Choose trusted inputs for authorisation
+> - Separate role rules from resource attributes
+
 ## Session-based auth
 
 ```text
@@ -32,6 +43,15 @@ enforces roles correctly but on a session that was never really verified.
     possible: delete the record, the session is dead on the
     next request. this is session auth's core trade-off
     against tokens, in both directions.
+```
+
+```mermaid
+flowchart TB
+  L[Login verified] --> S[Create server session]
+  S --> C[Send session-id cookie]
+  C --> R[Request presents cookie]
+  R --> V[Lookup verified identity]
+  V --> A[Check server-side permission]
 ```
 
 ## Token-based auth (JWT)
@@ -154,6 +174,28 @@ applied to a tenant id specifically — a request's tenant must come from the
 authenticated context, not a client-supplied field, or one tenant can read
 another's data by editing a request.
 
+> [!PITFALL] An authenticated request is not automatically authorised, and
+> a client-controlled role is not a verified claim.
+
+> [!INTERVIEW] Separate identity verification, revocation requirements and
+> per-resource permission checks; explain which input is trusted for each
+> decision.
+
+> [!CHECK] Does a JWT signature hide its payload?
+>
+> No. The payload is readable; the signature supplies authenticity rather
+> than encryption.
+
+> [!CHECK] What does OpenID Connect add to OAuth’s access delegation?
+>
+> An identity layer for authentication; OAuth itself addresses delegated
+> access.
+
+> [!CHECK] Why is hiding a client button insufficient authorisation?
+>
+> A caller can invoke the API directly, so the action must be checked
+> server-side on each request.
+
 ## What to take away
 
 1. Authentication and authorization are different questions — verify identity
@@ -168,3 +210,36 @@ another's data by editing a request.
 5. Every authorization check must be enforced server-side on every request —
    a hidden client button and a client-supplied role or tenant id are both
    simply not controls.
+
+## Exercises
+
+> [!EXERCISE recall] Why do server-side sessions and self-contained access
+> tokens have different revocation costs?
+>
+> **Solution:** Deleting a session record stops its next verified lookup,
+> but requires that store on requests. A self-contained JWT can be checked
+> without a lookup and remains usable until expiry unless an additional
+> revocation mechanism such as a denylist is consulted.
+
+> [!EXERCISE apply] A verified editor requests deletion of someone else’s
+> draft and supplies role=admin and owner=true in JSON. The policy permits
+> editors to edit, and only the actual document owner to delete a draft.
+> Choose which inputs establish permission and decide whether the supplied
+> fields can grant deletion.
+>
+> **Solution:** Use identity and role from the verified session or token,
+> and ownership from the resource’s authoritative attributes. The JSON
+> fields establish neither. Editor status supplies the editing role but
+> does not satisfy the stated ownership rule for deletion. Evaluate that
+> resource attribute server-side; without actual ownership, deny deletion
+> rather than trust owner=true.
+
+> [!EXERCISE stretch] A product has ordinary role permissions plus one
+> ownership-sensitive operation. Recommend whether to replace every role
+> lookup with an unrestricted attribute-rule engine.
+>
+> **Solution:** Keep RBAC for the simple audited role permissions and
+> apply an attribute-based ownership rule where the role model cannot
+> express the requirement. A weaker answer replaces all rules with
+> unbounded ABAC immediately, adding code-like rule complexity without a
+> need for it on ordinary role permissions.

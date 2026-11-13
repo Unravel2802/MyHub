@@ -10,6 +10,17 @@ applies it to something that used to be done by hand: clicking through a
 cloud console, one server at a time, with no record of who changed what or
 why.
 
+> [!WHY] An emergency console change increases capacity, but the
+> repository still declares the old size. The next apparently routine
+> apply can undo the mitigation because desired and actual state have
+> diverged.
+
+> [!GOALS]
+>
+> - Explain state-file mapping versus declaration
+> - Review a drift plan before applying
+> - Choose reusable environment definitions
+
 ## Declarative infrastructure
 
 ```text
@@ -71,6 +82,14 @@ why.
     real deployment, rather than being discovered mid-incident.
 ```
 
+```mermaid
+flowchart TB
+  D[Declared desired state] --> P[Plan comparison]
+  A[Actual managed resources] --> P
+  P --> R[Review proposed changes]
+  R --> U[Apply intended changes]
+```
+
 ## Modules: reusable infrastructure components
 
 ```text
@@ -123,6 +142,28 @@ why.
     they "aren't really code."
 ```
 
+> [!PITFALL] A plan that reverts an emergency change may accurately
+> reflect a stale declaration rather than the capacity currently required.
+
+> [!INTERVIEW] Explain declaration, managed identity and observed drift
+> separately, then review the intended resource effect before an apply.
+
+> [!CHECK] What does declarative infrastructure specify?
+>
+> The desired end state; the tool computes creation, update or removal
+> steps.
+
+> [!CHECK] Why run plan-only checks regularly?
+>
+> They can reveal drift before the next intentional deployment surprises
+> the operator.
+
+> [!CHECK] What does infrastructure Git history preserve beyond a resource
+> inventory?
+>
+> Who changed the declared infrastructure and why, with a reviewable diff
+> and rationale.
+
 ## What to take away
 
 1. IaC tools are declarative — you state the desired end state, and the
@@ -143,3 +184,34 @@ why.
 5. Infrastructure changes going through the same pull-request review as
    application code means a reviewer catches "this deletes the production
    database" in a plan's diff before it happens, rather than after.
+
+## Exercises
+
+> [!EXERCISE recall] Why is an IaC state file different from the
+> declaration of desired resources?
+>
+> **Solution:** The declaration says what should exist; the state file
+> maps managed declarations to actual cloud resource identities. The tool
+> needs both that mapping and observed reality to reason about changes, so
+> out-of-band edits can create surprises.
+
+> [!EXERCISE apply] After an emergency, five instances are required and
+> running, but the declaration still requests three. A plan proposes
+> removing two. Choose a next step that preserves the intended mitigation
+> while making the change reviewable.
+>
+> **Solution:** Do not blindly apply the stale desired count. Confirm the
+> emergency requirement and managed resources, update the declared desired
+> capacity to five if that requirement remains, and review a new plan
+> before applying. The removal of 5 − 3 = 2 is a consequence of the old
+> declaration, not proof that reducing capacity is now appropriate. Record
+> why the desired state changed.
+
+> [!EXERCISE stretch] Staging is hand-built separately and drifts from
+> production conventions. Recommend a reproducible definition strategy.
+>
+> **Solution:** Reuse a parameterised infrastructure module for the common
+> shape, supplying intentional environment-specific inputs and reviewing
+> their plans. A weaker answer keeps a console checklist for manually
+> recreating staging: it leaves unrecorded deviations and repeats
+> provisioning knowledge rather than versioning the shared pattern.

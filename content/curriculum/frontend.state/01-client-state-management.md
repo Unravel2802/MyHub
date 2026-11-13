@@ -10,6 +10,17 @@ management is hard" complaints trace back to treating server data, shared UI
 state, and local component state as one undifferentiated pile, when each has
 a genuinely different right home.
 
+> [!WHY] A badge count is stored separately from the list and one removal
+> path forgets to update it. The interface now shows two conflicting
+> answers because a derived fact became another independently writable
+> source of truth.
+
+> [!GOALS]
+>
+> - Explain local, shared and server state
+> - Choose derived values rather than duplicate storage
+> - Choose narrow store subscriptions
+
 ## The three kinds of state
 
 ```text
@@ -68,6 +79,13 @@ a genuinely different right home.
     is the single most common source of "these two things got
     out of sync" bugs, and the fix is always the same: delete
     the redundant state variable, compute it instead.
+```
+
+```mermaid
+flowchart TB
+  I[Authoritative items] --> D[Derive displayed count]
+  F[Current filter] --> D
+  D --> R[Render consistent badge]
 ```
 
 ## Lifting state up, and its natural limit
@@ -142,6 +160,26 @@ a genuinely different right home.
   sources for everyone subscribed broadly.
 ```
 
+> [!PITFALL] A stored count that is completely determined by a list
+> creates a second update obligation without adding information.
+
+> [!INTERVIEW] Classify ownership and derivation before choosing a
+> library; describe exactly which state slice each consumer needs.
+
+> [!CHECK] What must an optimistic mutation retain for failure?
+>
+> The previous value to restore, while reverting only when the request
+> fails.
+
+> [!CHECK] When does lifting state become cumbersome?
+>
+> When it forces props through distant intermediaries that do not use
+> them.
+
+> [!CHECK] Why can copying fetched data into another store create drift?
+>
+> Both copies then need every mutation and refresh synchronised manually.
+
 ## What to take away
 
 1. Local, shared-client, and server state are three genuinely different
@@ -158,3 +196,34 @@ a genuinely different right home.
 5. Optimistic updates apply the change immediately and roll back only on
    failure, keeping the previous value around to revert to — the pattern
    this project's own stores use throughout.
+
+## Exercises
+
+> [!EXERCISE recall] How do local UI state, shared-client state and server
+> state differ?
+>
+> **Solution:** Local state belongs to one component, shared-client state
+> coordinates multiple components, and server state originates remotely
+> with freshness and fetching concerns. They need different ownership
+> rather than one undifferentiated global bucket.
+
+> [!EXERCISE apply] A filter panel owns its open state, sibling controls
+> share a selected category, and a server-fetched item list displays a
+> matching count. Choose homes for all three inputs and for the count.
+>
+> **Solution:** Keep panel openness local. Lift category selection to the
+> nearest common parent or the relevant shared boundary when distance
+> warrants it. Keep the item list under its server-data handling rather
+> than creating a second independent copy. Compute the matching count from
+> the list and selection, so removing or filtering an item cannot leave a
+> separately stored count behind.
+
+> [!EXERCISE stretch] A name label rerenders whenever an unrelated
+> preference changes because it subscribes to an entire module store.
+> Recommend a narrower dependency.
+>
+> **Solution:** Subscribe with a selector for the name slice the label
+> actually uses. A weaker answer creates a second global store copy of the
+> whole user just to suppress rerenders: it adds synchronisation and
+> ownership cost instead of stating the component’s real dependency. Keep
+> state close to use and share only as far as required.

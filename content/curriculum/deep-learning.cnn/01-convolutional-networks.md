@@ -9,6 +9,16 @@ that a feature is the same wherever it appears. Those assumptions are correct
 enough that CNNs dominated vision for a decade, and understanding them explains
 both their strength and where they were superseded.
 
+> [!WHY] A vision block needs to reduce channel width but adds another
+> spatial convolution by habit. Choosing the operation from the required
+> mixing can reduce parameters without changing the block’s intended role.
+
+> [!GOALS]
+>
+> - Explain convolutional locality and sharing
+> - Compare channel-only and spatial parameter counts
+> - Choose a small-data vision starting point
+
 ## The convolution
 
 ```text
@@ -70,6 +80,13 @@ both their strength and where they were superseded.
 The receptive field is the concept that ties depth to capability: a single 3×3
 convolution sees 3 pixels, two stacked see 5, and a deep stack sees the whole
 image. Depth is how a CNN builds global understanding out of local operations.
+
+```mermaid
+flowchart TB
+  I[Input feature map] --> C[Local shared kernel]
+  C --> D[Deeper receptive field]
+  I --> W[One-by-one channel mixing]
+```
 
 ## The architectural progression
 
@@ -190,6 +207,27 @@ expects inputs normalised with particular per-channel means and standard
 deviations, and feeding it differently-normalised inputs degrades accuracy
 substantially with no error.
 
+> [!PITFALL] A pretrained backbone can lose accuracy silently if
+> deployment normalization or input size differs from its training recipe.
+
+> [!INTERVIEW] Say whether a block needs spatial mixing, channel mixing or
+> both before choosing a kernel.
+
+> [!CHECK] Why do residual paths help deep CNNs train?
+>
+> They give early layers an identity gradient path rather than only a long
+> product of transformations.
+
+> [!CHECK] How does a vision transformer construct its sequence?
+>
+> It embeds image patches with position information and applies a
+> transformer to those tokens.
+
+> [!CHECK] Why can U-Net-style skips help segmentation?
+>
+> They pass encoder spatial detail to the decoder that downsampling would
+> otherwise discard.
+
 ## What to take away
 
 1. Convolutions encode locality and translation equivariance, and weight sharing
@@ -207,3 +245,35 @@ substantially with no error.
    degrades accuracy silently.
 
 Next: sequences, and the models that preceded attention.
+
+## Exercises
+
+> [!EXERCISE recall] What assumptions do local connectivity and weight
+> sharing encode?
+>
+> **Solution:** Nearby image values interact, and the same feature can be
+> recognized at different positions using the same kernel. These provide
+> spatial inductive bias and avoid a separate weight set at every
+> position.
+
+> [!EXERCISE apply] A block has 16 input channels and needs 8 output
+> channels at unchanged spatial size. It only needs channel mixing.
+> Compare bias-free 1×1 and 3×3 convolutions, with unit stride and
+> suitable padding, and choose an operation.
+>
+> **Solution:** A shared kernel has
+> kernel_height×kernel_width×input_channels×output_channels weights. The
+> 1×1 choice has 1×1×16×8=16×8=128. The 3×3 choice has
+> 3×3×16×8=9×128=1,152. Ratio = 1,152/128=9. Choose 1×1 for the stated
+> channel-only job; the larger kernel adds spatial mixing that is not
+> required. These are parameter counts, not a measured latency guarantee.
+
+> [!EXERCISE stretch] A team has a small labelled vision dataset and
+> proposes training a new large ViT from scratch. Recommend a first
+> experiment.
+>
+> **Solution:** Start from a pretrained CNN or otherwise appropriate
+> pretrained backbone, match its preprocessing and use suitable
+> augmentation before escalating architecture scale. A weaker answer
+> assumes weak-bias ViT training will discover structure from little data
+> merely because it wins at large pretraining scale.

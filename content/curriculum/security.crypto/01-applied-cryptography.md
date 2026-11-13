@@ -10,6 +10,16 @@ primitive, the right way, for the right purpose). This chapter is enough to
 tell the primitives apart and know which mistakes are the ones that
 actually matter.
 
+> [!WHY] A password database is stolen and its fast checksums become an
+> offline guessing target. Choosing a familiar hash without considering
+> its purpose can make every guess cheap for the attacker.
+
+> [!GOALS]
+>
+> - Distinguish signature guarantees from confidentiality
+> - Choose cryptographic primitives by purpose
+> - Explain why audited composition matters
+
 ## Hashing: one-way, and specifically NOT for passwords alone
 
 ```text
@@ -120,13 +130,18 @@ actually matter.
 ```
 
 ```text
-  → TLS isn't a fourth, separate primitive — it's a well-
-    engineered COMPOSITION of the three above, each one doing
-    exactly the part it's suited for, which is precisely why
-    "never roll your own crypto" applies with even MORE force
-    to composing primitives together correctly (getting the
-    SEQUENCING and interaction right) than to any single
-    primitive in isolation.
+  → TLS isn't a fourth, separate primitive — it's a well-engineered
+    COMPOSITION of the three above, each one doing exactly the part it's
+    suited for, which is precisely why "never roll your own crypto" applies
+    with even MORE force to composing primitives together correctly (getting
+    the SEQUENCING and interaction right) than to any single primitive
+    in isolation.
+```
+
+```mermaid
+flowchart TB
+  C[Verify certificate signature] --> H[Establish shared key]
+  H --> D[Symmetric encryption of data]
 ```
 
 ## Why "never roll your own" is not overcaution
@@ -151,6 +166,29 @@ actually matter.
     not merely caution for its own sake.
 ```
 
+> [!PITFALL] A digital signature authenticates unchanged content; it does
+> not hide that content.
+
+> [!INTERVIEW] Say which property is required before naming a primitive or
+> library.
+
+> [!CHECK] Why is symmetric encryption efficient after a shared key
+> exists?
+>
+> The same secret key supports encryption and decryption and the primitive
+> is fast; distributing that key securely remains a separate problem.
+
+> [!CHECK] What does a public/private pair permit without sharing the
+> private key?
+>
+> Others can encrypt to the public key or verify signatures using it while
+> the private key remains secret.
+
+> [!CHECK] Why can published sound algorithms still fail in products?
+>
+> Timing leakage, predictable randomness or memory bugs can undermine
+> their implementation.
+
 ## What to take away
 
 1. A general-purpose hash is deliberately fast, which is exactly why it's
@@ -172,3 +210,34 @@ actually matter.
    randomness, memory bugs), not the published algorithm — a widely-used
    library has had far more expert scrutiny than any custom implementation
    realistically will.
+
+## Exercises
+
+> [!EXERCISE recall] What does a verified digital signature establish, and
+> what does it leave visible?
+>
+> **Solution:** It establishes authenticity from the private-key holder
+> and integrity of the signed message. The message remains readable;
+> signing supplies no confidentiality by itself.
+
+> [!EXERCISE apply] A design uses SHA-256 alone for passwords, a signature
+> to keep a public announcement unaltered, and symmetric encryption for
+> stored records the application later decrypts. Evaluate each choice and
+> identify the missing key-management concern.
+>
+> **Solution:** Replace the fast general-purpose password hash with a
+> deliberately expensive password-hashing algorithm from the chapter. The
+> signature suits an announcement needing authenticity and integrity
+> without secrecy. Symmetric encryption suits records with a shared
+> application secret, but securely distributing and holding that key is
+> still necessary; choosing encryption does not solve key distribution.
+
+> [!EXERCISE stretch] A team proposes composing its own TLS replacement
+> from standard primitives because the algorithms are public. Recommend a
+> path.
+>
+> **Solution:** Use a well-maintained, scrutinized implementation and its
+> established composition. A weaker answer implements the same algorithms
+> independently and assumes that proves safety: sequencing, timing
+> behaviour, randomness and memory handling can fail even when the
+> individual mathematical primitives are sound.

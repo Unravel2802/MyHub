@@ -9,6 +9,16 @@ memorise and fail to generalise. Deep networks have vastly more parameters than
 data points and generalise well. Understanding why — and what actually helps — is
 more useful than a list of techniques.
 
+> [!WHY] A data pipeline increases the training set with transformations
+> that change the label’s meaning. More samples then reinforce incorrect
+> targets while the training code reports no error.
+
+> [!GOALS]
+>
+> - Explain double descent’s practical caution
+> - Choose label-preserving augmentation
+> - Protect final test evidence from model selection
+
 ## The classical picture, and where it breaks
 
 ```text
@@ -122,6 +132,13 @@ The medical example is the one worth remembering: an augmentation that is
 obviously label-preserving in one domain can silently destroy the label in
 another, and the model learns from corrupted data with no error anywhere.
 
+```mermaid
+flowchart TB
+  X[Candidate transformation] --> P{Label preserved?}
+  P -->|Yes| A[Valid training augmentation]
+  P -->|No| C[Reject or explicitly relabel]
+```
+
 ## Diagnosing
 
 ```text
@@ -184,6 +201,29 @@ The ordering is the point: **data and architecture dominate regularisation
 tricks.** Teams frequently tune dropout rates on a model that would improve far
 more from a thousand more labelled examples.
 
+> [!PITFALL] A validation advantage over training can come from
+> training-only dropout or augmentation; a large gap still warrants a
+> leakage/preprocessing check.
+
+> [!INTERVIEW] Explain the domain’s label semantics before choosing an
+> augmentation recipe.
+
+> [!CHECK] Why does ensembling have an inference cost?
+>
+> Predictions require running several models rather than one, even when
+> averaging improves quality.
+
+> [!CHECK] Why does small-data regularization advice not transfer
+> automatically to a single-epoch huge-data run?
+>
+> The repeated-example overfitting setting and dominant data constraint
+> differ.
+
+> [!CHECK] How can early stopping regularize training?
+>
+> It stops model fitting when validation improvement ends instead of
+> continuing to optimize training loss alone.
+
 ## What to take away
 
 1. Double descent means bigger models can generalise better past the interpolation
@@ -200,3 +240,36 @@ more from a thousand more labelled examples.
 6. Data and architecture dominate regularisation tricks; tune those first.
 
 Next: convolutional networks and vision.
+
+## Exercises
+
+> [!EXERCISE recall] What practical conclusion does double descent
+> challenge?
+>
+> **Solution:** It challenges the automatic assumption that reducing
+> parameter count is the first response to overfitting. Past
+> interpolation, larger models can generalize better; data, augmentation
+> and suitable regularization deserve attention.
+
+> [!EXERCISE apply] An image label is the arrow’s direction, left or
+> right. Proposed augmentations are horizontal flipping without
+> relabeling, mild brightness changes that keep the arrow clear, and
+> cropping away the arrow entirely. Choose which to accept unchanged and
+> explain the others.
+>
+> **Solution:** Accept the stipulated brightness changes because direction
+> remains visible and unchanged. A horizontal flip reverses direction, so
+> it cannot keep the old label; reject it or deliberately relabel.
+> Cropping away the arrow removes the evidence for the target and should
+> not be treated as a valid labelled example. The test is preserving the
+> task’s label, not whether a transform is common in vision.
+
+> [!EXERCISE stretch] A team repeatedly evaluates its test set to pick
+> dropout and model variants. Recommend how to regain credible final
+> evaluation.
+>
+> **Solution:** Use validation data for tuning and early stopping, and
+> reserve a new untouched test set for the final chosen model because the
+> old test has become selection evidence. A weaker answer keeps calling
+> the repeatedly consulted set a test set: the name does not undo the
+> selection bias.

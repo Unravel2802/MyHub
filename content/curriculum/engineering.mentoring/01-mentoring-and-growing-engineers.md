@@ -11,6 +11,17 @@ being exercised is different in kind, not merely "the same skills, applied
 to teaching" — and it's frequently harder precisely because it isn't the
 thing you're already good at.
 
+> [!WHY] An expert repeatedly fixes a colleague’s bugs for them, keeping
+> today’s tasks fast but tomorrow’s dependency unchanged. The team gains a
+> repaired feature without growing anyone else’s ability to solve that
+> class of problem.
+
+> [!GOALS]
+>
+> - Explain mentoring as diagnosis
+> - Give specific actionable feedback
+> - Balance delegated learning with short-term speed
+
 ## The shift: from doing the work well to making someone else good at it
 
 ```text
@@ -29,6 +40,14 @@ thing you're already good at.
     showing them how YOU would personally do it, which teaches
     them to copy a specific solution rather than to develop
     their own actual problem-solving capability.
+```
+
+```mermaid
+flowchart TB
+  O[Observe current reasoning] --> D[Diagnose specific gap]
+  D --> N[Choose next learning step]
+  N --> P[Practise with feedback]
+  P --> I[Greater independence]
 ```
 
 ## Feedback: specific and actionable beats general and vague, every time
@@ -136,6 +155,27 @@ thing you're already good at.
     skilled those two hands happen to be.
 ```
 
+> [!PITFALL] Expertise in doing the work does not automatically confer
+> expertise in teaching it.
+
+> [!INTERVIEW] Describe the learner’s current gap and an observable next
+> step, not only your preferred solution.
+
+> [!CHECK] Why can pairing transfer knowledge that documents miss?
+>
+> Live reasoning exposes tacit heuristics prompted by a real situation
+> that an expert may not articulate in advance.
+
+> [!CHECK] What limits an individual’s direct output?
+>
+> One person has a finite number of working hours; growing others can
+> scale impact beyond that ceiling.
+
+> [!CHECK] Why is “communicate better” hard to act on?
+>
+> It names no specific event, changed behaviour or concrete alternative
+> the person can try.
+
 ## What to take away
 
 1. Being excellent at solving a problem yourself doesn't automatically make
@@ -157,3 +197,36 @@ thing you're already good at.
    past their own individual output ceiling — growing three other
    engineers multiplies total team output in a way one person's own work,
    however excellent, structurally cannot.
+
+## Exercises
+
+> [!EXERCISE recall] How does diagnosis differ from merely demonstrating
+> your own solution?
+>
+> **Solution:** Diagnosis identifies where the learner’s present
+> understanding is and the next step that helps from there. Demonstration
+> alone can teach copying one solution without developing independent
+> problem-solving.
+
+> [!EXERCISE apply] After an incident handoff, feedback says only
+> “communicate better.” The engineer omitted which diagnostics had already
+> been tried, so the next responder repeated them. Rewrite the feedback so
+> the recipient can act on it and describe what you would look for next
+> time.
+>
+> **Solution:** For example: “In today’s handoff you omitted the
+> diagnostics already tried, so the next responder repeated them. Next
+> time include those steps and their observed results.” In the next
+> handoff, look for that concrete information rather than judging a vague
+> impression of communication skill. Tie the feedback to the real event
+> and an observable alternative.
+
+> [!EXERCISE stretch] A learner is making slower progress than the mentor
+> would on a suitable delegated task. Recommend an approach that grows
+> independence.
+>
+> **Solution:** Let the learner work through a real struggle in their own
+> way, diagnosing blockers and providing specific next steps rather than
+> automatically taking over. A weaker answer completes every difficult
+> part for them to optimize today’s speed: it preserves reliance on the
+> expert instead of building capability for future tasks.

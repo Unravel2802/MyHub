@@ -10,6 +10,17 @@ every time, on every machine. Most of the confusing failures in this space —
 production — trace back to one of a small number of guarantees this
 machinery either provides or quietly doesn't.
 
+> [!WHY] CI installs a newer transitive dependency than the developer
+> tested and fails before the application starts. A version range without
+> a pinned dependency tree makes yesterday’s successful installation poor
+> evidence for today’s build.
+
+> [!GOALS]
+>
+> - Explain dependency pinning versus semver
+> - Choose accepted dependency versions
+> - Design a reproducibility investigation
+
 ## Compilation and linking, briefly
 
 ```text
@@ -32,6 +43,14 @@ machinery either provides or quietly doesn't.
     which is part of why static analysis and a build step that
     actually type-checks everything matter more, not less, in
     the absence of a compiler catching it up front.
+```
+
+```mermaid
+flowchart TB
+  S[Source units] --> C[Compile each unit]
+  C --> O[Object code]
+  O --> L[Link and resolve references]
+  L --> E[Executable]
 ```
 
 ## Package managers and the dependency graph
@@ -130,6 +149,27 @@ machinery either provides or quietly doesn't.
     not just a convenience.
 ```
 
+> [!PITFALL] A patch or minor version label is a promise that can be
+> mistaken; intentional dependency updates still require verification.
+
+> [!INTERVIEW] Distinguish an exact dependency tree from a reproducible
+> artifact, and identify the environmental inputs before claiming the
+> build is deterministic.
+
+> [!CHECK] What error can linking catch beyond per-file compilation?
+>
+> A called function may have no definition in the combined compiled units.
+
+> [!CHECK] Why can A and B carry different versions of C?
+>
+> A nesting package manager can install a separate transitive C beneath
+> each dependency.
+
+> [!CHECK] Why does reproducible output matter beyond convenience?
+>
+> It helps verify a published artifact corresponds to its claimed source,
+> a supply-chain property.
+
 ## What to take away
 
 1. Compilation catches errors within one file; linking catches errors between
@@ -147,3 +187,34 @@ machinery either provides or quietly doesn't.
 5. A reproducible build (bit-identical output from the same source) is a
    supply-chain security property, not just tidiness — build timestamps and
    unordered iteration are the usual things that quietly break it.
+
+## Exercises
+
+> [!EXERCISE recall] How do semver and a lockfile protect against
+> different problems?
+>
+> **Solution:** Semver communicates a maintainer’s compatibility promise
+> through version numbers. A lockfile records exact resolved versions and
+> integrity values, preventing unintended re-resolution. It does not make
+> an intentional update safe if the maintainer mislabeled a breaking
+> change.
+
+> [!EXERCISE apply] A package requires ^4.3.0; another configuration uses
+> ~4.3.0. For candidates 4.3.7, 4.4.0 and 5.0.0, decide which ranges
+> permit each and choose a CI installation mode when the manifest and
+> lockfile disagree.
+>
+> **Solution:** ^4.3.0 permits 4.3.7 and 4.4.0 but excludes 5.0.0. ~4.3.0
+> permits 4.3.7 but excludes 4.4.0 and 5.0.0. Install with npm ci so
+> manifest-lockfile disagreement fails loudly rather than silently
+> resolving another tree.
+
+> [!EXERCISE stretch] Identical source and locked dependencies yield
+> different artifact bytes each day. Recommend the next investigation
+> instead of repeatedly pinning versions.
+>
+> **Solution:** Inspect embedded build timestamps, iteration order and the
+> build’s locale or timezone. Dependency determinism is necessary but does
+> not establish bit-identical output. A weaker answer regenerates the
+> lockfile every run: it neither removes these environmental inputs nor
+> preserves a fixed dependency tree.

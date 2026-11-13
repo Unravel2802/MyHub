@@ -10,6 +10,16 @@ of one of these two, not a framework problem. This chapter is that mental
 model — box model, cascade, and the two layout systems that replaced decades
 of hacks.
 
+> [!WHY] A card fits placeholder text but clips a real customer’s longer
+> name. Fixed dimensions and an item that refuses to shrink can break an
+> otherwise tidy layout precisely when real content arrives.
+
+> [!GOALS]
+>
+> - Explain semantic element behaviour
+> - Compute content-box and border-box widths
+> - Choose layout rules for variable content
+
 ## Semantic HTML, and why it isn't just style preference
 
 ```text
@@ -63,6 +73,15 @@ of hacks.
     200px wide" require doing arithmetic every time padding
     changes — border-box makes the number on the element mean
     what it says.
+```
+
+```mermaid
+flowchart TB
+  W[Declared width] --> C{Sizing model}
+  C -->|content-box| A[Add padding and borders]
+  C -->|border-box| I[Padding and borders included]
+  A --> R[Rendered width]
+  I --> R
 ```
 
 ## The cascade: why a rule doesn't apply
@@ -145,9 +164,9 @@ of hacks.
 ## Layout that survives real content
 
 ```text
-  the layout bug that only shows up in production: a fixed-
-  height card designed around placeholder text, breaking the
-  moment a real product name is three lines instead of one.
+  the layout bug that only shows up in production: a fixed-height card
+  designed around placeholder text, breaking the moment a real product name
+  is three lines instead of one.
 
     height: 80px;              ✗ breaks on longer content
     min-height: 80px;           ✓ grows to fit; never shrinks
@@ -173,6 +192,27 @@ of hacks.
   it's easy to add it to the wrong element.
 ```
 
+> [!PITFALL] min-w-0 on a parent does not automatically remove a flex or
+> grid item’s own content-based minimum.
+
+> [!INTERVIEW] Calculate the rendered box and identify the actual
+> shrinking item before treating overflow as a framework problem.
+
+> [!CHECK] When equally specific CSS rules conflict, which wins?
+>
+> The later source rule; a more specific rule can win regardless of that
+> order.
+
+> [!CHECK] What changes when flex-direction becomes column?
+>
+> The main axis becomes vertical and the cross axis horizontal, changing
+> what alignment properties address.
+
+> [!CHECK] When does grid fit better than nested flex rows?
+>
+> When the layout’s relationships are genuinely defined by rows and
+> columns together.
+
 ## What to take away
 
 1. Semantic HTML elements come with free accessibility and behavior (focus,
@@ -192,3 +232,32 @@ of hacks.
    lists) rather than mockup placeholders — a flex/grid item's own
    `min-width: auto` default is a specific, recurring cause of layout that
    only breaks once real content arrives.
+
+## Exercises
+
+> [!EXERCISE recall] Why can a semantic submit button be a better
+> foundation than a visually identical clickable div?
+>
+> **Solution:** It supplies focus, keyboard activation, a button role and
+> native form-submit integration without separately recreating those
+> behaviours. Styling alone does not give a div the same contract.
+
+> [!EXERCISE apply] A panel must fit a 300 px slot. Its declared width is
+> 280 px, padding is 12 px on each side and borders are 2 px per side.
+> Compare content-box and border-box widths and choose a model that fits.
+>
+> **Solution:** Content-box renders 280 + 2 × 12 + 2 × 2 = 308 px,
+> exceeding the slot by 8 px. Border-box includes padding and border in
+> the declared 280 px, leaving 280 − 24 − 4 = 252 px of content and 20 px
+> of slot space. Choose border-box when the intended width should include
+> the complete padded box.
+
+> [!EXERCISE stretch] A long title overflows a flex card even though the
+> outer container has min-w-0; the card also has a fixed height. Recommend
+> a content-resilient fix.
+>
+> **Solution:** Allow the flex item itself to shrink with min-w-0, choose
+> wrapping, truncation or scrolling deliberately, and use a minimum height
+> when the card should grow for content. A weaker answer adds min-w-0 only
+> to the container again and keeps the fixed height: it leaves the item’s
+> automatic minimum and content clipping unchanged.

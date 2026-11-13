@@ -9,6 +9,16 @@ column. Search is a different problem: "find documents matching these words,
 ranked by relevance" — and it needs a fundamentally different data structure
 to answer efficiently.
 
+> [!WHY] A database update succeeds but the synchronous search-index
+> update fails. Users searching for the changed item see an old version
+> until a separate repair path catches the derived index up.
+
+> [!GOALS]
+>
+> - Explain inverted indexes
+> - Compute a postings-list query and choose facet representation
+> - Design recovery for index drift
+
 ## The inverted index
 
 ```text
@@ -79,11 +89,10 @@ to answer efficiently.
 ```
 
 ```text
-  → ranking can be tuned further with FIELD BOOSTS (a title
-    match counts more than a body match) and business signals
-    (recency, popularity) blended in — but BM25 on well-
-    analyzed text is a strong, unglamorous default before
-    reaching for anything more elaborate.
+  → ranking can be tuned further with FIELD BOOSTS (a title match counts
+    more than a body match) and business signals (recency, popularity)
+    blended in — but BM25 on well-analyzed text is a strong, unglamorous
+    default before reaching for anything more elaborate.
 ```
 
 ## Faceting
@@ -144,6 +153,36 @@ to answer efficiently.
     the database by design, not as an afterthought.
 ```
 
+```mermaid
+flowchart TB
+  D[Database source of truth] --> E[Change event]
+  E --> C[Async index consumer]
+  C --> I[Derived search index]
+  D --> R[Periodic reindex backstop]
+  R --> I
+```
+
+> [!PITFALL] A successful database commit and a separate failed index
+> write leave two stores out of sync unless recovery is designed.
+
+> [!INTERVIEW] Name the source of truth and the drift-repair path before
+> discussing ranking or query latency; the index is a rebuildable view.
+
+> [!CHECK] Why is aggressive stemming a design risk?
+>
+> It can merge unrelated words, and language-specific rules do not apply
+> universally.
+
+> [!CHECK] What does inverse document frequency reward?
+>
+> Rarer matching terms carry more relevance weight than terms found in
+> nearly every document.
+
+> [!CHECK] What is a facet?
+>
+> A count grouped alongside search results, such as brand or
+> price-category counts.
+
 ## What to take away
 
 1. An inverted index maps terms to the documents containing them, which is
@@ -159,3 +198,32 @@ to answer efficiently.
 5. A search index is derived, denormalized data that can drift from its
    source — async updates for freshness plus a periodic full reindex as a
    backstop is the common, deliberate answer.
+
+## Exercises
+
+> [!EXERCISE recall] How does an inverted index change the work of a word
+> query compared with scanning document text each time?
+>
+> **Solution:** It precomputes each term’s list of documents. Queries
+> combine the relevant postings lists instead of reopening every document
+> and searching its raw text.
+
+> [!EXERCISE apply] The postings for red are [1, 3, 6] and lamp are [3, 5,
+> 6]. Find documents containing both, then choose how to index a city
+> facet whose value New York must count as one category.
+>
+> **Solution:** Intersect the lists: 1 is absent from lamp; 3 is shared; 5
+> is absent from red; 6 is shared. Results are [3, 6]. Use a separate
+> unanalysed keyword representation for the city facet so New York is one
+> category, while a full-text field may have its own analysed
+> representation.
+
+> [!EXERCISE stretch] Search misses several successful database updates
+> after consumer failures. Recommend a repair strategy and reject treating
+> the index as the final authority.
+>
+> **Solution:** Keep the database authoritative, retry asynchronous index
+> updates with dead-letter handling, and use periodic reindexing as a
+> backstop to repair drift. A weaker answer edits only the search copy and
+> declares the mismatch solved: derived data can be rebuilt and future
+> events can overwrite it, while the source/consumer gap remains.

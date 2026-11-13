@@ -9,6 +9,16 @@ thousand tokens and prohibitive at a million, which has driven a search for
 architectures with linear scaling. State space models are the most successful
 attempt, and they work by making recurrence trainable in parallel.
 
+> [!WHY] A long-stream deployment cannot retain an ever-growing attention
+> cache. A constant-state model can fit the memory budget, but the
+> decision still needs evidence about precise recall of earlier content.
+
+> [!GOALS]
+>
+> - Explain the parallel-training and recurrent-inference duality
+> - Compute a linear state-space trajectory
+> - Choose efficiency versus precise recall deliberately
+
 ## The problem being solved
 
 ```text
@@ -55,6 +65,13 @@ That dual form is the whole idea. A nonlinear recurrence must be computed step b
 step; a linear one has an associative structure that a parallel scan exploits, so
 the same model has two execution modes.
 
+```mermaid
+flowchart TB
+  X[Input sequence] --> P[Parallel scan in training]
+  X --> R[Recurrent update in inference]
+  R --> S[Constant-size state]
+```
+
 ## Mamba's contribution
 
 ```text
@@ -67,8 +84,7 @@ the same model has two execution modes.
 ```
 
 ```text
-  MAMBA makes B, C and the discretisation step INPUT-
-  DEPENDENT.
+  MAMBA makes B, C and the discretisation step INPUT-DEPENDENT.
 
   → the model can selectively remember or forget based on
     content
@@ -137,11 +153,33 @@ Sliding-window attention is worth noting as the pragmatic baseline: it requires 
 new architecture, it is supported everywhere, and combined with attention sinks it
 handles long contexts adequately for many purposes.
 
+> [!PITFALL] A constant-size state does not promise attention’s exact
+> access to every earlier token.
+
+> [!INTERVIEW] Name both sequence-length scaling and the recall behaviour
+> the task actually requires.
+
+> [!CHECK] What makes Mamba’s state selection content-dependent?
+>
+> Input-dependent parameters and discretization let it decide what to
+> retain from the content.
+
+> [!CHECK] Why does that selection lose the simple fixed convolution form?
+>
+> The parameters depend on input, requiring a hardware-aware scan rather
+> than only a fixed convolution.
+
+> [!CHECK] What pragmatic alternative keeps attention while bounding its
+> cost?
+>
+> A sliding window restricts which previous positions are attended to
+> without introducing a wholly new architecture.
+
 ## What to take away
 
 1. Attention is quadratic and its inference state grows; recurrence is linear with
    constant state but cannot be parallelised in training.
-2. A *linear* recurrence has an associative structure that a parallel scan can
+2. A _linear_ recurrence has an associative structure that a parallel scan can
    exploit, giving parallel training and sequential constant-memory inference from
    one model.
 3. Mamba's contribution is making the state parameters input-dependent, recovering
@@ -153,3 +191,30 @@ handles long contexts adequately for many purposes.
    needs no new architecture.
 
 Next: making trained models smaller.
+
+## Exercises
+
+> [!EXERCISE recall] How can one state-space model train in parallel yet
+> infer recurrently?
+>
+> **Solution:** The linear recurrence has an associative structure that
+> can be evaluated as a parallel scan during training. During inference it
+> updates a fixed-size state one step at a time.
+
+> [!EXERCISE apply] Use scalar A=0.5, B=2, C=3, h_0=0 and inputs x_1=2,
+> x_2=−1. Apply h_t=A×h_previous+B×x_t and y_t=C×h_t for both steps.
+>
+> **Solution:** Use h_t=A×h_previous+B×x_t and y_t=C×h_t. First
+> h_1=0.5×0+2×2=0+4=4; y_1=3×4=12. Then h_2=0.5×4+2×(−1)=2−2=0; y_2=3×0=0.
+> The second output uses the updated recurrent state, not a fresh
+> computation from x_2 alone.
+
+> [!EXERCISE stretch] A product needs very long streaming context but also
+> must retrieve specific earlier details accurately. Recommend an
+> architecture evaluation.
+>
+> **Solution:** Evaluate a hybrid that handles much of the stream with
+> efficient SSM layers while retaining attention where precise recall
+> matters. A weaker answer replaces every attention layer solely from the
+> scaling curve: the chapter identifies precise retrieval as a real SSM
+> weakness that efficiency alone does not resolve.

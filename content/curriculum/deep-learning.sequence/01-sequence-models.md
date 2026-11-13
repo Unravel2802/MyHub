@@ -9,6 +9,17 @@ carrying a hidden state forward. Recurrent models are largely historical for
 language, and understanding their limitations is what makes the transformer's
 design choices legible.
 
+> [!WHY] A streaming model must preserve a bounded state while processing
+> an arbitrarily long input. Replacing it with unrestricted attention
+> changes the memory requirement even if the new model improves an offline
+> benchmark.
+
+> [!GOALS]
+>
+> - Explain recurrent sequential dependence
+> - Compute an LSTM cell-state update
+> - Choose a model under streaming-state constraints
+
 ## The recurrent idea
 
 ```text
@@ -80,6 +91,14 @@ you want a recurrent model at all.
   and the fundamental problem remains.
 ```
 
+```mermaid
+flowchart TB
+  C[Previous cell state] --> F[Forget-gated retained state]
+  N[Candidate content] --> I[Input-gated addition]
+  F --> U[Add into new cell state]
+  I --> U
+```
+
 ## The constraint that killed them
 
 ```text
@@ -131,7 +150,7 @@ letting the model look directly at any earlier position.
   → and, incidentally, interpretable alignments
 ```
 
-Attention began as a patch on recurrence. *Attention Is All You Need* removed the
+Attention began as a patch on recurrence. _Attention Is All You Need_ removed the
 recurrence and kept the patch — which is a useful reminder that architectural
 progress often comes from noticing that the auxiliary mechanism was doing the
 work.
@@ -147,10 +166,31 @@ work.
 ```
 
 **State space models** (Mamba and successors) are the modern return of this idea:
-linear-time recurrence with a state formulation that *can* be parallelised during
+linear-time recurrence with a state formulation that _can_ be parallelised during
 training via a scan, recovering the training efficiency that killed RNNs while
 keeping constant-memory inference. They are covered in their own topic, and they
 are the reason recurrence is worth understanding rather than merely remembering.
+
+> [!PITFALL] A fixed-size hidden state is an information bottleneck as
+> well as a memory advantage.
+
+> [!INTERVIEW] Separate training parallelism from inference-state size
+> when comparing sequence models.
+
+> [!CHECK] What does an LSTM output gate control?
+>
+> What part of the cell state is exposed as hidden state, distinct from
+> retention and addition.
+
+> [!CHECK] How does a GRU simplify the recurrent state?
+>
+> It combines cell and hidden state and uses fewer gates with fewer
+> parameters.
+
+> [!CHECK] What did attention add to an encoder-decoder bottleneck?
+>
+> A decoder can look at all encoder states instead of depending on only
+> one summary vector.
 
 ## What to take away
 
@@ -169,3 +209,32 @@ are the reason recurrence is worth understanding rather than merely remembering.
    which is why recurrence is worth understanding rather than merely remembering.
 
 Next: attention itself, in detail.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a plain recurrent model prevent parallel
+> computation across time?
+>
+> **Solution:** Its next state depends on the previous state, so a later
+> position cannot be computed until the earlier one finishes. Shared
+> parameters do not remove that dependency.
+
+> [!EXERCISE apply] For one scalar LSTM cell, c_previous=4, forget gate
+> f=0.75, input gate i=0.5 and candidate c_tilde=−2. Compute the new cell
+> state and the direct cell-path derivative with gate values held fixed.
+>
+> **Solution:** Use c_new=f×c_previous+i×c_tilde. Retained state is
+> 0.75×4=3; added content is 0.5×(−2)=−1; c_new=3+(−1)=2. Along the
+> explicit cell-state path, dc_new/dc_previous=f=0.75 with gates held
+> fixed. This is that local path derivative, not a claim about every
+> indirect gate dependency in the full network.
+
+> [!EXERCISE stretch] A device needs strict constant-memory streaming over
+> long sequences. Recommend what to compare before adopting full
+> attention.
+>
+> **Solution:** Compare a suitable recurrent model and an SSM/hybrid
+> designed for bounded inference state, evaluating the task’s memory and
+> recall trade-off. A weaker answer assumes a full-attention benchmark win
+> preserves constant-state inference: its retained past context changes
+> the deployment constraint.

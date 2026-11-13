@@ -9,6 +9,16 @@ Convergence is decided by the optimizer, the learning-rate schedule and the
 normalisation, and these interact in ways that make each one hard to tune in
 isolation.
 
+> [!WHY] A run resumes from saved weights and then suffers a loss
+> disturbance because optimizer history was not restored. The parameters
+> alone do not describe the state of an adaptive training process.
+
+> [!GOALS]
+>
+> - Explain decoupled weight decay
+> - Compute gradient clipping and its SGD update
+> - Choose complete adaptive-optimizer resume state
+
 ## Optimizers
 
 ```text
@@ -153,6 +163,15 @@ consequential.
 **Log the gradient norm continuously.** As the training-infra topic noted, a rising
 norm precedes divergence by many steps and is the best available early warning.
 
+```mermaid
+flowchart TB
+  G[Gradient and logged norm] --> C{Norm above threshold?}
+  C -->|Yes| S[Scale to threshold]
+  C -->|No| K[Keep gradient]
+  S --> U[Optimizer update]
+  K --> U
+```
+
 ## Reading a loss curve
 
 ```text
@@ -207,6 +226,27 @@ norm precedes divergence by many steps and is the best available early warning.
     5. everything else
 ```
 
+> [!PITFALL] Changing batch size without considering its learning-rate
+> coupling can invalidate a training comparison.
+
+> [!INTERVIEW] Inspect optimizer, schedule and normalization together
+> rather than tuning them as unrelated settings.
+
+> [!CHECK] Why use warmup with an adaptive optimizer?
+>
+> Early second-moment estimates are unreliable, so applying full learning
+> rate immediately can destabilize training.
+
+> [!CHECK] Why can batch normalization change evaluation behaviour?
+>
+> Training uses batch statistics while inference uses running statistics,
+> so the model mode matters.
+
+> [!CHECK] How does WSD differ from committing to a fixed cosine horizon?
+>
+> It allows a stable training phase and a decay when a stopping point is
+> chosen, rather than requiring the full length upfront.
+
 ## What to take away
 
 1. Use AdamW rather than Adam — decoupled weight decay fixes a genuine interaction
@@ -223,3 +263,32 @@ norm precedes divergence by many steps and is the best available early warning.
    warning of divergence.
 
 Next: making a model generalise rather than memorise.
+
+## Exercises
+
+> [!EXERCISE recall] What problem does AdamW’s decoupled decay address?
+>
+> **Solution:** It separates weight decay from Adam’s adaptive gradient
+> scaling, avoiding the interaction that makes ordinary L2 regularization
+> behave differently under that scaling.
+
+> [!EXERCISE apply] A gradient is (6,8) with measured norm 10; clipping
+> threshold is 5. Starting theta=(2,1), apply the chapter’s clipping rule,
+> then one SGD step with eta=0.1.
+>
+> **Solution:** Since norm 10 exceeds threshold 5, use
+> gradient_new=gradient×threshold/norm. Scale=5/10=0.5, giving
+> (6×0.5,8×0.5)=(3,4). The scaled norm is 10×0.5=5. Use
+> theta_new=theta−eta×gradient_new:
+> (2−0.1×3,1−0.1×4)=(2−0.3,1−0.4)=(1.7,0.6). Clipping scales the whole
+> gradient, not each component independently to 5.
+
+> [!EXERCISE stretch] A resume loader restores model weights but
+> initializes Adam moments and the step counter from scratch. Recommend
+> the checkpoint state to preserve.
+>
+> **Solution:** Restore the optimizer’s moment history and its step count
+> along with the model and relevant schedule state, so adaptive updates
+> and bias correction continue consistently. A weaker answer restores only
+> the weights and calls the trajectory resumed: resetting bias correction
+> and moments changes subsequent updates and can disturb the loss.

@@ -8,6 +8,17 @@ You write a forward pass; the framework produces gradients. The mechanism is
 worth understanding because its shape explains most of the surprises — memory
 growth, missing gradients, and why some operations break differentiability.
 
+> [!WHY] A training process runs out of memory only after many batches,
+> although each batch’s tensor shapes are unchanged. A metric accumulator
+> can keep every backward graph alive instead of storing just a detached
+> value.
+
+> [!GOALS]
+>
+> - Explain reverse-mode efficiency for training
+> - Trace gradients through primitive operations
+> - Diagnose unintended graph retention
+
 ## Automatic differentiation
 
 ```text
@@ -43,6 +54,13 @@ growth, missing gradients, and why some operations break differentiability.
     one pass per input
     → efficient when inputs ≪ outputs; used for Jacobians
       and some higher-order applications
+```
+
+```mermaid
+flowchart TB
+  A[Primitive forward operations] --> G[Recorded graph]
+  G --> B[Reverse chain-rule pass]
+  B --> P[All parameter gradients]
 ```
 
 ## Define-by-run versus define-and-run
@@ -149,6 +167,28 @@ either a policy-gradient estimator (as RL and RLHF use) or a continuous relaxati
 operation, backward as if it were the identity — is the pragmatic trick used in
 quantisation-aware training.
 
+> [!PITFALL] A convenient broadcast can compute a plausible loss over the
+> wrong shape rather than raising an error.
+
+> [!INTERVIEW] Inspect graph connectivity and tensor shapes before
+> assuming a missing gradient is an optimizer problem.
+
+> [!CHECK] Why can a transpose be free but affect kernel execution?
+>
+> It swaps strides over shared data instead of copying, leaving a
+> potentially non-contiguous view.
+
+> [!CHECK] What is the consequence of omitting zero_grad between ordinary
+> optimizer steps?
+>
+> Gradients accumulate across previous steps rather than representing only
+> the intended current update.
+
+> [!CHECK] Why call model.eval for evaluation?
+>
+> Dropout and batch normalization have different training/evaluation
+> behaviour, so the training mode can change reported predictions.
+
 ## What to take away
 
 1. Autodiff records a graph of primitives during the forward pass and applies the
@@ -164,3 +204,31 @@ quantisation-aware training.
    continuous relaxation, or a straight-through estimator.
 
 Next: making training actually converge.
+
+## Exercises
+
+> [!EXERCISE recall] Why is reverse-mode differentiation suited to a
+> scalar training loss with many parameters?
+>
+> **Solution:** One backward pass propagates that output’s gradient to all
+> inputs by reusing local derivatives. Forward mode would need separate
+> passes per input direction in that setting.
+
+> [!EXERCISE apply] For y=(a×b)+c, use a=3, b=−2, c=4 and upstream
+> derivative dL/dy=5. Compute the forward intermediates and derivatives
+> with respect to a, b and c.
+>
+> **Solution:** Forward: t=a×b=3×(−2)=−6; y=t+c=−6+4=−2. Backward rules:
+> dL/dc=dL/dy=5 and dL/dt=dL/dy=5. Then dL/da=(dL/dt)×b=5×(−2)=−10;
+> dL/db=(dL/dt)×a=5×3=15. The shared dL/dt is reused rather than
+> recomputed by separate forward passes.
+
+> [!EXERCISE stretch] A dashboard metric uses loss_total += loss each
+> batch and memory grows steadily. Recommend a correction that preserves
+> training gradients where needed.
+>
+> **Solution:** Detach the value used for reporting rather than retaining
+> every loss graph in the accumulator; retain the actual training loss
+> path for backward. A weaker answer detaches the model’s output before
+> computing the training loss: it removes the gradient path the optimizer
+> needs instead of only freeing metric history.

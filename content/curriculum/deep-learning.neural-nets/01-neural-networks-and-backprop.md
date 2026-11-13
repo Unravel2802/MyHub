@@ -9,6 +9,16 @@ trained by gradient descent. The interesting part is not the forward computation
 that is matrix multiplication — but backpropagation, which makes computing the
 gradient of millions of parameters cost roughly the same as one forward pass.
 
+> [!WHY] A custom layer fails to train and the team keeps changing
+> learning rates. An unsuitable initialization can shrink or explode
+> activations before the optimizer has a useful signal to follow.
+
+> [!GOALS]
+>
+> - Explain why nonlinearities make depth useful
+> - Compute initialization variances from fan sizes
+> - Choose a compute-for-memory training trade
+
 ## What a layer computes
 
 ```text
@@ -30,8 +40,8 @@ gradient of millions of parameters cost roughly the same as one forward pass.
 
 **Universal approximation** says a network with one sufficiently wide hidden layer
 can approximate any continuous function. It is often quoted and rarely useful,
-because it says nothing about *how wide* or *whether gradient descent will find
-it*. Depth matters in practice because deep networks represent certain functions
+because it says nothing about _how wide_ or _whether gradient descent will find
+it_. Depth matters in practice because deep networks represent certain functions
 exponentially more compactly than shallow ones.
 
 ## Activations
@@ -122,7 +132,7 @@ step.
       trainable at all
 ```
 
-The residual insight generalises beyond depth: a network learns a *correction* to
+The residual insight generalises beyond depth: a network learns a _correction_ to
 its input rather than a transformation of it, and the identity path means "do
 nothing" is the easy default rather than something that must be learned.
 
@@ -147,6 +157,13 @@ worth knowing about, because a custom layer with careless initialisation is a
 common cause of a model that will not train, and it looks like a learning-rate
 problem.
 
+```mermaid
+flowchart TB
+  F[Layer fan-in and fan-out] --> A[Activation choice]
+  A --> V[Choose initialization variance]
+  V --> S[Keep activation scale stable]
+```
+
 ## Loss functions
 
 ```text
@@ -165,7 +182,7 @@ problem.
   cost of each error type.
 ```
 
-**The numerical-stability point matters:** compute cross-entropy from *logits*,
+**The numerical-stability point matters:** compute cross-entropy from _logits_,
 not from softmax outputs. `log(softmax(x))` overflows and underflows;
 `log_softmax(x)` is computed stably. Passing softmax output to a
 cross-entropy-with-logits loss is the double-softmax bug from the training-infra
@@ -192,6 +209,29 @@ topic, and it trains slowly rather than failing.
     generalise worse
 ```
 
+> [!PITFALL] Passing softmax probabilities to a cross-entropy-with-logits
+> loss applies the wrong interface even if training does not immediately
+> crash.
+
+> [!INTERVIEW] Check activation scales and gradient flow before treating
+> every failure as a learning-rate issue.
+
+> [!CHECK] What does the identity part of a residual path contribute to a
+> local gradient?
+>
+> A derivative-1 route alongside the learned correction, helping early
+> layers receive signal.
+
+> [!CHECK] Why is one backward pass feasible for all parameters?
+>
+> Backprop reuses intermediate derivatives over the graph instead of
+> computing every parameter through a separate forward evaluation.
+
+> [!CHECK] Why choose a loss from error cost?
+>
+> The objective determines which mistakes are penalized most; a convenient
+> loss may optimize the wrong behaviour.
+
 ## What to take away
 
 1. Without a nonlinearity, stacked layers collapse to one; the trend in activations
@@ -208,3 +248,31 @@ topic, and it trains slowly rather than failing.
    from the cost of each error type.
 
 Next: the frameworks that implement all of this.
+
+## Exercises
+
+> [!EXERCISE recall] Why do many linear layers without nonlinearities fail
+> to add expressive depth?
+>
+> **Solution:** Their matrix products compose into one linear map.
+> Nonlinearities prevent that collapse and let depth represent more than a
+> single linear transformation.
+
+> [!EXERCISE apply] A square hidden layer has fan_in=16 and fan_out=16.
+> Compute Xavier variance for tanh and He variance for ReLU, then choose
+> for a ReLU version of the layer.
+>
+> **Solution:** Xavier variance = 2/(fan_in+fan_out) = 2/(16+16) = 2/32 =
+> 0.0625. He variance = 2/fan_in = 2/16 = 0.125. Choose the He rule for
+> the ReLU layer under the chapter’s initialization guidance; it accounts
+> for ReLU zeroing roughly half the units. These are variances, not
+> standard deviations.
+
+> [!EXERCISE stretch] A deep model runs out of activation memory during
+> backward although parameter storage fits. Recommend a trade-off.
+>
+> **Solution:** Use gradient checkpointing to recompute selected forward
+> activations instead of storing them all until backward. A weaker answer
+> discards needed activations without recomputation and assumes the
+> gradient is unaffected: backward requires them. The saving costs
+> additional computation, not a free removal of training state.

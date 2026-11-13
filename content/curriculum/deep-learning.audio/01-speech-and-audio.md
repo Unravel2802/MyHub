@@ -9,6 +9,17 @@ Modelling it directly at that rate is expensive, so nearly every system transfor
 it into something coarser first — and understanding that transformation explains
 most of the architecture choices.
 
+> [!WHY] A voice assistant waits for complete transcription, complete text
+> generation and only then speech synthesis. Individually fast stages can
+> still create an awkward silence when every stage waits for the previous
+> one.
+
+> [!GOALS]
+>
+> - Explain the role of audio tokenization
+> - Evaluate a staged conversational latency budget
+> - Design endpointing tests for natural pauses
+
 ## Representations
 
 ```text
@@ -95,6 +106,14 @@ talking rather than paused mid-thought determines whether a voice interface feel
 natural or rude, and it is a genuinely hard signal-processing and modelling
 problem that a demo never exposes.
 
+```mermaid
+flowchart TB
+  A[Incoming speech] --> S[Incremental ASR]
+  S --> L[Incremental response]
+  L --> T[Streaming TTS]
+  T --> O[First audible output]
+```
+
 ## Practical notes
 
 ```text
@@ -116,6 +135,26 @@ The sample-rate point is a specific and common bug: passing 44.1 kHz audio to a
 model expecting 16 kHz, or resampling with a poor algorithm, produces measurably
 worse transcription with no error message.
 
+> [!PITFALL] A sample-rate mismatch can degrade transcription without
+> raising an explicit processing error.
+
+> [!INTERVIEW] Distinguish time to first audible output from time to
+> finish processing the entire turn.
+
+> [!CHECK] Why can a spectrogram use vision machinery?
+>
+> It represents audio as a time-by-frequency image rather than only a
+> one-dimensional waveform.
+
+> [!CHECK] What information does word alignment add?
+>
+> Which word occurs at which timestamp, useful for captions and editing.
+
+> [!CHECK] Why test noise, reverberation and accent slices?
+>
+> Real-world audio conditions and coverage can dominate accuracy even when
+> a clean demo works.
+
 ## What to take away
 
 1. Raw audio is too high-rate to model directly at scale; mel spectrograms and
@@ -132,3 +171,37 @@ worse transcription with no error message.
    voice as biometric data.
 
 Next: state space models.
+
+## Exercises
+
+> [!EXERCISE recall] How do learned discrete audio tokens make
+> language-model machinery applicable?
+>
+> **Solution:** A neural codec converts the waveform into a coarser
+> sequence of discrete symbols, so a transformer can operate over tokens
+> instead of modeling every raw sample directly.
+
+> [!EXERCISE apply] In a hypothetical turn, complete ASR takes 80 ms,
+> complete text generation 90 ms, and TTS needs 70 ms after it starts to
+> emit first sound. Sequential stages start only after the prior stage
+> completes. With streaming partial outputs, text generation can instead
+> start at 40 ms and TTS at 110 ms. Compare first-sound times against a
+> 200 ms budget.
+>
+> **Solution:** Sequential first-sound time is ASR duration+generation
+> duration+TTS first-sound latency = 80+90+70 = 240 ms, exceeding 200 by
+> 40 ms. Under the stipulated streaming start times, text generation
+> finishes at 40+90=130 ms while TTS can start from partial text at 110
+> ms. First sound is TTS start+its latency = 110+70=180 ms, leaving
+> 200−180=20 ms. This is the assumed schedule’s first sound, not a
+> guarantee that all stages or speech output are complete.
+
+> [!EXERCISE stretch] A demo cuts speakers off whenever they pause briefly
+> within a sentence. Recommend an evaluation before changing the language
+> model.
+>
+> **Solution:** Test endpointing against natural pauses and genuine
+> end-of-turn cases, since deciding whether the speaker finished
+> determines interruptions. A weaker answer only accelerates text
+> generation: it does not repair a detector that wrongly decides the user
+> has already stopped speaking.

@@ -9,6 +9,16 @@ code, road networks, recommendation bipartite graphs. Flattening those into
 sequences or grids discards the structure that matters, and graph neural networks
 operate on it directly.
 
+> [!WHY] A graph model gets deeper but node representations become less
+> distinguishable. Adding layers to reach distant information can trade
+> away the very local differences the downstream prediction needs.
+
+> [!GOALS]
+>
+> - Explain permutation-invariant aggregation
+> - Trace synchronous message passing over hops
+> - Choose a graph split matching deployment
+
 ## Message passing
 
 Almost every GNN is an instance of one framework.
@@ -37,6 +47,14 @@ Almost every GNN is an instance of one framework.
 have no order. That constraint is what distinguishes a GNN from applying an MLP to
 a concatenated neighbour list, and it is what makes the model generalise to graphs
 of different sizes and shapes.
+
+```mermaid
+flowchart TB
+  N[Neighbour messages] --> A[Invariant aggregation]
+  A --> U[Combine with own state]
+  S[Current node state] --> U
+  U --> H[Next-layer representation]
+```
 
 ## The variants
 
@@ -109,10 +127,9 @@ degrading after three.
   □  GNNs win clearly where the graph structure carries
      information a flat representation cannot — molecules
      most of all
-  □  for many tabular-with-relations problems, a gradient-
-     boosted tree on hand-engineered graph FEATURES (degree,
-     neighbour aggregates, PageRank) is competitive and far
-     simpler
+  □  for many tabular-with-relations problems, a gradient-boosted tree on
+     hand-engineered graph FEATURES (degree, neighbour aggregates, PageRank)
+     is competitive and far simpler
   □  transformers with positional encodings can be applied to
      graphs and are increasingly competitive at scale
   □  the tooling is less mature and the training less stable
@@ -141,6 +158,27 @@ the model sees the test nodes' connections during training, which is legitimate
 for some problems and leakage for others. Deciding which you are in is a framing
 question, not a technical one.
 
+> [!PITFALL] A transductive split can be legitimate or leakage depending
+> on what connections will be available in deployment.
+
+> [!INTERVIEW] Name what a new layer can reach and what information the
+> evaluation lets the model see.
+
+> [!CHECK] What is oversmoothing?
+>
+> Repeated aggregation makes node representations converge and loses
+> useful distinctions.
+
+> [!CHECK] How is oversquashing different?
+>
+> An expanding neighbourhood’s information must fit in a fixed-size
+> vector, losing long-range detail.
+
+> [!CHECK] How can GraphSAGE control huge neighbourhoods?
+>
+> It samples a fixed number of neighbours rather than aggregating every
+> reachable neighbour naively.
+
 ## What to take away
 
 1. Nearly every GNN is message passing: neighbours send messages, a
@@ -156,3 +194,35 @@ question, not a technical one.
    the transductive setting is legitimate for your problem.
 
 Next: audio, state space models and compression.
+
+## Exercises
+
+> [!EXERCISE recall] Why must neighbour aggregation be
+> permutation-invariant?
+>
+> **Solution:** A graph’s neighbours have no intrinsic list order.
+> Reordering them should not change the aggregate, unlike concatenating an
+> arbitrary ordered neighbour list into an MLP.
+
+> [!EXERCISE apply] Use an undirected path A—B—C—D with initial scalar
+> states 1,2,4,8. Instantiate the chapter’s framework with identity
+> messages, sum aggregation and UPDATE(own,sum)=own+sum. Updates use only
+> the previous layer. Compute A after two layers and say whether D’s
+> initial state can influence it yet.
+>
+> **Solution:** The instantiated rule is h_v_next=h_v+sum of neighbour
+> states. First A_1=1+2=3. To get its next neighbour value, B_1=2+1+4=7.
+> Then A_2=A_1+B_1=3+7=10. D is three edges from A, so two message-passing
+> layers cannot yet carry D’s initial state to A. Synchronous updates must
+> not reuse an already-updated state within the same layer.
+
+> [!EXERCISE stretch] A model will score entirely new nodes whose future
+> connections are not known during training, but evaluation exposes those
+> connections through a transductive graph. Recommend a split.
+>
+> **Solution:** Construct evaluation around the information actually
+> available for new-node deployment, deliberately holding out the relevant
+> nodes/edges rather than benefiting from unavailable test connections. A
+> weaker answer accepts a random split simply because it is convenient:
+> the visible graph structure can make performance optimistic for the
+> intended task.

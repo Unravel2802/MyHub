@@ -171,6 +171,20 @@ const EXERCISE_TRACKS = [
   "ml-foundations.trees",
   "ml-foundations.tuning",
   "ml-foundations.unsupervised",
+  "deep-learning.attention",
+  "deep-learning.audio",
+  "deep-learning.cnn",
+  "deep-learning.compression",
+  "deep-learning.frameworks",
+  "deep-learning.generative",
+  "deep-learning.graph",
+  "deep-learning.neural-nets",
+  "deep-learning.regularization",
+  "deep-learning.representation",
+  "deep-learning.rl",
+  "deep-learning.sequence",
+  "deep-learning.ssm",
+  "deep-learning.training",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -208,6 +222,7 @@ const tracks = [
   { prefix: "data", expectedChapters: 11 },
   { prefix: "engineering", expectedChapters: 12 },
   { prefix: "ml-foundations", expectedChapters: 17 },
+  { prefix: "deep-learning", expectedChapters: 14 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

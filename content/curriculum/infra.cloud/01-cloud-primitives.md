@@ -10,6 +10,16 @@ the branding, nearly everything reduces to a small number of primitives every
 provider offers some version of — learning the primitives transfers across
 providers in a way memorizing product names never does.
 
+> [!WHY] A small service receives cloud-admin permissions because scoping
+> access takes longer. If that service is compromised, setup convenience
+> becomes access to resources unrelated to its actual job.
+
+> [!GOALS]
+>
+> - Explain the compute control spectrum
+> - Choose storage by required access pattern
+> - Choose service permissions by actual need
+
 ## Compute: three shapes, one spectrum
 
 ```text
@@ -117,6 +127,14 @@ providers in a way memorizing product names never does.
     security incidents originate.
 ```
 
+```mermaid
+flowchart TB
+  S[Running service] --> I[Service identity]
+  I --> R[Scoped role]
+  R --> A[Only required actions]
+  A --> O[Required cloud resources]
+```
+
 ## Managed services: the actual value proposition
 
 ```text
@@ -149,6 +167,29 @@ providers in a way memorizing product names never does.
   starting over.
 ```
 
+> [!PITFALL] Giving a service admin rights for convenience makes a
+> compromise’s blast radius far larger than its legitimate task.
+
+> [!INTERVIEW] Map the workload to a compute, storage, network and
+> identity primitive before memorising a provider’s product names.
+
+> [!CHECK] What does a managed service primarily trade for its price
+> premium?
+>
+> Operational work such as patching, backups and availability handling
+> that the team would otherwise own.
+
+> [!CHECK] What does a cloud service identity avoid?
+>
+> A running resource can assume permissions instead of relying on a
+> hardcoded human credential.
+
+> [!CHECK] What conceptual networking distinction transfers between
+> providers?
+>
+> Public and private network placement plus firewall rules, despite
+> different product names.
+
 ## What to take away
 
 1. Compute across every provider reduces to a spectrum from VMs (most
@@ -167,3 +208,36 @@ providers in a way memorizing product names never does.
 5. A managed service trades higher per-unit cost for removed operational
    burden, which is almost always worth it for anything that isn't your
    product's actual core differentiator.
+
+## Exercises
+
+> [!EXERCISE recall] How do VMs, managed containers and functions trade
+> control against operations?
+>
+> **Solution:** VMs offer OS-level control with responsibility for
+> patching and scaling. Managed containers let the platform run a supplied
+> image with less machine control. Functions focus on event code with
+> still less persistent-environment control. They are workload choices,
+> not a universal quality ranking.
+
+> [!EXERCISE apply] A team proposes one attached filesystem for public
+> media blobs, a VM’s local filesystem needs and structured customer
+> queries. Choose which storage primitive fits each and explain why one
+> shape is not a substitute for all three.
+>
+> **Solution:** Use object storage for durable key-addressed media blobs,
+> block storage for an attached disk/filesystem requirement, and a managed
+> database for structured querying when the team wants its operation
+> handled. The blob access, mounted filesystem and query semantics differ;
+> putting everything on one disk does not supply object delivery or
+> database query operations.
+
+> [!EXERCISE stretch] An image-processing service needs only its assigned
+> object data, but a proposal grants the whole account’s admin role.
+> Recommend an identity and permission boundary.
+>
+> **Solution:** Use a service identity with a role limited to the
+> resources and actions the job actually needs, rather than embedding
+> broad human credentials. A weaker answer grants admin because the
+> network is private: network location does not reduce the damage possible
+> with over-provisioned cloud permissions if the service is compromised.

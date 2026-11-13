@@ -10,6 +10,17 @@ between those two is real: a correctly-designed schema on a database
 nobody's backing up, testing failover for, or maintaining is still one
 incident away from real, permanent data loss.
 
+> [!WHY] Application replicas each open a generous database pool until
+> their combined connections exceed the database limit. The database is
+> healthy, yet scaling the application causes new requests to fail at
+> connection acquisition.
+
+> [!GOALS]
+>
+> - Explain why restore practice matters
+> - Compute a fleet-wide connection budget
+> - Choose a point-in-time recovery plan
+
 ## Backups: the one you never test is the one that fails
 
 ```text
@@ -104,6 +115,13 @@ incident away from real, permanent data loss.
     database connections as the scarce, sharable resource.
 ```
 
+```mermaid
+flowchart TB
+  A[App instance pools] --> P[Shared connection pooler]
+  P --> B[Bounded real connection pool]
+  B --> D[Database hard limit]
+```
+
 ## Zero-downtime upgrades
 
 ```text
@@ -142,6 +160,27 @@ incident away from real, permanent data loss.
     diagnosable rather than mysterious.
 ```
 
+> [!PITFALL] Per-instance connection pools must be budgeted together;
+> individually reasonable caps can exceed the database’s shared maximum.
+
+> [!INTERVIEW] State the restore evidence, retained recovery history and
+> fleet-wide resource limits before calling a database operationally safe.
+
+> [!CHECK] Why can promote-on-timeout create split-brain?
+>
+> The old primary may be alive but temporarily unreachable, so the new
+> promotion can create competing primaries.
+
+> [!CHECK] What operational symptom can neglected vacuum produce?
+>
+> Accumulated dead tuples and bloated tables or indexes can gradually
+> degrade performance.
+
+> [!CHECK] Why verify a major engine upgrade before cutover?
+>
+> Format and removed-feature changes can break compatibility even when the
+> schema itself looks unchanged.
+
 ## What to take away
 
 1. An untested backup is a hope, not a guarantee — regularly practicing an
@@ -162,3 +201,36 @@ incident away from real, permanent data loss.
    infrequent vacuuming produces a gradual, confusing performance
    degradation that's diagnosable once you understand the mechanism behind
    it, and mysterious if you don't.
+
+## Exercises
+
+> [!EXERCISE recall] Why is confirming that a backup file exists weaker
+> than rehearsing a restore?
+>
+> **Solution:** The file can be corrupt, incomplete or unusable with
+> current schemas or credentials. A real restore exercises whether the
+> data and recovery procedure actually work before an incident makes them
+> the only option.
+
+> [!EXERCISE apply] A database allows 200 connections; 20 are reserved for
+> other uses and eight app instances each want a pool of 35. Compute the
+> proposed total, available app budget and maximum equal whole-number cap
+> per instance.
+>
+> **Solution:** The proposed app total is 8 × 35 = 280, above the 200
+> overall limit. Reserving 20 leaves 180 for the app. floor(180/8) = 22
+> per instance gives 8 × 22 = 176, leaving four connections in that app
+> budget. A pooler can multiplex logical connections over a bounded actual
+> pool; adding instances must still respect the total shared limit.
+
+> [!EXERCISE stretch] A corrupting write begins after the latest nightly
+> backup, and valid writes occurred between that backup and the incident.
+> Recommend a recovery target and inputs rather than accepting loss of the
+> whole interval automatically.
+>
+> **Solution:** Use a tested full backup plus continuously retained WAL
+> for point-in-time recovery to a chosen instant before corruption. A
+> weaker answer restores only the nightly snapshot and discards all later
+> valid work by default: it ignores the finer recovery history available
+> in the log. Verify the restore procedure and target rather than assuming
+> log retention alone proves recovery will work.

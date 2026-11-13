@@ -105,6 +105,21 @@ const EXERCISE_TRACKS = [
   "frontend.styling",
   "frontend.testing",
   "frontend.typescript",
+  "infra.capacity-cost",
+  "infra.cicd",
+  "infra.cloud",
+  "infra.containers",
+  "infra.database-ops",
+  "infra.iac",
+  "infra.incidents",
+  "infra.linux",
+  "infra.networking-ops",
+  "infra.observability",
+  "infra.orchestration",
+  "infra.platform",
+  "infra.reliability",
+  "infra.serverless-edge",
+  "infra.service-mesh",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -137,6 +152,7 @@ const tracks = [
   { prefix: "craft", expectedChapters: 20 },
   { prefix: "backend", expectedChapters: 22 },
   { prefix: "frontend", expectedChapters: 20 },
+  { prefix: "infra", expectedChapters: 15 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

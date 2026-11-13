@@ -10,6 +10,17 @@ what you WANT, and a controller continuously works to make reality match it.
 Understanding that one loop explains far more of Kubernetes's behavior than
 memorizing its object types does.
 
+> [!WHY] A client hardcodes a pod’s IP and loses its backend after a
+> normal replacement. The orchestration system is keeping replicas
+> healthy, but the caller bypassed the stable service boundary meant to
+> survive that churn.
+
+> [!GOALS]
+>
+> - Explain the desired-state control loop
+> - Choose self-healing and stable discovery
+> - Separate runtime configuration from image bytes
+
 ## The control loop: declarative, not imperative
 
 ```text
@@ -39,6 +50,14 @@ memorizing its object types does.
     current set of healthy pods; an autoscaler ensures replica
     count matches current load. same loop, different resource,
     different "desired state" being enforced.
+```
+
+```mermaid
+flowchart TB
+  D[Desired replicas] --> C[Compare]
+  O[Observed replicas] --> C
+  C --> A[Act to close gap]
+  A --> O
 ```
 
 ## Pods: the actual unit of scheduling
@@ -147,6 +166,27 @@ memorizing its object types does.
     concept to learn from scratch.
 ```
 
+> [!PITFALL] A healthy replacement pod has a new identity; hardcoded old
+> pod IPs bypass Service discovery and defeat ordinary self-healing.
+
+> [!INTERVIEW] State the desired state, the controller responsible and the
+> stable consumer interface before memorising object schemas.
+
+> [!CHECK] Why put two containers in one pod deliberately?
+>
+> They are genuinely coupled and must be co-located, sharing the pod’s
+> network namespace.
+
+> [!CHECK] Why must API contracts tolerate old and new versions during a
+> rolling update?
+>
+> Both pod versions can receive requests during rollout.
+
+> [!CHECK] How is horizontal autoscaling another control loop?
+>
+> It observes load relative to a target and adjusts replica count to close
+> that difference.
+
 ## What to take away
 
 1. Nearly every Kubernetes controller is the same loop — observe current
@@ -165,3 +205,35 @@ memorizing its object types does.
 5. A default Kubernetes Secret is base64-encoded, not encrypted — a common,
    genuine misunderstanding that real encryption at rest needs an
    additional mechanism to actually provide.
+
+## Exercises
+
+> [!EXERCISE recall] How does a controller differ from a one-time start
+> command?
+>
+> **Solution:** It repeatedly observes actual state, compares with
+> declared desired state and acts to close the gap. A start command
+> creates an immediate effect but does not by itself keep the desired
+> replica count true after later failures.
+
+> [!EXERCISE apply] A Deployment desires seven replicas and two crash,
+> leaving five serving. A caller uses a failed pod’s IP. Choose the
+> reconciliation and discovery mechanisms rather than adding a manual
+> restart timer.
+>
+> **Solution:** The desired-state controller detects the gap and replaces
+> the two missing replicas to work back toward seven. Route callers
+> through a Service’s stable name and selector-based backend set rather
+> than preserving the dead IP. A one-time restart timer neither expresses
+> continuous desired state nor makes pod identity stable.
+
+> [!EXERCISE stretch] A release builds separate images with credentials
+> embedded for each environment. Recommend promotion and runtime
+> configuration instead.
+>
+> **Solution:** Build the application image once and inject
+> environment-specific configuration at runtime, separating non-sensitive
+> config from secret handling. A weaker answer rebuilds the same source
+> with credentials inside each image: promotion no longer uses identical
+> bytes and sensitive environment data travels in artifacts. Do not treat
+> base64 encoding of a Secret as evidence of encryption at rest.

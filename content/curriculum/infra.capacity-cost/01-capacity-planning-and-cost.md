@@ -10,6 +10,16 @@ down; provision too much, and you're paying for idle capacity every single
 day it isn't needed. This chapter is finding the actual right amount,
 deliberately, rather than guessing.
 
+> [!WHY] A campaign raises demand before new instances can become ready.
+> An autoscaler exists, but its reaction lag leaves users waiting because
+> the capacity plan assumed scale-up was instantaneous.
+
+> [!GOALS]
+>
+> - Explain realistic load-test evidence
+> - Compute capacity and per-request cost
+> - Design around predictable scaling lag
+
 ## Load testing: finding the breaking point before users do
 
 ```text
@@ -22,18 +32,18 @@ deliberately, rather than guessing.
 ```
 
 ```text
-  ✓  a REALISTIC traffic PATTERN (production traffic is rarely
-     uniform — it has read/write ratios, request-type mixes,
-     and burstiness that a naive "hit it with N requests/sec,
-     all identical" test misses entirely)
-  ✓  test DEPENDENCIES too, not just the service itself — a
-     downstream database or third-party API frequently breaks
-     BEFORE your own service does, under real load
-  ✓  test in an environment that's a genuinely FAITHFUL
-     representation of production, not a smaller, differently-
-     configured "staging" that breaks at a completely
-     different point for reasons unrelated to the thing you're
-     actually testing
+  ✓  a REALISTIC traffic PATTERN (production traffic is rarely uniform — it
+     has read/write ratios, request-type mixes, and burstiness that a naive
+     "hit it with N requests/sec, all identical" test misses entirely)
+
+  ✓  test DEPENDENCIES too, not just the service itself — a downstream
+     database or third-party API frequently breaks BEFORE your own service
+     does, under real load
+
+  ✓  test in an environment that's a genuinely FAITHFUL representation of
+     production, not a smaller, differently-configured "staging" that breaks
+     at a completely different point for reasons unrelated to the thing
+     you're actually testing
 ```
 
 ## Headroom: the buffer between "handles today's peak" and "breaks"
@@ -81,6 +91,14 @@ deliberately, rather than guessing.
     matters for genuinely predictable traffic patterns.
 ```
 
+```mermaid
+flowchart TB
+  P[Known traffic peak] --> A[Scale before arrival]
+  A --> S[Provision and start]
+  S --> H[Pass readiness checks]
+  H --> C[Usable capacity]
+```
+
 ## The unit economics of a request
 
 ```text
@@ -113,17 +131,39 @@ deliberately, rather than guessing.
 ```
 
 ```text
-  → the practical strategy that combines both, deliberately:
-    RESERVED capacity for your PREDICTABLE baseline load (the
-    traffic floor you KNOW you'll always need), ON-DEMAND for
-    the VARIABLE portion above that baseline (a spike, a
-    seasonal surge) — this captures the reserved discount on
-    the predictable majority of load while staying flexible for
-    the genuinely unpredictable part, rather than over-
-    committing to reserved capacity that sits unused during a
-    quiet period, or paying full on-demand price for load that
-    was actually entirely predictable all along.
+  → the practical strategy that combines both, deliberately: RESERVED
+    capacity for your PREDICTABLE baseline load (the traffic floor you KNOW
+    you'll always need), ON-DEMAND for the VARIABLE portion above that
+    baseline (a spike, a seasonal surge) — this captures the reserved
+    discount on the predictable majority of load while staying flexible for
+    the genuinely unpredictable part, rather than over-committing to
+    reserved capacity that sits unused during a quiet period, or paying full
+    on-demand price for load that was actually entirely predictable
+    all along.
 ```
+
+> [!PITFALL] A scaling decision and usable capacity are separated by real
+> startup and readiness time.
+
+> [!INTERVIEW] State measured capacity, the chosen safety margin, scaling
+> lag and unit cost before calling a provisioned fleet sufficient.
+
+> [!CHECK] Why reserve predictable baseline capacity rather than all
+> possible peak capacity?
+>
+> A commitment can discount reliably used capacity, while on-demand
+> capacity preserves flexibility for variable demand instead of paying for
+> unused reservations.
+
+> [!CHECK] Is one headroom percentage right for every service?
+>
+> No. Traffic volatility and the ongoing cost of idle safety margin
+> determine the trade-off.
+
+> [!CHECK] Why include third-party costs in unit economics?
+>
+> A feature can be expensive per request through dependencies and
+> bandwidth even when its own compute is cheap.
 
 ## What to take away
 
@@ -144,3 +184,37 @@ deliberately, rather than guessing.
 5. Combining reserved capacity for a predictable baseline with on-demand
    for the variable portion above it captures the reserved discount without
    over-committing to capacity that sits unused during a quiet period.
+
+## Exercises
+
+> [!EXERCISE recall] What makes a load test useful beyond proving normal
+> traffic still works?
+>
+> **Solution:** It finds degradation and breaking points under a realistic
+> request mix, burst pattern and dependencies in a faithful environment. A
+> uniformly repeated easy request or an unrepresentative smaller staging
+> system can identify a different limit than production faces.
+
+> [!EXERCISE apply] Peak demand is 800 requests per second and the chosen
+> safety factor is 1.75. Candidate capacity is 1200 or 1500 requests per
+> second. Monthly compute, database, API and bandwidth costs are $240,
+> $480, $720 and $360 for 900000 requests. Choose a capacity candidate and
+> compute unit cost.
+>
+> **Solution:** Required capacity is 800 × 1.75 = 1400 requests per
+> second, so 1200 is insufficient and 1500 meets the chosen margin. Total
+> monthly cost is 240 + 480 + 720 + 360 = $1800. Dividing by 900000
+> requests gives $0.002 per request, or 0.2 cents. The safety factor is a
+> scenario choice to validate against actual volatility, not a universal
+> threshold.
+
+> [!EXERCISE stretch] A daily peak is predictable, but instances take time
+> to start. Recommend a policy rather than waiting for the peak to
+> overload the current fleet.
+>
+> **Solution:** Scale ahead of the known peak and retain appropriate
+> headroom during startup, tuning from traffic history and measured
+> readiness lag. A weaker answer relies solely on a reactive threshold
+> after saturation: capacity cannot serve requests until it is actually
+> ready. Autoscaling supplies the mechanism, not a guarantee that every
+> spike will be absorbed instantly.

@@ -10,6 +10,17 @@ exist to turn that vague aspiration into a specific, measured, negotiated
 number that both engineering and the business can actually make decisions
 against.
 
+> [!WHY] A service has spent nearly all its reliability allowance, but a
+> rollout decision is still argued only as move fast versus be careful. An
+> explicit remaining budget makes the trade measurable rather than a
+> contest of instincts.
+
+> [!GOALS]
+>
+> - Explain indicator, objective and agreement
+> - Compute an error budget and remaining allowance
+> - Choose alerts from user impact
+
 ## SLI, SLO, SLA: three related, genuinely different things
 
 ```text
@@ -66,23 +77,23 @@ against.
     and "be careful."
 ```
 
+```mermaid
+flowchart TB
+  S[Negotiated objective] --> B[Allowed error budget]
+  B --> I[Subtract observed impact]
+  I --> R[Remaining allowance]
+  R --> D[Release and stability decisions]
+```
+
 ## Alerting on symptoms, not causes
 
 ```text
-  ✗  alert on: "CPU usage > 80%"        — is this even a
-                                           PROBLEM? maybe it's
-                                           fine, maybe the
-                                           system is about to
-                                           fall over — the
-                                           metric alone doesn't
-                                           say
+  ✗  alert on: "CPU usage > 80%" — is this even a PROBLEM? maybe it's fine,
+     maybe the system is about to fall over — the metric alone doesn't say
 
-  ✓  alert on: "error rate > 1%" or
-     "p99 latency > 500ms"                — this is a USER-
-                                           FACING symptom —
-                                           something is
-                                           ACTUALLY wrong for a
-                                           real user right now
+  ✓  alert on: "error rate > 1%" or "p99 latency > 500ms" — this is a
+     USER-FACING symptom — something is ACTUALLY wrong for a real user
+     right now
 ```
 
 ```text
@@ -148,6 +159,29 @@ against.
     consciously chose.
 ```
 
+> [!PITFALL] An internal resource threshold alone does not establish user
+> harm; repeated noisy pages can hide the real incident.
+
+> [!INTERVIEW] State the measurement window, objective and remaining
+> budget, then separate paging symptoms from the causes you will
+> investigate.
+
+> [!CHECK] Do dependency outages consume a service’s uptime budget?
+>
+> Yes. User-visible downtime consumes the same allowance regardless of
+> whether its cause was an internal deploy or a dependency.
+
+> [!CHECK] What separates toil from lasting engineering work?
+>
+> Toil repeats manually without reducing future effort; building
+> automation that removes that repetition creates lasting value.
+
+> [!CHECK] Why is absolute reliability not a sensible universal investment
+> target?
+>
+> The final fractions of reliability cost disproportionately more, so a
+> negotiated objective makes the benefit-versus-cost decision explicit.
+
 ## What to take away
 
 1. An SLI is a measured fact, an SLO is an internal target, and an SLA is a
@@ -167,3 +201,35 @@ against.
    disproportionately more for diminishing benefit, and an error budget
    makes that trade-off explicit and negotiated rather than an unexamined
    default.
+
+## Exercises
+
+> [!EXERCISE recall] How do SLI, SLO and SLA differ in what each statement
+> represents?
+>
+> **Solution:** An SLI measures actual behaviour, an SLO sets the team’s
+> internal objective for that indicator, and an SLA makes a
+> customer-facing contractual promise, often looser than the internal
+> target to preserve margin.
+
+> [!EXERCISE apply] For a fixed 30-day window, the uptime SLO is 99.95%.
+> Incidents used eight minutes and 6.5 minutes. Compute allowed downtime
+> and remaining budget; decide whether another ten-minute outage would
+> fit.
+>
+> **Solution:** The window has 30 × 24 × 60 = 43200 minutes. Allowed
+> downtime is 0.05% × 43200 = 0.0005 × 43200 = 21.6 minutes. Spent time is
+> 8 + 6.5 = 14.5, leaving 21.6 − 14.5 = 7.1 minutes. Another ten minutes
+> would exceed that by 2.9 minutes, so it does not fit the stated
+> remaining allowance.
+
+> [!EXERCISE stretch] An on-call rotation is paged for high CPU while
+> requests remain healthy and begins ignoring alarms. Recommend an
+> alerting policy.
+>
+> **Solution:** Page on meaningful user-facing error or latency symptoms
+> and use internal CPU or memory evidence to investigate causes after
+> detection. A weaker answer lowers the CPU threshold so it pages even
+> more often: it amplifies noise without establishing user impact.
+> Symptom-based signals preserve attention for failures the response must
+> actually mitigate.

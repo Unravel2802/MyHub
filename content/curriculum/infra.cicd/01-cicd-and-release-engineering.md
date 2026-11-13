@@ -9,6 +9,16 @@ than by how safely and quickly a change can go from committed to running in
 production. CI/CD is the machinery that determines which of those two it
 is — and a bad pipeline is a tax paid on every single deploy, forever.
 
+> [!WHY] A release looks healthy in staging but produces errors on a small
+> share of real requests. Gradual exposure and a verified rollback path
+> can limit the incident before the change reaches every customer.
+
+> [!GOALS]
+>
+> - Explain delivery versus deployment
+> - Evaluate a canary against its baseline
+> - Choose merged-result integration evidence
+
 ## Continuous Integration: catching problems at merge time, not release time
 
 ```text
@@ -97,6 +107,15 @@ is — and a bad pipeline is a tax paid on every single deploy, forever.
     real users experience them before the rollout is stopped.
 ```
 
+```mermaid
+flowchart TB
+  N[New version] --> C[Small traffic canary]
+  C --> M[Compare errors and latency]
+  M --> H{Healthy?}
+  H -->|yes| E[Expand gradually]
+  H -->|no| R[Roll back exposure]
+```
+
 ## Feature flags: decoupling deploy from release
 
 ```text
@@ -105,15 +124,13 @@ is — and a bad pipeline is a tax paid on every single deploy, forever.
   }
   return oldCheckoutFlow();
 
-  → a feature flag lets code DEPLOY to production (in a
-    disabled state) SEPARATELY from when it's actually
-    RELEASED (turned on) — this decoupling is genuinely
-    powerful: a deploy becomes a low-risk, purely mechanical
-    event (the code is there, inert, doing nothing new yet),
-    and a RELEASE becomes an instant, no-deploy-required
-    toggle — including an instant KILL SWITCH if a newly-
-    enabled feature causes a problem, reverting to old
-    behavior in seconds rather than requiring an emergency
+  → a feature flag lets code DEPLOY to production (in a disabled state)
+    SEPARATELY from when it's actually RELEASED (turned on) — this
+    decoupling is genuinely powerful: a deploy becomes a low-risk, purely
+    mechanical event (the code is there, inert, doing nothing new yet), and
+    a RELEASE becomes an instant, no-deploy-required toggle — including an
+    instant KILL SWITCH if a newly-enabled feature causes a problem,
+    reverting to old behavior in seconds rather than requiring an emergency
     deploy and rollback.
 ```
 
@@ -133,6 +150,27 @@ is — and a bad pipeline is a tax paid on every single deploy, forever.
     a one-time cost paid for a single risky release.
 ```
 
+> [!PITFALL] A low aggregate error rate can hide a severe canary
+> regression when most requests still use the healthy old version.
+
+> [!INTERVIEW] Compare the exposed cohort with its baseline and state the
+> rollback condition before increasing the rollout percentage.
+
+> [!CHECK] What resource cost buys blue-green’s fast cutover and reversal?
+>
+> Both full environments run during the cutover window so traffic can
+> switch back to the old one.
+
+> [!CHECK] How does a feature flag separate deploy from release?
+>
+> Code can be deployed disabled, then enabled or disabled without another
+> code deployment.
+
+> [!CHECK] Why can frequent small releases be easier to recover from?
+>
+> Their smaller diffs are easier to understand and reverse than rare large
+> batches, given reliable rollback machinery.
+
 ## What to take away
 
 1. CI's real value is catching integration problems at merge time, when two
@@ -151,3 +189,34 @@ is — and a bad pipeline is a tax paid on every single deploy, forever.
    releasing it (an instant toggle, including an instant kill switch) — and
    fast, reliable rollback is what makes frequent, small deploys feel safer
    than rare, large ones.
+
+## Exercises
+
+> [!EXERCISE recall] What is the difference between continuous delivery
+> and continuous deployment, and what confidence does automatic deployment
+> require?
+>
+> **Solution:** Delivery keeps passing builds deployable with a decision
+> about when to release them. Deployment automatically sends passing
+> builds to production, so test evidence and reliable rollback must
+> justify removing that checkpoint.
+
+> [!EXERCISE apply] A canary handles 1000 of 20000 requests and fails 20;
+> the old version handles 19000 and fails 19. Compute each error rate and
+> the combined rate. Choose whether a combined rate below 1% is enough to
+> expand the canary.
+>
+> **Solution:** The canary rate is 20/1000 = 2%. The old rate is 19/19000
+> = 0.1%. Combined, 39/20000 = 0.195%. The canary is twenty times the old
+> rate despite the small aggregate. Do not expand merely because the
+> aggregate is below 1%; stop or roll back the canary and investigate its
+> observed regression.
+
+> [!EXERCISE stretch] Two branches pass independently but their combined
+> change fails. Recommend CI evidence before accepting the integration.
+>
+> **Solution:** Build and test the merged result so interactions between
+> the changes are exercised early. A weaker answer only reruns the same
+> isolated branch tests: each can remain green while the combination is
+> still broken. Preserve a deployable artifact and rollback confidence
+> rather than treating separate success as proof of integration.

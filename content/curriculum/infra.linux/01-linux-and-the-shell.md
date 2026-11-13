@@ -9,6 +9,16 @@ in the abstract. This chapter is the same concepts made concrete — the
 specific commands and files that Linux exposes them through, since that
 interface is what you actually touch when something is broken at 3am.
 
+> [!WHY] A team can list a directory’s filenames but cannot open a
+> readable file inside it. Broadly changing the file’s permissions would
+> miss the actual missing capability: traversing the directory path.
+
+> [!GOALS]
+>
+> - Explain the file-based system interface
+> - Choose the minimal permission fix
+> - Choose a graceful shutdown sequence
+
 ## Everything is a file
 
 ```text
@@ -81,19 +91,26 @@ interface is what you actually touch when something is broken at 3am.
     before resorting to the guaranteed-but-unclean option.
 ```
 
+```mermaid
+flowchart TB
+  S[Stop requested] --> T[Send SIGTERM]
+  T --> G[Allow graceful cleanup]
+  G --> E{Exited within grace?}
+  E -->|yes| D[Stopped cleanly]
+  E -->|no| K[SIGKILL as last resort]
+```
+
 ## Pipes and composability
 
 ```text
   cat access.log | grep "500" | wc -l
 
-  → each command's STDOUT is connected DIRECTLY to the next
-    command's STDIN — this is the actual mechanism (a kernel-
-    level pipe, not a temp file or copy) behind Unix's
-    "small tools that compose" philosophy: three simple,
-    single-purpose tools chained together solve "how many 500
-    errors are in this log" without any of the three needing to
-    know about the other two, or about the specific problem
-    being solved.
+  → each command's STDOUT is connected DIRECTLY to the next command's STDIN
+    — this is the actual mechanism (a kernel-level pipe, not a temp file or
+    copy) behind Unix's "small tools that compose" philosophy: three simple,
+    single-purpose tools chained together solve "how many 500 errors are in
+    this log" without any of the three needing to know about the other two,
+    or about the specific problem being solved.
 ```
 
 ```text
@@ -147,6 +164,28 @@ interface is what you actually touch when something is broken at 3am.
     real time on a real running process.
 ```
 
+> [!PITFALL] A readable filename and a readable file do not grant
+> directory traversal when the execute permission is missing.
+
+> [!INTERVIEW] Identify the exact resource, permission or signal semantics
+> before replacing a focused diagnosis with broader privileges or a forced
+> kill.
+
+> [!CHECK] Which tool can identify the process listening on a port?
+>
+> lsof with the relevant network-port filter exposes the owning process
+> and socket.
+
+> [!CHECK] How do df and du answer different disk questions?
+>
+> df reports filesystem space; du reports space consumed by paths or
+> directories.
+
+> [!CHECK] What does a pipe connect?
+>
+> One command’s standard output to the next command’s standard input
+> through the kernel.
+
 ## What to take away
 
 1. Linux exposes hardware, running processes, and kernel state as files in
@@ -166,3 +205,34 @@ interface is what you actually touch when something is broken at 3am.
 5. Debugging tools like lsof and strace are the Operating Systems chapter's
    abstract concepts (file descriptors, the syscall boundary) made concrete
    and observable on a real running process.
+
+## Exercises
+
+> [!EXERCISE recall] How does exposing process and device state as files
+> make ordinary shell tools reusable?
+>
+> **Solution:** A common filesystem and descriptor interface lets tools
+> read process information, hardware state and ordinary text through the
+> same basic operations. The tools compose without needing a custom API
+> for every resource kind.
+
+> [!EXERCISE apply] A group can list a directory but lacks its execute
+> bit; a file inside already permits group reads. Choose which permission
+> needs changing for access by path and explain why making the file
+> world-writable is irrelevant.
+>
+> **Solution:** Add the needed traversal permission on the directory for
+> the authorised group, while keeping the existing file read permission.
+> Directory read supports listing; execute supports entering or traversing
+> the path. Altering file write permissions does not grant traversal and
+> broadens an unrelated capability beyond the stated need.
+
+> [!EXERCISE stretch] A service is slow to stop and an operator always
+> begins with kill -9. Recommend a shutdown policy.
+>
+> **Solution:** Request SIGTERM first, allow a grace period for the
+> process to finish in-flight work and clean up, then use SIGKILL if it
+> still will not exit. A weaker answer starts with SIGKILL for speed: it
+> cannot be caught and gives no chance to close connections or finish
+> writes cleanly. A catchable request and a forced termination are
+> different tools.

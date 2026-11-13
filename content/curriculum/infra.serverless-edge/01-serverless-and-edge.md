@@ -10,6 +10,16 @@ it doesn't eliminate trade-offs, it moves them: from operational burden you
 manage directly to constraints on execution model that you have to design
 around instead.
 
+> [!WHY] A rarely used function meets its latency target when warm but
+> misses it after inactivity. A benchmark of reused environments has
+> omitted the startup path customers sometimes have to pay.
+
+> [!GOALS]
+>
+> - Explain opportunistic environment reuse
+> - Compute cold-start impact
+> - Choose edge logic within runtime constraints
+
 ## The execution model: stateless, event-triggered, ephemeral
 
 ```text
@@ -45,15 +55,13 @@ around instead.
 ```
 
 ```text
-  → this is the SAME JIT-warmup shape the Performance
-    Engineering chapter covered for a runtime's first few
-    calls, at the INFRASTRUCTURE level instead of the language-
-    runtime level — a function that's invoked rarely
-    (occasional background job) pays cold-start cost on a
-    meaningful fraction of its invocations; one invoked
-    CONSTANTLY stays warm nearly always, because a new
-    invocation almost always arrives before the platform tears
-    down the previous environment.
+  → this is the SAME JIT-warmup shape the Performance Engineering chapter
+    covered for a runtime's first few calls, at the INFRASTRUCTURE level
+    instead of the language-runtime level — a function that's invoked rarely
+    (occasional background job) pays cold-start cost on a meaningful
+    fraction of its invocations; one invoked CONSTANTLY stays warm nearly
+    always, because a new invocation almost always arrives before the
+    platform tears down the previous environment.
 ```
 
 ```text
@@ -64,6 +72,14 @@ around instead.
     genuinely spiky, unpredictable traffic pattern — this is a
     real architectural constraint to design around, not a
     solved problem.
+```
+
+```mermaid
+flowchart TB
+  R[Invocation] --> E{Warm environment available?}
+  E -->|yes| W[Run work]
+  E -->|no| C[Provision and load runtime]
+  C --> W
 ```
 
 ## Where serverless genuinely fits
@@ -118,6 +134,27 @@ around instead.
     deployment model.
 ```
 
+> [!PITFALL] A warm-only timing result is not evidence that cold
+> invocations satisfy the same latency requirement.
+
+> [!INTERVIEW] State cold frequency, startup cost, persistence assumptions
+> and runtime limits before calling serverless a fit.
+
+> [!CHECK] How can smaller deployment packages help cold startup?
+>
+> There is less code and dependency material to load before execution
+> begins.
+
+> [!CHECK] What cost accompanies keeping provisioned environments warm?
+>
+> Capacity can remain paid for even while idle, trading away some
+> scale-to-zero savings.
+
+> [!CHECK] How does edge execution extend a CDN’s proximity idea?
+>
+> It runs request-specific code near the user instead of only serving
+> cached static bytes nearby.
+
 ## What to take away
 
 1. A serverless function's execution environment isn't guaranteed to
@@ -137,3 +174,35 @@ around instead.
 5. Edge runtimes are deliberately more restricted than a regular serverless
    function — a genuine trade for running cheaply at hundreds of
    distributed locations with near-instant startup.
+
+## Exercises
+
+> [!EXERCISE recall] Why is warm in-memory state not a reliable
+> persistence contract for a function?
+>
+> **Solution:** The environment may be reused or torn down between
+> invocations. A cache or pool can survive opportunistically in a reused
+> instance, but the next invocation is not guaranteed to receive that same
+> process or memory.
+
+> [!EXERCISE apply] Thirty percent of invocations need a 180 ms startup
+> before 20 ms of work; warm invocations need only the 20 ms. Compute mean
+> latency and evaluate a requirement that every request finish within 50
+> ms.
+>
+> **Solution:** A cold invocation costs 180 + 20 = 200 ms. The mean is
+> 0.30 × 200 + 0.70 × 20 = 60 + 14 = 74 ms. More decisively, the cold
+> requests take 200 ms, so the every-request 50 ms requirement fails even
+> if a different traffic mix produced a good average. Choose an execution
+> and warming trade-off that fits the actual latency contract rather than
+> measuring only warm calls.
+
+> [!EXERCISE stretch] Request rewriting benefits from running near users,
+> but a separate job requires native dependencies and filesystem
+> operations unavailable in the stated edge runtime. Recommend placement.
+>
+> **Solution:** Place small compatible per-request rewriting at the edge
+> and keep the incompatible job in an execution environment that supports
+> its requirements. A weaker answer moves both to the edge for proximity:
+> reduced network distance does not add missing runtime APIs or remove
+> resource limits. The constraints are part of the placement decision.

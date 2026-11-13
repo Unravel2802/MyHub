@@ -8,6 +8,17 @@ Machine learning is linear algebra with nonlinearities sprinkled in. The
 operations are few, they recur constantly, and each has a geometric meaning that
 makes the algebra intuitive rather than mechanical.
 
+> [!WHY] A retrieval projection passes a shape check but uses the wrong
+> transpose, changing what each output coordinate means. Writing
+> dimensions and one worked entry can expose the mistake before a full
+> training run.
+
+> [!GOALS]
+>
+> - Explain rank as surviving directions
+> - Compute a matrix-product entry and workload
+> - Choose a stable linear-system solve
+
 ## Vectors and what operations mean
 
 ```text
@@ -102,6 +113,13 @@ explicit inverse loses precision badly for ill-conditioned matrices.
     → assert shapes at boundaries
 ```
 
+```mermaid
+flowchart TB
+  A[Left matrix: m by k] --> M[Shared inner dimension k]
+  B[Right matrix: k by n] --> M
+  M --> C[Product: m by n]
+```
+
 ## Eigenvectors and eigenvalues
 
 ```text
@@ -177,6 +195,27 @@ change you allow.
      on any accelerator
 ```
 
+> [!PITFALL] Forming an explicit inverse to solve a system can lose
+> numerical stability while doing unnecessary work.
+
+> [!INTERVIEW] Write operand and output shapes before discussing speed or
+> accelerator utilization.
+
+> [!CHECK] Why can L1 promote sparse weights?
+>
+> Its gradient does not shrink toward zero in the same way as L2, so it
+> can drive coefficients exactly to zero.
+
+> [!CHECK] What does keeping the largest singular values provide?
+>
+> The best rank-constrained approximation in the chapter’s SVD sense,
+> connecting compression and low-rank updates.
+
+> [!CHECK] Why does conditioning affect training?
+>
+> An elongated loss valley makes gradient descent zigzag and amplifies
+> numerical difficulties.
+
 ## What to take away
 
 1. The dot product is a similarity measure and orthogonality means no shared
@@ -192,3 +231,29 @@ change you allow.
    fine-tuning — the rank is how many directions of change you allow.
 
 Next: calculus and optimisation.
+
+## Exercises
+
+> [!EXERCISE recall] What does a rank-deficient linear map lose?
+>
+> **Solution:** Independent directions collapse, so some input information
+> cannot be recovered by inversion. Rank describes how many independent
+> output directions remain.
+
+> [!EXERCISE apply] Multiply A of shape [3×4] by B of shape [4×2]. A’s
+> first row is [1,2,0,−1], B’s first column is [2,0,3,1]. Find the output
+> shape, C_11 and the chapter’s FLOP estimate.
+>
+> **Solution:** The shape rule [m×k][k×n]=[m×n] gives [3×2]. C_ij = sum_k
+> A_ik B_kj, so C_11 = 1×2 + 2×0 + 0×3 + (−1)×1 = 2+0+0−1 = 1. The
+> workload formula is 2mkn = 2×3×4×2 = 48 FLOPs under the stated
+> multiply/add convention.
+
+> [!EXERCISE stretch] A nearly ill-conditioned least-squares problem is
+> implemented using inv(X-transpose X). Recommend a numerical approach.
+>
+> **Solution:** Use a QR or SVD-based solve rather than explicitly forming
+> the inverse; avoid normal equations where their squared condition number
+> is harmful. A weaker answer merely computes the inverse at the same
+> precision and hopes for agreement: the numerical formulation itself
+> worsens sensitivity.

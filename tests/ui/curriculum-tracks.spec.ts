@@ -85,6 +85,26 @@ const EXERCISE_TRACKS = [
   "backend.sql",
   "backend.time-money",
   "backend.transactions",
+  "frontend.a11y",
+  "frontend.animation",
+  "frontend.browser",
+  "frontend.build",
+  "frontend.data-fetching",
+  "frontend.forms",
+  "frontend.graphics",
+  "frontend.html-css",
+  "frontend.i18n",
+  "frontend.javascript",
+  "frontend.mobile",
+  "frontend.offline",
+  "frontend.performance",
+  "frontend.react",
+  "frontend.rendering",
+  "frontend.routing",
+  "frontend.state",
+  "frontend.styling",
+  "frontend.testing",
+  "frontend.typescript",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -116,6 +136,7 @@ const tracks = [
   },
   { prefix: "craft", expectedChapters: 20 },
   { prefix: "backend", expectedChapters: 22 },
+  { prefix: "frontend", expectedChapters: 20 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

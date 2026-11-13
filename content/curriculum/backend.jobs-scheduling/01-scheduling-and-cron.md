@@ -9,6 +9,17 @@ until more than one instance of the app is running, at which point "every
 hour" quietly becomes "every hour, from every instance, simultaneously" unless
 something explicitly prevents it.
 
+> [!WHY] A scheduled digest runs on every redundant app instance and sends
+> customers several copies. High availability for the application has
+> multiplied the schedule’s side effects because execution ownership was
+> never coordinated.
+
+> [!GOALS]
+>
+> - Explain fixed-clock scheduling versus finish-relative drift
+> - Choose catch-up by the cost of a missed run
+> - Design a job body for partial completion
+
 ## The single-instance illusion
 
 ```text
@@ -43,6 +54,15 @@ something explicitly prevents it.
     again, on any instance, until someone intervenes by hand.
 ```
 
+```mermaid
+flowchart TB
+  T[Scheduled tick on all instances] --> L{Acquire shared lock?}
+  L -->|yes| R[Run idempotent body]
+  L -->|no| S[Skip duplicate tick]
+  R --> C[Record successful period]
+  C --> U[Release lock]
+```
+
 ## Drift
 
 ```text
@@ -51,10 +71,9 @@ something explicitly prevents it.
   interval is 65 seconds, and that error compounds over a
   long-running process.
 
-  → schedule against a FIXED CLOCK (the next :00/:05/:10
-    boundary, or a cron expression evaluated against wall-
-    clock time), not against "N seconds after the last run
-    finished".
+  → schedule against a FIXED CLOCK (the next :00/:05/:10 boundary, or a cron
+    expression evaluated against wall-clock time), not against "N seconds
+    after the last run finished".
 ```
 
 ## Missed runs
@@ -124,6 +143,27 @@ something explicitly prevents it.
     at the recipient's local morning, DST shift and all).
 ```
 
+> [!PITFALL] A lock coordinates a run but cannot erase partial side
+> effects from a crashed previous run.
+
+> [!INTERVIEW] State the scheduled period, missed-run policy, lock
+> lifetime and repeated-effect guard before claiming a job runs once.
+
+> [!CHECK] Why must a distributed schedule lock expire?
+>
+> A crashed holder may never release it, so without a TTL all instances
+> can remain blocked indefinitely.
+
+> [!CHECK] When does an explicit regional timezone belong in a schedule?
+>
+> When the job’s purpose requires local-time alignment, such as a morning
+> notification; otherwise UTC avoids that local-time dependency.
+
+> [!CHECK] Why does scaling the app multiply naive cron executions?
+>
+> Each instance owns its own timer and fires the same job unless
+> coordination chooses a runner.
+
 ## What to take away
 
 1. Any recurring job running on more than one instance needs a distributed
@@ -138,3 +178,33 @@ something explicitly prevents it.
    which is wrong for jobs where a gap is a compliance or financial issue.
 5. A scheduled job's body needs the same idempotency discipline as a queue
    handler, since exactly-once execution isn't achievable in general.
+
+## Exercises
+
+> [!EXERCISE recall] Why does sleeping for the interval after a job
+> finishes drift relative to a fixed schedule?
+>
+> **Solution:** The execution time adds to every interval. A fixed clock
+> boundary or wall-clock cron expression anchors the next run to the
+> intended schedule rather than to the previous completion time.
+
+> [!EXERCISE apply] After an outage spans two planned ticks, a cache-warm
+> task and a daily billing task both restart. Choose missed-run policies
+> for each and identify the state needed to catch up safely.
+>
+> **Solution:** A missed cache warm can be dropped when it is harmless;
+> later traffic can repopulate it. Billing needs a catch-up policy based
+> on the last successful scheduled period so the missed work eventually
+> occurs. Record completion and make repeated execution safe; merely
+> running once immediately without checking which periods succeeded can
+> either miss a gap or repeat prior work.
+
+> [!EXERCISE stretch] An instance sends some digests and crashes before
+> marking the run done. Recommend a restart design beyond a distributed
+> lock.
+>
+> **Solution:** Use an expiring lock for coordination and make the body
+> idempotent, checking whether the relevant day’s digest was already sent
+> before repeating that effect. A weaker answer relies only on the lock:
+> after its TTL expires another run can repeat partially completed
+> effects. An unbounded lock instead risks preventing future runs forever.

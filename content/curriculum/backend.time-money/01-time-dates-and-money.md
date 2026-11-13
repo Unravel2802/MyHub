@@ -9,6 +9,16 @@ and nearly every subtle correctness bug in a backend traces back to one of the
 three trap categories below — not to an exotic algorithm, but to an assumption
 about time or money that felt obviously true and wasn't.
 
+> [!WHY] A bill split into rounded floating-point shares no longer adds up
+> to the original total. An unstated remainder rule becomes a customer
+> support dispute even though every individual share looks reasonable.
+
+> [!GOALS]
+>
+> - Explain storage and display timezones
+> - Compute exact shares with an explicit remainder rule
+> - Choose a clock for duration measurement
+
 ## Timezones and DST
 
 ```text
@@ -56,10 +66,8 @@ about time or money that felt obviously true and wasn't.
 
     const start = Date.now();
     await doWork();
-    const elapsed = Date.now() - start;   // can be NEGATIVE
-                                            // if NTP adjusted
-                                            // the clock mid-
-                                            // measurement
+    const elapsed = Date.now() - start;  // can be NEGATIVE
+    // if NTP adjusted the clock mid-measurement
 
   → use a monotonic clock for elapsed-time measurement
     (timeouts, latency metrics, rate limiter windows); use
@@ -71,6 +79,14 @@ This is also why the Time & Ordering chapter needs a
 different tool (Lamport clocks, vector clocks) for ordering events across
 machines — wall clocks on two different machines are not even guaranteed to
 agree with each other, let alone stay monotonic.
+
+```mermaid
+flowchart TB
+  E[Timing requirement] --> C{Instant or duration?}
+  C -->|instant| W[Wall-clock UTC timestamp]
+  C -->|duration| M[Difference of monotonic readings]
+  W --> D[Convert timezone for display]
+```
 
 ## Leap seconds
 
@@ -127,6 +143,29 @@ agree with each other, let alone stay monotonic.
   exchange rate and time, or refuse.
 ```
 
+> [!PITFALL] A remainder policy is part of a money-splitting contract;
+> rounding each share independently can change the total.
+
+> [!INTERVIEW] State the time representation or currency unit, then the
+> rounding or clock rule; apparently simple values still need explicit
+> contracts.
+
+> [!CHECK] Why is binary floating point a poor default for exact currency
+> totals?
+>
+> Some decimal fractions are approximations, so integer subunits or an
+> appropriate decimal representation avoids unintended rounding drift.
+
+> [!CHECK] What must accompany a money amount before arithmetic?
+>
+> Its currency; different currencies require explicit conversion at a
+> stated rate and time or rejection.
+
+> [!CHECK] Why should date arithmetic belong to a library?
+>
+> DST and leap-second behaviour make fixed assumptions such as every day
+> having exactly 86400 seconds unreliable.
+
 ## What to take away
 
 1. Store every timestamp in UTC; convert to a viewer's local time only at
@@ -141,3 +180,33 @@ agree with each other, let alone stay monotonic.
 5. A rounding remainder in a money split needs a stated, documented rule
    (first/last/largest share) — an unstated one is inconsistent by
    construction.
+
+## Exercises
+
+> [!EXERCISE recall] Why store an instant in UTC and convert it only for
+> display?
+>
+> **Solution:** Storage should represent one unambiguous instant
+> independent of server or viewer location. Display conversion belongs to
+> the viewer’s timezone at render time; storing already-localised values
+> makes interpretation depend on an implicit region.
+
+> [!EXERCISE apply] Split USD 17.00 across six shares using integer cents,
+> allocating remainder cents to the earliest shares. Compute every share
+> and verify the sum.
+>
+> **Solution:** 17.00 dollars is 1700 cents. Integer division gives 283
+> cents each because 6 × 283 = 1698, leaving 2 cents. Give one extra cent
+> to each of the first two shares: [284, 284, 283, 283, 283, 283]. The sum
+> is 568 + 1132 = 1700 cents, exactly USD 17.00; the documented rule makes
+> independent implementations agree.
+
+> [!EXERCISE stretch] A latency metric subtracts wall-clock timestamps and
+> sometimes becomes negative after clock correction. Recommend a
+> measurement design without changing event timestamp storage.
+>
+> **Solution:** Use the difference between monotonic clock readings for
+> elapsed duration, while retaining wall-clock UTC instants for event
+> timestamps. A weaker answer clamps negative durations to zero: it hides
+> jumps but still mismeasures operations when the clock moves. A monotonic
+> duration is not an absolute cross-machine timestamp.

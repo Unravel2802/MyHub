@@ -9,6 +9,16 @@ it. Four families have been tried seriously, they make different trade-offs
 between sample quality, training stability and likelihood, and the reasons
 diffusion displaced GANs are instructive.
 
+> [!WHY] A model comparison quotes a lower image-quality score from a
+> different evaluation setup. Selecting a generator from incompatible
+> numbers can mistake measurement differences for better samples.
+
+> [!GOALS]
+>
+> - Explain diffusion’s regression training objective
+> - Compute VAE sampling and loss terms
+> - Choose comparable generative evaluation
+
 ## The four families
 
 ```text
@@ -71,6 +81,14 @@ VAEs produce blurry images because the reconstruction loss averages over the
 plausible outputs. They remain widely used **as components**: the latent space in
 latent-diffusion models is a VAE's, which is what makes diffusion tractable at
 high resolution.
+
+```mermaid
+flowchart TB
+  X[Input] --> E[Encoder mean and scale]
+  E --> Z[Reparameterized latent sample]
+  Z --> D[Decoder reconstruction]
+  D --> L[Reconstruction plus KL penalty]
+```
 
 ## GANs
 
@@ -194,6 +212,27 @@ The current direction, and worth knowing as a name:
   comparable.
 ```
 
+> [!PITFALL] A likelihood or feature-distance proxy does not fully
+> establish human-perceived quality.
+
+> [!INTERVIEW] Distinguish the training objective, sampling process and
+> evaluation setup before comparing model families.
+
+> [!CHECK] What is GAN mode collapse?
+>
+> The generator repeatedly produces a limited output that fools the
+> discriminator instead of covering the desired distribution.
+
+> [!CHECK] What does latent diffusion use a VAE for?
+>
+> A compressed latent space where the diffusion process is cheaper than
+> operating directly in pixels.
+
+> [!CHECK] What trade-off does classifier-free guidance expose?
+>
+> More literal prompt adherence versus diversity and characteristic
+> artefacts rather than one universally correct setting.
+
 ## What to take away
 
 1. Four families trade sample quality, training stability and likelihood
@@ -210,3 +249,32 @@ The current direction, and worth knowing as a name:
    rarely comparable across papers.
 
 Next: reinforcement learning.
+
+## Exercises
+
+> [!EXERCISE recall] Why is diffusion training easier to stabilize than
+> adversarial generator/discriminator training in this chapter’s
+> comparison?
+>
+> **Solution:** It predicts added noise with an ordinary regression loss,
+> avoiding the coupled adversarial equilibrium and oscillation problems of
+> the two-network game.
+
+> [!EXERCISE apply] A one-dimensional VAE has mu=2, sigma=0.5 and sampled
+> epsilon=−2. Its reconstruction term is 8, KL term is 3 and beta=0.2.
+> Compute the reparameterized latent value and total loss.
+>
+> **Solution:** Use z=mu+sigma×epsilon: z=2+0.5×(−2)=2−1=1. Use
+> loss=reconstruction+beta×KL: loss=8+0.2×3=8+0.6=8.6. The randomness is
+> supplied by epsilon while mu and sigma remain on a differentiable
+> computation path.
+
+> [!EXERCISE stretch] Two papers report FID values from different
+> implementations and datasets. Recommend a comparison before selecting a
+> production generator.
+>
+> **Solution:** Evaluate candidates within the same FID setup and include
+> the relevant prompt-adherence and human-quality assessment. A weaker
+> answer ranks the published numbers directly: implementation and
+> evaluation differences can make those numbers incomparable even though
+> both use the same metric name.

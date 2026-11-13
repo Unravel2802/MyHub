@@ -8,6 +8,16 @@ Unsupervised learning finds structure in unlabelled data. Its central difficulty
 is not the algorithms — most are simple — but evaluation: with no ground truth,
 "is this good?" has no direct answer, and that shapes how it should be used.
 
+> [!WHY] An anomaly detector’s tiny false-positive rate becomes thousands
+> of daily alerts at production volume. Without a triage calculation, a
+> promising model can create a queue people learn to ignore.
+
+> [!GOALS]
+>
+> - Compare clustering assumptions
+> - Compute alert load against review capacity
+> - Validate a visualization in original space
+
 ## Clustering
 
 ```text
@@ -143,6 +153,14 @@ a 0.1% false-positive rate on a high-volume stream produces more alerts than any
 team can triage, and the system is then ignored — which is worse than not having
 it.
 
+```mermaid
+flowchart TB
+  V[Production event volume] --> A[Expected alert load]
+  F[Measured false-positive rate] --> A
+  A --> C[Compare to triage capacity]
+  C --> D[Deployment decision]
+```
+
 ## Matrix factorisation
 
 ```text
@@ -181,6 +199,28 @@ it.
     clustering.
 ```
 
+> [!PITFALL] A visually separated cluster in a t-SNE plot is a hypothesis,
+> not a measured distance in the original data.
+
+> [!INTERVIEW] Evaluate what the representation enables downstream rather
+> than only its internal objective.
+
+> [!CHECK] What is PCA preserving?
+>
+> Directions of greatest variance through a linear projection of centered
+> data.
+
+> [!CHECK] What is matrix factorization’s low-rank representation?
+>
+> A user-by-item matrix is approximated as a product of lower-dimensional
+> user and item factors.
+
+> [!CHECK] Why use available anomaly labels?
+>
+> Even a limited labelled set can support supervised or semi-supervised
+> methods and more meaningful validation than pretending no ground truth
+> exists.
+
 ## What to take away
 
 1. k-means assumes spherical similar-sized clusters and assigns every point;
@@ -196,3 +236,35 @@ it.
    metrics.
 
 Next: feature engineering, which usually matters more than the model.
+
+## Exercises
+
+> [!EXERCISE recall] How do k-means and DBSCAN differ in assumptions and
+> treatment of outliers?
+>
+> **Solution:** k-means chooses a fixed number of roughly spherical
+> clusters and assigns every point. DBSCAN groups dense regions of
+> arbitrary shape and can mark sparse points as noise, but varying density
+> and its parameter choices remain difficulties.
+
+> [!EXERCISE apply] Assume 4 million normal events per day, a measured
+> false-positive rate of 0.2%, and capacity for 600 reviews daily.
+> Estimate false alerts and evaluate the deployment constraint before
+> counting any true anomalies.
+>
+> **Solution:** False alerts = normal-event count×false-positive rate.
+> Convert 0.2% to 0.002, giving 4,000,000×0.002=8,000 false alerts/day.
+> Excess over capacity is 8,000−600=7,400; the load ratio is
+> 8,000/600≈13.33, rounded to two decimals. False alerts alone exceed
+> capacity, so the measured operating point is unsuitable without changing
+> the review/threshold design and validating it.
+
+> [!EXERCISE stretch] A UMAP plot suggests business segments and the team
+> wants to adopt them solely because the picture looks clean. Recommend
+> validation.
+>
+> **Solution:** Verify the hypothesized structure in original space,
+> consult domain usefulness and test the downstream decision it enables. A
+> weaker answer treats inter-cluster visual distances or sizes as the
+> original geometry: these stochastic visualization embeddings do not
+> justify that reading.

@@ -9,6 +9,17 @@ not independent, and the future must not inform the past. Both the modelling and
 the evaluation need different treatment, and getting the evaluation wrong is the
 more common failure.
 
+> [!WHY] A forecast looks excellent in a retrospective test that uses
+> revised source values unavailable on the forecast date. The operational
+> system cannot reproduce that apparent advantage because it never had
+> those inputs.
+
+> [!GOALS]
+>
+> - Explain why naive baselines matter
+> - Compare scaled forecast errors across series
+> - Design a historically faithful backtest
+
 ## The structure
 
 ```text
@@ -146,6 +157,13 @@ backtesting on revised data systematically overstates performance.
 baseline the denominator: a MASE above 1 means the model is worse than doing
 nothing, which is exactly the check people skip.
 
+```mermaid
+flowchart TB
+  P[Past data available then] --> T[Train in temporal order]
+  T --> H[Evaluate required future horizon]
+  H --> B[Compare to naive baseline]
+```
+
 ## Practical guidance
 
 ```text
@@ -168,6 +186,26 @@ The interval point deserves emphasis: a demand forecast of 1,000 units is far le
 useful than "between 800 and 1,300 with 90% confidence", because the inventory
 decision depends on the spread rather than the centre.
 
+> [!PITFALL] A gap in timestamps is not automatically a zero observation.
+
+> [!INTERVIEW] State the horizon and information available at each
+> prediction date before presenting a backtest score.
+
+> [!CHECK] What does differencing change?
+>
+> It uses consecutive changes instead of levels to help remove
+> nonstationary trend structure.
+
+> [!CHECK] Why might a one-step evaluation mislead a long-horizon
+> application?
+>
+> It measures an easier task than the actual required forecast horizon.
+
+> [!CHECK] Why provide forecast intervals?
+>
+> Decisions can depend on spread and risk rather than only the forecast’s
+> central point.
+
 ## What to take away
 
 1. Decompose into trend, seasonality and noise, and test stationarity — many
@@ -184,3 +222,34 @@ decision depends on the spread rather than the centre.
    intervals rather than points.
 
 Next: Bayesian methods.
+
+## Exercises
+
+> [!EXERCISE recall] Why compute naive and seasonal-naive forecasts before
+> a more elaborate model?
+>
+> **Solution:** They are strong, cheap references that many elaborate
+> forecasts do not beat. Without them an apparently useful model may add
+> complexity without improvement.
+
+> [!EXERCISE apply] Using the chapter’s naive-error scaling, series A has
+> model absolute error 3 and naive scaling error 4; B has model error 8
+> and naive scaling error 10. Compute MASE for each and compare what raw
+> errors alone would suggest. Treat the supplied errors as the
+> already-computed aggregate errors.
+>
+> **Solution:** MASE = model error / naive scaling error. A gives
+> 3/4=0.75; B gives 8/10=0.80. Both are below 1 and beat their respective
+> naive references. A is better relative to its reference, but B’s larger
+> raw error does not by itself indicate a proportionally worse model
+> because the series have different scales. Compare the ratios, not 3
+> versus 8 in isolation.
+
+> [!EXERCISE stretch] A historical evaluation random-splits dates and
+> loads the latest corrected source values. Recommend a replacement.
+>
+> **Solution:** Use temporal walk-forward evaluation at the required
+> horizon and reconstruct what data was actually known at each prediction
+> time, including late arrivals and revisions. A weaker answer only sorts
+> the final report by date: it leaves future training information and
+> revised inputs inside the evaluation.

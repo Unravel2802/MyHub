@@ -9,6 +9,16 @@ unseen data. The formal answers are loose in practice, and the *concepts* they
 produce — bias-variance, capacity, the no-free-lunch result — are among the most
 useful mental tools in applied ML.
 
+> [!WHY] A low training error is celebrated while held-out loss remains
+> high. Tuning for more capacity can worsen the failure if the real
+> problem is sensitivity to the training sample.
+
+> [!GOALS]
+>
+> - Explain inductive bias as a model choice
+> - Diagnose gaps before choosing a remedy
+> - Choose cross-validation boundaries for related entities
+
 ## The setup
 
 ```text
@@ -63,6 +73,13 @@ thing to compute when a model underperforms — before any hyperparameter tuning
 **And the classical trade-off is not the whole story**, as the regularisation
 chapter covered: double descent means very overparameterised models can have low
 bias *and* low variance, which the classical curve does not predict.
+
+```mermaid
+flowchart TB
+  E[Compare train and true risk] --> G{Large gap?}
+  G -->|Low train and high test| V[Variance remedies]
+  G -->|Both high and similar| B[Bias remedies]
+```
 
 ## Capacity
 
@@ -176,6 +193,28 @@ survive deployment.
      why production monitoring exists
 ```
 
+> [!PITFALL] A bound or evaluation that assumes the same distribution does
+> not promise performance after production drift.
+
+> [!INTERVIEW] Compare training and held-out behaviour before prescribing
+> model size.
+
+> [!CHECK] Why are classical capacity bounds limited for deep networks?
+>
+> They are often vacuous in practice and do not explain observed
+> neural-network generalization.
+
+> [!CHECK] Why is the optimizer part of inductive bias?
+>
+> Different training algorithms can select different solutions even within
+> the same architecture and training-fit set.
+
+> [!CHECK] What happens to sample needs as capacity or required confidence
+> grows in the PAC framing?
+>
+> More capacity and higher confidence require more data; the scaling
+> relationship is more useful than loose constants.
+
 ## What to take away
 
 1. Everything rests on train and test coming from the same distribution, which
@@ -193,3 +232,31 @@ survive deployment.
    you get an optimistic estimate that does not survive deployment.
 
 Next: the supervised learning methods themselves.
+
+## Exercises
+
+> [!EXERCISE recall] What does no free lunch imply about choosing a model?
+>
+> **Solution:** A method’s advantage comes from assumptions matching the
+> problem. There is no universally best model independent of the data and
+> its structure.
+
+> [!EXERCISE apply] Assume estimated true risks are representative: model
+> A has empirical risk 0.02 and true risk 0.18; B has 0.16 and 0.18.
+> Compute their generalization gaps and choose different first remedies.
+>
+> **Solution:** The formula is gap = true risk−empirical risk. A:
+> 0.18−0.02 = 0.16; B: 0.18−0.16 = 0.02. A’s low training loss and large
+> gap suggest variance: consider more data, augmentation or
+> regularization. B’s similar high losses suggest bias: consider more
+> capacity, better features or longer training. A small gap alone does not
+> make B a good model.
+
+> [!EXERCISE stretch] Many records belong to the same user, and a random
+> fold split places each user in both training and validation. Recommend a
+> validation design.
+>
+> **Solution:** Use grouped folds so related records from a user stay
+> together when evaluating generalization to unseen users. A weaker answer
+> shuffles individual rows more thoroughly: it preserves the cross-fold
+> entity leakage and optimistic estimate.

@@ -8,6 +8,16 @@ summary: What an explanation is for, the methods available, and what they do not
 asking and why. Choosing a method without knowing which question you are answering
 produces explanations that are technically valid and practically useless.
 
+> [!WHY] A user asks how to change an unfavourable prediction and receives
+> a dense attribution plot. The explanation may describe the model yet
+> fail to support the action the user needs.
+
+> [!GOALS]
+>
+> - Distinguish attribution from causation
+> - Choose explanation methods by audience and correlation
+> - Evaluate an interpretable high-stakes alternative
+
 ## What the explanation is for
 
 ```text
@@ -32,6 +42,13 @@ produces explanations that are technically valid and practically useless.
 **Different purposes need different methods**, and the compliance case is the one
 where the usual tools are weakest — a SHAP value is an attribution, not a reason a
 regulator or a customer will accept.
+
+```mermaid
+flowchart TB
+  Q[Who asks and why?] --> D[Debugging: global behaviour]
+  Q --> U[User action: counterfactual]
+  Q --> H[High stakes: readable model]
+```
 
 ## Intrinsically interpretable models
 
@@ -175,6 +192,27 @@ it remains a research programme rather than a deployable tool.
      attribution methods
 ```
 
+> [!PITFALL] An explanation can faithfully describe a wrong prediction
+> without making it correct.
+
+> [!INTERVIEW] Name the audience and intended use before presenting a
+> technically valid attribution.
+
+> [!CHECK] Why check LIME explanations across runs?
+>
+> The local approximation can be unstable, so one run is not reliable
+> evidence of a stable reason.
+
+> [!CHECK] Why are attention maps only suggestive?
+>
+> They do not by themselves explain the model’s full computation or
+> establish the decision’s cause.
+
+> [!CHECK] Why can correlated features make attribution credit unstable?
+>
+> They can share credit in arbitrary ways rather than each attribution
+> being a stable fact.
+
 ## What to take away
 
 1. Decide who the explanation is for and what they will do with it before choosing
@@ -190,3 +228,35 @@ it remains a research programme rather than a deployable tool.
    attribution plots.
 
 Next: fairness.
+
+## Exercises
+
+> [!EXERCISE recall] What does a feature attribution establish, and what
+> causal claim does it not establish?
+>
+> **Solution:** It describes how the model uses a feature for its
+> prediction. It does not establish that changing that feature causes the
+> real-world outcome.
+
+> [!EXERCISE apply] A developer wants to know whether a feature matters
+> globally, but its correlated partner makes impossible combinations a
+> concern. A user wants a comprehensible change that would alter this
+> prediction. Choose appropriate tools and explain why a single
+> partial-dependence plot is insufficient.
+>
+> **Solution:** For global checking, use permutation importance to measure
+> the drop, and consider ALE rather than partial dependence when
+> correlation makes artificial combinations misleading. For the user’s
+> local action question, offer a counterfactual in comprehensible terms.
+> One partial-dependence average is neither a robust treatment of
+> correlated combinations nor a local actionable alternative.
+
+> [!EXERCISE stretch] A high-stakes tabular model has a nearly as accurate
+> readable alternative, but the team prefers a black box with a post-hoc
+> plot. Recommend an evaluation.
+>
+> **Solution:** Take the intrinsically interpretable alternative seriously
+> and compare the accuracy/readability trade-off for the actual decision.
+> A weaker answer assumes an attribution plot supplies an equally
+> defensible reason: it approximates behaviour and can fail in the cases
+> where a human must defend the decision.

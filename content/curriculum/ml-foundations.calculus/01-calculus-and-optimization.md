@@ -8,6 +8,17 @@ Training is optimisation: find parameters minimising a loss. The tools are the
 gradient and the chain rule, and the interesting question is why gradient descent
 works at all on a surface with no guarantees.
 
+> [!WHY] A custom training loss appears to converge until an ordinary
+> parameter update increases it sharply. Checking the gradient and its
+> step size separately can prevent days of tuning around a faulty
+> derivative.
+
+> [!GOALS]
+>
+> - Explain gradient propagation through a chain
+> - Compute a numerical gradient and descent step
+> - Choose a response to an excessive learning rate
+
 ## The gradient
 
 ```text
@@ -146,6 +157,14 @@ why λ trades off against the loss rather than being an independent setting.
 This is the standard check for custom autograd functions and custom losses, and it
 takes minutes to write.
 
+```mermaid
+flowchart TB
+  F[Evaluate loss at x plus epsilon] --> D[Central difference]
+  B[Evaluate loss at x minus epsilon] --> D
+  D --> C[Compare analytic gradient]
+  C --> U[Validate update direction]
+```
+
 ## Practical implications
 
 ```text
@@ -159,6 +178,26 @@ takes minutes to write.
   □  the loss SURFACE depends on the parameterisation:
      normalisation reshapes it, which is why it helps
 ```
+
+> [!PITFALL] A gradient is a local description; multiplying it by a large
+> step size can leave the region where it predicts improvement.
+
+> [!INTERVIEW] Distinguish a wrong derivative from a correct derivative
+> used with a poor step size.
+
+> [!CHECK] Which direction does the gradient point?
+>
+> Steepest ascent; gradient descent steps against it.
+
+> [!CHECK] Why is a full Newton step infeasible for huge models?
+>
+> The Hessian has one entry per parameter pair, so its storage and
+> manipulation scale quadratically in parameter count.
+
+> [!CHECK] How does regularization relate to a constraint?
+>
+> A norm constraint can be made soft by a penalty with a multiplier
+> trading its cost against the loss.
 
 ## What to take away
 
@@ -176,3 +215,34 @@ takes minutes to write.
    gradient, and it takes minutes.
 
 Next: probability and statistics.
+
+## Exercises
+
+> [!EXERCISE recall] Why can repeated local derivatives make gradients
+> vanish or explode, and what changes with a residual path?
+>
+> **Solution:** The chain rule multiplies local derivatives along a path,
+> so repeatedly small or large factors shrink or grow the signal. A
+> residual connection adds a derivative-1 path that breaks that pure
+> product.
+
+> [!EXERCISE apply] At x=2, epsilon=0.5, a loss evaluates to
+> f(x+epsilon)=6.25 and f(x−epsilon)=2.25. Estimate its derivative, then
+> make one descent step with eta=0.1 from theta=2 using that estimate.
+>
+> **Solution:** The central-difference formula is df/dx ≈
+> [f(x+epsilon)−f(x−epsilon)]/(2 epsilon). The numerator is 6.25−2.25 = 4
+> and denominator is 2×0.5 = 1, so the estimate is 4/1 = 4. The update is
+> theta_new = theta−eta×gradient = 2−0.1×4 = 2−0.4 = 1.6. This
+> finite-difference value is a debugging approximation, not an exact
+> derivative guarantee.
+
+> [!EXERCISE stretch] A verified derivative gives unstable training when
+> the learning rate is raised sharply. Recommend what to examine before
+> concluding that non-convex optimization is hopeless.
+>
+> **Solution:** Inspect the learning rate and gradient norm, reduce an
+> excessive step and use clipping when gradients are enormous. A weaker
+> answer keeps the oversized step and treats every increase in loss as
+> proof of a bad local minimum: the local gradient promise does not extend
+> to arbitrarily distant updates.

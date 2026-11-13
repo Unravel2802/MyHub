@@ -9,6 +9,16 @@ loss is usually a negative log-likelihood, and evaluation is statistical
 inference. The concepts below are the ones that recur, with the practical errors
 attached.
 
+> [!WHY] A forecast changes units and an engineer multiplies its
+> uncertainty by the same factor as its mean. The downstream decision then
+> receives the wrong spread even though the transformed average is right.
+
+> [!GOALS]
+>
+> - Distinguish epistemic and aleatoric uncertainty
+> - Transform expectations and variances correctly
+> - Interpret an underpowered non-significant result
+
 ## Distributions worth knowing
 
 ```text
@@ -109,6 +119,13 @@ are the same parameter viewed two ways.
     perfect dependence.
 ```
 
+```mermaid
+flowchart TB
+  X[Random variable X] --> E[Mean scales linearly]
+  X --> V[Variance scales quadratically]
+  V --> I[Add variances only if independent]
+```
+
 ## Hypothesis testing and its traps
 
 ```text
@@ -183,6 +200,28 @@ Modern neural networks are systematically **overconfident**, and temperature
 scaling is a one-parameter fix that costs nothing and preserves accuracy exactly.
 It is under-used relative to how cheap it is.
 
+> [!PITFALL] Zero correlation rules out only linear association; it is not
+> a certificate of independence.
+
+> [!INTERVIEW] State independence and the uncertainty quantity before
+> transforming or combining it.
+
+> [!CHECK] What roles do prior and likelihood have in Bayes’ rule?
+>
+> The prior describes the hypothesis before this evidence; the likelihood
+> describes the observed evidence under that hypothesis.
+
+> [!CHECK] What estimation view corresponds to adding a Gaussian weight
+> prior?
+>
+> MAP estimation, with the chapter’s correspondence to L2 regularization.
+
+> [!CHECK] Why report intervals and effect size rather than only a
+> p-value?
+>
+> They communicate magnitude and uncertainty; significance alone does not
+> tell the size or usefulness of the effect.
+
 ## What to take away
 
 1. The CLT explains why Gaussians are everywhere and why the assumption fails for
@@ -199,3 +238,29 @@ It is under-used relative to how cheap it is.
    calibration with one parameter and preserves ranking exactly.
 
 Next: what learning theory says about generalisation.
+
+## Exercises
+
+> [!EXERCISE recall] Which uncertainty can more representative data
+> reduce, and which remains inherent?
+>
+> **Solution:** Epistemic uncertainty concerns the model and can shrink
+> with data. Aleatoric uncertainty is inherent outcome noise that
+> collecting more data does not remove.
+
+> [!EXERCISE apply] Let E[X]=3 and Var(X)=2. Compute E[2X+5] and Var(2X).
+> Then an independent Y has Var(Y)=3; compute Var(2X+Y), stating where
+> independence is needed.
+>
+> **Solution:** Use E[aX+b]=aE[X]+b: E[2X+5]=2×3+5=6+5=11. Use
+> Var(aX)=a²Var(X): Var(2X)=2²×2=4×2=8. For independent quantities,
+> Var(U+V)=Var(U)+Var(V), so Var(2X+Y)=8+3=11. Independence is needed for
+> that sum-of-variances step, not for the linear expectation identity.
+
+> [!EXERCISE stretch] A small experiment is non-significant and a team
+> wants to announce that there is no effect. Recommend an interpretation.
+>
+> **Solution:** Check power, the confidence interval and plausible effect
+> sizes before concluding what the data excludes. A weaker answer equates
+> failure to reject with evidence of no effect: a weak test may simply be
+> unable to detect a real difference.

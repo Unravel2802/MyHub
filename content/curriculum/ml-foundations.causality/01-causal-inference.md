@@ -8,6 +8,17 @@ Most ML answers "what will happen?" Most decisions need "what will happen *if I
 do this*?" Those are different questions, and a model that answers the first can
 be actively misleading about the second.
 
+> [!WHY] A model accurately predicts which users will disengage, but
+> acting on those predictions produces no improvement. The intervention
+> budget depends on whose behaviour changes, not just whose outcome was
+> predictable.
+
+> [!GOALS]
+>
+> - Distinguish predictive and intervention questions
+> - Compute a difference-in-differences estimate
+> - Design an experiment around spillover
+
 ## The distinction
 
 ```text
@@ -121,6 +132,13 @@ experiment wrong means you have neither prediction nor causation.
     implication of it you can.
 ```
 
+```mermaid
+flowchart TB
+  T[Treated before and after] --> D[Compare changes]
+  C[Untreated before and after] --> D
+  D --> A[State parallel-trends assumption]
+```
+
 ## Uplift modelling
 
 The technique that directly answers the intervention question:
@@ -176,6 +194,27 @@ chapter's holdout, arriving from the causal direction: without it, the effect of
 continuously-running intervention is unmeasurable, and it will be defended on
 prediction accuracy rather than on impact.
 
+> [!PITFALL] Matching on measured covariates does not resolve an
+> unmeasured confounder.
+
+> [!INTERVIEW] Name the identifying assumption rather than presenting an
+> observational contrast as a guaranteed causal effect.
+
+> [!CHECK] What separates a persuadable case from a sure thing?
+>
+> The persuadable responds only with treatment; the sure thing responds
+> either way, so treatment spends effort without changing the outcome.
+
+> [!CHECK] Why retain a permanent control for a continuous intervention?
+>
+> It supports measuring the intervention’s effect rather than defending it
+> only through predictive accuracy.
+
+> [!CHECK] Why does repeated peeking threaten a fixed-horizon experiment?
+>
+> It inflates the false-positive rate unless the procedure is designed for
+> sequential decisions.
+
 ## What to take away
 
 1. Prediction and causation are different questions, and a model that answers the
@@ -192,3 +231,33 @@ prediction accuracy rather than on impact.
    is unmeasurable.
 
 Next: time series.
+
+## Exercises
+
+> [!EXERCISE recall] Why can a highly accurate predictor be unsuitable for
+> choosing an intervention target?
+>
+> **Solution:** It estimates what will happen conditional on observed
+> features, not the change caused by acting. The highest-risk cases may
+> already be unresponsive or may react adversely.
+
+> [!EXERCISE apply] An unrandomized rollout has treated-group outcome 50
+> before and 65 after; the comparison group moves from 40 to 45. Compute
+> difference-in-differences and explain the assumption behind attributing
+> it to treatment.
+>
+> **Solution:** The rule is change_treated−change_comparison. Treated
+> change is 65−50 = 15; comparison change is 45−40 = 5. The estimate is
+> 15−5 = 10 outcome units. Attribution assumes parallel trends absent
+> treatment; examine pre-period implications and state that the assumption
+> is not established just by these four observations.
+
+> [!EXERCISE stretch] An intervention changes interactions among users in
+> the same community, so untreated users can be affected by treated
+> neighbours. Recommend an experimental design.
+>
+> **Solution:** Consider cluster randomization at a unit that addresses
+> the spillover, with split checks, advance power and a preselected
+> primary metric. A weaker answer randomizes individuals and ignores
+> interference: treatment can change the supposed control condition
+> through neighbours.

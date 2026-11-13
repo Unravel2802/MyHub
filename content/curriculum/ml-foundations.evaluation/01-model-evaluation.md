@@ -8,6 +8,16 @@ An evaluation metric encodes what you consider a mistake. Choosing it badly mean
 optimising for the wrong thing with perfect rigour, which is the most expensive
 form of being wrong in ML.
 
+> [!WHY] A rare-event classifier shows a strong overall score while its
+> alert queue fills with false alarms. A metric that hides the operating
+> threshold can make an unusable review workflow look ready to ship.
+
+> [!GOALS]
+>
+> - Explain calibration separately from ranking
+> - Compute precision and recall at a threshold
+> - Choose slice-aware release evidence
+
 ## Classification metrics
 
 ```text
@@ -51,17 +61,16 @@ different systems.
 ## The curves
 
 ```text
-  ROC          TPR vs FPR across thresholds
-               AUC = P(a random positive scores above a
-               random negative)
-               ✗ MISLEADING under heavy imbalance, because
-                 FPR is computed against an enormous negative
-                 class
+  ROC                  TPR vs FPR across thresholds
+                       AUC = P(a random positive scores above a
+                       random negative)
+                       ✗ MISLEADING under heavy imbalance, because
+                         FPR is computed against an enormous negative
+                         class
 
-  PRECISION-
-  RECALL       precision vs recall across thresholds
-               ✓ the right curve for imbalanced problems
-               → baseline AUC = the positive rate, not 0.5
+  PRECISION-RECALL      precision vs recall across thresholds
+                       ✓ the right curve for imbalanced problems
+                       → baseline AUC = the positive rate, not 0.5
 ```
 
 ```text
@@ -91,6 +100,13 @@ different systems.
 That last point, from the ML-incidents chapter, is worth building in advance: a
 shifted score distribution is fixed by moving the threshold in minutes, versus
 retraining in a day.
+
+```mermaid
+flowchart TB
+  S[Model scores] --> V[Validation threshold]
+  V --> E[Error costs and review capacity]
+  E --> O[Runtime operating point]
+```
 
 ## Regression metrics
 
@@ -182,6 +198,27 @@ ship without a decision.
   □  and: is the difference larger than run-to-run variance?
 ```
 
+> [!PITFALL] Tuning a threshold on the test set spends the held-out
+> evidence intended for the final assessment.
+
+> [!INTERVIEW] Report both kinds of error and the operating constraint
+> instead of one attractive aggregate score.
+
+> [!CHECK] Why prefer a PR curve under strong imbalance?
+>
+> A large negative population can make ROC false-positive rates look small
+> while precision at usable thresholds is poor.
+
+> [!CHECK] Why pair model comparisons on the same examples?
+>
+> It provides a more sensitive comparison than unrelated means; confidence
+> intervals and run variance still matter.
+
+> [!CHECK] At which ranking cutoff should performance be reported?
+>
+> At the positions users actually see, not a much deeper list whose unseen
+> items dominate the reported number.
+
 ## What to take away
 
 1. The metric encodes what counts as a mistake; choose it from the relative cost of
@@ -198,3 +235,31 @@ ship without a decision.
    once.
 
 Next: causal inference and experimentation.
+
+## Exercises
+
+> [!EXERCISE recall] How can a model rank examples well yet have poor
+> calibration?
+>
+> **Solution:** Ordering scores correctly does not mean their probability
+> values match observed frequencies. Calibration asks whether cases scored
+> at a given probability occur at roughly that frequency.
+
+> [!EXERCISE apply] At a proposed threshold, TP=36, FP=12, FN=24 and
+> TN=128. Compute precision, recall and accuracy. Explain why accuracy
+> alone does not describe the positive-class behaviour.
+>
+> **Solution:** Precision = TP/(TP+FP) = 36/(36+12) = 36/48 = 0.75. Recall
+> = TP/(TP+FN) = 36/(36+24) = 36/60 = 0.60. Total = 36+12+24+128 = 200;
+> accuracy = (TP+TN)/total = (36+128)/200 = 164/200 = 0.82. The model is
+> correct on 75% of its positive calls but finds only 60% of actual
+> positives; the 82% aggregate hides both distinctions.
+
+> [!EXERCISE stretch] A candidate improves overall evaluation while
+> regressing a predeclared important language slice. Recommend release
+> evidence.
+>
+> **Solution:** Gate and discuss the slice regression explicitly, compare
+> on the same examples with uncertainty and reserve final test evidence
+> for the chosen model. A weaker answer ships solely because the aggregate
+> improved: gains elsewhere can mask a consequential segment failure.

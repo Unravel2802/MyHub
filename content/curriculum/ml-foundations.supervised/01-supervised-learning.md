@@ -9,6 +9,16 @@ not for nostalgia but because they remain the right answer for a large fraction 
 real problems, and because their assumptions make the trade-offs explicit in a way
 a neural network's do not.
 
+> [!WHY] A team replaces a quick tabular baseline with a complex model
+> before checking feature quality. Extra training and deployment work can
+> then hide the fact that no useful signal was added.
+
+> [!GOALS]
+>
+> - Explain regularization’s feature-selection effect
+> - Compute a naive-Bayes class decision
+> - Choose an ordered baseline improvement plan
+
 ## Linear regression
 
 ```text
@@ -123,6 +133,13 @@ The reason it survives a false assumption is worth understanding: it produces ba
 calibrated probabilities and frequently correct rankings, and classification needs
 the ranking.
 
+```mermaid
+flowchart TB
+  P[Class prior] --> S[Prior times feature likelihoods]
+  L[Conditional feature terms] --> S
+  S --> A[Choose highest class score]
+```
+
 ## Choosing
 
 ```text
@@ -173,6 +190,27 @@ Threshold tuning deserves the emphasis: the model outputs a score, and the
 operating point is a separate decision that should follow from the relative cost of
 false positives and false negatives — not from the default of 0.5.
 
+> [!PITFALL] A high all-negative accuracy on an imbalanced task says
+> little about whether useful positives are found.
+
+> [!INTERVIEW] Name the model’s assumptions and baseline performance
+> before choosing more complexity.
+
+> [!CHECK] Why can kNN inference become costly as data grows?
+>
+> It places the work at prediction time and needs a meaningful distance to
+> training examples.
+
+> [!CHECK] What does the kernel trick avoid constructing?
+>
+> An explicit high-dimensional feature representation while computing its
+> inner products.
+
+> [!CHECK] How should a linear-regression system be solved numerically?
+>
+> Prefer a QR or SVD solve to explicitly computing the normal-equation
+> inverse.
+
 ## What to take away
 
 1. Linear and logistic regression remain strong baselines with calibrated
@@ -188,3 +226,32 @@ false positives and false negatives — not from the default of 0.5.
    relative cost of errors is the most direct and most forgotten lever.
 
 Next: trees and ensembles, which win on tabular data.
+
+## Exercises
+
+> [!EXERCISE recall] How do Lasso and Ridge differ as feature selectors?
+>
+> **Solution:** L1/Lasso can drive coefficients exactly to zero and
+> thereby select features. L2/Ridge shrinks coefficients while generally
+> retaining them.
+
+> [!EXERCISE apply] For two observed features, class A has prior 0.6 and
+> conditional likelihoods 0.5 and 0.2; B has prior 0.4 and likelihoods
+> 0.25 and 0.8. Using the chapter’s conditional-independence model, choose
+> a class and say whether normalized probabilities were required.
+>
+> **Solution:** The rule is P(y|x) proportional to P(y)×product_i
+> P(x_i|y). A’s score is 0.6×0.5×0.2 = 0.3×0.2 = 0.06. B’s is 0.4×0.25×0.8
+> = 0.1×0.8 = 0.08. Choose B since 0.08>0.06. A common normalization is
+> unnecessary for the argmax, and a correct ordering does not imply
+> well-calibrated probabilities when the independence assumption is false.
+
+> [!EXERCISE stretch] A mixed-type tabular project has only a trivial
+> baseline and proposes a large network next. Recommend an experiment
+> sequence.
+>
+> **Solution:** Try a simple logistic or boosted-tree baseline on
+> reasonable features, improve the features and justify a more complex
+> model only with a clear gain. A weaker answer jumps directly to
+> architecture search: it spends effort before learning whether feature
+> quality and a simple model already solve the problem.

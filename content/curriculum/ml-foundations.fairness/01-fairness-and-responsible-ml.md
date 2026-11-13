@@ -9,6 +9,17 @@ are several formal definitions, they conflict mathematically, and choosing betwe
 them is a value judgement that engineering cannot make. Understanding that is the
 starting point.
 
+> [!WHY] A selection model is announced as fair because one group metric
+> matches, while affected people experience different error consequences.
+> Choosing and documenting which definition matters is a decision that the
+> aggregate score cannot make.
+
+> [!GOALS]
+>
+> - Explain measurement bias in labels
+> - Compare group selection-error and precision metrics
+> - Evaluate fairness beyond model scores
+
 ## Where bias enters
 
 ```text
@@ -85,6 +96,14 @@ definitions.
   → so: choose the definition DELIBERATELY, with the people
     affected and with legal input, and DOCUMENT the choice
     and its reasoning.
+```
+
+```mermaid
+flowchart TB
+  C[Deployment and affected people] --> D[Choose fairness definition]
+  D --> M[Measure by group and intersection]
+  M --> T[Document trade-offs]
+  T --> R[Review system and recourse]
 ```
 
 ## Measuring
@@ -173,6 +192,27 @@ the most common well-intentioned mistake in the area.
     ASSESSMENTS      increasingly a regulatory requirement
 ```
 
+> [!PITFALL] Removing a protected field does not remove correlated proxies
+> or repair a biased target label.
+
+> [!INTERVIEW] Say which fairness definition is being evaluated, who chose
+> it and what costs it leaves out.
+
+> [!CHECK] Why check intersections rather than only one attribute at a
+> time?
+>
+> A failure can be hidden within an intersection even when the marginal
+> group metrics look acceptable.
+
+> [!CHECK] Why can post-processing require deployment-policy review?
+>
+> Group-specific thresholds require the protected attribute at decision
+> time, which may be constrained in the relevant context.
+
+> [!CHECK] Why measure error costs as well as rates?
+>
+> The same rate can impose different consequences on different groups.
+
 ## What to take away
 
 1. Bias enters at seven distinct points; measurement bias — a label that encodes
@@ -189,3 +229,34 @@ the most common well-intentioned mistake in the area.
    deployment context — not just the model.
 
 Next: hyperparameter optimisation.
+
+## Exercises
+
+> [!EXERCISE recall] Why is measurement bias deeper than an ordinary model
+> accuracy problem?
+>
+> **Solution:** If the label is an inequitable proxy for the intended
+> outcome, accurately predicting it reproduces the wrong target.
+> Post-processing cannot make that label mean the right thing.
+
+> [!EXERCISE apply] A review reports group A with TPR 0.8, FPR 0.2 and
+> precision 0.6, and group B with TPR 0.8, FPR 0.1 and precision 0.6.
+> Choose which of equal opportunity, equalised odds and predictive parity
+> hold on these reported rates. Does passing some definitions justify
+> saying all three hold?
+>
+> **Solution:** Equal opportunity holds because the true-positive rates
+> match. Predictive parity holds because precision matches. Equalised odds
+> does not hold because it requires both TPR and FPR equality, and the
+> false-positive rates differ. Report the chosen definition explicitly;
+> two matching criteria do not make the conflicting third disappear.
+
+> [!EXERCISE stretch] A model’s chosen group metric passes, but users
+> cannot challenge an incorrect decision and reviewers cannot actually
+> override it. Recommend the next review.
+>
+> **Solution:** Assess the complete system with affected people, including
+> recourse, meaningful override and intended deployment context. Document
+> the chosen definition and its limits. A weaker answer stops at the
+> passing score: a fair metric does not make an unfair appeals process
+> acceptable.

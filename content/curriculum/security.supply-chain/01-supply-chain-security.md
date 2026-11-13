@@ -10,6 +10,16 @@ application's own privileges. Supply chain security is the discipline of
 treating that dependency tree, and the pipeline that builds and ships it,
 as a genuine attack surface rather than an implicitly trusted given.
 
+> [!WHY] A clean source review is followed by a malicious published
+> artifact because the build machine was compromised. Dependency review
+> alone cannot establish that the shipped bytes match the reviewed source.
+
+> [!GOALS]
+>
+> - Distinguish signatures from pinned integrity hashes
+> - Choose evidence for build and dependency incidents
+> - Design a safer CI privilege boundary
+
 ## The transitive dependency problem
 
 ```text
@@ -31,15 +41,13 @@ as a genuine attack surface rather than an implicitly trusted given.
 ## The recurring attack pattern: compromising a trusted maintainer
 
 ```text
-  the actual, repeatedly observed pattern behind several REAL,
-  major incidents: an attacker doesn't need to write NEW
-  malicious code from scratch and somehow get widespread
-  adoption — they compromise an EXISTING, already-trusted,
-  already-widely-used package (a maintainer's credentials
-  phished, a maintainer account taken over, a new "co-
-  maintainer" added who then publishes a malicious update) and
-  publish a malicious VERSION of something thousands of
-  projects already depend on and update to routinely.
+  the actual, repeatedly observed pattern behind several REAL, major
+  incidents: an attacker doesn't need to write NEW malicious code from
+  scratch and somehow get widespread adoption — they compromise an EXISTING,
+  already-trusted, already-widely-used package (a maintainer's credentials
+  phished, a maintainer account taken over, a new "co-maintainer" added who
+  then publishes a malicious update) and publish a malicious VERSION of
+  something thousands of projects already depend on and update to routinely.
 
   → this is exactly why "it's a popular, widely-used package"
     is not, by itself, a safety guarantee — popularity is a
@@ -107,6 +115,14 @@ as a genuine attack surface rather than an implicitly trusted given.
     all.
 ```
 
+```mermaid
+flowchart TB
+  S[Reviewed source] --> B[Independent rebuild]
+  S --> P[Published build process]
+  B --> C[Compare artifact bytes]
+  P --> C
+```
+
 ## CI as an attack surface
 
 ```text
@@ -116,17 +132,37 @@ as a genuine attack surface rather than an implicitly trusted given.
     genuine, direct attack target, not merely a build-automation
     concern.
 
-  → the CONCRETE risk pattern: a pull request from an EXTERNAL
-    contributor that modifies the CI CONFIGURATION FILE itself
-    (not just application code) can potentially run arbitrary
-    commands WITH the pipeline's existing, elevated privileges
-    and secrets — the SAME code-review discipline the code-
-    review chapter covers needs to apply with PARTICULAR
-    scrutiny to changes touching CI config specifically, since
-    the blast radius of a compromised CI pipeline (production
-    deploy access, registry publish access) is dramatically
-    larger than a typical application code change.
+  → the CONCRETE risk pattern: a pull request from an EXTERNAL contributor
+    that modifies the CI CONFIGURATION FILE itself (not just application
+    code) can potentially run arbitrary commands WITH the pipeline's
+    existing, elevated privileges and secrets — the SAME code-review
+    discipline the code-review chapter covers needs to apply with PARTICULAR
+    scrutiny to changes touching CI config specifically, since the blast
+    radius of a compromised CI pipeline (production deploy access, registry
+    publish access) is dramatically larger than a typical application
+    code change.
 ```
+
+> [!PITFALL] A package’s popularity increases its value as a target; it is
+> not a guarantee against maintainer compromise.
+
+> [!INTERVIEW] Say whether the evidence proves inventory, bytes, publisher
+> identity or correspondence to source.
+
+> [!CHECK] Why does a transitive dependency still matter?
+>
+> It runs with the application’s privileges even though the team did not
+> choose it directly.
+
+> [!CHECK] What does an SBOM enumerate?
+>
+> Every direct and transitive component and its precise version in a
+> particular build.
+
+> [!CHECK] Why scrutinize CI configuration changes?
+>
+> They can execute commands with deployment, publishing and secret access,
+> creating a broad privilege boundary.
 
 ## What to take away
 
@@ -147,3 +183,35 @@ as a genuine attack surface rather than an implicitly trusted given.
    server injecting malicious code during the build step while the source
    in git stays clean — a mismatch between rebuild and published artifact
    reveals tampering the source review would never catch.
+
+## Exercises
+
+> [!EXERCISE recall] How do a publisher signature and a lockfile integrity
+> hash differ?
+>
+> **Solution:** A verified signature establishes origin from the
+> signing-key holder and unchanged content, assuming the key is
+> trustworthy. A pinned integrity hash checks the expected bytes but does
+> not by itself establish the original publisher’s identity.
+
+> [!EXERCISE apply] A library vulnerability is disclosed, and separately a
+> published binary differs from an independent rebuild of the same source.
+> Choose what an SBOM and reproducible builds help answer, and whether
+> clean source review settles both issues.
+>
+> **Solution:** Query the SBOM for the affected component/version and
+> where that build ships. Compare rebuild bytes to the published artifact
+> to investigate build-process tampering despite clean source. Source
+> review alone neither inventories every shipped transitive component nor
+> proves that publication used the reviewed source without modification
+> during building.
+
+> [!EXERCISE stretch] An external pull request changes a CI job that
+> normally holds production deployment secrets. Recommend the review and
+> privilege boundary.
+>
+> **Solution:** Review the CI change specifically as executable privileged
+> configuration and keep untrusted contributor execution from inheriting
+> unnecessary deployment/publish authority or secrets. A weaker answer
+> approves it after checking only application code: the pipeline itself
+> can be the attack path even when that code is harmless.

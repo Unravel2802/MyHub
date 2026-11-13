@@ -9,6 +9,17 @@ domain, reduces to one of a small number of recurring algorithmic shapes.
 This chapter isn't every algorithm — it's the shapes themselves, which is
 what lets you recognize a new problem as an old one in disguise.
 
+> [!WHY] A search routine passes its tests on sorted records, then
+> silently misses records after ingestion changes their order. An
+> algorithm’s precondition can decide correctness even when the code still
+> runs without an exception.
+
+> [!GOALS]
+>
+> - Explain when memoization pays off
+> - Choose algorithms from workload requirements
+> - Test a greedy choice with a counterexample
+
 ## Sorting: the baseline every comparison builds on
 
 ```text
@@ -103,13 +114,23 @@ what lets you recognize a new problem as an old one in disguise.
 ```
 
 ```text
-  → this is the Complexity and Analysis chapter's amortized-
-    cost idea, applied differently: the FIRST computation of
+    → this is the Complexity and Analysis chapter's amortized-cost idea,
+    applied differently: the FIRST computation of
     each
     subproblem pays its real cost; every SUBSEQUENT reference
     to the same subproblem is O(1) — the total cost collapses
     from exponential (recomputing) to polynomial (computing
     once, reading many times).
+```
+
+
+```mermaid
+flowchart TB
+  P[Repeated subproblem] --> C{Already cached?}
+  C -->|yes| R[Reuse result]
+  C -->|no| S[Solve smaller subproblems]
+  S --> M[Store result]
+  M --> R
 ```
 
 ## Greedy algorithms: locally optimal, sometimes globally correct
@@ -157,6 +178,27 @@ what lets you recognize a new problem as an old one in disguise.
     benchmarking any code.
 ```
 
+> [!PITFALL] Binary search on unsorted input can return a wrong answer
+> silently; sortedness is part of its correctness contract.
+
+> [!INTERVIEW] Name the algorithm’s precondition before its complexity:
+> sortedness for binary search, equal edge costs for BFS, and a proved
+> greedy-choice property for greedy optimisation.
+
+> [!CHECK] What is the general comparison-sort lower bound?
+>
+> O(n log n); counting and radix sorts escape it by exploiting value
+> structure rather than comparing arbitrary elements.
+
+> [!CHECK] Why is DFS not a shortest-hop substitute for BFS?
+>
+> It follows depth rather than distance layers, so the first path it finds
+> need not use the fewest hops.
+
+> [!CHECK] Which divide-and-conquer recurrence gives O(n log n) here?
+>
+> T(n) = 2T(n/2) + O(n), as in splitting, sorting halves and merging.
+
 ## What to take away
 
 1. Comparison sorts have a proven O(n log n) lower bound; non-comparison
@@ -175,3 +217,37 @@ what lets you recognize a new problem as an old one in disguise.
    general heuristic — the same greedy strategy that's provably optimal for
    one denomination set fails silently, with a valid but suboptimal answer,
    for another.
+
+## Exercises
+
+> [!EXERCISE recall] Which two properties make dynamic programming useful,
+> and what fails without each?
+>
+> **Solution:** Overlapping subproblems let stored results avoid repeated
+> computation; optimal substructure lets correct subproblem solutions
+> combine into a correct overall solution. Without overlap there is no
+> repeated work to cache; without the required structure those choices
+> need not combine correctly.
+
+> [!EXERCISE apply] A report must sort tickets by priority while retaining
+> arrival order among equal priorities, then search many sorted ticket
+> ids. Choose a sort and a search, naming the relevant guarantees and
+> costs.
+>
+> **Solution:** Choose stable merge sort for O(n log n) guaranteed sorting
+> with O(n) extra space; stability preserves arrival order within priority
+> groups. Use binary search for the separately sorted ids at O(log n),
+> ensuring sortedness first. An unstable sort can lose the arrival
+> ordering, and binary search on unsorted ids is invalid.
+
+> [!EXERCISE stretch] A machine has coin values 8, 5 and 1 and must return
+> 10 units with as few coins as possible. Evaluate largest-first greedy,
+> recommend an approach, and explain the weaker claim that greedy worked
+> for another coin system.
+>
+> **Solution:** Greedy picks 8, then 1, then 1: three coins. Two 5s make
+> 10 with two coins, and no single available coin makes 10, so two is
+> optimal. Reject unproved greedy here; use an exact method that considers
+> alternatives, such as dynamic programming. Success on another
+> denomination set is a weaker justification because the greedy-choice
+> property belongs to the particular problem.

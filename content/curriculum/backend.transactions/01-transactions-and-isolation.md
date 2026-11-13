@@ -10,6 +10,16 @@ the promise is expensive to keep fully, so every database offers weaker,
 faster versions of it, and picking one means knowing exactly what you're
 giving up.
 
+> [!WHY] Two editors read the same row version and save different updates.
+> Without a version condition, the later write can overwrite work neither
+> editor intended to discard.
+
+> [!GOALS]
+>
+> - Explain isolation anomalies
+> - Trace an optimistic version check
+> - Choose a lock strategy for contention
+
 ## ACID, as a checklist
 
 ```text
@@ -59,7 +69,7 @@ giving up.
   the concrete bug READ COMMITTED still allows:
 
     t1: SELECT balance FROM accounts WHERE id=1;  -- 100
-    t2:                                    UPDATE ... SET balance=50; COMMIT;
+    t2: UPDATE ... SET balance=50; COMMIT;
     t1: SELECT balance FROM accounts WHERE id=1;  -- 50 (!)
     t1: -- same transaction, same row, different answer
 
@@ -95,6 +105,14 @@ This optimistic pattern is exactly what HTTP's `If-Match` conditional request
 does at the API layer (the HTTP & the Web Platform chapter) — a version
 or ETag read on GET, sent back on the write, rejected with 412 if it moved.
 Same idea, two layers.
+
+```mermaid
+flowchart TB
+  R[Read version 9] --> A[Attempt update where version is 9]
+  A --> C{Version still matches?}
+  C -->|yes| W[Write and advance version]
+  C -->|no| F[Zero rows: report or retry conflict]
+```
 
 ## Deadlocks
 
@@ -137,6 +155,28 @@ Same idea, two layers.
     which this chapter's single-database version sets up.
 ```
 
+> [!PITFALL] Retrying a stale write without preserving its version check
+> discards the concurrency protection.
+
+> [!INTERVIEW] Name the anomaly and conflict rate, then justify locking or
+> optimism and state how the caller handles a rejected write.
+
+> [!CHECK] What does durability promise after commit?
+>
+> Committed data survives a crash under the database’s durability
+> contract.
+
+> [!CHECK] What can READ COMMITTED still allow in this chapter’s example?
+>
+> A second read of the same row sees a newer committed value, a
+> non-repeatable read.
+
+> [!CHECK] What happens if a 2PC coordinator fails between prepare and
+> commit?
+>
+> Participants can remain uncertain and hold locks until the coordinator
+> recovers, motivating other cross-service designs.
+
 ## What to take away
 
 1. ACID's isolation guarantee is a spectrum, not a switch — READ COMMITTED
@@ -151,3 +191,35 @@ Same idea, two layers.
    ordering across every code path that locks more than one row.
 5. Two-phase commit has a single-point-of-failure coordinator, which is why
    cross-service transactions usually reach for a saga instead.
+
+## Exercises
+
+> [!EXERCISE recall] Distinguish dirty, non-repeatable and phantom reads.
+>
+> **Solution:** A dirty read observes uncommitted data that may roll back.
+> A non-repeatable read gets different committed values for the same row
+> in one transaction. A phantom read gets a changed set of matching rows
+> from repeating a predicate query.
+
+> [!EXERCISE apply] A row is version 9 when clients A and B read it. A
+> updates WHERE version=9 and advances it to 10. B then updates WHERE
+> version=9. Trace affected-row counts and choose B’s recovery rather than
+> overwriting unconditionally.
+>
+> **Solution:** A matches the current version and updates one row to
+> version 10. B’s condition no longer matches, so it affects zero rows and
+> must report a conflict or reread and retry deliberately. Removing the
+> version condition would silently overwrite a value based on an obsolete
+> read. HTTP If-Match expresses the same conditional-write idea at the API
+> boundary.
+
+> [!EXERCISE stretch] A hot inventory row causes frequent optimistic
+> conflicts, and some transactions lock related rows in opposite orders.
+> Recommend a strategy for both problems.
+>
+> **Solution:** Use pessimistic locking where high contention makes
+> repeated optimistic attempts collide, keep the transaction bounded, and
+> require the same row lock order across paths. A weaker answer leaves
+> opposite lock ordering and only retries more aggressively: it preserves
+> the deadlock cycle and adds contention. Low-conflict rows can still use
+> optimistic checks rather than locking everything.

@@ -10,6 +10,17 @@ Event sourcing stores the opposite — a log of everything that happened — and
 derives current state from replaying it. That single reversal is the whole
 idea, and it has real, specific consequences.
 
+> [!WHY] A support engineer needs to explain a balance change, but the
+> current row contains only the final number. An append-only event history
+> can answer how the state arose, at the cost of projections and
+> long-lived event versions.
+
+> [!GOALS]
+>
+> - Explain event history versus current state
+> - Replay an event sequence into a projection
+> - Choose a confirmation path despite projection lag
+
 ## The core reversal
 
 ```text
@@ -87,6 +98,14 @@ idea, and it has real, specific consequences.
     separate auxiliary store.
 ```
 
+```mermaid
+flowchart TB
+  W[Command accepted] --> L[Append event log]
+  L --> P[Async projection consumer]
+  P --> T[Read-optimised table]
+  T --> R[Queries may lag]
+```
+
 ## Eventual consistency between write and read
 
 ```text
@@ -146,6 +165,27 @@ idea, and it has real, specific consequences.
      any of the above and event sourcing's costs are real
 ```
 
+> [!PITFALL] A stale projection is not evidence that an accepted event
+> disappeared; read and write models can advance at different times.
+
+> [!INTERVIEW] State the authoritative log, the projection’s lag and the
+> event-version burden before presenting replay as a free benefit.
+
+> [!CHECK] What does CQRS deliberately separate?
+>
+> The write model and a read-optimised projection, which is derived and
+> rebuildable.
+
+> [!CHECK] Why do immutable events complicate schema evolution?
+>
+> Old event shapes remain in the log, so readers must understand the
+> versions already written.
+
+> [!CHECK] When is event sourcing justified rather than a default?
+>
+> When audit history, reconstruction or distinct read models are real
+> requirements worth its query and replay costs.
+
 ## What to take away
 
 1. Event sourcing stores what happened, not just what's currently true — a
@@ -162,3 +202,35 @@ idea, and it has real, specific consequences.
    reading code must understand — this is not a default architecture; reach
    for it only when the audit trail or the history genuinely is the
    requirement.
+
+## Exercises
+
+> [!EXERCISE recall] What distinction can an event log preserve that a
+> current-value row cannot?
+>
+> **Solution:** Different sequences can produce the same final state.
+> Appended deposits and withdrawals retain how a balance was reached,
+> while an overwritten balance row loses that sequence and cannot
+> independently reconstruct earlier states.
+
+> [!EXERCISE apply] Starting from zero, an account records deposit 80,
+> withdraw 25 and deposit 40. The projection consumed only the first two
+> events. Compute the full balance and visible projection, and choose
+> which is authoritative when rebuilding.
+>
+> **Solution:** Replay gives 0 + 80 = 80, then 80 − 25 = 55, then 55 + 40
+> = 95. The lagging projection shows 55 because it has not consumed the
+> final deposit. The immutable event log is authoritative; rebuilding a
+> corrected projection replays those events rather than treating its stale
+> 55 as source data.
+
+> [!EXERCISE stretch] A customer writes successfully but an immediate read
+> shows an old projection. Recommend a confirmation experience without
+> pretending reads are synchronously updated.
+>
+> **Solution:** For confirmation, consult the write model for that
+> operation or present an optimistic/pending view until the projection
+> catches up. A weaker answer reads the same lagging projection and
+> reports that the write failed: asynchronous projection lag is a separate
+> fact from the accepted write. Also retain the cost of version-aware
+> replay when choosing this architecture.

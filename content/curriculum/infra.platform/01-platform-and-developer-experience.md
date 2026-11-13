@@ -10,6 +10,17 @@ infrastructure as a PRODUCT, with OTHER ENGINEERS as its users — and, like
 any product, its quality is measured by whether those users can get their
 actual work done, not by how sophisticated the underlying technology is.
 
+> [!WHY] A new engineer waits on several tickets before a first
+> deployment, while every team maintains a different setup. The platform’s
+> sophistication matters little if common tasks repeatedly stop its actual
+> users from shipping.
+
+> [!GOALS]
+>
+> - Explain the golden-path contract
+> - Compute repeated iteration waiting cost
+> - Design self-service with enforced guardrails
+
 ## The golden path: one well-supported way to do the common thing
 
 ```text
@@ -26,14 +37,13 @@ actual work done, not by how sophisticated the underlying technology is.
 ```
 
 ```text
-  → this is the "reviewable environments" idea from
-    Infrastructure as Code, generalized past just infrastructure
-    definitions to the ENTIRE workflow of building and shipping
-    a service — a golden path doesn't PREVENT deviating from it
-    for a genuinely unusual need, but it means the COMMON case
-    (which is most cases) has a fast, well-supported, already-
-    solved answer, rather than every team re-solving the same
-    problem independently and inconsistently.
+  → this is the "reviewable environments" idea from Infrastructure as Code,
+    generalized past just infrastructure definitions to the ENTIRE workflow
+    of building and shipping a service — a golden path doesn't PREVENT
+    deviating from it for a genuinely unusual need, but it means the COMMON
+    case (which is most cases) has a fast, well-supported, already-solved
+    answer, rather than every team re-solving the same problem independently
+    and inconsistently.
 ```
 
 ## Internal tooling as a product, with real users
@@ -101,6 +111,14 @@ actual work done, not by how sophisticated the underlying technology is.
     step under time pressure.
 ```
 
+```mermaid
+flowchart TB
+  U[Engineer requests common resource] --> G[Golden-path tooling]
+  G --> C[Automatic guardrails]
+  C --> P[Self-service provision]
+  P --> F[Measure user friction]
+```
+
 ## Measuring platform effectiveness
 
 ```text
@@ -122,6 +140,27 @@ actual work done, not by how sophisticated the underlying technology is.
     infrastructure experience instead.
 ```
 
+> [!PITFALL] A portal without encoded limits and conventions changes the
+> interface to provisioning, not the reliability of its guardrails.
+
+> [!INTERVIEW] Treat developers as users: measure their first deploy,
+> iteration delay and workarounds before judging a platform by its
+> technology stack.
+
+> [!CHECK] What onboarding metric is a useful platform signal?
+>
+> Time for a new engineer to make a first production deployment.
+
+> [!CHECK] Why measure pipeline variance as well as typical duration?
+>
+> Occasional large delays create a different disruptive experience from a
+> consistently predictable cycle.
+
+> [!CHECK] What does frequent bypass of platform tooling suggest?
+>
+> The supported path may not serve a real user need; investigate the
+> workaround rather than assuming the platform is effective.
+
 ## What to take away
 
 1. A golden path is deliberately opinionated — one well-supported default
@@ -141,3 +180,36 @@ actual work done, not by how sophisticated the underlying technology is.
    honest signal of whether a golden path is actually serving a real need —
    measure platform effectiveness the same way performance work measures
    code, rather than assuming it.
+
+## Exercises
+
+> [!EXERCISE recall] What makes a golden path opinionated without
+> requiring that every unusual workload fit it?
+>
+> **Solution:** It gives the common case one documented, supported
+> default, avoiding independent reinvention. Genuinely unusual needs can
+> deviate deliberately; the value is fast reliable support for ordinary
+> work rather than prohibition of every alternative.
+
+> [!EXERCISE apply] Twelve engineers each run eighteen build/test cycles
+> daily. A shared improvement reduces each cycle from eight minutes to
+> one. Compute raw waiting time avoided and explain why that informs
+> prioritisation without claiming all of it becomes productive coding
+> time.
+>
+> **Solution:** There are 12 × 18 = 216 cycles. Each saves 8 − 1 = 7
+> minutes, for 216 × 7 = 1512 minutes, or 25.2 engineer-hours of raw
+> waiting per day. This makes the repeated tax visible when prioritising a
+> shared pipeline improvement. Actual productivity also depends on context
+> switching and overlap, so the arithmetic is not a promise of 25.2 extra
+> coding hours.
+
+> [!EXERCISE stretch] A platform proposal replaces provisioning tickets
+> with a portal but removes limits and required tags for convenience.
+> Recommend a genuine self-service design.
+>
+> **Solution:** Encode resource limits, tagging and security checks in the
+> supported tooling so users can provision the common case without manual
+> platform intervention. A weaker answer removes those guardrails and
+> calls the absence of tickets success: the chapter’s self-service model
+> moves consistent enforcement into automation rather than discarding it.

@@ -391,7 +391,7 @@ gate.
   chapters (append X4.1's items 5–6 to the authoring prompt).
 - The status line below is current.
 
-**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 merged 2026-11-12; F1, F2, C, B, FE, I, S, D and EP merged 2026-11-13 (see the reviews at the end); MF and DL are next.
+**Status:** X1–X3 merged 2026-11-11. X4: E0 merged 2026-11-11; E1 merged 2026-11-11; E2 merged 2026-11-12; DS3 and DS4 merged 2026-11-12; F1, F2, C, B, FE, I, S, D, EP, MF and DL merged 2026-11-13 (see the reviews at the end); ML Systems and LLMs are next.
 
 ---
 
@@ -1038,3 +1038,39 @@ They render normally.
 typecheck, 1,629 unit tests and 287 curriculum E2E tests pass. 240 of 339
 chapters have openers and exercises. MF (ML Foundations) and DL (Deep
 Learning) are next.
+
+### Review: MF and DL
+
+Both batches passed on their first review.
+
+- **Arithmetic.** I re-derived all 31 Apply answers and they are all correct.
+  Each solution writes its formula before substituting and shows every
+  intermediate value. Some examples:
+  - Beta(2,4) becomes Beta(2,5) after a failure;
+  - successive halving uses 64 of 128 configuration-epochs;
+  - difference-in-differences gives 15 − 5 = 10;
+  - masked attention gives (1,3);
+  - PPO clips to 2.4 and to −1.6;
+  - an LSTM cell becomes 2 with derivative 0.75;
+  - a clipped gradient (3,4) gives θ = (1.7, 0.6).
+
+  Every formula an exercise uses is in its own chapter, in the chapter's
+  notation: Beta(1+s, 1+f), MASE, 2mkn, TF-IDF with the log made explicit,
+  the variance rules, Xavier and He, and the clipping rule.
+
+- **Shape.** Every opener describes a concrete failure, and every GOALS
+  bullet is exercised. Each Stretch recommends something and names a
+  distinct weaker answer.
+- **Formatting.** The four re-wrapped blocks keep their original words.
+- **Gates.** Both `EXERCISE_TRACKS` lists, the `ml-foundations` (17) and
+  `deep-learning` (14) entries in the tracks spec, and a quota test per
+  batch.
+
+Non-blocking nit: two re-wrapped tables have a joined label row whose text
+starts one column right of the rest. They are "PRECISION-RECALL" in
+`ml-foundations.evaluation` and "2:4 SEMI-STRUCTURED" in
+`deep-learning.compression`.
+
+**Status:** both merged 2026-11-13. On the merged main: lint, typecheck,
+1,631 unit tests and 320 curriculum E2E tests pass. 271 of 339 chapters
+have openers and exercises. ML Systems (48) and LLMs (19) are next.

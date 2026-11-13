@@ -9,6 +9,16 @@ connection closes. Realtime inverts that: the connection stays open, and the
 server pushes updates on its own schedule. That single change is what
 introduces backpressure and fan-out as real engineering problems.
 
+> [!WHY] A browser on a slow connection falls behind a live feed and the
+> server retains every update for it. Enough slow subscribers can exhaust
+> server memory and disrupt clients whose connections were healthy.
+
+> [!GOALS]
+>
+> - Explain cross-server fan-out
+> - Choose a transport from direction of flow
+> - Design bounded backpressure for a state stream
+
 ## The three mechanisms
 
 ```text
@@ -75,6 +85,15 @@ introduces backpressure and fan-out as real engineering problems.
     and let each filter to its own connections.
 ```
 
+```mermaid
+flowchart TB
+  E[Domain event] --> P[Cross-server pub-sub]
+  P --> A[App instance A]
+  P --> B[App instance B]
+  A --> X[Local subscribers]
+  B --> Y[Local subscribers]
+```
+
 ## Backpressure
 
 ```text
@@ -136,6 +155,27 @@ introduces backpressure and fan-out as real engineering problems.
     because a stale entry simply expires.
 ```
 
+> [!PITFALL] Persistent connections need bounded per-client queues; one
+> slow reader must not reserve unlimited server memory.
+
+> [!INTERVIEW] State whether the stream carries replaceable state or
+> indispensable commands before choosing drop, disconnect and snapshot
+> recovery.
+
+> [!CHECK] Why is polling often wasteful?
+>
+> Many periodic requests return no new data.
+
+> [!CHECK] How does presence recover after an unclean disconnect?
+>
+> Heartbeat expiry removes stale connection-derived presence when no close
+> event arrives.
+
+> [!CHECK] Where should ephemeral presence live?
+>
+> A fast TTL-based store that expires missed disconnects, rather than
+> ordinary durable application state.
+
 ## What to take away
 
 1. Choose the mechanism by direction of data flow: SSE for server-to-client-only
@@ -151,3 +191,34 @@ introduces backpressure and fan-out as real engineering problems.
 5. Presence is ephemeral, connection-derived state — store it in a fast,
    TTL-based store that self-corrects on a missed disconnect, never as
    regular durable state.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a local map of resource ids to sockets fail
+> to deliver every update across several app servers?
+>
+> **Solution:** It knows only connections held by that process. A pub/sub
+> layer between servers or a registry of which server holds each
+> connection is needed so events reach clients attached elsewhere.
+
+> [!EXERCISE apply] One screen only receives live inventory totals;
+> another continuously sends collaborative cursor movements while
+> receiving other users’ movements. Choose a transport for each and
+> describe how two app instances distribute updates.
+>
+> **Solution:** Use SSE for the one-way inventory stream and a full-duplex
+> WebSocket for collaborative cursor traffic. Publish updates through a
+> cross-server pub/sub layer; each instance forwards relevant events to
+> its locally connected clients. Choosing a transport does not itself
+> solve multi-instance fan-out.
+
+> [!EXERCISE stretch] A current-price feed has clients consuming slower
+> than updates are produced. Recommend a bounded memory policy and
+> contrast retaining every intermediate price forever.
+>
+> **Solution:** Cap each connection’s send buffer, then drop superseded
+> state updates or disconnect and let the client reconnect to a fresh
+> snapshot. A weaker answer buffers every intermediate tick without limit:
+> memory grows for slow readers even though the use case needs the latest
+> price, not every state transition. A command stream would require a
+> different loss decision.

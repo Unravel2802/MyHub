@@ -10,6 +10,17 @@ interface from the caller's perspective before any implementation exists to
 bias that design. The test doubles that make isolated testing possible carry
 real, distinct meanings worth keeping straight.
 
+> [!WHY] A service interface becomes awkward only after several callers
+> depend on it. A caller-first test can reveal excessive setup and
+> confusing arguments before implementation makes that interface expensive
+> to change.
+
+> [!GOALS]
+>
+> - Explain the design value of test-first work
+> - Choose the right test doubles
+> - Choose when to defer TDD
+
 ## Red-green-refactor
 
 ```text
@@ -32,6 +43,14 @@ real, distinct meanings worth keeping straight.
     passing test, catches over-engineering before it happens —
     you build only as much generality as the next RED test
     actually demands.
+```
+
+```mermaid
+flowchart TB
+  R[Red: desired behaviour fails] --> G[Green: simplest passing code]
+  G --> F[Refactor under tests]
+  F --> N[Next behaviour]
+  N --> R
 ```
 
 ## Why writing the test first changes the design
@@ -116,6 +135,28 @@ real, distinct meanings worth keeping straight.
     retroactively once the design has actually settled.
 ```
 
+> [!PITFALL] Overusing mock call sequences can test the implementation
+> rather than the behaviour the caller relies on.
+
+> [!INTERVIEW] Explain which contract is stable enough for test-first
+> design, and choose doubles by what the test actually needs to prove.
+
+> [!CHECK] What must the green step optimise for?
+>
+> The simplest implementation that satisfies the current test, postponing
+> unnecessary generality.
+
+> [!CHECK] How does a dummy differ from a stub?
+>
+> A dummy merely satisfies an unused parameter; a stub supplies canned
+> behaviour or data.
+
+> [!CHECK] Why can a fake survive a refactor better than mock call-order
+> assertions?
+>
+> It lets tests assert observable returned state without pinning an
+> internal sequence of method calls.
+
 ## What to take away
 
 1. The deliberately minimal GREEN step is TDD's over-engineering guard —
@@ -133,3 +174,34 @@ real, distinct meanings worth keeping straight.
 5. TDD earns its cost on stable, knowable interfaces with real future
    maintenance — exploratory work is usually better left un-test-driven
    until the design settles.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a failing caller-first test shape an
+> interface differently from a test written after implementation?
+>
+> **Solution:** It requires imagining how the interface should be used
+> before implementation biases it. Painful setup or an awkward signature
+> becomes evidence about API design while it is still cheap to revise.
+
+> [!EXERCISE apply] A service test needs a fixed user lookup, a repository
+> that saves and retrieves changing records, and evidence that an external
+> charge is issued once. Choose a double for each and explain what should
+> be asserted.
+>
+> **Solution:** Use a stub for the fixed lookup, a working in-memory fake
+> for repository state changes, and a mock where the charge interaction
+> itself is the required observable effect. Assert returned or saved state
+> for repository behaviour; assert the specified charge count and
+> arguments for the interaction. Do not turn every internal repository
+> call into a mock-sequence requirement.
+
+> [!EXERCISE stretch] A team is exploring an unknown interaction design
+> but demands a full test-first interface before prototyping. Recommend a
+> sequence.
+>
+> **Solution:** Allow an exploratory spike until the design becomes stable
+> and knowable, then give the settled interface meaningful tests and use
+> red-green-refactor for maintained logic. A weaker answer locks tests to
+> each speculative interface immediately: they may be discarded with the
+> first design and do not provide the intended caller-first value.

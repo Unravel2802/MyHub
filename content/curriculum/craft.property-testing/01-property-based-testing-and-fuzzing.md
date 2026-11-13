@@ -9,6 +9,17 @@ test asserts a RULE holds across a whole space of generated inputs — which
 finds the edge cases a human writing examples by hand would never think to
 try, precisely because they're the ones nobody thinks to try.
 
+> [!WHY] A serializer passes a handful of hand-written examples but fails
+> on a generated empty value. A useful property and a shrunk
+> counterexample can expose the missing case without requiring someone to
+> guess that example first.
+
+> [!GOALS]
+>
+> - Explain property testing and shrinking
+> - Choose complementary properties for a contract
+> - Select fuzzing for untrusted parser risk
+
 ## Example-based vs property-based
 
 ```text
@@ -93,6 +104,15 @@ try, precisely because they're the ones nobody thinks to try.
     usually immediately diagnosable by inspection.
 ```
 
+```mermaid
+flowchart TB
+  G[Generate input] --> P[Check property]
+  P --> F{Failure?}
+  F -->|yes| S[Shrink while preserving failure]
+  S --> C[Small counterexample]
+  F -->|no| G
+```
+
 ## Fuzzing: the same idea aimed at crashes and security
 
 ```text
@@ -135,6 +155,29 @@ try, precisely because they're the ones nobody thinks to try.
      itself"
 ```
 
+> [!PITFALL] A property can be true of a broken implementation; choose
+> rules that distinguish the intended contract from plausible wrong
+> behaviour.
+
+> [!INTERVIEW] Give a concrete incorrect implementation your property
+> rejects, then explain how a shrunk failure helps diagnose the rule
+> violation.
+
+> [!CHECK] What does a metamorphic property relate?
+>
+> A known transformation of input to a predictable output change, such as
+> doubled prices doubling the total.
+
+> [!CHECK] What does a round-trip property test?
+>
+> Encoding and decoding compose to recover the relevant original
+> representation or value.
+
+> [!CHECK] When can an example test be clearer than a generated property?
+>
+> A specific business outcome with no useful general rule may be best
+> checked directly rather than reimplementing its logic as an oracle.
+
 ## What to take away
 
 1. Property-based testing checks that a rule holds across a generated space
@@ -151,3 +194,33 @@ try, precisely because they're the ones nobody thinks to try.
 5. This pays off for pure functions with a real mathematical property and
    anything parsing untrusted input — a business rule with no general
    property is usually better served by a direct example-based test.
+
+## Exercises
+
+> [!EXERCISE recall] How do shrinking and generation contribute different
+> parts of a property-test failure?
+>
+> **Solution:** Generation finds an input that violates the chosen rule.
+> Shrinking simplifies a failing input while preserving failure, turning a
+> large random case into a smaller diagnostic counterexample.
+
+> [!EXERCISE apply] A new sort must order integers without losing
+> duplicates. Choose properties that would reject both an identity
+> implementation and an implementation that sorts a set of the input.
+>
+> **Solution:** Require nondecreasing output order and preservation of the
+> input multiset, including duplicate multiplicity. Identity fails the
+> order property on unsorted input. Sorting a set can satisfy order but
+> loses repeated elements, failing multiset preservation and often length.
+> Differential comparison with an independent trusted sort is another
+> check; length alone misses value replacement.
+
+> [!EXERCISE stretch] A binary parser consumes hostile files and example
+> tests cover only valid samples. Recommend an additional technique and
+> contrast a weaker input strategy.
+>
+> **Solution:** Add coverage-guided fuzzing aimed at crashes, hangs and
+> sanitizer failures, retaining inputs that reach new paths. A weaker
+> answer only generates more uniformly random bytes: it may keep hitting
+> the same shallow rejection path rather than exploring deeply nested
+> parsing logic. Keep meaningful examples alongside fuzzing.

@@ -8,6 +8,16 @@ Offline evaluation is how you decide whether to ship. It is also systematically
 optimistic, for reasons that are structural rather than accidental, and knowing
 where the optimism comes from is what keeps the number useful.
 
+> [!WHY] A new ranker wins on a fixed benchmark while performance falls
+> for new accounts. A rolling set and a slice-level gate can expose the
+> gap before the offline winner becomes a production regression.
+
+> [!GOALS]
+>
+> - Explain logged-policy bias
+> - Choose an operating-point gate
+> - Preserve future evaluation options
+
 ## The evaluation set is a product
 
 ```text
@@ -36,6 +46,15 @@ both:
 
 Report both. A model that improves on the rolling set and regresses on the fixed
 one has probably overfitted to recent conditions.
+
+```mermaid
+flowchart TB
+  A[Version benchmark]
+  B[Score baseline and candidate]
+  C[Check slices]
+  D[Gate the change]
+  A --> B --> C --> D
+```
 
 ## Slices are not optional
 
@@ -204,6 +223,21 @@ direction.
 failure becomes a test case, and the suite grows into an institutional memory of
 what has broken before — which is exactly what prevents the same class recurring.
 
+> [!PITFALL] A higher average can mask a collapsed segment.
+
+> [!INTERVIEW] State the logging policy and support assumptions when
+> discussing counterfactual evaluation.
+
+> [!CHECK] What does a fixed benchmark provide alongside a rolling set?
+>
+> A stable comparison across versions while the rolling set reflects
+> recent behavior.
+
+> [!CHECK] Why keep a trivial baseline?
+>
+> It exposes cases where model complexity fails to improve on a simple
+> policy.
+
 ## What to take away
 
 1. The evaluation set is a versioned artifact; keep both a fixed benchmark for
@@ -220,3 +254,29 @@ what has broken before — which is exactly what prevents the same class recurri
    them the information is gone.
 
 Next: online testing, which is the only measurement that actually settles it.
+
+## Exercises
+
+> [!EXERCISE recall] Why is reranking replay biased when logs contain only
+> outcomes for shown items?
+>
+> **Solution:** The logger selected which actions were observed. Outcomes
+> for the alternative choices are missing, so the replay cannot directly
+> measure their effect.
+
+> [!EXERCISE apply] A rare-event detector raises ROC-AUC, but the team
+> reviews a fixed alert list and one important slice loses recall. How
+> would you decide whether to promote it?
+>
+> **Solution:** Evaluate precision and recall at the real review capacity
+> and gate the affected slice against the baseline. Report PR-oriented
+> evidence for imbalance. The overall ROC-AUC gain cannot justify the
+> slice regression on its own.
+
+> [!EXERCISE stretch] A team wants to assess new ranking policies from
+> future logs. What should it capture at serving time?
+>
+> **Solution:** Record action propensities and ensure the logging policy
+> provides support for relevant actions while controlling variance.
+> Outcome-only logs lose the selection information needed by propensity
+> weighting.

@@ -9,6 +9,16 @@ models run. A decade of accumulated changes — normalisation placement, positio
 encoding, attention variants, activation functions — has produced a fairly stable
 modern design, and each change exists for a reason worth knowing.
 
+> [!WHY] A serving model fits comfortably at low concurrency and hits its
+> memory ceiling as longer conversations arrive. The size of the cached
+> keys and values can determine whether a model fits the next rollout.
+
+> [!GOALS]
+>
+> - Compare normalization operations
+> - Choose a cache-oriented model architecture
+> - Choose a long-distance evaluation
+
 ## The block
 
 ```text
@@ -38,6 +48,19 @@ modern design, and each change exists for a reason worth knowing.
 
 Repeat this 32–120 times, add embeddings at the bottom and a projection to
 vocabulary at the top, and that is a modern language model.
+
+```mermaid
+flowchart TB
+  A[Block input]
+  B[Normalize and attend]
+  C[Add attention residual]
+  D[Normalize MLP input]
+  E[Compute feed-forward]
+  F[Add second residual]
+  A --> B --> C --> D --> E --> F
+  A --> C
+  C --> F
+```
 
 ## Pre-norm, not post-norm
 
@@ -228,6 +251,26 @@ sliding-window attention that drops the *earliest* tokens degrades badly, and
 keeping just the first four tokens restores it — the model uses them as a place to
 dump attention it does not need to allocate elsewhere.
 
+> [!PITFALL] Total expert parameters and active compute describe different
+> deployment costs.
+
+> [!INTERVIEW] Name the bottleneck first and connect the architectural
+> change to the resource it affects.
+
+> [!CHECK] How does pre-norm support the residual stream?
+>
+> Normalization is on the transformed branch, leaving the residual path as
+> a direct identity route.
+
+> [!CHECK] How does RoPE convey relative position?
+>
+> It rotates query and key coordinates so their interaction reflects
+> relative position.
+
+> [!CHECK] What deployment cost can sparse experts add?
+>
+> A larger set of resident parameters and routing traffic across devices.
+
 ## What to take away
 
 1. The modern block is pre-norm RMSNorm, grouped-query attention with RoPE, and a
@@ -244,3 +287,29 @@ dump attention it does not need to allocate elsewhere.
    attention to work at all.
 
 Next: how these models are trained in the first place.
+
+## Exercises
+
+> [!EXERCISE recall] Which operations does RMSNorm omit compared with the
+> chapter’s LayerNorm expression?
+>
+> **Solution:** RMSNorm scales by the root mean square and a learned gain.
+> The expression omits subtraction of the mean and the additive bias.
+
+> [!EXERCISE apply] Long-context concurrency is limited by KV cache size,
+> and the candidate model is being designed from scratch. Which attention
+> change should be evaluated first?
+>
+> **Solution:** Evaluate grouped-query attention. Query heads in a group
+> share a key and value head, reducing the cached entries per position.
+> Measure concurrency, quality and actual cache memory under the target
+> workload. Changing expert count targets a different part of the block.
+
+> [!EXERCISE stretch] A positional scaling change allows more input tokens
+> and the team expects reliable distant recall. What would count as
+> evidence?
+>
+> **Solution:** Evaluate questions that require information placed at
+> varied distances, alongside normal shorter requests. Successful
+> allocation of a longer sequence establishes capacity while leaving
+> recall quality unmeasured.

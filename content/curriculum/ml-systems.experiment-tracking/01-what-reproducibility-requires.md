@@ -9,6 +9,17 @@ an incident, a regulatory review, or an attempt to improve on it — and for mos
 teams the answer is no. Reproducibility is not a virtue exercise; it is what makes
 a model debuggable, defensible and improvable.
 
+> [!WHY] A teammate reruns the winning configuration and gets a materially
+> lower score. An unrecorded dataset or container change can cost a day of
+> investigation even when the training code still has the same commit
+> hash.
+
+> [!GOALS]
+>
+> - Distinguish reproduction levels
+> - Choose missing run metadata
+> - Design a low-cost reproducibility baseline
+
 ## The three levels
 
 Worth separating, because teams aim at the wrong one:
@@ -87,6 +98,15 @@ statistics and gradient noise.
 experiment that worked was run from a dirty working tree, and the change was never
 committed. Recording the diff, or refusing to log a run from a dirty tree, both
 solve it.
+
+```mermaid
+flowchart TB
+  A[Capture inputs and environment]
+  B[Store run identity]
+  C[Rebuild the run]
+  D[Compare outcomes]
+  A --> B --> C --> D
+```
 
 ## Sources of non-determinism
 
@@ -204,6 +224,21 @@ That last item is worth the small effort: a model file that carries the id of th
 run that produced it means a production model can always be traced back, even
 when the deployment record is lost.
 
+> [!PITFALL] Save the actual code diff for a dirty checkout. A commit hash
+> alone can point to different code from the run.
+
+> [!INTERVIEW] Decide whether reproducing metrics within noise or
+> producing identical bits is required.
+
+> [!CHECK] Why seed loader workers individually?
+>
+> Identical worker seeds can repeat the same sampling or augmentations
+> across workers.
+
+> [!CHECK] Why record the container digest?
+>
+> Tags may move and the digest identifies the concrete system image.
+
 ## What to take away
 
 1. Aim for reproducible (same metrics within noise), not bit-identical — level 3
@@ -221,3 +256,28 @@ when the deployment record is lost.
 
 Next: experiment tracking — turning hundreds of runs into knowledge rather than a
 directory of checkpoints.
+
+## Exercises
+
+> [!EXERCISE recall] When are matching metrics within noise a reasonable
+> reproduction target?
+>
+> **Solution:** When the goal is confirming a result reliably.
+> Bit-identical repetition costs more and is justified when exact
+> provenance or debugging requires it.
+
+> [!EXERCISE apply] Two runs use the same source commit and config, but
+> one is built on a new image and features were refreshed. What should the
+> run records compare?
+>
+> **Solution:** Compare the exact data and feature versions, image digest,
+> lock, hardware and seeds. Those inputs can change behavior independently
+> of the code commit.
+
+> [!EXERCISE stretch] A team can fund a small tracking investment but
+> cannot run everything in deterministic mode. What setup should it adopt?
+>
+> **Solution:** Capture environment and inputs automatically and compare
+> repeated results across seeds. Enable stricter determinism selectively
+> when debugging. Demanding bitwise equality for all runs spends compute
+> without recording the inputs needed to explain differences.

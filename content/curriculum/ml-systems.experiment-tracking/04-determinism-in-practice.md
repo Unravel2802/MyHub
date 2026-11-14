@@ -8,6 +8,16 @@ You run the same training script twice with the same seed and get slightly
 different weights. This is normal, it is mostly not fixable, and the useful
 question is not how to eliminate it but how to work productively despite it.
 
+> [!WHY] A production score changes when an unrelated request shares its
+> batch. Accurate offline comparisons do not help if a service gives
+> different results for the same input depending on its neighbors.
+
+> [!GOALS]
+>
+> - Explain paired seeds
+> - Diagnose serving nondeterminism
+> - Choose a comparison policy
+
 ## Where the non-determinism comes from
 
 ```text
@@ -196,6 +206,24 @@ composition, then the same request produces different answers depending on load,
 which is very hard to debug and undermines any caching or A/B analysis. Test it
 explicitly — score a fixture alone and inside a large batch, and compare.
 
+```mermaid
+flowchart TB
+  A[Fix request inputs]
+  B[Vary batch neighbors]
+  C[Compare scores]
+  D[Trace divergence]
+  A --> B --> C --> D
+```
+
+> [!CHECK] Why can equal-seed accelerator runs diverge?
+>
+> Parallel reductions can change the order of floating-point additions.
+
+> [!CHECK] Where should exact tests focus?
+>
+> Deterministic components such as parsing and transforms, with property
+> or tolerance tests on noisy model behavior.
+
 ## What to take away
 
 1. Floating-point addition is not associative and GPU reduction order varies, so
@@ -213,3 +241,25 @@ explicitly — score a fixture alone and inside a large batch, and compare.
 
 That completes experiments and reproducibility. Next in the track: **training
 infrastructure** — running these jobs at scale without wasting the accelerators.
+
+## Exercises
+
+> [!EXERCISE recall] Why compare baseline and candidate on the same seeds?
+>
+> **Solution:** Pairing aligns one source of variation across the two
+> conditions, helping isolate the difference between recipes.
+
+> [!EXERCISE apply] A fixture scores consistently alone but shifts when
+> batched with other examples. Is retraining the first diagnostic?
+>
+> **Solution:** Reproduce with controlled batch composition and inspect
+> evaluation mode and padding-sensitive computation. Stable single-request
+> scores with changing batch neighbors point to the serving execution
+> path.
+
+> [!EXERCISE stretch] Two training variants trade the top validation
+> position across seeds. How would you report the result?
+>
+> **Solution:** Report paired differences and their spread across several
+> runs. A verdict based on the best seed can confuse chance variation with
+> a repeatable improvement.

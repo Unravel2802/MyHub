@@ -9,6 +9,16 @@ what is deployed**. The distinction matters: an experiment is a question, a
 registered model is a commitment, and conflating them means production models are
 chosen by whoever last exported a pickle.
 
+> [!WHY] A deployed model consumes features in a different order while
+> every field still has the right type. The release looks healthy at the
+> API layer and silently produces scores for the wrong inputs.
+
+> [!GOALS]
+>
+> - Explain the role of lineage
+> - Apply a promotion gate
+> - Choose a rollback design
+
 ## What a registry holds
 
 ```text
@@ -60,6 +70,15 @@ model retrained with a changed feature set, deployed against a serving path that
 still sends the old vector. The shapes match, the values are misaligned, and the
 predictions are confident nonsense. Comparing the declared input signature against
 the serving contract catches it at promotion time.
+
+```mermaid
+flowchart TB
+  A[Create candidate]
+  B[Verify signature and metrics]
+  C[Promote registry version]
+  D[Deploy recorded version]
+  A --> B --> C --> D
+```
 
 ## The signature is a contract
 
@@ -216,6 +235,16 @@ stakes.** Requiring a committee for a carousel means teams route around the
 registry; allowing automated promotion for a credit model means an unreviewed
 model makes decisions about people. Match the gate to the consequence.
 
+> [!CHECK] Which identity should prediction logs carry?
+>
+> The model version, linked through the registry to the producing training
+> run.
+
+> [!CHECK] Why include score distributions in the contract?
+>
+> Existing downstream thresholds can change behavior when the score scale
+> changes.
+
 ## What to take away
 
 1. A registry records what is deployable and deployed; the link back to the
@@ -232,3 +261,29 @@ model makes decisions about people. Match the gate to the consequence.
    inherit the canary, rollback and audit machinery code already has.
 
 Next: determinism in practice — how far to chase it and where to stop.
+
+## Exercises
+
+> [!EXERCISE recall] Why does the trained artifact need a link to the
+> experiment run?
+>
+> **Solution:** The link connects the deployed version to the data,
+> configuration and metrics that produced it. A model file alone cannot
+> explain those inputs.
+
+> [!EXERCISE apply] A candidate beats production on average, exceeds the
+> latency budget and moves a positional feature. Should the registry
+> promote it?
+>
+> **Solution:** Block promotion. The candidate violates the latency
+> constraint and the serving signature, even with a better aggregate
+> score. Revalidate the updated input contract and performance before
+> rollout.
+
+> [!EXERCISE stretch] A model file is manually overwritten during
+> releases. How would you make rollback reliable?
+>
+> **Solution:** Deploy immutable registry versions through the normal
+> release mechanism and record the version with predictions. Overwriting a
+> shared artifact loses the identity and reproducibility of the prior
+> serving release.

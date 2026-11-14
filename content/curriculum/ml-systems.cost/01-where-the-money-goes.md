@@ -9,6 +9,16 @@ largest line item is often not the one people expect, and costs scale with usage
 in ways that are easy to miss until the invoice arrives. Building a model of where
 the money goes is what makes optimisation targeted rather than superstitious.
 
+> [!WHY] The cloud bill spikes between training runs while hourly feature
+> jobs keep rescheduling themselves. Breaking spend down by workload can
+> reveal a larger saving than cancelling the next run.
+
+> [!GOALS]
+>
+> - Explain why batch utilization matters
+> - Compare API and instance cost
+> - Choose what to audit
+
 ## The categories
 
 ```text
@@ -227,6 +237,14 @@ and data leaving your boundary.
 "this sweep cost $4,000 and the winner was in the first ten runs" designs the next
 sweep differently. A team that cannot, runs it again.
 
+```mermaid
+flowchart TB
+  A[Tag the run]
+  B[Attribute spend]
+  C[Compare cost per outcome]
+  A --> B --> C
+```
+
 ## Optimising, in order
 
 ```text
@@ -241,6 +259,20 @@ sweep differently. A team that cannot, runs it again.
 Step 1 is skipped most often, and it is why cost work so frequently targets
 training (visible and bursty) when the bill is dominated by feature pipelines
 (invisible and continuous).
+
+> [!PITFALL] A model can become cheaper per request while becoming more
+> expensive per valuable outcome.
+
+> [!INTERVIEW] State the utilization assumption and the unit of value
+> before comparing a hosted API with dedicated capacity.
+
+> [!CHECK] Why can a feature pipeline dominate the training bill?
+>
+> Materialization runs continuously while training is typically bursty.
+
+> [!CHECK] What does a permanent holdout add to cost per unit of value?
+>
+> It estimates the incremental value attributable to the model.
 
 ## What to take away
 
@@ -258,3 +290,30 @@ training (visible and bursty) when the bill is dominated by feature pipelines
    measure before optimising — the visible cost is rarely the largest one.
 
 Next: capacity planning for hardware that is scarce as well as expensive.
+
+## Exercises
+
+> [!EXERCISE recall] Why do two deployments on identical accelerators have
+> different inference cost?
+>
+> **Solution:** Batching lets the same weights serve more tokens, raising
+> completed work per paid hour. Quantization can also reduce the bytes
+> needed to do that work.
+
+> [!EXERCISE apply] An instance costs $3 per hour and actually produces
+> 1.5 million tokens per hour. An API costs $3 per million tokens. Which
+> is cheaper on these charges, and at what instance throughput do they
+> tie?
+>
+> **Solution:** Instance cost per token = instance dollars per hour ÷
+> achieved tokens per hour. Using million tokens as the denominator, $3 ÷
+> 1.5 = $2 per million. That is $1 below the API. At the tie, $3 ÷
+> throughput = $3 per million, so throughput is 1 million tokens per hour.
+
+> [!EXERCISE stretch] Training runs finish on budget, but recurring
+> feature costs rise each month. How would you find waste?
+>
+> **Solution:** Attribute materialization spend to feature owners and
+> inspect readers and required refresh cadence. Retire unconsumed features
+> and assess refresh needs before changing them. Cutting training slots
+> misses the continuous source of growth.

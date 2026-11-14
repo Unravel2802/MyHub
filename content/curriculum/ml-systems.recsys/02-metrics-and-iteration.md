@@ -8,6 +8,16 @@ A recommender is judged by a ranked list, which needs its own metrics, and train
 on logs that are systematically biased by the system that produced them. Handling
 both correctly is what separates a system that improves from one that oscillates.
 
+> [!WHY] A recommender learns that items shown first receive more clicks,
+> then treats those clicks as direct relevance labels. The next model can
+> reinforce old placement advantages and still appear to improve offline.
+
+> [!GOALS]
+>
+> - Explain position bias
+> - Choose logging for a policy comparison
+> - Respond to offline and online divergence
+
 ## Offline ranking metrics
 
 ```text
@@ -82,6 +92,15 @@ The problem that corrupts every recommendation log.
 The position-as-a-feature trick is the pragmatic default: the model learns to
 attribute part of the click to position, and at serving you ask "what would the
 click probability be at a fixed position", isolating relevance.
+
+```mermaid
+flowchart TB
+  A[Log candidate and position]
+  B[Record propensities]
+  C[Evaluate ranking]
+  D[Test online]
+  A --> B --> C --> D
+```
 
 ## Online metrics
 
@@ -202,6 +221,16 @@ afterwards.
        → the catalogue ossifies and new items never surface
 ```
 
+> [!CHECK] Why report ranking metrics at the actual display cutoff?
+>
+> Quality far beyond the visible slate may have little relevance to the
+> user experience.
+
+> [!CHECK] Why track catalogue coverage?
+>
+> Engagement alone can improve while impressions concentrate and fewer
+> useful items receive exposure.
+
 ## What to take away
 
 1. NDCG with a position discount is the standard offline ranking metric; report it
@@ -219,3 +248,28 @@ afterwards.
 
 That completes recommendation systems. Next in the track: **cost and capacity for
 ML** — what all of this costs and how to control it.
+
+## Exercises
+
+> [!EXERCISE recall] Why are clicks from different ranks difficult to
+> compare directly?
+>
+> **Solution:** Position affects exposure and click opportunity, so click
+> rates mix relevance with rank effects.
+
+> [!EXERCISE apply] A team wants to compare two ranking policies later.
+> Its existing logs have just clicked item IDs, with no slate or scores.
+> What should the new logging capture?
+>
+> **Solution:** Record candidate sets, scores, displayed positions and
+> assignment propensities under a valid exposure policy. Use those logs
+> for supported comparisons and validate the decision online.
+
+> [!EXERCISE stretch] Several changes raise the offline metric and
+> consistently hurt the online outcome. What would you change in the
+> iteration process?
+>
+> **Solution:** Investigate whether the offline measure, data and cutoff
+> match the product task, then revise the evaluation to track the intended
+> outcome. Promoting only the largest offline gains doubles down on a
+> measure that has lost useful alignment.

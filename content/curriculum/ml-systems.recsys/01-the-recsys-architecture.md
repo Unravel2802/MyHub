@@ -8,6 +8,16 @@ Recommendation is the ML system most people encounter, and its architecture is
 remarkably uniform across companies because the constraint is uniform: score
 enormous catalogues under a tight latency budget. The answer is always a funnel.
 
+> [!WHY] A new catalogue item never reaches the ranker and receives no
+> clicks. Training on the observed clicks reinforces its invisibility even
+> though the item might satisfy some requests.
+
+> [!GOALS]
+>
+> - Explain the recommendation funnel
+> - Choose the recall investigation
+> - Plan feedback collection for cold start
+
 ## The funnel
 
 ```text
@@ -38,6 +48,15 @@ hundred items worth thinking about.**
 The same shape appears in search, in ads, and in RAG (retrieve then rerank). It is
 the standard answer whenever a good scoring function is too expensive to apply
 broadly.
+
+```mermaid
+flowchart TB
+  A[Generate candidates]
+  B[Rank candidates]
+  C[Apply slate constraints]
+  D[Observe feedback]
+  A --> B --> C --> D
+```
 
 ## Candidate generation
 
@@ -233,6 +252,20 @@ tracked. A system showing 2% of its catalogue is one where 98% of the inventory 
 economically dead, which is usually a much larger problem than a small ranking
 improvement.
 
+> [!PITFALL] Measure retrieval coverage alongside ranking quality.
+
+> [!INTERVIEW] Describe why the candidate stage and the ranking stage
+> optimize different objectives.
+
+> [!CHECK] What can cross features add to ranking?
+>
+> They let a scorer use interactions between the user and item that
+> separate precomputed towers do not model directly.
+
+> [!CHECK] Where can diversity constraints change the result?
+>
+> Re-ranking can adjust the final slate after scoring for relevance.
+
 ## What to take away
 
 1. Every large recommender is a funnel: cheap retrieval over everything, expensive
@@ -249,3 +282,27 @@ improvement.
    coverage monitoring are the answers.
 
 Next: the metrics and the online loop that keep it honest.
+
+## Exercises
+
+> [!EXERCISE recall] How does candidate generation make expensive scoring
+> practical?
+>
+> **Solution:** A fast retrieval stage searches the catalogue and narrows
+> it to a manageable set. The more expensive model scores only those
+> candidates.
+
+> [!EXERCISE apply] Users often search for a newly added product, and
+> direct tests show the ranker prefers it whenever it receives the item.
+> What should change first?
+>
+> **Solution:** Check index freshness and candidate sources, then validate
+> recall for newer items before changing ranking weights. Re-ranking an
+> unchanged candidate set still cannot surface an absent item.
+
+> [!EXERCISE stretch] A click-trained model concentrates impressions on
+> old items. How would you gather evidence about new ones?
+>
+> **Solution:** Use constrained exploration to expose eligible new items
+> and monitor coverage and outcomes. Training another model only on the
+> existing clicks repeats the skew in who was shown.

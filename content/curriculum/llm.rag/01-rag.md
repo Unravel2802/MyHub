@@ -9,6 +9,16 @@ update. RAG fixes all three by retrieving relevant documents and putting them in
 the context. It is the most widely deployed LLM pattern, and most of its failures
 are retrieval failures rather than generation failures.
 
+> [!WHY] A help assistant cites a page from the right manual but misses
+> the section containing the exception. Testing whether the generator can
+> answer with the known passage can save a costly model upgrade.
+
+> [!GOALS]
+>
+> - Explain retrieval for changing facts
+> - Localize a retrieval failure
+> - Design a RAG regression test
+
 ## Why not fine-tune the knowledge in
 
 ```text
@@ -43,6 +53,15 @@ documentation — produces half-remembered, uncitable, stale knowledge.
 Each stage is a place quality is lost, and the retrieval stages dominate: a
 generator given the right passage almost always answers correctly, and a generator
 given the wrong passage almost never does.
+
+```mermaid
+flowchart TB
+  A[Prepare documents]
+  B[Retrieve candidates]
+  C[Rerank evidence]
+  D[Generate grounded answer]
+  A --> B --> C --> D
+```
 
 ## Chunking decides more than you expect
 
@@ -246,6 +265,27 @@ graph RAG on top of a retrieval system that has no reranker.
 The pragmatic answer is both: retrieve aggressively, then use a generous context
 for what you retrieve.
 
+> [!PITFALL] Inspect which evidence actually reaches the generation
+> prompt.
+
+> [!INTERVIEW] Explain how retrieval relevance and answer grounding can
+> fail independently.
+
+> [!CHECK] Why chunk around sections?
+>
+> Coherent sections keep related facts and headings together for retrieval
+> and later interpretation.
+
+> [!CHECK] What does sparse retrieval add alongside dense search?
+>
+> It helps find exact terms and identifiers that semantic matching can
+> miss.
+
+> [!CHECK] Why let the model state evidence is missing?
+>
+> Some requests lack supporting context and a clear unsupported case
+> reduces pressure to guess.
+
 ## What to take away
 
 1. RAG and fine-tuning are complementary — facts belong in retrieval where they can
@@ -262,3 +302,29 @@ for what you retrieve.
    problems are chunking, hybrid retrieval and reranking rather than architecture.
 
 Next: agents, where the model chooses actions rather than just producing text.
+
+## Exercises
+
+> [!EXERCISE recall] Why is retrieval useful for rules updated after model
+> training?
+>
+> **Solution:** Updated documents can be selected at runtime and cited,
+> making the information easier to refresh and audit.
+
+> [!EXERCISE apply] A query fails with normal retrieval and succeeds with
+> a known passage. The correct page appears low in the retrieved list,
+> outside the context budget. What should change first?
+>
+> **Solution:** Improve ranking or chunk selection so the supporting
+> section reaches the prompt, and measure retrieval independently of
+> answer quality. A larger generator still sees the same omitted passage
+> if context selection remains fixed.
+
+> [!EXERCISE stretch] A release changes chunk boundaries and average
+> answer quality looks similar, but exact identifiers are often missed.
+> How would you gate the change?
+>
+> **Solution:** Use examples with queries, gold evidence and expected
+> answers. Measure identifier retrieval and grounding separately,
+> including absent-evidence cases. A single aggregate answer score can
+> mask a retrieval regression on rare exact matches.

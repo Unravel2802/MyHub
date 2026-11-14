@@ -277309,3 +277309,46 @@ Fixed after merge: two re-wrapped tables had a joined label row whose text
 started one column right of the rest. They were "PRECISION-RECALL" in
 `ml-foundations.evaluation` and "2:4 SEMI-STRUCTURED" in
 `deep-learning.compression`. Both are realigned.
+
+### Review: MS1, MS2 and LLM
+
+All three batches passed on their first review.
+
+- **Arithmetic.** Eleven of the 67 Apply exercises compute something, and I
+  re-derived all eleven. They are all correct:
+  - $2 per million tokens, against an API at $3, with a tie at 1M tokens/h;
+  - an effective batch of 96, so 4 per device on 8 devices;
+  - ZeRO-1 at 4P + 12P/N = 14 GB;
+  - pipeline bubbles of 20% and 15.8%;
+  - a roofline bound of max(50 µs, 60 µs);
+  - ln 8 ≈ 2.079;
+  - recall@20 of 0.90 and 0.95;
+  - 5 × 8 = 40 pairwise integrations against 5 + 8 = 13;
+  - 6ND = 480 × 10¹⁸ FLOPs for both models, at 20 and at 5 tokens per
+    parameter;
+  - 65,536,000 bytes per embedding table.
+
+  Each formula is in its own chapter: ZeRO's 4P + 12P/N, the bubble formula,
+  the ridge point, N×M → N+M, C ≈ 6ND and weight tying. The other Apply
+  exercises apply a chapter's mechanism to a scenario without computing
+  anything. This is more common here than in the maths tracks, which suits
+  operational topics.
+
+- **Shape.** Every opener describes a concrete failure, and every GOALS
+  bullet is exercised. Each Stretch recommends something and names a
+  distinct weaker answer. Single-chapter topics (`ml-systems.edge`,
+  `labeling`, `privacy`, and every LLM topic except `tokenization`) use
+  PR D's quotas, and multi-chapter topics use DS's.
+- **Formatting.** The one re-wrapped block, the judge-bias table in
+  `ml-systems.evaluation-infra`, keeps its original words. Its
+  "SELF-PREFERENCE" label is joined with the text column aligned, so the
+  MF/DL lesson held.
+- **Gates.** Both `EXERCISE_TRACKS` lists and a quota test per batch. The
+  tracks spec has two `ml-systems` entries (23 and 25) with topic lists, and
+  one `llm` entry (19).
+
+**Status:** all three merged 2026-11-13. On the merged main: lint,
+typecheck, 1,634 unit tests and 390 curriculum E2E tests pass. **X4 is
+complete:** all 338 chapters have a WHY opener, GOALS and three exercises.
+The "339" quoted earlier in this brief counted `content/curriculum/README.md`;
+there are 338 chapter files.

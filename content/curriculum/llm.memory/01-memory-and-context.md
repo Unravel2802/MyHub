@@ -9,6 +9,17 @@ and that text has a hard limit and a per-token cost. Managing what occupies the
 context is the central engineering problem of long conversations and long agent
 runs.
 
+> [!WHY] A long session carries old tool output in every request and costs
+> rise as the history grows. When the assistant finally compacts the
+> context, a free-form summary drops a decision the user still expects it
+> to honor.
+
+> [!GOALS]
+>
+> - Explain layered context assembly
+> - Choose compact state for a long session
+> - Repair a compaction error
+
 ## The constraint
 
 ```text
@@ -80,6 +91,15 @@ runs.
 cache covers it, which as the inference topic showed can be a large latency and
 cost win. Putting the retrieved context — which changes every turn — above the
 system prompt defeats it entirely.
+
+```mermaid
+flowchart TB
+  A[Keep recent turns]
+  B[Store structured decisions]
+  C[Retrieve relevant history]
+  D[Assemble bounded context]
+  A --> B --> C --> D
+```
 
 ## Compaction
 
@@ -215,6 +235,26 @@ The explicit affordances are worth building. Automatic memory extraction is
 unreliable and slightly unsettling; letting a user say "remember that I prefer
 X" produces higher-quality memory and better-calibrated trust.
 
+> [!PITFALL] Repeated summarization can propagate small mistakes into
+> persistent memory.
+
+> [!INTERVIEW] Describe the canonical state and how the user can inspect
+> or correct it.
+
+> [!CHECK] Why keep stable context first?
+>
+> A stable prefix can be reused by prefix caching across later turns.
+
+> [!CHECK] What should memory extraction avoid?
+>
+> Collecting unnecessary details that add noise or enlarge the privacy
+> surface.
+
+> [!CHECK] Why reference large stored results by ID?
+>
+> It allows selective retrieval without resending the entire artifact each
+> turn.
+
 ## What to take away
 
 1. A model has no state — everything remembered is text you resend, so a long
@@ -231,3 +271,27 @@ X" produces higher-quality memory and better-calibrated trust.
    every turn.
 
 Next: making the model's output reliably parseable.
+
+## Exercises
+
+> [!EXERCISE recall] What roles do recent turns and retrieved history
+> play?
+>
+> **Solution:** Recent turns preserve immediate continuity, while
+> retrieval adds relevant older evidence only when the task needs it.
+
+> [!EXERCISE apply] A user has approved constraints and a table of results
+> spanning many turns. Which material belongs in persistent structured
+> state?
+>
+> **Solution:** Store the approved constraints and references to the
+> result records, keeping recent dialogue and selected evidence in context
+> as needed. A free-form summary makes durable decisions harder to inspect
+> and correct.
+
+> [!EXERCISE stretch] A summary changes an old deadline and later
+> summaries repeat it. How would you recover and prevent recurrence?
+>
+> **Solution:** Rebuild from original records and give the user a way to
+> inspect and correct known state. Revising only the latest summary
+> inherits the earlier drift.

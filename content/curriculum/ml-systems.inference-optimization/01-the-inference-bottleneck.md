@@ -8,6 +8,16 @@ Optimising inference without knowing what limits it produces effort aimed at the
 wrong thing. For autoregressive generation the limit is unusually clear, and the
 arithmetic takes a minute to do.
 
+> [!WHY] A chat service streams smoothly once it starts, but long common
+> prompts delay the first token. A benchmark that reports only output
+> tokens per second can miss the largest delay a user experiences.
+
+> [!GOALS]
+>
+> - Explain decode bandwidth
+> - Choose the first latency fix
+> - Choose an optimization order
+
 ## The two phases
 
 ```text
@@ -32,6 +42,14 @@ arithmetic takes a minute to do.
 
   → decode dominates, and it is the phase that is
     bandwidth-limited
+```
+
+```mermaid
+flowchart TB
+  A[Prefill prompt]
+  B[Store keys and values]
+  C[Decode each token]
+  A --> B --> C
 ```
 
 ## The decode arithmetic
@@ -242,6 +260,21 @@ The prefill/decode split is the diagnostic that most changes what you do, and it
 is workload-specific — a summarisation service and a chat service running the same
 model need different optimisations.
 
+> [!PITFALL] Report time to first token and time per output token
+> separately. They expose different costs.
+
+> [!INTERVIEW] Identify which phase is slow at the concurrency and context
+> length users actually send.
+
+> [!CHECK] What does prefill compute for the prompt?
+>
+> It processes prompt positions and creates their cached keys and values.
+
+> [!CHECK] Why can throughput improve while a request feels slower?
+>
+> Larger batches can complete more work in aggregate while clients wait
+> longer for dispatch or tokens.
+
 ## What to take away
 
 1. Prefill is compute-bound and decode is memory-bound; decode dominates end-to-end
@@ -258,3 +291,30 @@ model need different optimisations.
    requires only that stable content comes first.
 
 Next: the techniques themselves — paged attention, speculation and compression.
+
+## Exercises
+
+> [!EXERCISE recall] Why are arithmetic units often underused during
+> single-stream decode?
+>
+> **Solution:** Each token requires reading the weights, with relatively
+> little arithmetic performed per byte of weight traffic.
+
+> [!EXERCISE apply] A service has acceptable time per output token, but
+> time to first token regresses after adding a shared instructions block.
+> Most requests begin with a unique ID before those instructions. What
+> would you test?
+>
+> **Solution:** Put stable instructions before the varying request content
+> and measure shared prefix-cache hit rate and first-token latency. The
+> unique leading text prevents an otherwise common prefix from being
+> reused.
+
+> [!EXERCISE stretch] A service has poor throughput at high concurrency
+> and an engineer proposes writing a custom kernel. What should guide the
+> first work?
+>
+> **Solution:** Establish a trace and baseline with a purpose-built server
+> and continuous batching. Profile the remaining bottleneck at realistic
+> load. A custom kernel may speed a small operation while existing
+> scheduling wastes most elapsed time.

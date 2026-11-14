@@ -8,6 +8,17 @@ Prompting is the primary interface to a model, and it has accumulated a large
 amount of folklore. The techniques below are the ones with consistent evidence,
 separated from the ones that are cargo cult.
 
+> [!WHY] A prompt bundles many documents into every request and a required
+> detail goes missing in the middle. Increasing the window consumes more
+> tokens without checking whether the model can locate the evidence it
+> needs.
+
+> [!GOALS]
+>
+> - Explain context selection
+> - Revise a prompt for a grounded task
+> - Choose a prompt release gate
+
 ## The structure that works
 
 ```text
@@ -135,6 +146,15 @@ refusal, and it costs one sentence.
 material measurably reduces accuracy on the relevant part, and costs proportionally
 more. Retrieval quality matters more than retrieval quantity.
 
+```mermaid
+flowchart TB
+  A[Select relevant context]
+  B[Delimit input]
+  C[Request grounded output]
+  D[Run regression cases]
+  A --> B --> C --> D
+```
+
 ## Prompt injection
 
 ```text
@@ -201,6 +221,24 @@ That first line connects to the inference topic: prompt structure is a
 performance decision. Putting the variable part first defeats prefix caching and
 can multiply prefill cost across every request.
 
+> [!PITFALL] Treat retrieved text as data and enforce permissions in the
+> application.
+
+> [!INTERVIEW] Show how task, constraints and the expected output shape
+> can be verified on representative inputs.
+
+> [!CHECK] Why put stable content before request-specific text?
+>
+> A shared leading sequence enables prefix-cache reuse.
+
+> [!CHECK] What do few-shot examples demonstrate?
+>
+> Desired structure and the handling of representative edge cases.
+
+> [!CHECK] Why give an explicit insufficient-evidence response?
+>
+> It allows the model to signal missing support instead of guessing.
+
 ## What to take away
 
 1. Structure prompts as role, task, constraints, examples, delimited input, output
@@ -218,3 +256,27 @@ can multiply prefill cost across every request.
 
 Next: retrieval-augmented generation, which is how models get information they
 were not trained on.
+
+## Exercises
+
+> [!EXERCISE recall] What can happen when more irrelevant documents fit
+> into a bigger window?
+>
+> **Solution:** The request costs more and relevant evidence may be harder
+> to find, especially in the middle of long context.
+
+> [!EXERCISE apply] A summary receives policy excerpts and must cite
+> specific passages. The model invents details when no passage supports
+> the answer. Which prompt and context changes would you test?
+>
+> **Solution:** Provide only relevant, delimited passages, specify the
+> citation format and allow an insufficient-evidence response. Test
+> supported and unsupported examples against the same baseline. Adding
+> vaguely related material can increase guesses.
+
+> [!EXERCISE stretch] An edits-only release changes the instructions for a
+> frequently used classifier. How would you assess impact before rollout?
+>
+> **Solution:** Version the prompt and run a representative regression
+> suite with the known difficult cases and output checks. Judging a few
+> polished examples may miss predictable changes in behavior.

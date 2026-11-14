@@ -8,6 +8,16 @@ Software needs structured data; models produce text. The gap between them is the
 most common source of brittleness in LLM applications, and it is fully solvable —
 by constraining the decoder rather than by asking politely.
 
+> [!WHY] An extraction endpoint emits valid JSON with an incorrect total
+> and a plausible document ID. Parsing succeeds and lets the wrong record
+> enter the next stage unless semantic validation runs separately.
+
+> [!GOALS]
+>
+> - Explain syntax versus value validity
+> - Design validation for constrained extraction
+> - Choose where to constrain outputs
+
 ## The three approaches
 
 ```text
@@ -147,6 +157,15 @@ field, then the constrained result.
   the prompt, schema or model changed.
 ```
 
+```mermaid
+flowchart TB
+  A[Generate constrained response]
+  B[Parse schema]
+  C[Validate values]
+  D[Accept or repair]
+  A --> B --> C --> D
+```
+
 ## Choosing an approach
 
 ```text
@@ -185,6 +204,24 @@ set of document ids actually in the context makes a fabricated citation
 hallucination into a structural impossibility, which is the strongest kind of fix
 available.
 
+> [!PITFALL] A valid prefix can still be incomplete when a generation
+> stops early.
+
+> [!INTERVIEW] Explain which guarantees come from the decoder and which
+> must come from application checks.
+
+> [!CHECK] How does a grammar constrain decoding?
+>
+> The decoder masks tokens that would violate the current grammar state.
+
+> [!CHECK] Why include an explicit unknown value?
+>
+> It gives a schema-valid representation for insufficient information.
+
+> [!CHECK] Why inspect termination state?
+>
+> Token limits may stop generation before the intended record is complete.
+
 ## What to take away
 
 1. Asking for JSON fails at a rate high enough to hurt and low enough to escape
@@ -201,3 +238,30 @@ available.
    ids present in the context makes fabricated citations impossible.
 
 Next: the protocols that connect models to real systems.
+
+## Exercises
+
+> [!EXERCISE recall] Why can a schema-valid result still need business
+> validation?
+>
+> **Solution:** It can obey required types while using the wrong amount,
+> identity or allowed relationship.
+
+> [!EXERCISE apply] A receipt parser must return known line item
+> identifiers and a valid total. Outputs parse but sometimes refer to
+> absent items. Which checks belong in the pipeline?
+>
+> **Solution:** Restrict identifiers to allowed values where possible,
+> then verify the extracted identifiers and total against the receipt
+> before consumption. Parsing alone validates format and cannot establish
+> the source values.
+
+> [!EXERCISE stretch] For a complex classification task, the final result
+> is a small enum and some ambiguous cases are unsupported. The team sees
+> quality drop when constraining the entire generation. What would you
+> try?
+>
+> **Solution:** Compare a staged approach that applies the schema to the
+> final answer, includes an unknown enum value and validates it. Keeping a
+> grammar over the entire generation can impede useful intermediate work
+> without improving the final outcome.

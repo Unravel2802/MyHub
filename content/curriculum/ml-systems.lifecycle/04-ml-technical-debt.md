@@ -10,6 +10,16 @@ debt in forms ordinary software does not — forms that are invisible at the cod
 level, so they do not show up in review, in linting, or in anyone's refactoring
 plan.
 
+> [!WHY] An upstream owner renames or removes a signal that looks unused
+> in code search. The change still reaches another model through shared
+> features, turning routine cleanup into a cross-team release risk.
+
+> [!GOALS]
+>
+> - Explain CACE
+> - Choose an ablation
+> - Repair a correction cascade
+
 ## CACE: Changing Anything Changes Everything
 
 ```text
@@ -102,6 +112,15 @@ Every one is a pipeline to maintain, a failure mode, and a dependency on an
 upstream system. The tool is **leave-one-out evaluation** run periodically: drop
 each feature, retrain, measure. Features that cost more than they contribute get
 removed. Almost nobody does this, which is why feature sets only ever grow.
+
+```mermaid
+flowchart TB
+  A[Inventory dependency]
+  B[Evaluate feature removal]
+  C[Check slices]
+  D[Retire verified dependency]
+  A --> B --> C --> D
+```
 
 ## Configuration debt
 
@@ -224,6 +243,16 @@ the code. ML debt is visible only in the data flow, the config and the
 evaluation, so it accumulates silently until the system cannot be changed —
 which is the state most ML systems reach after two or three years.
 
+> [!CHECK] How can a confidence score become an undeclared contract?
+>
+> Another system may use a threshold on it without declaring that
+> dependency.
+
+> [!CHECK] Why version configuration?
+>
+> It changes the fitted or served behavior independently of changes to
+> model code.
+
 ## What to take away
 
 1. CACE means no change to an ML system is local; every input change requires full
@@ -242,3 +271,29 @@ which is the state most ML systems reach after two or three years.
    deliberately rather than done opportunistically.
 
 Next: the people and roles, and the handoffs where ML projects actually stall.
+
+## Exercises
+
+> [!EXERCISE recall] Why does changing a feature require broader
+> re-evaluation than testing the transformation in isolation?
+>
+> **Solution:** Inputs and predictions interact, and the change can alter
+> several outcomes or downstream consumers. Slice-level evaluation detects
+> the larger behavioral impact.
+
+> [!EXERCISE apply] One expensive feature runs continuously and has low
+> standalone importance. How would you decide whether to retire it?
+>
+> **Solution:** Remove it in a controlled retraining and evaluation
+> comparison, check slices and consumers, then retire the pipeline only if
+> the resulting quality and interfaces meet their bars. Standalone
+> importance misses interactions.
+
+> [!EXERCISE stretch] Several patch models adjust a legacy score and
+> deploying a change now requires recalibrating all of them. What would
+> you pursue?
+>
+> **Solution:** Train and evaluate a replacement that owns the final
+> target, and plan its migration with consumer checks. Adding one more
+> patch accumulates another coupled behavior and leaves the old cascade
+> frozen.

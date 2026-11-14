@@ -10,6 +10,17 @@ they concern where behaviour comes from, how correctness is defined, and what
 happens when nobody changes anything. Getting those three straight is what stops
 an ML project from being an engineering project that mysteriously does not work.
 
+> [!WHY] The service reports healthy latency and success rates while the
+> model starts making confident errors following a population change. An
+> uptime dashboard can certify the infrastructure while the decision
+> service loses value.
+
+> [!GOALS]
+>
+> - Explain silent failures
+> - Design evidence for a silent regression
+> - Choose what to version
+
 ## Behaviour comes from data, not code
 
 ```text
@@ -109,6 +120,15 @@ seen, and the system downstream uses it. This is why ML monitoring has to watch
 *inputs and outputs* rather than only availability — a topic in its own right
 later in this track.
 
+```mermaid
+flowchart TB
+  A[Serve prediction]
+  B[Observe outcome]
+  C[Compare slice performance]
+  D[Investigate change]
+  A --> B --> C --> D
+```
+
 ## Experimentation is the workflow
 
 ```text
@@ -173,6 +193,21 @@ staffed and organised as though the small box were the work will build a model
 that cannot be deployed, monitored or retrained. Most of the engineering is
 everything around it, which is what this track is about.
 
+> [!PITFALL] A successful response code can accompany a materially
+> incorrect prediction.
+
+> [!INTERVIEW] Explain how you would compare two model releases when
+> neither is correct on every example.
+
+> [!CHECK] What artifacts can change behavior besides code?
+>
+> Data and configuration can change learned behavior and its operating
+> point.
+
+> [!CHECK] What makes false precision about an average risky?
+>
+> Aggregate results can hide worse performance for a particular segment.
+
 ## What to take away
 
 1. Behaviour comes from code *plus data plus config*, so the artifacts you must
@@ -190,3 +225,28 @@ everything around it, which is what this track is about.
 
 Next: the question to ask before any of this — whether the problem should be
 solved with ML at all.
+
+## Exercises
+
+> [!EXERCISE recall] Why can a model degrade without any new deployment?
+>
+> **Solution:** The input population or the relation between inputs and
+> outcomes changes while the existing model keeps answering requests
+> successfully.
+
+> [!EXERCISE apply] A frozen model receives requests successfully after a
+> seasonal change. Users complain about results for new accounts only.
+> Which measurement should you add?
+>
+> **Solution:** Compare outcome-linked model performance against a
+> baseline for that account slice, then examine changes in features and
+> predictions. Global uptime and aggregate scores leave that quality
+> failure hidden.
+
+> [!EXERCISE stretch] A candidate behaves differently from production even
+> though the source commit matches. How would you make the differences
+> attributable?
+>
+> **Solution:** Record the training dataset, configuration, model artifact
+> and evaluation setup alongside code. A source-only release record misses
+> several mechanisms that can change behavior.

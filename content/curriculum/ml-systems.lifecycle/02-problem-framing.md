@@ -9,6 +9,16 @@ framing mistakes: applying ML where rules would do, predicting something that is
 not actionable, or optimising a metric that does not correspond to the goal. None
 of them are fixable by a better model.
 
+> [!WHY] A team builds a predictor with excellent accuracy, then learns
+> that every predicted case receives the same treatment. The investment
+> produces a score without changing any decision.
+
+> [!GOALS]
+>
+> - Tie predictions to actions
+> - Choose a predictive or causal framing
+> - Design a fallback
+
 ## Should this be ML at all?
 
 ```text
@@ -76,6 +86,15 @@ threshold, and that choice is where the cost asymmetry lives, not in the model.
 **Decision → outcome.** Without a holdout you cannot tell whether the
 intervention worked. Offering discounts to likely churners and observing that
 most of them stayed proves nothing, because most of them may have stayed anyway.
+
+```mermaid
+flowchart TB
+  A[Define the goal]
+  B[Identify a decision]
+  C[Choose a target]
+  D[Measure online impact]
+  A --> B --> C --> D
+```
 
 ## The question that catches bad framings
 
@@ -204,6 +223,14 @@ whether the model survives contact with production. A model with no fallback pat
 becomes a hard dependency of the product; a model with no online measurement is a
 model nobody can defend when someone asks whether it helps.
 
+> [!CHECK] Why start with a hand-written rule?
+>
+> It offers a baseline and fallback and can solve enough of the problem.
+
+> [!CHECK] What sets a lower bound on feedback speed?
+>
+> Outcomes can only be used once labels mature and arrive.
+
 ## What to take away
 
 1. Default to rules; start with a hand-written rule and let it fail — it gives you
@@ -220,3 +247,27 @@ model nobody can defend when someone asks whether it helps.
    measure it *online* — those two determine whether it survives production.
 
 Next: the lifecycle itself, and why drawing it as a pipeline is the mistake.
+
+## Exercises
+
+> [!EXERCISE recall] What question should connect a model output to a
+> business objective?
+>
+> **Solution:** Ask who will change what decision because of the
+> prediction, and what benefit that change should produce.
+
+> [!EXERCISE apply] A support team already knows which accounts are likely
+> to churn. It needs to send an offer only where the offer will help.
+> Which target fits?
+>
+> **Solution:** Frame the problem around the incremental impact of the
+> offer, measured by a valid intervention comparison. A risk predictor can
+> identify likely churners even when the intervention would change nothing
+> for them.
+
+> [!EXERCISE stretch] The feature needed by a new scorer becomes available
+> only after the decision. How should the launch plan handle this?
+>
+> **Solution:** Use features known at the decision time and specify a rule
+> fallback, then measure the resulting policy online. Waiting for an
+> unavailable feature misses the decision window.

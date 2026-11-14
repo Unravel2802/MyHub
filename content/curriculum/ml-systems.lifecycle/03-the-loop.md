@@ -10,6 +10,17 @@ build, because it implies an end. There is no end. A deployed model is an input
 to the next iteration, and the systems that work are built as loops from the
 start.
 
+> [!WHY] A retraining job finishes every week, but nobody links
+> predictions to outcomes in production. The pipeline produces deployable
+> artifacts while giving the team no evidence about whether the deployed
+> policy is still useful.
+
+> [!GOALS]
+>
+> - Explain the production feedback loop
+> - Gate an automated retrain
+> - Choose an automation level
+
 ## The loop
 
 ```text
@@ -38,6 +49,17 @@ accurate and unhelpful is a framing discovery you can only make in production.
 **Serving generates training data.** Predictions and their eventual outcomes are
 next iteration's labels — and, as the previous chapter noted, they are biased by
 the model that produced them.
+
+```mermaid
+flowchart TB
+  A[Frame the decision]
+  B[Train and evaluate]
+  C[Serve]
+  D[Observe outcomes]
+  E[Revise framing]
+  A --> B --> C --> D --> E --> A
+  D --> B
+```
 
 ## The stages, and what each owes the next
 
@@ -179,6 +201,18 @@ infrastructure problems at zero user risk. A canary with a proper A/B measures
 the actual decision impact. Both come straight from the distributed track's
 traffic-management chapter, and they apply here without modification.
 
+> [!PITFALL] A retraining trigger can amplify an upstream data problem
+> when input validation is missing.
+
+> [!CHECK] What should a training stage hand to evaluation?
+>
+> A candidate with reproducible dataset and model provenance.
+
+> [!CHECK] Why use shadow traffic before a canary?
+>
+> Shadow traffic checks behavior under equivalent inputs before affecting
+> decisions for customers.
+
 ## What to take away
 
 1. The lifecycle is a loop: monitoring feeds framing, and serving generates the
@@ -196,3 +230,27 @@ traffic-management chapter, and they apply here without modification.
 
 Next: the technical debt that accumulates in these systems in ways ordinary
 software does not.
+
+## Exercises
+
+> [!EXERCISE recall] Which two feedback paths make the lifecycle a loop?
+>
+> **Solution:** Production outcomes become training evidence, and
+> monitoring informs whether to revise the problem framing or policy.
+
+> [!EXERCISE apply] A scheduled run finishes and its global metric passes
+> an old benchmark while an important slice regresses against production.
+> Which model should serve?
+>
+> **Solution:** Keep the production model. Gate the candidate against the
+> current release with slice checks and inspect the regression before a
+> canary. Job completion is an orchestration signal, not promotion
+> evidence.
+
+> [!EXERCISE stretch] Retraining is infrequent and manually reviewed, but
+> delayed labels often fail to join to prediction logs. Where should
+> automation effort go?
+>
+> **Solution:** Make outcome joins reliable and automatable first, keeping
+> review proportionate to retrain cadence. Building fully automatic
+> promotion leaves the missing evidence problem intact.

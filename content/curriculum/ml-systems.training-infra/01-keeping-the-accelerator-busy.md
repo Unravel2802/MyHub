@@ -9,6 +9,17 @@ A GPU costs between one and forty dollars an hour. A training job that keeps it
 nobody has profiled. Training infrastructure is, almost entirely, the discipline
 of keeping the expensive part fed.
 
+> [!WHY] An accelerator shows activity throughout a slow training run and
+> the team plans to buy more devices. A synthetic-data run can show
+> whether the current devices are waiting for the input path to produce
+> useful work.
+
+> [!GOALS]
+>
+> - Explain model FLOPs utilization
+> - Diagnose a synthetic-data difference
+> - Choose a memory trade
+
 ## The metric
 
 ```text
@@ -104,6 +115,15 @@ The synchronisation one is worth expanding because it is easy to write:
 A `.item()` per step on a fast model can cost 20–30% of throughput, because it
 empties the asynchronous queue the GPU relies on.
 
+```mermaid
+flowchart TB
+  A[Measure useful throughput]
+  B[Substitute synthetic data]
+  C[Compare rates]
+  D[Investigate remaining gaps]
+  A --> B --> C --> D
+```
+
 ## Asynchronous execution, and why the queue matters
 
 ```text
@@ -184,7 +204,7 @@ common false conclusion.
 reason a model that fits for inference does not fit for training.
 
 Activations are the other half, and they scale with batch size and sequence
-length — for transformers, attention activations scale with the *square* of
+length — for transformers, attention activations scale with the _square_ of
 sequence length unless a memory-efficient attention kernel is used.
 
 ```text
@@ -238,6 +258,22 @@ that costs the most money:
 Doubling the GPUs on a job at 20% MFU buys 2× at 20%. Fixing the dataloader first
 often buys 3× on the hardware you already have, at no cost.
 
+> [!PITFALL] High utilization can coexist with little useful model
+> computation.
+
+> [!INTERVIEW] Explain what the workload is waiting for before
+> recommending more accelerator capacity.
+
+> [!CHECK] Why can reading a per-step scalar stall a run?
+>
+> Extracting a CPU scalar can synchronize the device and drain the work
+> queue.
+
+> [!CHECK] Why use gradient accumulation?
+>
+> It combines microbatches into a larger effective batch when the whole
+> batch cannot fit at once.
+
 ## What to take away
 
 1. MFU, not `nvidia-smi` utilisation, is the honest metric; under 20% means there
@@ -256,3 +292,26 @@ often buys 3× on the hardware you already have, at no cost.
 
 Next: the data loading path, which is the most common answer to "why is my GPU
 idle".
+
+## Exercises
+
+> [!EXERCISE recall] Why is a device activity percentage insufficient to
+> decide if the model is training efficiently?
+>
+> **Solution:** Activity includes work that is not model progress. MFU
+> compares useful model compute with hardware capacity and helps detect
+> inefficient execution.
+
+> [!EXERCISE apply] A run's steps become much faster on synthetic batches
+> with unchanged model and shapes. Where would you focus first?
+>
+> **Solution:** Profile the real data loader and device transfer path,
+> where the input substitution removed the delay. Scaling out would
+> preserve the per-device input bottleneck.
+
+> [!EXERCISE stretch] Activation storage limits the useful microbatch
+> size. Which intervention would you try, and what should be measured?
+>
+> **Solution:** Test checkpointing activations to reduce storage through
+> recomputation, and benchmark useful throughput under the new batch.
+> Buying more nodes leaves each device's activation limit unchanged.

@@ -9,6 +9,17 @@ model that cannot be deployed, a pipeline nobody owns, a production problem that
 neither team considers theirs. The organisational structure is a system design
 decision, and it has the same failure modes as any other interface.
 
+> [!WHY] A scientist hands over a model that expects a feature only the
+> notebook can fetch in time. The serving team discovers the dependency
+> late and has to negotiate a new feature contract under a release
+> deadline.
+
+> [!GOALS]
+>
+> - Explain the common handoff failure
+> - Choose a handoff package
+> - Choose when to build a platform
+
 ## The roles
 
 ```text
@@ -62,8 +73,8 @@ were never inputs to the modelling work.
 
 The fixes, in order of effectiveness:
 
-**Constrain features up front.** Before modelling, write down what is *available
-at serving time*, with what latency and what freshness. A feature that cannot be
+**Constrain features up front.** Before modelling, write down what is _available
+at serving time_, with what latency and what freshness. A feature that cannot be
 computed in production is not a feature; it is a research finding.
 
 **Shared feature definitions.** One definition used for both training and serving
@@ -76,6 +87,15 @@ one that happens before the work.
 
 **Make the data scientist deploy the first version.** Nothing surfaces the
 constraints faster than having to satisfy them yourself.
+
+```mermaid
+flowchart TB
+  A[Establish serving constraints]
+  B[Define available features]
+  C[Evaluate model]
+  D[Assign owner]
+  A --> B --> C --> D
+```
 
 ## Three organisational models
 
@@ -203,6 +223,16 @@ The third is the most expensive at organisational scale. **Platform requirements
 should be extracted from working systems, not anticipated.** Ship one model
 end-to-end with whatever it takes, then build the platform from what actually hurt.
 
+> [!CHECK] Why assign an on-call owner for model quality?
+>
+> Someone needs authority to investigate wrong decisions even when the
+> service is technically up.
+
+> [!CHECK] What should a model card record about scope?
+>
+> Intended use and known restrictions, including uses the model should not
+> support.
+
 ## What to take away
 
 1. Most ML project failures are handoff failures, not technical ones.
@@ -214,10 +244,36 @@ end-to-end with whatever it takes, then build the platform from what actually hu
 4. A model with no on-call owner decays until it is switched off, and on-call must
    cover "the model is wrong", not only "the service is down".
 5. Model cards are operationally valuable because they record what a model must
-   *not* be used for, which is where the damaging misuse lives.
+   _not_ be used for, which is where the damaging misuse lives.
 6. Build the ML platform from the needs of your second and third models, not from
    guesses before the first.
 
 That completes the ML lifecycle. Next in the track: **ML data pipelines and
 feature stores** — the part that consumes most of the engineering effort and
 causes most of the production failures.
+
+## Exercises
+
+> [!EXERCISE recall] Why should serving constraints be inputs to modeling?
+>
+> **Solution:** A model learned from features unavailable within request
+> time cannot be served faithfully. Shared feature definitions and
+> practical limits guide training choices.
+
+> [!EXERCISE apply] A team receives weights and an average score for a
+> model it will operate. What evidence is needed before accepting
+> ownership?
+>
+> **Solution:** Obtain the feature contract, evaluation and slice
+> evidence, limits, lineage and rollout or fallback procedures. Check that
+> feature availability and latency are feasible. A weight file plus an
+> average cannot explain how to reproduce or operate the release.
+
+> [!EXERCISE stretch] A second team needs the same mature feature path,
+> while a proposed central team wants to review every experiment. Which
+> ownership model would you favor?
+>
+> **Solution:** Offer shared feature and deployment capabilities as a
+> service with product teams owning their decisions and quality. A
+> mandatory review of each experiment introduces a bottleneck without
+> addressing duplicated infrastructure.

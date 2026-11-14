@@ -8,6 +8,17 @@ An ML incident looks different from a service incident: nothing is down, latency
 is fine, error rates are normal, and the output is wrong. The diagnostic path is
 different too, and the fastest mitigation is almost never retraining.
 
+> [!WHY] A classifier starts routing most requests to manual review just
+> after a feature deployment. The response queue grows while the team
+> debates whether to retrain, so mitigation must come before the
+> root-cause investigation.
+
+> [!GOALS]
+>
+> - Explain request replay
+> - Choose immediate mitigation
+> - Design a preventive gate
+
 ## The signals that start one
 
 ```text
@@ -81,6 +92,15 @@ Threshold adjustment deserves the emphasis. A model whose scores have shifted
 upward is flagging too much; moving the threshold restores the operating point
 immediately, while a retrain takes a day. It is a dial you should have exposed as
 runtime configuration precisely so it is available during an incident.
+
+```mermaid
+flowchart TB
+  A[Detect regression]
+  B[Mitigate impact]
+  C[Replay affected requests]
+  D[Verify recovery]
+  A --> B --> C --> D
+```
 
 ## The failure catalogue
 
@@ -175,6 +195,16 @@ ML work as if the model were the risk.
   □  rollback that is a version change, tested
 ```
 
+> [!CHECK] Why expose the threshold as runtime configuration?
+>
+> It allows a reversible mitigation during an incident when the score
+> scale shifts.
+
+> [!CHECK] What should a postmortem distinguish?
+>
+> Causes in model behavior, data or the surrounding serving and feature
+> systems.
+
 ## What to take away
 
 1. Most "model problems" are pipeline problems; check deploys, feature pipelines
@@ -192,3 +222,27 @@ ML work as if the model were the risk.
 
 That completes ML monitoring. Next in the track: **evaluation and online
 testing** — measuring whether a model actually helps.
+
+## Exercises
+
+> [!EXERCISE recall] What evidence lets you compare a bad production
+> decision against earlier behavior?
+>
+> **Solution:** Preserve the versioned input vector and relevant model
+> versions so the same request can be replayed through both paths.
+
+> [!EXERCISE apply] A new feature sends constant values and a fallback
+> rules policy is available. What would you do while debugging?
+>
+> **Solution:** Use the fallback or roll back the change and confirm that
+> queues and decisions recover. Repair the feature and use replay before
+> reinstating it. Retraining on broken inputs adds a new release while
+> impact continues.
+
+> [!EXERCISE stretch] A retrained model passed its aggregate metric but
+> causes a large review surge after deployment. What would you add to the
+> release process?
+>
+> **Solution:** Gate at the configured operating threshold and evaluate
+> review volume and affected slices during limited rollout. Another
+> average discrimination number can leave the workload change invisible.

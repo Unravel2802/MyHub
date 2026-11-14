@@ -9,6 +9,17 @@ bandwidth-bound: you read the entire model to produce one output. Batching amort
 that read across many requests, and it is by a wide margin the highest-leverage
 optimisation in model serving.
 
+> [!WHY] A lightly loaded API still pauses before computation because it
+> waits for large static batches. The configuration saves accelerator work
+> under peak load and makes the first request slow when arrivals are
+> sparse.
+
+> [!GOALS]
+>
+> - Explain batch amortization
+> - Choose a dispatch condition
+> - Choose a response to prompt interference
+
 ## Why it works
 
 ```text
@@ -107,6 +118,15 @@ is the main reason to use a purpose-built LLM server (vLLM, TGI, SGLang) rather
 than a generic one. The complexity is real — the KV cache must support sequences
 entering and leaving arbitrarily — which is exactly what paged attention provides,
 covered in the inference-optimization topic.
+
+```mermaid
+flowchart TB
+  A[Admit ready requests]
+  B[Execute next decode step]
+  C[Release finished requests]
+  D[Refill batch]
+  A --> B --> C --> D
+```
 
 ## Prefill and decode are different workloads
 
@@ -219,6 +239,16 @@ is when it matters. (And the coordinated-omission warning from the
 distributed-systems track applies: a load generator that waits for responses
 understates the tail.)
 
+> [!CHECK] What does padding waste buy you?
+>
+> Uniform shapes let examples execute together at the cost of work on
+> unused positions.
+
+> [!CHECK] Why measure queue wait independently of model time?
+>
+> It separates delay caused by scheduling or overload from delay inside
+> execution.
+
 ## What to take away
 
 1. Batching amortises the model read across requests and is the highest-leverage
@@ -226,7 +256,7 @@ understates the tail.)
 2. The first few doublings buy large throughput for small latency; find the knee
    empirically.
 3. Static batching makes the first request wait for the batch — use adaptive
-   dispatch on queue depth *or* age.
+   dispatch on queue depth _or_ age.
 4. Continuous batching re-forms the batch every decoding step and is typically
    2–4× better than static for generation.
 5. Prefill is compute-bound and decode is memory-bound; mixing them lets a long
@@ -235,3 +265,25 @@ understates the tail.)
    optimising the model when the queue dominates buys nothing.
 
 Next: scaling, cold starts and the operational side of a model service.
+
+## Exercises
+
+> [!EXERCISE recall] Why does batching improve work per model read?
+>
+> **Solution:** One read of the weights can serve several requests, so the
+> same memory traffic supports more useful computation.
+
+> [!EXERCISE apply] Traffic alternates between bursts and isolated
+> requests. A fixed dispatcher waits until its batch is full even when a
+> request nears its latency limit. How should dispatch change?
+>
+> **Solution:** Dispatch on queue depth or the age of the oldest request.
+> Fill batches opportunistically during bursts and bound waiting during
+> sparse traffic. A full-batch requirement delays isolated requests.
+
+> [!EXERCISE stretch] Long prompts stall existing short decodes in a
+> continuous batch. How would you protect those streams?
+>
+> **Solution:** Measure prefill and decode separately and test chunked
+> prefill or disaggregation at the target load. Increasing the batch limit
+> alone can admit more competing prompt work.

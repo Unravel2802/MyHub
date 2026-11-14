@@ -9,6 +9,16 @@ and deduplication. The operation is simple — find the k closest vectors — an
 computationally brutal at scale, which is why every production system uses an
 approximation.
 
+> [!WHY] A search endpoint returns empty results for a restrictive
+> category even though eligible documents exist. The filter runs after
+> approximate retrieval and discards every candidate the index found.
+
+> [!GOALS]
+>
+> - Explain the exact-search limit
+> - Choose a deployment search setting
+> - Design a filtered retrieval comparison
+
 ## Why exact search fails
 
 ```text
@@ -223,6 +233,15 @@ And measure **end-to-end quality**, not only recall. Recall@10 of 0.92 versus 0.
 may make no difference to answer quality if the reranker sees enough candidates —
 in which case the extra latency is wasted.
 
+```mermaid
+flowchart TB
+  A[Build exact reference]
+  B[Sweep approximate settings]
+  C[Measure recall and latency]
+  D[Pick operating point]
+  A --> B --> C --> D
+```
+
 ## Filtered search
 
 The requirement that breaks naive designs:
@@ -258,6 +277,22 @@ key (one index per tenant), or using an engine with native filtered search.
 Partitioning by tenant is frequently the right answer for multi-tenant systems, and
 it also solves the isolation problem from the resilience track.
 
+> [!PITFALL] Evaluate selective filters explicitly because average
+> retrieval recall can miss empty filtered results.
+
+> [!INTERVIEW] Describe the exact reference and the eligible corpus before
+> reporting ANN recall.
+
+> [!CHECK] What does HNSW's search effort knob trade?
+>
+> Searching more of its graph can improve recall at the cost of query
+> latency.
+
+> [!CHECK] What can an exact rerank recover after quantized retrieval?
+>
+> Better order among retained candidates whose approximate scores were
+> noisy.
+
 ## What to take away
 
 1. Exact search is memory-bound and linear in corpus size; it is genuinely fine
@@ -275,3 +310,31 @@ it also solves the isolation problem from the resilience track.
 
 Next: operating a vector search system, where the hard parts are updates and
 embedding versions.
+
+## Exercises
+
+> [!EXERCISE recall] Why can exact search become bandwidth-bound as a
+> corpus grows?
+>
+> **Solution:** It reads and scores every vector, so the amount of memory
+> moved grows with corpus size.
+
+> [!EXERCISE apply] A 20-result exact reference is available. Setting A
+> returns 18 of those results in 8 ms and B returns 19 in 14 ms. The
+> budget is 10 ms and minimum recall is 0.90. Choose a setting.
+>
+> **Solution:** Recall@k = size of the intersection with the exact top k ÷
+> k. A has 18 ÷ 20 = 0.90 and B has 19 ÷ 20 = 0.95. A meets both limits
+> with 8 ms, while B exceeds the latency limit. Verify the same criteria
+> on important query slices.
+
+> [!EXERCISE stretch] A tenant query must return results from a small
+> eligible subset, and the subset sizes vary widely. Searching the shared
+> index first often yields only other tenants' candidates. How would you
+> choose an approach and establish that it works?
+>
+> **Solution:** Benchmark native filtering or an index partitioned by the
+> filter key, measuring recall against exact eligible results and latency
+> across subset sizes. A weaker approach post-filters the same small
+> global candidate list, which may leave no usable items. Include
+> selective queries in the release gate.

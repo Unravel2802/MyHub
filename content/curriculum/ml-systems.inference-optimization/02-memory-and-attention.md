@@ -9,6 +9,16 @@ once, and therefore on throughput. The insight that transformed LLM serving was
 that most of that memory was being wasted by allocation, not by data — and the fix
 came from operating systems.
 
+> [!WHY] Two requests terminate and leave free memory scattered across the
+> KV cache. A new request queues because its reservation needs one
+> contiguous span even though the allocator has enough total bytes.
+
+> [!GOALS]
+>
+> - Explain block tables
+> - Apply copy-on-write
+> - Choose a cache capacity response
+
 ## The waste in naive allocation
 
 ```text
@@ -75,6 +85,15 @@ The fix is virtual memory, applied to the KV cache.
 This is exactly the OS insight from the foundations track — paging removes
 external fragmentation and bounds internal fragmentation to one page — applied to
 a completely different resource.
+
+```mermaid
+flowchart TB
+  A[Allocate fixed block]
+  B[Map block to sequence]
+  C[Decode new token]
+  D[Reclaim released blocks]
+  A --> B --> C --> D
+```
 
 ## Copy-on-write sharing
 
@@ -246,6 +265,16 @@ A non-zero preemption rate is the signal that you are memory-constrained rather
 than compute-constrained, which points at the cache optimisations rather than at
 more FLOPs.
 
+> [!CHECK] What is the tail waste under paged allocation?
+>
+> A mostly empty final block is possible for a sequence, while earlier
+> full blocks retain their slots.
+
+> [!CHECK] Why can preemption signal a cache capacity issue?
+>
+> Active sequences compete for cache slots, and a request may be paused or
+> recomputed to free them.
+
 ## What to take away
 
 1. Naive contiguous KV allocation wastes 60–80% of the cache to fragmentation and
@@ -262,3 +291,29 @@ more FLOPs.
    cache is a cheap and under-used capacity win.
 
 Next: making the model itself smaller and faster.
+
+## Exercises
+
+> [!EXERCISE recall] How does paged attention let a sequence span disjoint
+> physical slots?
+>
+> **Solution:** A sequence's block table maps logical token blocks to the
+> physical blocks holding their cached state.
+
+> [!EXERCISE apply] Two sampled continuations share a prompt and reach its
+> partly filled last block. How should their first divergent writes be
+> handled?
+>
+> **Solution:** Keep read-only full prefix blocks shared. Give each
+> diverging continuation an independent writable version of the partial
+> block when it writes. Updating a shared block directly can corrupt the
+> other continuation.
+
+> [!EXERCISE stretch] Preemption repeatedly rises on long-context traffic
+> despite a paged allocator. What would you evaluate for the next model
+> release?
+>
+> **Solution:** Compare cache geometry and cache quantization at
+> representative context lengths, measuring quality and preemption. Larger
+> contiguous reservations revive waste and do not reduce the bytes each
+> token's state occupies.

@@ -8,6 +8,17 @@ Batching and cache management make better use of a model. The remaining
 optimisations change the model itself, or change how many tokens each expensive
 weight read produces. Both attack the same bandwidth bound from different sides.
 
+> [!WHY] A compressed release cuts the median token time and loses
+> accuracy on rare requests with several conditions. The average quality
+> score hides the regression until customers send the cases that need the
+> most care.
+
+> [!GOALS]
+>
+> - Explain exact speculative verification
+> - Choose speculation from measured behavior
+> - Choose a quality-preserving rollout
+
 ## Quantisation for serving
 
 The formats and their trade-offs were covered in the GPU topic; here is what
@@ -85,7 +96,7 @@ because it looks like a modelling project rather than an efficiency one. A
 distilled model that meets the quality bar is 10× cheaper than every serving
 optimisation applied to the large one, permanently.
 
-The realistic assessment: on a *narrow* task, a well-distilled small model
+The realistic assessment: on a _narrow_ task, a well-distilled small model
 routinely matches its teacher. On broad general capability it does not, and
 expecting it to leads to disappointment.
 
@@ -151,7 +162,7 @@ because its guarantee is unusual.
 
 That guarantee is what makes speculation different from every other technique
 here: quantisation, pruning and distillation all trade quality for speed.
-Speculative decoding trades *compute* for speed, with no quality cost at all.
+Speculative decoding trades _compute_ for speed, with no quality cost at all.
 
 ```text
   speedup ≈ acceptance_rate × K,
@@ -256,6 +267,24 @@ real problem: quantisation and distillation tend to preserve average performance
 while degrading the tail of the input distribution, which is exactly where the
 users who complain live.
 
+```mermaid
+flowchart TB
+  A[Compress candidate]
+  B[Measure device performance]
+  C[Compare affected slices]
+  D[Gate release]
+  A --> B --> C --> D
+```
+
+> [!CHECK] When does unstructured pruning speed a workload?
+>
+> The hardware and kernel must be able to exploit the resulting sparsity
+> pattern.
+
+> [!CHECK] Where is lookup-based speculation useful?
+>
+> In workloads that frequently copy phrases or spans from the input.
+
 ## What to take away
 
 1. Weight-only quantisation helps memory-bound decode; weight-and-activation helps
@@ -265,7 +294,7 @@ users who complain live.
 3. Unstructured pruning gives no speedup without hardware support; 2:4
    semi-structured sparsity is the practical middle ground.
 4. Speculative decoding verifies K draft tokens in one target pass and, with the
-   correct acceptance rule, leaves the output distribution *exactly* unchanged.
+   correct acceptance rule, leaves the output distribution _exactly_ unchanged.
 5. Lookup-based speculation is free and works well whenever output copies from the
    input; cascades are simple and often the best cost/quality trade.
 6. Validate compression on your own evaluation set and on slices — the aggregate
@@ -273,3 +302,29 @@ users who complain live.
 
 That completes inference optimization. Next in the track: **vector search and
 retrieval infrastructure** — the serving system behind RAG and recommendation.
+
+## Exercises
+
+> [!EXERCISE recall] What is the target model's role when a draft model
+> proposes several tokens?
+>
+> **Solution:** It checks the proposed positions together. The appropriate
+> acceptance and correction rule preserves the target distribution.
+
+> [!EXERCISE apply] Two run profiles have equal draft cost. One reliably
+> proposes several accepted tokens per verification, while the other
+> usually fails at the first proposal. Which should proceed to a serving
+> benchmark?
+>
+> **Solution:** Test the first profile because the target verification is
+> amortized over more accepted tokens. Measure end-to-end throughput and
+> latency, including draft cost and corrections.
+
+> [!EXERCISE stretch] A quantized model passes the average evaluation
+> threshold and fails on rare long outputs. What release gate would you
+> use?
+>
+> **Solution:** Require the relevant slices to meet the quality bar on
+> representative deployment data. Compare a less aggressive precision for
+> affected operators or keep the original there. Releasing on the average
+> would accept a known loss hidden by common examples.

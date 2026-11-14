@@ -8,6 +8,17 @@ summary: A procedure for a model that is not learning, ordered by what is most o
 diagnostic order. Working through it systematically takes an hour; guessing at
 hyperparameters takes a week and usually finds the wrong answer.
 
+> [!WHY] A training curve stays flat and the team prepares a costly
+> architecture sweep. A small repeatable diagnostic can reveal a wrong
+> loss or broken gradient before another full-scale run consumes the
+> budget.
+
+> [!GOALS]
+>
+> - Explain gradient diagnosis
+> - Choose the next debug test
+> - Decide what to do after a tiny-batch pass
+
 ## The order
 
 Cheapest and most likely first:
@@ -22,6 +33,15 @@ Cheapest and most likely first:
 ```
 
 Most teams start at 6. Almost all real bugs are at 1–4.
+
+```mermaid
+flowchart TB
+  A[Fit a tiny batch]
+  B[Inspect data and loss]
+  C[Inspect gradients and rate]
+  D[Revisit architecture]
+  A --> B --> C --> D
+```
 
 ## Step 1: overfit a tiny batch
 
@@ -252,6 +272,16 @@ twenty-minute iteration loop produces bad hypotheses because the cost of testing
 one is too high; getting the loop under a minute changes how carefully you can
 think.
 
+> [!CHECK] What can directly inspecting a sample batch reveal?
+>
+> It can expose wrong labels, input ranges, alignment or destructive
+> augmentation.
+
+> [!CHECK] Why compare against a simple baseline?
+>
+> It checks whether the task has exploitable signal and whether added
+> model complexity improves on it.
+
 ## What to take away
 
 1. Work the order: overfit ten examples, look at the data, check the loss, check
@@ -270,3 +300,27 @@ think.
 That completes training infrastructure. Next in the track: **GPUs and
 accelerators** — what the hardware actually does, and why some operations are
 hundreds of times faster than others.
+
+## Exercises
+
+> [!EXERCISE recall] What does an absent gradient on a parameter tell you?
+>
+> **Solution:** That parameter has no usable path from the loss in the
+> current computation, which narrows the search to wiring or frozen state.
+
+> [!EXERCISE apply] A balanced eight-class classifier starts with
+> approximately uniform scores but reports a loss of 0.2. Use the expected
+> initial cross-entropy to choose the first diagnostic.
+>
+> **Solution:** Expected loss ≈ ln(n). With n = 8, ln(8) ≈ 2.079 rounded
+> to three decimals. The reported 0.200 is far below 2.079. Verify the
+> loss inputs, activation and labels before changing the architecture.
+
+> [!EXERCISE stretch] The model fits a tiny batch, but a larger run never
+> improves over a simple predictor. Which evidence would guide your next
+> experiment?
+>
+> **Solution:** Compare data signal, split and optimization against the
+> baseline and inspect learning rate and gradients on the larger run. A
+> successful tiny test only shows this path can fit some examples. It does
+> not establish useful generalization.

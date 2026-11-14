@@ -8,6 +8,16 @@ summary: The kinds of change that degrade a model, how to measure each, and whic
 responses. Distinguishing them is what turns a drift alert from a nuisance into
 an action.
 
+> [!WHY] A drift alert arrives after an upstream unit change and an
+> automatic retrain starts immediately. The replacement can learn the
+> corrupted input instead of recovering the previous behavior.
+
+> [!GOALS]
+>
+> - Distinguish drift types
+> - Interpret a step change
+> - Plan a gradual-decay response
+
 ## The kinds
 
 ```text
@@ -101,7 +111,7 @@ on statistical tests over large samples, so it fires constantly.
 
 ## Multivariate drift
 
-Individual features can each look stable while their *relationship* changes:
+Individual features can each look stable while their _relationship_ changes:
 
 ```text
   feature A: mean 50, unchanged
@@ -128,7 +138,7 @@ Individual features can each look stable while their *relationship* changes:
 ```
 
 The domain classifier is the most useful of these because it does double duty:
-it detects drift *and* points at which features are responsible, which is exactly
+it detects drift _and_ points at which features are responsible, which is exactly
 what the investigation needs.
 
 ## Prediction drift
@@ -207,8 +217,17 @@ question is what happened on that date.
 ```
 
 The last line matters and is skipped: persistent concept drift after retraining
-usually means the *feature set* no longer describes the world, not that the model
+usually means the _feature set_ no longer describes the world, not that the model
 is stale. Retraining harder on inadequate features does not help.
+
+```mermaid
+flowchart TB
+  A[Flag drift]
+  B[Verify pipeline inputs]
+  C[Identify cause]
+  D[Choose response]
+  A --> B --> C --> D
+```
 
 ## Retraining strategy
 
@@ -242,6 +261,16 @@ is stale. Retraining harder on inadequate features does not help.
   something that expects Christmas every month.
 ```
 
+> [!CHECK] Why prefer an effect size over a significance-only alert?
+>
+> At large sample sizes a very small change can be significant without
+> being operationally important.
+
+> [!CHECK] What can a domain classifier expose?
+>
+> Joint differences between reference and current data that marginal
+> feature checks may miss.
+
 ## What to take away
 
 1. Covariate shift, concept drift, label shift and upstream bugs are different
@@ -258,3 +287,28 @@ is stale. Retraining harder on inadequate features does not help.
    world moving, a step change is something that broke on a date.
 
 Next: incidents — what to do when the model is the problem.
+
+## Exercises
+
+> [!EXERCISE recall] How can inputs drift while the relation from input to
+> target stays the same?
+>
+> **Solution:** Covariate shift changes the distribution of inputs.
+> Concept drift changes how outcomes relate to those inputs.
+
+> [!EXERCISE apply] Scores shift on the exact day an upstream field
+> switches units, while rollout and model versions are constant. What
+> should you investigate first?
+>
+> **Solution:** Validate the source against its former schema semantics
+> and repair or roll back the input conversion. The timing and unit change
+> favor a pipeline explanation over retraining for a new population.
+
+> [!EXERCISE stretch] Feature pipelines are healthy, but mature outcomes
+> show progressively worse quality over several comparable windows. How
+> would you respond?
+>
+> **Solution:** Validate the evidence for concept change, compare an
+> updated candidate trained on sound recent data and use the normal
+> evaluation gate. Raising an alert threshold suppresses evidence without
+> repairing model quality.

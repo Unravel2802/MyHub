@@ -8,6 +8,17 @@ Supervised learning needs labels, and labels come from people. That makes
 annotation a process-design problem as much as a data problem — and its quality
 sets a hard ceiling that no amount of modelling can exceed.
 
+> [!WHY] Two annotators disagree consistently about whether a borderline
+> ticket belongs in the target class. Adding more labels at the same pace
+> scales the disagreement and consumes budget without improving the task
+> definition.
+
+> [!GOALS]
+>
+> - Explain chance-adjusted agreement
+> - Choose labeling acquisition
+> - Plan a guideline repair
+
 ## The ceiling
 
 ```text
@@ -20,7 +31,7 @@ sets a hard ceiling that no amount of modelling can exceed.
 ```
 
 **Measure inter-annotator agreement before training anything.** It tells you the
-achievable ceiling, and low agreement is nearly always a *definition* problem
+achievable ceiling, and low agreement is nearly always a _definition_ problem
 rather than an annotator problem — the guidelines are ambiguous, the categories
 overlap, or the task is genuinely subjective.
 
@@ -108,6 +119,15 @@ living document produce dramatically better data than those that write them once
 **Full overlap on every item is expensive and usually unnecessary.** Overlap
 heavily at the start to establish agreement and calibrate, then reduce to a sample
 plus a gold set for ongoing monitoring.
+
+```mermaid
+flowchart TB
+  A[Pilot labels]
+  B[Review disagreements]
+  C[Revise guideline]
+  D[Audit with gold items]
+  A --> B --> C --> D
+```
 
 ## Aggregating multiple labels
 
@@ -236,6 +256,24 @@ precisely on the boundary where it is most informative.
 produces training data drawn from the boundary, not from the distribution. Mixing
 in randomly sampled items keeps the label set representative.
 
+> [!PITFALL] A high acceptance rate in model-assisted labeling can reflect
+> anchoring on the suggestion.
+
+> [!INTERVIEW] Show a concrete ambiguous example and how the guideline
+> helps annotators resolve it.
+
+> [!CHECK] Why seed gold examples into the regular stream?
+>
+> They provide an ongoing quality check against known labels.
+
+> [!CHECK] What does a cannot-tell label capture?
+>
+> Cases where the evidence cannot support a reliable classification.
+
+> [!CHECK] Why preserve a label distribution for subjective data?
+>
+> It records disagreement that a single majority label would erase.
+
 ## What to take away
 
 1. Inter-annotator agreement is the ceiling on model performance; measure it with
@@ -254,3 +292,29 @@ in randomly sampled items keeps the label set representative.
 
 That completes labelling. Next in the track: **privacy-preserving ML** — training
 on data you are not allowed to see.
+
+## Exercises
+
+> [!EXERCISE recall] Why does raw agreement overstate consistency on a
+> skewed labeling task?
+>
+> **Solution:** Annotators can often agree by repeatedly choosing the
+> common class. Kappa adjusts for agreement expected by chance.
+
+> [!EXERCISE apply] The uncertainty queue contains near-identical
+> unreadable examples. There is a fixed review budget and new categories
+> are rare. How should the next batch be chosen?
+>
+> **Solution:** Combine uncertainty with diversity and keep some
+> representative samples. Use the cannot-tell option for genuinely
+> unresolvable items. Pure uncertainty sampling can spend the budget on
+> repeated noise.
+
+> [!EXERCISE stretch] Two reviewers consistently classify the same
+> borderline case differently despite high overall agreement. What should
+> the team do before hiring more reviewers?
+>
+> **Solution:** Adjudicate representative disagreements, add examples and
+> counterexamples to the guideline, and run another calibration pilot.
+> Additional reviewers using the same ambiguous rule increase the volume
+> of inconsistent labels.

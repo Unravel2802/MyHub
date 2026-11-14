@@ -8,6 +8,17 @@ A training run on 512 GPUs for three weeks will experience hardware failures. No
 might — will. At scale, mean time between failures drops below the length of the
 job, and a job that cannot resume is a job that never finishes.
 
+> [!WHY] A training job restores model weights after a preemption and
+> starts replaying the beginning of its dataset. The job appears
+> recovered, but repeated restarts change the training sequence and
+> invalidate the run comparison.
+
+> [!GOALS]
+>
+> - Explain complete checkpoint state
+> - Choose an object-store publication method
+> - Choose a response to save failures
+
 ## The arithmetic
 
 ```text
@@ -110,6 +121,15 @@ pointer object — the same commit trick as everywhere else.
     □  periodic milestones (every 10k steps) — retained longer
 
   a single checkpoint means a corrupt one loses the whole run.
+```
+
+```mermaid
+flowchart TB
+  A[Save complete state]
+  B[Write temporary checkpoint]
+  C[Publish complete checkpoint]
+  D[Test resume]
+  A --> B --> C --> D
 ```
 
 ## Resuming correctly
@@ -223,6 +243,19 @@ its peers, and checkpoint failure. **Checkpoint failure alerting is the one to
 insist on** — a job that has silently stopped checkpointing is a job that will
 lose everything at the next failure, and nothing else will tell you.
 
+> [!PITFALL] Store the data cursor and scheduler state along with model
+> and optimizer weights.
+
+> [!CHECK] Why retain several completed checkpoints?
+>
+> A recent checkpoint can be incomplete or corrupted, so an earlier
+> complete one lets training recover.
+
+> [!CHECK] Why test an interrupted and uninterrupted trajectory?
+>
+> Divergent steps can reveal missing state, such as a scheduler reset or a
+> repeated data position.
+
 ## What to take away
 
 1. At 512 nodes, MTBF drops to hours; checkpointing is what makes a long job
@@ -239,3 +272,28 @@ lose everything at the next failure, and nothing else will tell you.
    failure — nothing else reveals a job that has stopped saving.
 
 Next: orchestrating these jobs — scheduling, queues and cost.
+
+## Exercises
+
+> [!EXERCISE recall] Why are weights alone insufficient for a faithful
+> resume?
+>
+> **Solution:** Updates depend on optimizer and scheduler history as well
+> as RNG and data order. Those states determine what happens next.
+
+> [!EXERCISE apply] Several ranks upload checkpoint shards and a resume
+> reader may start before all shards arrive. Which signal should the
+> reader use?
+>
+> **Solution:** Publish a completion marker or manifest after all shards
+> are durably present and read only completed checkpoint versions.
+> Assuming a filesystem-style atomic rename on object storage can expose
+> partial state.
+
+> [!EXERCISE stretch] A long job trains normally but checkpoint writes
+> have failed repeatedly. What operational change should happen before the
+> next preemption?
+>
+> **Solution:** Alert on save failures and restore verified checkpointing,
+> retaining an older completed version. Continuing solely because loss
+> improves risks losing a long interval of training work.

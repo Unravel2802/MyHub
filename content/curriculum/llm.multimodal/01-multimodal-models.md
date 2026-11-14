@@ -8,6 +8,16 @@ Multimodal models process more than tokens of text: images, audio, video, and
 combinations. The architectural idea is simple — map every modality into the same
 representation space — and the engineering consequences are substantial.
 
+> [!WHY] A document feature sends every page as a full image even when the
+> text layer is sufficient. The request becomes slower and more expensive
+> while question accuracy stays limited by which pages were selected.
+
+> [!GOALS]
+>
+> - Explain cross-modal attention
+> - Choose a document representation
+> - Design a video evaluation
+
 ## The architecture
 
 ```text
@@ -41,6 +51,14 @@ representation space — and the engineering consequences are substantial.
   UNIFIED           one model trained natively on all
                     modalities from the start
                     → the frontier direction
+```
+
+```mermaid
+flowchart TB
+  A[Encode source modality]
+  B[Project into shared space]
+  C[Attend to combined input]
+  A --> B --> C
 ```
 
 ## Images are expensive in tokens
@@ -176,6 +194,26 @@ documents, screens with credentials and location information the sender did not
 consider. The data-minimisation obligation applies to what is in the image, not
 just to what the request is about.
 
+> [!PITFALL] Validate fine-detail and counting cases on representative
+> media. General description accuracy can hide those failures.
+
+> [!INTERVIEW] Explain which information requires visual inputs and how
+> the rest can be sent more efficiently.
+
+> [!CHECK] Why can equivalent text be cheaper than a full-page image?
+>
+> The image is represented by many visual tokens, even when the relevant
+> content is a short passage.
+
+> [!CHECK] What can make a video input too large?
+>
+> Supplying every frame adds many visual tokens across the timeline.
+
+> [!CHECK] Which audio property shapes a natural conversation?
+>
+> Streaming latency and the time before the first usable reply matter to
+> turn-taking.
+
 ## What to take away
 
 1. Every modality is projected into a shared vector space and attended over
@@ -192,3 +230,29 @@ just to what the request is about.
    an image may contain personal data the sender did not consider.
 
 Next: safety and the guardrails around all of this.
+
+## Exercises
+
+> [!EXERCISE recall] How can a model relate text in a question to an image
+> region?
+>
+> **Solution:** The encoders project inputs into a shared representation,
+> so attention can combine information from visual and textual positions.
+
+> [!EXERCISE apply] A contract review depends mostly on selectable text
+> plus a handful of charts whose layout matters. What input would you
+> send?
+>
+> **Solution:** Use text for searchable passages and selected image
+> regions for charts or layout-dependent questions. Evaluate the mixed
+> strategy on original documents. Sending every page as an image raises
+> token cost and may bury relevant detail.
+
+> [!EXERCISE stretch] Users ask both what was said and what happened
+> visually at a short moment. How would you design the input and test the
+> result?
+>
+> **Solution:** Supply timestamped transcript and representative frames,
+> then assess whether the frame sampling covers events users ask about.
+> Include cases where visual evidence changes the answer. Transcript-only
+> evaluation misses those failures.

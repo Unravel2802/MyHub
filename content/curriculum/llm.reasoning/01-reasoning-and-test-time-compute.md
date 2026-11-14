@@ -5,9 +5,19 @@ summary: Spending compute per query instead of per model, and what reasoning tra
 ---
 
 The dominant axis of progress shifted around 2024: instead of only making models
-larger, spend more compute *at inference* on hard problems. A model that thinks
+larger, spend more compute _at inference_ on hard problems. A model that thinks
 before answering solves problems a same-sized model cannot, and the resulting
 scaling curve is a second lever alongside pretraining.
+
+> [!WHY] A service uses its slowest reasoning mode on every request and
+> misses a latency target even for simple lookups. Difficulty routing can
+> reserve expensive computation for cases where it changes the answer.
+
+> [!GOALS]
+>
+> - Explain reasoning tokens as computation
+> - Choose a compute-allocation policy
+> - Choose verification evidence
 
 ## Chain of thought
 
@@ -24,7 +34,7 @@ scaling curve is a second lever alongside pretraining.
 
 Why it works, mechanically: a transformer performs a fixed amount of computation
 per token. A hard problem needing many steps cannot be solved in one forward pass —
-but *writing the intermediate steps* gives the model more forward passes, with each
+but _writing the intermediate steps_ gives the model more forward passes, with each
 step's result available as input to the next.
 
 ```text
@@ -33,7 +43,7 @@ step's result available as input to the next.
 ```
 
 That reframing matters: chain of thought is not the model "showing its working"
-for the reader's benefit. The working *is* the computation.
+for the reader's benefit. The working _is_ the computation.
 
 ## The techniques
 
@@ -95,8 +105,8 @@ reasoning by default.
 ```
 
 The verifiable-reward point is the important one. Preference-based RL is limited by
-reward hacking (as the alignment chapter described); a reward that is *checked by
-running the code* has no such ceiling, which is why reasoning training could be
+reward hacking (as the alignment chapter described); a reward that is _checked by
+running the code_ has no such ceiling, which is why reasoning training could be
 pushed much further than RLHF.
 
 ```text
@@ -150,7 +160,18 @@ The methods, in increasing sophistication:
 
 **A verifier is what makes parallel sampling scale.** Majority voting plateaus;
 a good verifier keeps improving with N, which is why process reward models — which
-score each *step* rather than the final answer — are an active area.
+score each _step_ rather than the final answer — are an active area.
+
+```mermaid
+flowchart TB
+  A[Assess task difficulty]
+  B[Choose compute budget]
+  C[Verify answer]
+  D[Escalate if needed]
+  A --> B --> C
+  C --> D
+  D --> B
+```
 
 ## Practical guidance
 
@@ -207,9 +228,31 @@ score each *step* rather than the final answer — are an active area.
      structure
 ```
 
-The first is the one with real consequences. A reasoning trace is *evidence about*
+The first is the one with real consequences. A reasoning trace is _evidence about_
 the model's behaviour, not a faithful record of its computation, and treating it as
 an explanation in a regulated or safety-critical setting is a mistake.
+
+> [!PITFALL] A fluent reasoning trace is insufficient evidence of what
+> caused an answer.
+
+> [!INTERVIEW] Compare answer quality, cost and latency at each test-time
+> budget.
+
+> [!CHECK] What does self-consistency aggregate?
+>
+> It samples several solution paths and uses their final answers to select
+> a result.
+
+> [!CHECK] Why can test-time compute be elastic?
+>
+> The system can allocate more or fewer tokens, samples or search steps
+> per request.
+
+> [!CHECK] What can a verifiable outcome supply during training or
+> evaluation?
+>
+> An externally checkable signal about whether a proposed answer satisfies
+> a defined criterion.
 
 ## What to take away
 
@@ -217,7 +260,7 @@ an explanation in a regulated or safety-critical setting is a mistake.
    because the model is explaining itself.
 2. Self-consistency — sample N paths, take the majority — is the highest
    value-per-complexity test-time technique.
-3. Reasoning models are trained with RL against *verifiable* rewards, which cannot
+3. Reasoning models are trained with RL against _verifiable_ rewards, which cannot
    be reward-hacked the way preference models can — that is why the training could
    be pushed so far.
 4. Test-time compute trades against model size, and unlike model size it is elastic
@@ -228,3 +271,28 @@ an explanation in a regulated or safety-critical setting is a mistake.
    computation — do not treat it as an audit explanation.
 
 Next: prompting, which is the interface to all of this.
+
+## Exercises
+
+> [!EXERCISE recall] Why can intermediate generated text help a model
+> complete a multistep task?
+>
+> **Solution:** It creates additional processing steps and exposes earlier
+> partial results to later tokens.
+
+> [!EXERCISE apply] Simple requests already meet quality targets, while a
+> difficult subset improves with a slower model. The overall latency
+> budget is tight. Which policy should you compare?
+>
+> **Solution:** Use a fast default with escalation for measured difficult
+> or uncertain cases. Test routing mistakes as well as answer quality and
+> response time. Sending all requests to the slow model would pay the
+> extra cost even where quality is already adequate.
+
+> [!EXERCISE stretch] A generated explanation reads well but the
+> independently checkable answer disagrees with it. What should decide
+> acceptance?
+>
+> **Solution:** Use the task's external outcome check and investigate
+> failed cases with the trace as diagnostic data. Accepting on the trace's
+> fluency alone rewards explanations that can accompany a wrong answer.

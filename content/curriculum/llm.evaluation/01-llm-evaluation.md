@@ -9,6 +9,17 @@ industry's headline numbers are systematically less informative than they appear
 Building your own measurement is not optional — it is the only thing that tells
 you whether your system works.
 
+> [!WHY] A public benchmark ranks a model highly and the first production
+> trial fails on the organization's document formats. A private,
+> task-specific suite offers evidence about a release that a leaderboard
+> cannot supply.
+
+> [!GOALS]
+>
+> - Explain benchmark mismatch
+> - Select evaluation methods by task
+> - Choose a regression suite policy
+
 ## Why public benchmarks mislead
 
 ```text
@@ -109,6 +120,15 @@ can tell you.
 The incident-regression set is the highest-value part, because it accumulates into
 an institutional memory of what has broken — and prevents the same class recurring.
 
+```mermaid
+flowchart TB
+  A[Collect real examples]
+  B[Choose evaluation checks]
+  C[Compare both releases]
+  D[Gate deployment]
+  A --> B --> C --> D
+```
+
 ## What to measure
 
 ```text
@@ -180,6 +200,27 @@ The paired-comparison point, from the determinism chapter, applies with full
 force here: comparing two prompts on the same 200 examples and counting wins is
 dramatically more sensitive than comparing two average scores.
 
+> [!PITFALL] A performance change smaller than run-to-run variation is
+> weak evidence for a product decision.
+
+> [!INTERVIEW] Specify the evaluation population, rubric and acceptance
+> criteria before comparing candidates.
+
+> [!CHECK] Which judge bias does randomized order help address?
+>
+> A tendency to prefer a response based on where it appears in the
+> comparison.
+
+> [!CHECK] Why use paired comparisons?
+>
+> Candidate and baseline face the same examples, reducing noise from
+> variation among tasks.
+
+> [!CHECK] What does measuring refusal on benign requests expose?
+>
+> Loss of useful coverage when the model unnecessarily declines supported
+> work.
+
 ## What to take away
 
 1. Public benchmarks are contaminated, saturated, optimised toward and often
@@ -195,3 +236,27 @@ dramatically more sensitive than comparing two average scores.
    run-to-run variance is not a difference.
 
 Next: models that handle more than text.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a public score give incomplete evidence for
+> a production choice?
+>
+> **Solution:** The benchmark can overlap training data, have a different
+> workload or saturate while the product's tasks still differ.
+
+> [!EXERCISE apply] One feature extracts typed fields. Another writes
+> open-ended help answers. Which checks would you use on each?
+>
+> **Solution:** Compare field values and validate the schema
+> programmatically for extraction. For help answers, use a defined rubric
+> and a calibrated judge with blinded order, along with human examples. A
+> single subjective score can obscure objective extraction failures.
+
+> [!EXERCISE stretch] A series of prompt edits is tuned on public examples
+> and results keep improving there. What should gate the next release?
+>
+> **Solution:** Freeze a private, representative suite from real cases and
+> compare changes against the same baseline, tracking uncertainty and
+> slices. Optimizing public examples further raises their scores while
+> leaving deployment behavior uncertain.

@@ -9,6 +9,16 @@ the result, and decides again. That structure turns a text generator into
 something that can accomplish tasks — and introduces every failure mode of a
 distributed system driven by a probabilistic controller.
 
+> [!WHY] A catalog assistant stops after reading a document and reports
+> that the inventory check succeeded. The application needs evidence that
+> the result answers the request before it shows a completion message.
+
+> [!GOALS]
+>
+> - Explain the observation loop
+> - Design a bounded read-only workflow
+> - Verify completion criteria
+
 ## The loop
 
 ```text
@@ -36,6 +46,15 @@ distributed system driven by a probabilistic controller.
   → and eventually the window is exhausted
   → which is why context management (next topic) is the
     binding constraint on long agent runs
+```
+
+```mermaid
+flowchart TB
+  A[Receive bounded task]
+  B[Read approved data]
+  C[Verify result]
+  D[Report outcome]
+  A --> B --> C --> D
 ```
 
 ## Tool definitions are prompts
@@ -224,11 +243,32 @@ exists, checking it converts a probabilistic system into a reliable one.
 Mock tools in CI are the practical answer to cost and flakiness: the loop is
 exercised deterministically, and only the release gate pays for real calls.
 
+> [!PITFALL] Reserve a clear termination condition and record whether it
+> was reached.
+
+> [!INTERVIEW] Explain the gap between plausible agent output and verified
+> completion.
+
+> [!CHECK] Why does the context grow on a long run?
+>
+> Each round can add messages and tool results that must be managed before
+> subsequent requests.
+
+> [!CHECK] What should a tool description clarify about its scope?
+>
+> Include when the tool is appropriate and when its permitted purpose does
+> not fit.
+
+> [!CHECK] Why keep a small, orthogonal tool surface?
+>
+> Fewer overlapping operations make selection clearer and reduce the
+> capability surface the application has to validate.
+
 ## What to take away
 
 1. An agent is a loop whose context grows monotonically — context management is the
    binding constraint on long runs.
-2. Tool descriptions are prompts, and the most-omitted part is when *not* to use
+2. Tool descriptions are prompts, and the most-omitted part is when _not_ to use
    the tool; error messages are prompts too.
 3. Fewer, orthogonal tools work better; try one well-prompted agent before a
    multi-agent architecture.
@@ -241,3 +281,28 @@ exercised deterministically, and only the release gate pays for real calls.
 
 Next: keeping an agent coherent over a long session — memory and context
 management.
+
+## Exercises
+
+> [!EXERCISE recall] What does a result from a read tool contribute to the
+> next decision?
+>
+> **Solution:** It supplies an observation about external state. The
+> application can use it as task data while keeping authorization
+> independent of the contents.
+
+> [!EXERCISE apply] An assistant summarizes a local product catalogue.
+> Parts of the catalogue can contain directions unrelated to the user's
+> request. Which permissions and checks would you provide?
+>
+> **Solution:** Grant read access only to the approved catalogue, treat
+> records as data and check the summary against those records. Route
+> authorization through the application so document text cannot expand the
+> permitted task.
+
+> [!EXERCISE stretch] A read-only audit reaches its step budget before
+> checking the final records. What should it return?
+>
+> **Solution:** Report which records were checked, the findings confirmed
+> so far and the remaining items. A success flag based on reaching the
+> budget would misrepresent partial coverage.

@@ -9,6 +9,16 @@ between the stack and the output sits its mirror. For smaller models these two
 matrices are a large fraction of the parameters, and several important design
 decisions live here.
 
+> [!WHY] A serving benchmark estimates activation memory and omits the
+> embedding table. The model misses a memory target before processing its
+> first prompt because vocabulary rows carry a real fixed cost.
+
+> [!GOALS]
+>
+> - Explain the vocabulary-size trade
+> - Compute embedding storage
+> - Choose a repetitive-output decoding policy
+
 ## The embedding matrix
 
 ```text
@@ -36,6 +46,15 @@ The output side mirrors it:
   ✓ often improves quality on small models
   ✗ the two roles are not identical; large models usually
     keep them separate
+```
+
+```mermaid
+flowchart TB
+  A[Read token identifier]
+  B[Look up embedding row]
+  C[Transform hidden state]
+  D[Project to vocabulary]
+  A --> B --> C --> D
 ```
 
 ## Vocabulary size is a trade
@@ -153,7 +172,7 @@ for structured tasks.
     temperature 0, and it surprises people.
 ```
 
-For reproducibility, pin the seed *and* accept that exact reproduction across
+For reproducibility, pin the seed _and_ accept that exact reproduction across
 hardware or batch conditions is not guaranteed — the same conclusion as the GPU
 topic, arriving here.
 
@@ -173,10 +192,19 @@ The layer where constrained generation happens:
   SEQUENCES    halt when a string is produced
 ```
 
-Masking is the important one: by computing which tokens are *legal* at each step
+Masking is the important one: by computing which tokens are _legal_ at each step
 according to a grammar, and setting everything else to −infinity, output can be
 guaranteed to parse. This is the foundation of the structured-output topic, and it
 is a decoding-time mechanism rather than a prompting technique.
+
+> [!CHECK] What does weight tying share?
+>
+> The input embedding and output projection use the same weight matrix.
+
+> [!CHECK] Why compute only last-position logits during cached generation?
+>
+> The next token uses the last position's vocabulary distribution. Prior
+> positions do not need a full vocabulary projection again.
 
 ## What to take away
 
@@ -194,3 +222,28 @@ is a decoding-time mechanism rather than a prompting technique.
 
 That completes tokenization. Next in the track: the modern transformer
 architecture these tokens flow through.
+
+## Exercises
+
+> [!EXERCISE recall] Why can adding vocabulary entries shorten sequences
+> and still raise model memory?
+>
+> **Solution:** More pieces can encode common strings in fewer tokens and
+> each additional vocabulary entry adds a matrix row.
+
+> [!EXERCISE apply] A model has 32,000 vocabulary entries, width 1,024 and
+> two bytes per entry. Both embedding and output tables have this
+> geometry. Compare untied and tied table storage.
+>
+> **Solution:** One table = vocab_size × d_model × bytes per entry =
+> 32,000 × 1,024 × 2 = 32,768,000 × 2 = 65,536,000 bytes. Untied storage =
+> two tables = 131,072,000 bytes. Tied storage = one table = 65,536,000
+> bytes, saving 65,536,000 bytes for these weights.
+
+> [!EXERCISE stretch] A generation endpoint must output repetitive labels
+> in a structured list. A large repetition penalty suppresses necessary
+> repeated labels. What should the team test?
+>
+> **Solution:** Reduce the penalty and validate required repeated fields
+> and schema compliance on representative lists. Increasing the penalty
+> would further suppress valid tokens that need to recur.

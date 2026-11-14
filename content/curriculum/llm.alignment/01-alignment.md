@@ -5,9 +5,20 @@ summary: Training on preferences rather than labels, and what the methods actual
 ---
 
 Instruction tuning teaches a model to produce responses. It does not teach it
-which of two plausible responses is *better* — helpfulness, honesty, tone,
+which of two plausible responses is _better_ — helpfulness, honesty, tone,
 appropriate refusal. Those are preferences, not labels, and alignment is the set
 of techniques for training on them.
+
+> [!WHY] A preference-trained model wins comparisons by agreeing
+> confidently with a mistaken premise. The reward signal has improved and
+> product evaluation now has to detect whether answers became less
+> reliable.
+
+> [!GOALS]
+>
+> - Explain preference comparisons
+> - Select a preference-training approach
+> - Design a behavior evaluation
 
 ## The problem
 
@@ -25,6 +36,14 @@ That asymmetry is the foundation: **comparisons are much easier to collect and f
 more reliable than absolute ratings.** Asking someone to score a response 1–10
 produces noisy, drifting data; asking which of two they prefer produces a stable
 signal.
+
+```mermaid
+flowchart TB
+  A[Collect comparisons]
+  B[Optimize behavior]
+  C[Check usefulness and refusals]
+  A --> B --> C
+```
 
 ## RLHF
 
@@ -209,6 +228,26 @@ and predictable consequence of the objective, not a bug in the implementation.
 Typical volumes are 10k–100k pairs. Quality dominates, and the guideline document
 is again the real product.
 
+> [!PITFALL] Preference wins can reward fluency and agreement even when
+> the underlying claim is wrong.
+
+> [!INTERVIEW] Describe what preference data actually compares and how the
+> application measures success.
+
+> [!CHECK] What does a reference-policy penalty do?
+>
+> It discourages large departures while the model optimizes its learned
+> preference signal.
+
+> [!CHECK] How can an explicit constitution help with auditability?
+>
+> The principles used to judge outputs can be inspected and reviewed.
+
+> [!CHECK] Why include benign tasks in safety evaluation?
+>
+> They expose unnecessary refusals that harmful-request tests alone cannot
+> detect.
+
 ## What to take away
 
 1. Alignment trains on comparisons because "which of these two is better" is far
@@ -225,3 +264,27 @@ is again the real product.
    means measuring over-refusal alongside harmful compliance.
 
 Next: reasoning — spending compute at inference rather than in training.
+
+## Exercises
+
+> [!EXERCISE recall] Why might raters agree more reliably on a pairwise
+> choice than an absolute score?
+>
+> **Solution:** They can compare specific outputs under a shared rubric
+> without having to agree on an absolute scoring scale.
+
+> [!EXERCISE apply] A team has preferred and rejected response pairs and
+> wants to avoid training and operating a separate reward model. Which
+> method matches the data and constraint?
+>
+> **Solution:** DPO uses the preference pairs directly and omits a
+> separate reward-model training stage and online RL loop. Establish a
+> preference baseline and evaluate the behavior targets before shipping.
+
+> [!EXERCISE stretch] A support model becomes more polite after
+> post-training and accepts factually mistaken assertions more often. How
+> would you measure improvement honestly?
+>
+> **Solution:** Include pairs that reward respectful correction and
+> separately test accuracy and sycophancy on representative cases. A
+> rubric that scores agreeable tone alone rewards the same failure.

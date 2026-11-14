@@ -9,6 +9,17 @@ deployment therefore does not rest on the model behaving — it rests on layers
 around the model, and on the system being designed so that a fully-compromised
 model cannot do much harm.
 
+> [!WHY] A document assistant gains an integration with write access even
+> though its product task is answering questions. A mistake in
+> interpreting document text now has consequences beyond an inaccurate
+> answer.
+
+> [!GOALS]
+>
+> - Explain the role of capability limits
+> - Choose controls for a low-privilege assistant
+> - Choose a balanced monitoring policy
+
 ## What can go wrong
 
 ```text
@@ -62,6 +73,15 @@ A model that cannot delete data cannot be talked into deleting data.
     is the worst it could do?
 
   → and then make that answer acceptable.
+```
+
+```mermaid
+flowchart TB
+  A[Define allowed task]
+  B[Restrict capabilities]
+  C[Validate request]
+  D[Monitor outcomes]
+  A --> B --> C --> D
 ```
 
 ## Jailbreaks
@@ -232,6 +252,26 @@ both directions keeps the trade visible and prevents optimising into uselessness
 the same point the evaluation chapter made, and it recurs because the incentive
 gradient always points one way.
 
+> [!PITFALL] A detector's success on sampled inputs leaves the capability
+> boundary important.
+
+> [!INTERVIEW] Explain which application control prevents a mistaken model
+> decision from taking effect.
+
+> [!CHECK] What does least privilege do for a document reader?
+>
+> It limits the actions available to the reader even when it handles
+> untrusted content.
+
+> [!CHECK] Why convert a discovered weakness into a regression case?
+>
+> A reproducible fixture checks whether releases restore the failure or
+> retain the protective behavior.
+
+> [!CHECK] What does over-refusal measure?
+>
+> Benign supported requests that the system incorrectly declines.
+
 ## What to take away
 
 1. Alignment is a soft constraint; safe deployment rests on layers around the model
@@ -249,3 +289,31 @@ gradient always points one way.
    points toward caution.
 
 Next: reading the frontier, and how to keep up.
+
+## Exercises
+
+> [!EXERCISE recall] Why is an application permission check stronger than
+> relying on a model instruction alone?
+>
+> **Solution:** The application decides what operations can run
+> independently of the model's output, bounding the consequences of
+> mistakes.
+
+> [!EXERCISE apply] A reader answers questions from approved reports. One
+> report contains unrelated text asking for record changes. Which controls
+> should the release test?
+>
+> **Solution:** Check that the reader has no write capability and that the
+> application verifies permissions separately from retrieved text. Test
+> normal questions alongside harmless fixtures resembling irrelevant
+> report instructions. A warning in the prompt by itself does not enforce
+> permissions.
+
+> [!EXERCISE stretch] A stricter filter reduces one class of problematic
+> outputs and prevents ordinary supported requests from completing. What
+> should the rollout compare?
+>
+> **Solution:** Measure both undesirable outputs and refusals on benign
+> tasks using explicit acceptance criteria, then review failures by
+> category. Optimizing only for the blocked-output count can reduce the
+> product's useful coverage.

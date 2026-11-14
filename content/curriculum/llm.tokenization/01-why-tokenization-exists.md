@@ -8,6 +8,17 @@ A language model operates on a fixed vocabulary of integers. Text is not integer
 so something must convert between them, and that converter — the tokenizer — is
 where a surprising share of model behaviour originates.
 
+> [!WHY] Two translated versions of a request carry the same message and
+> one consistently reaches the context limit first. Counting characters or
+> words during planning leaves the token budget invisible until the
+> application truncates input.
+
+> [!GOALS]
+>
+> - Explain the subword compromise
+> - Choose an evaluation for multilingual budgets
+> - Design message assembly
+
 ## The two bad options
 
 ```text
@@ -79,6 +90,15 @@ use.
   SENTENCEPIECE  a library, not an algorithm — treats the input
                  as a raw stream including spaces, so it is
                  language-agnostic and reversible
+```
+
+```mermaid
+flowchart TB
+  A[Start from symbol vocabulary]
+  B[Count adjacent pairs]
+  C[Merge frequent pair]
+  D[Encode with learned merges]
+  A --> B --> C --> D
 ```
 
 ## The consequences you will actually meet
@@ -196,9 +216,25 @@ configured to not parse special tokens from user content.
 ```
 
 The "count the letters" failure is worth understanding precisely because it is so
-often cited as evidence of a deep limitation: it is largely a *representational*
+often cited as evidence of a deep limitation: it is largely a _representational_
 one. The model never sees the characters, only the token ids, so it must have
 memorised spellings rather than being able to inspect them.
+
+> [!PITFALL] An unfamiliar number or whitespace pattern can split
+> differently from the obvious human grouping.
+
+> [!INTERVIEW] Explain how the tokenizer, template and language mix affect
+> the actual input budget.
+
+> [!CHECK] Why does a word-only vocabulary struggle with unseen text?
+>
+> New words and variants would need vocabulary entries or an unknown
+> symbol.
+
+> [!CHECK] Why count with the deployed tokenizer?
+>
+> Token boundaries and sequence lengths vary by model and by the exact
+> input formatting.
 
 ## What to take away
 
@@ -216,3 +252,27 @@ memorised spellings rather than being able to inspect them.
    comparable.
 
 Next: what the model does with those tokens — the modern transformer stack.
+
+## Exercises
+
+> [!EXERCISE recall] How can a subword vocabulary handle unfamiliar words
+> without paying a character token for every common sequence?
+>
+> **Solution:** Learned merges encode common sequences together while
+> smaller pieces represent unfamiliar ones. Byte-level coverage gives a
+> fallback for arbitrary input.
+
+> [!EXERCISE apply] A prompt fits with English examples but frequently
+> truncates for users of another language. What would you collect before
+> changing the limit?
+>
+> **Solution:** Measure real token counts and truncation rates by language
+> using the actual tokenizer and chat template, then shorten or select
+> context that affects high-cost inputs. Word counts miss the discrepancy.
+
+> [!EXERCISE stretch] A team handwrites the role delimiters around user
+> text for two models. How should it package requests?
+>
+> **Solution:** Use the exact chat template for each model and preserve
+> user text as data inside its role. Sharing one hand-written template
+> assumes special tokens and role structure are interchangeable.

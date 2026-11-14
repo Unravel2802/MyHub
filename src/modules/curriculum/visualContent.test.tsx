@@ -186,6 +186,24 @@ export const EXERCISE_TRACKS: string[] = [
   "deep-learning.sequence",
   "deep-learning.ssm",
   "deep-learning.training",
+  "llm.agents",
+  "llm.alignment",
+  "llm.architecture",
+  "llm.coding-agents",
+  "llm.evaluation",
+  "llm.finetuning",
+  "llm.frontier",
+  "llm.memory",
+  "llm.multimodal",
+  "llm.pretraining",
+  "llm.prompting",
+  "llm.protocols",
+  "llm.rag",
+  "llm.reasoning",
+  "llm.safety",
+  "llm.scaling-laws",
+  "llm.structured-output",
+  "llm.tokenization",
 ];
 const DS3_VISUAL_TRACKS = [
   "distributed.messaging",
@@ -1453,6 +1471,85 @@ describe("curriculum visual content gates", () => {
       );
       const multi = topicChapters.length > 1;
       expect(topicChapters, topic).toHaveLength(1);
+      for (const file of topicChapters) {
+        const source = readFileSync(file, "utf8");
+        const name = relative(ROOT, file);
+        const diagrams = count(source, /^```mermaid\s*$/gm);
+        expect(diagrams, name).toBeGreaterThanOrEqual(multi ? 0 : 1);
+        expect(diagrams, name).toBeLessThanOrEqual(multi ? 2 : 3);
+        expect(count(source, /^```chart\s*$/gm), name).toBeLessThanOrEqual(
+          multi ? 1 : 2,
+        );
+        expect(count(source, /^```widget\s*$/gm), name).toBe(0);
+        const prose = source.replace(/^```[^\n]*\n[\s\S]*?^```[^\n]*$/gm, "");
+        expect(count(prose, /^> \[!KEY\]/gm), name).toBeLessThanOrEqual(
+          multi ? 2 : 3,
+        );
+        const checks = [...prose.matchAll(/^> \[!CHECK\]/gm)];
+        expect(checks, name).toHaveLength(multi ? 2 : 3);
+        const recapAt = prose.indexOf("## What to take away");
+        expect(recapAt, name).toBeGreaterThan(0);
+        expect(
+          checks.every((check) => check.index < recapAt),
+          name,
+        ).toBe(true);
+        const why = /^> \[!WHY\] (.+)$/m.exec(prose);
+        expect(why?.[1].trim(), name).toBeTruthy();
+        expect(why?.index, name).toBeLessThan(prose.indexOf("## "));
+        expect(source, name).not.toMatch(/[A-Za-z]-[ \t]*\n/);
+        expect(source, name).not.toMatch(/[A-Za-z]\n-[a-z]/);
+        for (const fence of source.matchAll(/^```([^\n]*)\n([\s\S]*?)^```/gm)) {
+          for (const line of fence[2].trimEnd().split("\n")) {
+            expect(line.length, `${name}: ${line}`).toBeLessThanOrEqual(76);
+          }
+          if (fence[1].trim() === "mermaid" && /^flowchart /m.test(fence[2])) {
+            expect(fence[2], name).toMatch(/^flowchart TB$/m);
+          }
+        }
+      }
+      const source = topicChapters
+        .map((file) => readFileSync(file, "utf8"))
+        .join("\n");
+      const pitfalls = count(source, /^> \[!PITFALL\]/gm);
+      expect(pitfalls, topic).toBeGreaterThanOrEqual(1);
+      expect(pitfalls, topic).toBeLessThanOrEqual(multi ? 3 : 2);
+      expect(count(source, /^> \[!INTERVIEW\]/gm), topic).toBe(1);
+    }
+  });
+  it("enforces the LLM visual quotas and source formatting", () => {
+    const topicCounts: Record<string, number> = {
+      "llm.agents": 1,
+      "llm.alignment": 1,
+      "llm.architecture": 1,
+      "llm.coding-agents": 1,
+      "llm.evaluation": 1,
+      "llm.finetuning": 1,
+      "llm.frontier": 1,
+      "llm.memory": 1,
+      "llm.multimodal": 1,
+      "llm.pretraining": 1,
+      "llm.prompting": 1,
+      "llm.protocols": 1,
+      "llm.rag": 1,
+      "llm.reasoning": 1,
+      "llm.safety": 1,
+      "llm.scaling-laws": 1,
+      "llm.structured-output": 1,
+      "llm.tokenization": 2,
+    };
+    const topics = Object.keys(topicCounts);
+    const chapters = files.filter((file) =>
+      topics.includes(relative(ROOT, file).split("/")[0]),
+    );
+    expect(chapters).toHaveLength(19);
+    const count = (source: string, pattern: RegExp) =>
+      [...source.matchAll(pattern)].length;
+    for (const topic of topics) {
+      const topicChapters = chapters.filter(
+        (file) => relative(ROOT, file).split("/")[0] === topic,
+      );
+      const multi = topicChapters.length > 1;
+      expect(topicChapters, topic).toHaveLength(topicCounts[topic]);
       for (const file of topicChapters) {
         const source = readFileSync(file, "utf8");
         const name = relative(ROOT, file);

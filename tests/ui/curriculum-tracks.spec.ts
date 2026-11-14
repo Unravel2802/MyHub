@@ -185,6 +185,24 @@ const EXERCISE_TRACKS = [
   "deep-learning.sequence",
   "deep-learning.ssm",
   "deep-learning.training",
+  "llm.agents",
+  "llm.alignment",
+  "llm.architecture",
+  "llm.coding-agents",
+  "llm.evaluation",
+  "llm.finetuning",
+  "llm.frontier",
+  "llm.memory",
+  "llm.multimodal",
+  "llm.pretraining",
+  "llm.prompting",
+  "llm.protocols",
+  "llm.rag",
+  "llm.reasoning",
+  "llm.safety",
+  "llm.scaling-laws",
+  "llm.structured-output",
+  "llm.tokenization",
 ];
 const tracks = [
   { prefix: "systems-design", expectedChapters: 18 },
@@ -223,6 +241,7 @@ const tracks = [
   { prefix: "engineering", expectedChapters: 12 },
   { prefix: "ml-foundations", expectedChapters: 17 },
   { prefix: "deep-learning", expectedChapters: 14 },
+  { prefix: "llm", expectedChapters: 19 },
 ];
 const chapters = tracks.flatMap((track) => {
   const chapters = readdirSync(contentRoot)

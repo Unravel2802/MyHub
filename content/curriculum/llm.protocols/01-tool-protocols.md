@@ -8,6 +8,17 @@ Every model provider invented its own way to describe tools, and every
 integration was bespoke. The convergence around shared protocols matters for a
 practical reason: it turns an N×M integration problem into N+M.
 
+> [!WHY] A read integration works in isolation, and a newly connected
+> writer accepts requests with a different permission model. Combining the
+> integrations expands what the assistant can attempt, so the application
+> needs to enforce both boundaries together.
+
+> [!GOALS]
+>
+> - Explain tool and resource roles
+> - Compare integration counts
+> - Design a restricted tool surface
+
 ## Function calling
 
 ```text
@@ -124,6 +135,15 @@ no clean technical answer yet. The practical mitigations:
      instructions
 ```
 
+```mermaid
+flowchart TB
+  A[Parse tool request]
+  B[Validate schema]
+  C[Enforce permission]
+  D[Execute allowed action]
+  A --> B --> C --> D
+```
+
 ## Designing a tool surface
 
 ```text
@@ -159,6 +179,26 @@ cost is a thin adapter; the benefit is that changing provider — for price, for
 capability, or because one is down — is a configuration change rather than a
 project.
 
+> [!PITFALL] Schema validation and action authorization protect separate
+> parts of the request.
+
+> [!INTERVIEW] Explain who chooses to expose resources and who may request
+> each tool.
+
+> [!CHECK] What must a server check before using generated call arguments?
+>
+> Validate their schema and check the values and permissions required by
+> the operation.
+
+> [!CHECK] When does a parallel call request reduce wall time?
+>
+> The executor must actually run independent calls concurrently.
+
+> [!CHECK] How can retrying a write avoid duplicate effects?
+>
+> Use an idempotent operation or a stable request key and record the
+> outcome.
+
 ## What to take away
 
 1. A tool call is generated tokens shaped like a call, so it inherits every
@@ -175,3 +215,30 @@ project.
    rather than a project.
 
 Next: applying all of this to code — the domain where agents work best.
+
+## Exercises
+
+> [!EXERCISE recall] Who chooses how a resource is supplied, and how does
+> that differ from a tool?
+>
+> **Solution:** The application selects and supplies resources as context.
+> A tool is an operation the model can request within the permitted
+> surface.
+
+> [!EXERCISE apply] Five compatible clients need access to eight services.
+> Under the chapter's simplified integration-count model, compare separate
+> pairwise integrations with a common protocol.
+>
+> **Solution:** Pairwise count = N × M = 5 × 8 = 40. Common protocol count
+> = N + M = 5 + 8 = 13. The common protocol models 27 fewer pair
+> integrations, assuming each client and service needs one protocol
+> implementation.
+
+> [!EXERCISE stretch] A document assistant only needs to answer questions
+> about approved files, and another installed integration can modify
+> records. Which tools should this assistant receive?
+>
+> **Solution:** Grant read access to the approved files and omit
+> modification capabilities for this task. Keep server-side checks for any
+> separately authorized write workflow. Offering the writer and relying on
+> a prompt leaves unnecessary authority available to untrusted content.

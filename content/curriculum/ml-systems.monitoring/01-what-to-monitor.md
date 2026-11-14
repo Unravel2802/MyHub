@@ -9,6 +9,17 @@ model is wrong, because a wrong model returns a confident number with a 200 stat
 in twelve milliseconds. ML monitoring exists to detect the failure that all your
 other monitoring is blind to.
 
+> [!WHY] A model begins returning scores in a narrow range while its
+> endpoint remains responsive. Labels are delayed, so a monitoring design
+> that waits for ground truth gives the regression more time to influence
+> decisions.
+
+> [!GOALS]
+>
+> - Distinguish monitoring layers
+> - Design a delayed-label alert
+> - Choose a lasting benefit check
+
 ## The four layers
 
 ```text
@@ -42,6 +53,15 @@ other monitoring is blind to.
 right? — arrives last, sometimes months late. Layers 2 and 3 are proxies you can
 observe now, and the whole game is using them to catch problems before layer 4
 confirms them.
+
+```mermaid
+flowchart TB
+  A[Track infrastructure]
+  B[Inspect inputs]
+  C[Monitor predictions]
+  D[Join labels]
+  A --> B --> C --> D
+```
 
 ## Layer 2: input monitoring
 
@@ -234,6 +254,22 @@ Using a recent rolling window as the reference for a slow drift hides it entirel
 data. **Monitor against both**: the training distribution for gradual decay, a
 recent window for sudden breaks.
 
+> [!PITFALL] A valid feature can become nearly constant without triggering
+> a schema error.
+
+> [!INTERVIEW] Name the first available signal and the later label-based
+> confirmation.
+
+> [!CHECK] What can prediction distributions reveal before labels arrive?
+>
+> They can show shifts or collapsed output and warn consumers that apply
+> score thresholds.
+
+> [!CHECK] Why track calibration separately?
+>
+> A model can keep its ranking accuracy while the absolute probabilities
+> move.
+
 ## What to take away
 
 1. Infrastructure monitoring is blind to model failure, which returns a confident
@@ -250,3 +286,29 @@ recent window for sudden breaks.
    model still beats doing nothing.
 
 Next: drift — what it is, how to measure it, and what to do about each kind.
+
+## Exercises
+
+> [!EXERCISE recall] Which layers do you observe before delayed ground
+> truth arrives?
+>
+> **Solution:** Infrastructure, inputs and scores offer immediate but
+> indirect signals. Label-linked performance eventually measures decision
+> quality.
+
+> [!EXERCISE apply] One critical feature starts returning nulls for a
+> country. The daily average score stays steady and labels mature later.
+> What alert would catch this first?
+>
+> **Solution:** Set a slice-specific input alert on null rate against a
+> relevant reference window. Check resulting score behavior for that slice
+> and confirm with labels later. An overall score average can wash out the
+> localized failure.
+
+> [!EXERCISE stretch] The deployed model has been operating for years.
+> Accuracy looks stable but business conditions have changed. What would
+> help measure incremental benefit?
+>
+> **Solution:** Preserve a permanent holdout and compare outcomes for the
+> intervention versus the reference policy. Stable accuracy by itself
+> cannot show the decisions are still worth taking.

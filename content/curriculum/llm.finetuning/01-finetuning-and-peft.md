@@ -9,6 +9,17 @@ expensive than prompting, less flexible, and sometimes the only thing that works
 and parameter-efficient methods have made the decision far less costly than it
 was.
 
+> [!WHY] A team fine-tunes a model with last month's policy text, then a
+> policy revision produces conflicting answers. Shipping every change as a
+> new training run makes an ordinary content update slow and hard to
+> audit.
+
+> [!GOALS]
+>
+> - Explain the operational cost of full tuning
+> - Choose a knowledge update design
+> - Assess a specialized tuning release
+
 ## When to fine-tune
 
 ```text
@@ -36,6 +47,15 @@ facts. Facts belong in retrieval, where they can be updated, cited and audited.
 
   ✓  retrieve the catalogue; fine-tune so the model answers
      in the required format and tone
+```
+
+```mermaid
+flowchart TB
+  A[Measure prompted baseline]
+  B[Identify behavior gap]
+  C[Tune selected parameters]
+  D[Evaluate general use]
+  A --> B --> C --> D
 ```
 
 ## Full fine-tuning versus PEFT
@@ -213,6 +233,27 @@ A distinct option, worth naming:
 Use it when the domain is genuinely distributionally different, not merely
 specialised.
 
+> [!PITFALL] A specialized training set can improve its target behavior
+> while degrading general capabilities.
+
+> [!INTERVIEW] Distinguish a recurring behavior gap from facts that change
+> after deployment.
+
+> [!CHECK] What makes adapters useful across several tasks?
+>
+> Separate small task-specific weights can reuse the same large base
+> model.
+
+> [!CHECK] Why curate target answers before tuning?
+>
+> Training examples teach the desired output behavior, so errors and
+> ambiguous patterns can become learned habits.
+
+> [!CHECK] What should the baseline include?
+>
+> A well-prompted or few-shot model with available retrieval as
+> appropriate for the task.
+
 ## What to take away
 
 1. Try prompting, few-shot and retrieval first; fine-tune for consistent format,
@@ -229,3 +270,28 @@ specialised.
    the outputs you want rather than the ones you have.
 
 Next: alignment — teaching a model what a good answer is when there is no label.
+
+## Exercises
+
+> [!EXERCISE recall] What changes when each task gets a full copy versus
+> an adapter?
+>
+> **Solution:** Full tuning produces separate large weights. Adapters can
+> keep the base shared and store task-specific changes separately.
+
+> [!EXERCISE apply] A support system has accurate response format and
+> stale product rules that change weekly. Should the team train on every
+> revised rule?
+>
+> **Solution:** Retrieve current, versioned rules at request time and
+> evaluate grounding. The observed issue concerns fresh facts, which
+> retrieval can update and cite without replacing trained weights.
+
+> [!EXERCISE stretch] A narrow task improves after tuning, but the model
+> also handles general help requests. What release evidence should be
+> required?
+>
+> **Solution:** Compare both narrow behavior and general capability
+> against the base and examine degradation. Consider parameter-efficient
+> adaptation with modest training exposure. A specialist-only evaluation
+> can hide forgetting and quality losses elsewhere.

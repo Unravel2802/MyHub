@@ -8,6 +8,16 @@ The field moves fast enough that specific facts date quickly, and slowly enough
 that the underlying structure is stable. This chapter is about telling the two
 apart: which claims to take seriously, and what to watch.
 
+> [!WHY] A new model wins a headline score after using a larger inference
+> budget. The team would spend more per request if it switched without
+> checking whether the same budget buys better performance for its tasks.
+
+> [!GOALS]
+>
+> - Explain the practical value of efficiency
+> - Evaluate a comparison claim
+> - Choose a release strategy
+
 ## What has actually changed, and what has not
 
 ```text
@@ -54,6 +64,15 @@ memorised current model names cannot.
     who have used it in production to report back.
 
   most claimed improvements do not survive that.
+```
+
+```mermaid
+flowchart TB
+  A[Match comparison budgets]
+  B[Check ablations]
+  C[Reproduce key result]
+  D[Test your workload]
+  A --> B --> C --> D
 ```
 
 ## What to watch
@@ -152,6 +171,27 @@ engineering is around the model, not in it.** Retrieval infrastructure, evaluati
 sets, verification loops, permission boundaries and data pipelines keep their value
 across model generations; prompt tricks and model-specific workarounds do not.
 
+> [!PITFALL] A result from one benchmark can hide throughput or
+> reliability costs that matter in deployment.
+
+> [!INTERVIEW] Ask which variable changed and whether the comparison
+> reflects production constraints.
+
+> [!CHECK] Why ask for ablations?
+>
+> They help separate which changes contributed to the reported gain when
+> several interventions were combined.
+
+> [!CHECK] What can independent reproduction establish?
+>
+> It supplies evidence that the result survives beyond the original
+> evaluation implementation and setup.
+
+> [!CHECK] Why evaluate failure handling during capability improvements?
+>
+> Reliability and hallucination can still limit useful production behavior
+> when average scores rise.
+
 ## What to take away
 
 1. The transformer architecture has been stable since 2017; almost everything else
@@ -172,3 +212,27 @@ across model generations; prompt tricks and model-specific workarounds do not.
 
 That completes the LLMs & Frontier AI track. It connects back to **ML Systems** for
 how these models are served, and to **Deep Learning** for how they are built.
+
+## Exercises
+
+> [!EXERCISE recall] Why might equal accuracy at lower cost matter more
+> than a small score increase?
+>
+> **Solution:** Lower cost or latency can expand which requests can use
+> the model within the product's constraints.
+
+> [!EXERCISE apply] Model A beats model B with a larger test-time budget.
+> Which controlled comparison would you request?
+>
+> **Solution:** Compare on the same tasks under matched compute or latency
+> constraints, record the quality-cost curve and use reproducible runs.
+> The headline score alone does not expose the operating trade.
+
+> [!EXERCISE stretch] Model releases arrive frequently and each provider
+> reports different metrics. What work helps the team make sustainable
+> decisions?
+>
+> **Solution:** Maintain a representative internal evaluation and
+> reproducible baselines, then verify promising candidates against
+> observed needs. Switching on headline rankings alone creates rework and
+> leaves the team's reliability requirements unevaluated.

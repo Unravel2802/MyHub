@@ -10,6 +10,16 @@ pass or fail, compilers accept or reject, types check or do not. That verifiable
 signal converts a probabilistic generator into something you can build a loop
 around.
 
+> [!WHY] A code change passes its local checks because the expected output
+> changed with the implementation. The reviewer needs a stable test oracle
+> to decide whether the application's behavior was repaired.
+
+> [!GOALS]
+>
+> - Explain the value of executable feedback
+> - Choose safeguards for a benign code edit
+> - Design a review process
+
 ## Why code works
 
 ```text
@@ -145,6 +155,15 @@ fix is to make test files read-only in the agent's tool surface.
 an ambiguous request into a precise specification with automatic verification, and
 it is exactly the verifiable-reward structure that makes reasoning training work.
 
+```mermaid
+flowchart TB
+  A[Define behavior]
+  B[Run fixed tests]
+  C[Review diff]
+  D[Verify result]
+  A --> B --> C --> D
+```
+
 ## Evaluation
 
 ```text
@@ -220,6 +239,26 @@ generated code without understanding it does not build the model of the system
 that lets them debug it later. The mitigation is cultural rather than technical —
 requiring explanation, not just acceptance.
 
+> [!PITFALL] Preserve independently specified tests when a task uses them
+> as completion evidence.
+
+> [!INTERVIEW] Explain why validation and reviewer accountability still
+> matter for a readable patch.
+
+> [!CHECK] What context helps locate the actual behavior?
+>
+> Callers, type references and relevant tests show how the implementation
+> is used.
+
+> [!CHECK] Why record provenance with the resulting change?
+>
+> It gives reviewers a way to trace the inputs and generated edits if a
+> defect appears later.
+
+> [!CHECK] What makes a task easier to verify?
+>
+> A precise behavior requirement and an executable acceptance check.
+
 ## What to take away
 
 1. Code is the domain where agents work best because it has runnable ground truth,
@@ -237,3 +276,30 @@ requiring explanation, not just acceptance.
    makes escaped defects attributable.
 
 Next: evaluating these systems honestly.
+
+## Exercises
+
+> [!EXERCISE recall] Why is a failing test more informative than a prose
+> instruction to improve a sorting feature?
+>
+> **Solution:** It reproduces a concrete mismatch and provides a
+> repeatable check on the revised behavior.
+
+> [!EXERCISE apply] An assistant is asked to fix a local calendar view
+> where items display out of date order. It can edit the implementation
+> and the acceptance test. Which constraints would make the evidence
+> trustworthy?
+>
+> **Solution:** Keep the independently prepared regression test read-only
+> for the edit, inspect the actual diff and rerun the test and related
+> normal entry points. Passing after altering the expected order would
+> undermine the acceptance check.
+
+> [!EXERCISE stretch] A large formatting update has green tests yet
+> touches several rendering paths. How should the reviewer use the
+> evidence?
+>
+> **Solution:** Inspect the changed paths and compare them to the behavior
+> spec. Check whether tests cover the intended view and record remaining
+> gaps. Accepting based on passing tests alone can miss behavior outside
+> the assertions.

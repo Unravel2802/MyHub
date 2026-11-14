@@ -8,6 +8,16 @@ Pretraining is one objective — predict the next token — applied to an enormo
 corpus. Everything a base model can do comes from that, and the engineering is
 overwhelmingly about the data rather than the objective.
 
+> [!WHY] A candidate's benchmark score improves after a corpus refresh
+> that includes copied evaluation questions. The gain can reflect familiar
+> answers and justify an expensive run without stronger generalization.
+
+> [!GOALS]
+>
+> - Explain next-token learning
+> - Choose a corpus validation change
+> - Choose base versus post-trained use
+
 ## The objective
 
 ```text
@@ -72,6 +82,16 @@ evaluation set is the only trustworthy measurement.
   PERPLEXITY     score with a small model; drop the extremes
   MODEL-BASED    an LLM rates educational value
                  → expensive and currently the strongest
+```
+
+```mermaid
+flowchart TB
+  A[Source data]
+  B[Filter and deduplicate]
+  C[Remove evaluation overlap]
+  D[Train]
+  E[Evaluate checkpoints]
+  A --> B --> C --> D --> E
 ```
 
 ## Data mixing
@@ -189,6 +209,27 @@ Everything that makes a model *usable* — instruction following, refusal, a
 consistent persona, stopping — comes from post-training. The base model is raw
 capability with no interface.
 
+> [!PITFALL] Validation examples can leak through copies and repeated
+> fragments.
+
+> [!INTERVIEW] Explain which corpus changes are being tested and how their
+> effects would be measured.
+
+> [!CHECK] Why monitor gradient norms at scale?
+>
+> Abnormal gradients can warn of instability before a larger loss spike or
+> divergence.
+
+> [!CHECK] Why keep checkpoints during pretraining?
+>
+> They permit recovery after a failure without restarting the whole
+> expensive run.
+
+> [!CHECK] What role does data mixing play?
+>
+> The sources and proportions determine which patterns contribute to
+> learned behavior.
+
 ## What to take away
 
 1. Next-token prediction over a huge corpus produces capability because predicting
@@ -205,3 +246,28 @@ capability with no interface.
    comes from post-training.
 
 Next: how much data and how many parameters — the scaling laws that decide.
+
+## Exercises
+
+> [!EXERCISE recall] Why can learning to predict the next token produce
+> broader capabilities?
+>
+> **Solution:** Better prediction requires modeling recurring structure in
+> the available sequence data, including context and relationships.
+
+> [!EXERCISE apply] A candidate corpus adds duplicate documents and
+> examples from the final evaluation set. The team can run one data
+> processing pass before training. What should it prioritize?
+>
+> **Solution:** Deduplicate and remove evaluation overlap before training,
+> recording the data recipe. Reserve uncontaminated evidence for the
+> comparison. Adding more copies can inflate memorization and the
+> benchmark result.
+
+> [!EXERCISE stretch] A base model completes familiar passages well, and a
+> team wants a user-facing instruction assistant. What remaining evidence
+> should the team require?
+>
+> **Solution:** Evaluate a post-trained candidate on instruction following
+> and target interactions with independent examples. Good completion loss
+> can coexist with poor behavior on explicit user tasks.

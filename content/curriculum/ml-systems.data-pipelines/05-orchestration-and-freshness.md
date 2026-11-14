@@ -9,6 +9,17 @@ failure is often silent, and the thing that suffers is a model's accuracy rather
 than a dashboard's contents. Everything from the data-engineering track applies;
 this chapter is what is different.
 
+> [!WHY] A nightly feature job reports success while one of its inputs
+> arrives late and the published values go stale. The first reliable sign
+> can be a bad prediction unless freshness is measured against the
+> decision's deadline.
+
+> [!GOALS]
+>
+> - Explain a freshness SLO
+> - Schedule a dependent pipeline
+> - Plan a point-in-time backfill
+
 ## The pipeline graph
 
 ```text
@@ -63,6 +74,14 @@ resilience topic, and the defence is the same: measure the thing that matters
   ALERT when it exceeds the declared requirement, not when
   the job fails — a job that succeeds while producing stale
   output is the case you are trying to catch.
+```
+
+```mermaid
+flowchart TB
+  A[Measure feature age]
+  B[Compare with feature SLO]
+  C[Alert on stale values]
+  A --> B --> C
 ```
 
 ## Backfills
@@ -198,6 +217,19 @@ read it, and what freshness do they need?** Features with no readers get deleted
 features over-provisioned for freshness get moved to a cheaper cadence. Both are
 usually available and neither happens without someone deliberately looking.
 
+> [!PITFALL] A successful job can publish stale, empty or constant
+> features.
+
+> [!CHECK] Why can a label join degrade silently?
+>
+> Failed matches reduce the number of eligible training rows without
+> necessarily causing a job error.
+
+> [!CHECK] What do per-feature variance checks reveal?
+>
+> They flag inputs that become nearly constant despite valid rows and
+> successful jobs.
+
 ## What to take away
 
 1. Training-set jobs depend on labels that mature later than features; monitor the
@@ -216,3 +248,27 @@ usually available and neither happens without someone deliberately looking.
 
 That completes ML data pipelines. Next in the track: **experiments and
 reproducibility** — being able to rebuild and explain any model you have shipped.
+
+## Exercises
+
+> [!EXERCISE recall] What should determine how old a feature may be?
+>
+> **Solution:** The requirements of the decision using the value. Useful
+> cadence varies with how quickly the underlying signal matters.
+
+> [!EXERCISE apply] Features are ready at the usual time, but the label
+> producer is delayed. Which trigger and validation would you use for the
+> training-set build?
+>
+> **Solution:** Trigger from mature label and feature data availability.
+> Validate the label join and resulting row count before publishing. A
+> successful timer invocation cannot prove the expected rows are present.
+
+> [!EXERCISE stretch] A corrected feature transform needs to be used for
+> last quarter's training data. How should the backfill handle historical
+> inputs and late arrivals?
+>
+> **Solution:** Reconstruct each row from data available at its historical
+> decision time under the serving late-arrival policy. A join to today's
+> corrected values can leak information that would have been unavailable
+> then.

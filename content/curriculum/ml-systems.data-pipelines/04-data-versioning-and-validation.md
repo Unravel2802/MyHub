@@ -8,6 +8,17 @@ Code has git. Data mostly has "the table, as of whenever you looked". That gap i
 why ML systems are hard to reproduce and why bad data reaches models unnoticed.
 Both problems have practical answers that do not require a platform.
 
+> [!WHY] A pipeline switches a numeric input from dollars to cents. The
+> type checker passes the change and the model begins assigning extreme
+> scores, so a structural schema alone leaves the expensive error
+> undetected.
+
+> [!GOALS]
+>
+> - Explain statistical data checks
+> - Assign validation severity
+> - Design a reproducible investigation
+
 ## Why versioning data is different
 
 ```text
@@ -139,6 +150,15 @@ changes and precision changes all pass schema validation and all destroy a model
   □  the number of rows per entity is within range
 ```
 
+```mermaid
+flowchart TB
+  A[Validate structure]
+  B[Check statistical profile]
+  C[Block or warn]
+  D[Record snapshot]
+  A --> B --> C --> D
+```
+
 ## What to do when validation fails
 
 The decision matters as much as the check:
@@ -198,6 +218,15 @@ Any of them beats none. The most common failure is not choosing the wrong tool �
 it is having validation that logs a warning nobody reads, which is the same
 failure as an unwatched dead-letter queue.
 
+> [!CHECK] What does a dataset identifier need to resolve to?
+>
+> The exact dataset rows used by the run, typically through a snapshot.
+
+> [!CHECK] What should serving define for out-of-range values?
+>
+> A deliberate response such as rejection, imputation with a flag, or a
+> fallback prediction.
+
 ## What to take away
 
 1. A training run must record a dataset identifier that resolves back to exactly
@@ -215,3 +244,28 @@ failure as an unwatched dead-letter queue.
 
 Next: labelling — where training data actually comes from, and why its quality
 caps everything.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a valid numeric column still need range and
+> distribution validation?
+>
+> **Solution:** Its type can stay valid while units, scale or frequencies
+> change. Statistical expectations surface shifts that a schema cannot.
+
+> [!EXERCISE apply] One batch lacks a required column and another has a
+> mild distribution shift with valid values. How should the pipeline
+> handle each?
+>
+> **Solution:** Block the structurally invalid batch before training. Warn
+> about and investigate the mild shift. Preserve the distinct signals so a
+> real behavior change can be reviewed without accepting an impossible
+> input shape.
+
+> [!EXERCISE stretch] A resumed model run scores differently from a prior
+> run despite the same query text. What evidence would you require?
+>
+> **Solution:** Retrieve the exact dataset snapshot and compare
+> environment, hardware, code, configuration and seeds. Re-running the
+> query against moving tables may read different rows and conceal the
+> original difference.

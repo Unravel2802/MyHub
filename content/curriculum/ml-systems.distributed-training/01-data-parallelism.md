@@ -10,6 +10,16 @@ batch, and they synchronise gradients each step. It scales well until
 communication becomes the constraint, and understanding exactly when that happens
 is what this chapter is for.
 
+> [!WHY] A team adds workers and throughput improves, but the training
+> curve moves on the first run. The change in effective batch means the
+> new curve cannot isolate the effect of the hardware.
+
+> [!GOALS]
+>
+> - Explain communication overlap
+> - Compute matched batch settings
+> - Diagnose intermittent collective hangs
+
 ## The mechanism
 
 ```text
@@ -61,6 +71,15 @@ There is also a limit. Past some critical batch size, larger batches stop
 improving convergence per sample — you get more throughput and need proportionally
 more steps' worth of data for the same result. The critical batch size is
 task-dependent and worth measuring before buying more GPUs to grow the batch.
+
+```mermaid
+flowchart TB
+  A[Local microbatch]
+  B[Accumulate gradients]
+  C[All-reduce]
+  D[Step each replica]
+  A --> B --> C --> D
+```
 
 ## All-reduce
 
@@ -257,6 +276,22 @@ call a collective and others not will hang forever, because collectives must be
 called by every rank in the same order. Logging or checkpointing "only on rank 0"
 is fine; *reducing* only on rank 0 is a deadlock.
 
+> [!PITFALL] A branch that makes only some ranks call a collective can
+> leave workers waiting indefinitely.
+
+> [!INTERVIEW] Name the effective batch, learning-rate policy and
+> interconnect before claiming a scaling result.
+
+> [!CHECK] What does all-reduce exchange for data parallelism?
+>
+> It combines gradient contributions so each replica can apply the same
+> update.
+
+> [!CHECK] Why set the sampler epoch explicitly?
+>
+> It gives the distributed sampler the intended changing shuffle across
+> epochs.
+
 ## What to take away
 
 1. Data parallelism replicates the model, splits the batch, and all-reduces
@@ -273,3 +308,27 @@ is fine; *reducing* only on rank 0 is a deadlock.
    degrades training, and a conditional collective hangs forever.
 
 Next: what to do when the model does not fit — sharding the optimizer state.
+
+## Exercises
+
+> [!EXERCISE recall] How does a gradient bucket reduce exposed
+> communication during backward?
+>
+> **Solution:** Once all its gradients are ready, the bucket can start a
+> collective while later backward work continues.
+
+> [!EXERCISE apply] A run uses 4 devices, 8 examples per device and 3
+> accumulation steps. Moving to 8 devices, choose a per-device batch that
+> keeps the effective batch fixed at the same accumulation count.
+>
+> **Solution:** Effective batch = per_device_batch × num_devices ×
+> accumulation_steps. Original batch = 8 × 4 × 3 = 32 × 3 = 96. New
+> per-device batch = 96 ÷ (8 × 3) = 96 ÷ 24 = 4. Check 4 × 8 × 3 = 96.
+
+> [!EXERCISE stretch] A training step stalls only when a rare input
+> appears on one rank. What would you check first?
+>
+> **Solution:** Compare per-rank control flow around collectives and
+> capture where each rank waits. Make the collective sequence consistent
+> across ranks. Increasing the timeout delays detection if ranks disagree
+> on the next operation.

@@ -10,6 +10,16 @@ ZeRO (Zero Redundancy Optimizer) removes that redundancy in stages, and FSDP is
 PyTorch's implementation of the idea. Together they are what makes training
 models larger than a single device routine.
 
+> [!WHY] Replicated training state fills the device before activations are
+> allocated. Picking a sharding stage from the actual state budget can
+> keep the run feasible without paying for unnecessary collectives.
+
+> [!GOALS]
+>
+> - Explain just-in-time gathering
+> - Compare sharding stages
+> - Choose a practical wrap policy
+
 ## The redundancy
 
 ```text
@@ -84,6 +94,15 @@ The mechanism is worth understanding, because its cost follows from it:
   │ layer 3 gathered                ░░░░░░░      │
   └──────────────────────────────────────────────┘
     only ONE layer's full parameters at a time
+```
+
+```mermaid
+flowchart TB
+  A[Sharded parameters]
+  B[Gather layer]
+  C[Compute layer]
+  D[Free full layer]
+  A --> B --> C --> D
 ```
 
 ## The cost
@@ -245,6 +264,15 @@ That last one catches people integrating FSDP with existing code: anything that
 inspects parameters directly — a custom optimizer, a gradient-norm computation, a
 logging hook — must be aware that it may be seeing a shard.
 
+> [!CHECK] Why wrap model blocks at a meaningful granularity?
+>
+> Gathering a whole model can increase peak memory. Gathering many tiny
+> pieces exposes collective latency.
+
+> [!CHECK] Why consolidate a sharded checkpoint for portability?
+>
+> Individual shards depend on the layout used by the distributed run.
+
 ## What to take away
 
 1. Data parallelism replicates ~16P bytes of state on every GPU; ZeRO removes that
@@ -261,3 +289,29 @@ logging hook — must be aware that it may be seeing a shard.
    checkpoints need consolidating before they are portable.
 
 Next: splitting the model itself — tensor and pipeline parallelism.
+
+## Exercises
+
+> [!EXERCISE recall] What happens to parameters on a worker running a
+> ZeRO-3 layer?
+>
+> **Solution:** It gathers the current layer's parameters for computation
+> and releases the full copy afterward. It keeps its own shard during the
+> rest of the step.
+
+> [!EXERCISE apply] A 2B-parameter job runs on 4 workers. Its budget for
+> persistent model state is 14 GB per worker, with activations budgeted
+> separately. Using the chapter's approximations, what is the least stage
+> that fits?
+>
+> **Solution:** ZeRO-1 = 4P + 12P/N = 8 + 24/4 = 8 + 6 = 14 GB.
+> Replication = 16P = 32 GB. ZeRO-1 meets the stated state-only budget.
+> Higher stages would save more state at a different communication cost.
+
+> [!EXERCISE stretch] A model has many small linear layers and
+> per-collective latency dominates with sharding. What would you try?
+>
+> **Solution:** Wrap logical transformer blocks so communication can
+> amortize overhead, and test hybrid sharding where node boundaries are
+> slow. Wrapping every linear layer increases the number of small
+> collectives.

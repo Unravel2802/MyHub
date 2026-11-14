@@ -9,6 +9,16 @@ simultaneously, they run for days, they need specific accelerators, and the
 hardware is expensive enough that idle time is a line item someone notices. The
 cluster-scheduling topic covers the general problem; this is what is specific.
 
+> [!WHY] Each of two jobs obtains some GPUs and then waits for the
+> remaining ranks. Dividing capacity before a job can start leaves
+> expensive hardware idle and both jobs blocked.
+
+> [!GOALS]
+>
+> - Explain gang scheduling
+> - Choose placement
+> - Design utilization accountability
+
 ## What makes ML jobs awkward to schedule
 
 ```text
@@ -35,6 +45,15 @@ wrong. Kubernetes' default scheduler places pods individually and will happily
 create the deadlock above — running distributed training on Kubernetes requires a
 gang scheduler (Volcano, Kueue, or a coscheduling plugin), not as an optimisation
 but for correctness.
+
+```mermaid
+flowchart TB
+  A[Request full worker group]
+  B[Place on compatible topology]
+  C[Start all ranks]
+  D[Release or requeue]
+  A --> B --> C --> D
+```
 
 ## Topology matters more than card count
 
@@ -172,6 +191,16 @@ Skipping to 4 before 2 is the "platform nobody asked for" anti-pattern from the
 lifecycle topic. Build the platform from what actually hurt on the second and
 third real jobs.
 
+> [!CHECK] Why set a maximum runtime?
+>
+> A hung or abandoned job can hold accelerators until its limit triggers
+> checkpoint and requeue or termination.
+
+> [!CHECK] Why maintain a small interactive pool?
+>
+> Quick experiments get predictable access and teams have less incentive
+> to keep private capacity idle.
+
 ## What to take away
 
 1. Gang scheduling is a correctness requirement for distributed training, not an
@@ -188,3 +217,28 @@ third real jobs.
    than any mandate.
 
 Next: debugging a training run that is not learning.
+
+## Exercises
+
+> [!EXERCISE recall] How does starting a whole distributed job together
+> avoid a resource deadlock?
+>
+> **Solution:** The scheduler admits the group only when all required
+> workers can run, so partially allocated jobs cannot occupy resources
+> while waiting on each other.
+
+> [!EXERCISE apply] A run has heavy recurring collective traffic and can
+> fit on one fast-connected node. The scheduler offers the same GPU count
+> scattered across hosts. Which constraint matters?
+>
+> **Solution:** Request topology-aware placement within one fast-connected
+> node and compare time and cost per run. Equal card count alone does not
+> account for slower cross-node communication.
+
+> [!EXERCISE stretch] Teams reserve instances for long-running experiments
+> but cannot tell which jobs still use them. What would help change
+> behavior?
+>
+> **Solution:** Attribute spend by job, team and experiment, surface
+> runtimes and make checkpoint/requeue easy. A general cost memo leaves
+> each team unable to trace its own idle capacity.

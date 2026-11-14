@@ -9,6 +9,16 @@ processing images can consume several thousand samples per second; a naive Pytho
 loop reading JPEGs from network storage delivers a few hundred. The gap is
 entirely engineering.
 
+> [!WHY] A cluster spends more time opening small objects than consuming
+> the bytes inside them. More workers raise request pressure and can
+> multiply memory overhead without filling the device queue.
+
+> [!GOALS]
+>
+> - Explain prefetching
+> - Choose a storage layout
+> - Move deterministic work
+
 ## The pipeline
 
 ```text
@@ -31,6 +41,15 @@ Each stage has a characteristic failure:
   COLLATE    copying and padding into a batch tensor
   TRANSFER   host-to-device copy, serialised with compute if
              not pinned and asynchronous
+```
+
+```mermaid
+flowchart TB
+  A[Read shards]
+  B[Decode or transform]
+  C[Prefetch]
+  D[Transfer to accelerator]
+  A --> B --> C --> D
 ```
 
 ## The small-files problem
@@ -197,6 +216,17 @@ of ranks. Shard assignment must be by rank.
 Doing this arithmetic first is the difference between a week of profiling the
 model and an afternoon fixing the input pipeline.
 
+> [!CHECK] What should distributed readers avoid fetching redundantly?
+>
+> They should assign disjoint shards by rank so several workers do not
+> each read the whole dataset.
+
+> [!CHECK] Why can a Python list of dataset indices consume more RAM after
+> worker processes fork?
+>
+> Reference-count updates can break copy-on-write sharing and replicate
+> pages across workers.
+
 ## What to take away
 
 1. The dataloader is the most common cause of GPU idling; time it alone and
@@ -214,3 +244,28 @@ model and an afternoon fixing the input pipeline.
 
 Next: checkpointing and surviving the failures that a long training run
 guarantees.
+
+## Exercises
+
+> [!EXERCISE recall] Why does a prepared batch help when training overlaps
+> work with loading?
+>
+> **Solution:** The next batch can be ready while the device computes on
+> the current one, reducing empty-queue time.
+
+> [!EXERCISE apply] Training reads many tiny image objects and the storage
+> trace has low data volume but high per-object latency. Which change
+> addresses it?
+>
+> **Solution:** Pack images into larger sequential shards, shuffle the
+> shard order and use a shuffle buffer. This reduces request overhead
+> while preserving useful randomness. More workers still issue the
+> expensive small requests.
+
+> [!EXERCISE stretch] CPU decode and resizing dominate repeated runs on
+> the same data. What would you move, and how would you test the effect?
+>
+> **Solution:** Precompute deterministic resizing and measure loading
+> throughput and end-to-end device idling. Preserve randomness for
+> intended augmentation. Adding devices faster than the same preprocessing
+> can feed them may make idling worse.

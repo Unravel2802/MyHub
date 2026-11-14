@@ -8,6 +8,16 @@ Scaling laws are the most practically useful empirical result in modern ML: loss
 falls as a *predictable power law* in model size, data and compute. That
 predictability is what turns a training run from a gamble into a plan.
 
+> [!WHY] A training proposal assigns most of the compute to parameter
+> count and leaves few tokens per parameter. A rough compute estimate can
+> reveal an allocation mismatch before the large run commits its budget.
+
+> [!GOALS]
+>
+> - Explain allocation under fixed compute
+> - Compute a training comparison
+> - Choose evidence for a new workload
+
 ## The relationship
 
 ```text
@@ -67,6 +77,15 @@ Given a fixed compute budget, how do you split it between model size and data?
     7B    →  140B tokens
     70B   →  1.4T tokens
     400B  →  8T tokens
+```
+
+```mermaid
+flowchart TB
+  A[Set training compute]
+  B[Select parameters and tokens]
+  C[Fit small runs]
+  D[Evaluate downstream]
+  A --> B --> C --> D
 ```
 
 ## Why nobody trains compute-optimal any more
@@ -193,6 +212,28 @@ reported ones are measurement artifacts.
 That second line is why inference-optimal sizing matters: the training cost is
 paid once and the inference cost is paid per token for the life of the product.
 
+> [!PITFALL] Scaling curves for loss give weaker evidence about a specific
+> downstream capability.
+
+> [!INTERVIEW] State the assumed token-to-parameter ratio and separate
+> training compute from lifetime serving cost.
+
+> [!CHECK] Why fit a scaling curve from smaller runs?
+>
+> It can guide a larger training allocation with evidence gathered at
+> lower cost.
+
+> [!CHECK] Why can repeated data become a limiting factor?
+>
+> High-quality distinct data is finite and repeated training can yield
+> diminishing returns.
+
+> [!CHECK] Why might an inference-heavy system choose a smaller model
+> despite a larger training budget?
+>
+> The cost of serving each request can dominate lifetime cost, changing
+> the preferred training allocation.
+
 ## What to take away
 
 1. Loss follows a predictable power law in parameters, data and compute, which lets
@@ -209,3 +250,28 @@ paid once and the inference cost is paid per token for the life of the product.
    constants do not transfer between setups.
 
 Next: adapting a pretrained model to a task.
+
+## Exercises
+
+> [!EXERCISE recall] What trade happens when parameter count increases but
+> compute remains fixed?
+>
+> **Solution:** The training-compute approximation couples model size and
+> token count. Increasing one leaves less budget for the other.
+
+> [!EXERCISE apply] Compare a 2B-parameter model trained on 40B tokens
+> with a 4B-parameter model trained on 20B tokens. Use the chapter's
+> training compute estimate and compare their tokens per parameter.
+>
+> **Solution:** Training compute C ≈ 6 × N × D. First C ≈ 6 × 2B × 40B =
+> 480 × 10¹⁸ FLOPs. Second C ≈ 6 × 4B × 20B = 480 × 10¹⁸ FLOPs. Tokens per
+> parameter = D ÷ N. The ratios are 40 ÷ 2 = 20 and 20 ÷ 4 = 5, so the
+> first follows the chapter's approximate 20-token reference.
+
+> [!EXERCISE stretch] Two recipes predict similar training loss, but one
+> must serve a latency-sensitive product. Which decision evidence should
+> you gather?
+>
+> **Solution:** Compare representative downstream quality and serving cost
+> and latency at the expected volume. The training loss curve alone does
+> not establish the product trade.

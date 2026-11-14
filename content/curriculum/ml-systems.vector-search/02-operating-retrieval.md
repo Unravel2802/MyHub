@@ -8,6 +8,16 @@ Choosing an index is the easy part. The operational difficulties are keeping the
 index current, surviving an embedding model change, and the fact that pure vector
 search is usually worse than combining it with keyword search.
 
+> [!WHY] A deployment switches the query encoder and keeps the current
+> document index. Both models return vectors of the same length, but the
+> changes displace the nearest neighbors for ordinary queries.
+
+> [!GOALS]
+>
+> - Explain segment merges
+> - Plan an embedding migration
+> - Improve rare-term retrieval
+
 ## Updates: the awkward part
 
 ```text
@@ -88,6 +98,15 @@ That last point prevents the worst version of this failure: a query embedded wit
 v2 searched against a v1 index returns confident, wrong results with no error.
 Tagging the index with its model version and checking it at query time is a few
 lines that make the mistake impossible.
+
+```mermaid
+flowchart TB
+  A[Build versioned embeddings]
+  B[Populate new index]
+  C[Compare relevance]
+  D[Cut over paired encoder and index]
+  A --> B --> C --> D
+```
 
 ## Hybrid search
 
@@ -241,6 +260,15 @@ time someone changes the chunk size.
 The freshness metric is the one users notice: a document uploaded and not findable
 for ten minutes is a product problem that no retrieval metric shows.
 
+> [!CHECK] Why can a cross-encoder improve ranking after retrieval?
+>
+> It jointly sees query and candidate text after a fast retrieval stage
+> limits how many pairs are scored.
+
+> [!CHECK] Why retain document and section titles with chunks?
+>
+> They give otherwise isolated chunks enough context to be interpretable.
+
 ## What to take away
 
 1. Deletion is the hard operation; segment-based indexing with background merges
@@ -258,3 +286,27 @@ for ten minutes is a product problem that no retrieval metric shows.
 
 That completes vector search. Next in the track: **ML monitoring and drift** —
 detecting that a deployed model has stopped working.
+
+## Exercises
+
+> [!EXERCISE recall] Why use background merges when an index needs
+> frequent updates and deletions?
+>
+> **Solution:** Segment-oriented writes keep immediate updates fast while
+> background work rewrites or consolidates the index.
+
+> [!EXERCISE apply] A new encoder is ready and both versions must serve
+> during a rollback window. How should index and query versions be routed?
+>
+> **Solution:** Re-embed the corpus into a versioned new index and pair
+> each query encoder with its own index. Compare relevance before
+> switching and keep the old pair available. Matching vector length is
+> insufficient to compare coordinates across models.
+
+> [!EXERCISE stretch] Semantic retrieval does well on paraphrases and
+> misses exact part numbers. What change would you test?
+>
+> **Solution:** Add sparse retrieval and fuse its results with dense
+> candidates, then evaluate exact-identifier cases and reranking quality.
+> A larger dense candidate set may still miss rare literal matches and
+> adds scoring work.

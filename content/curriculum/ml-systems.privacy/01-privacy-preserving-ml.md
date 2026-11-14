@@ -9,6 +9,17 @@ obvious. A model is not an anonymised summary — it can be induced to reveal it
 training examples, and it inherits the legal obligations attached to the data it
 was trained on. The techniques here address that, at real cost.
 
+> [!WHY] A team approves a training dataset after checking that explicit
+> names were removed. Rare strings and repeated records can still carry
+> identifying information, so the release review needs to account for what
+> the model can learn from the remaining data.
+
+> [!GOALS]
+>
+> - Explain a privacy budget
+> - Choose protection for distributed training
+> - Design a deletion plan
+
 ## Models memorise
 
 ```text
@@ -228,6 +239,36 @@ weeks to months of work and real accuracy cost, and should follow from an actual
 threat assessment rather than from the presence of the word "personal" in a
 requirements document.
 
+```mermaid
+flowchart TB
+  A[Minimize collected data]
+  B[Deduplicate]
+  C[Apply chosen protections]
+  D[Check privacy and quality]
+  A --> B --> C --> D
+```
+
+> [!PITFALL] Treat embeddings and other derived artifacts as part of the
+> data inventory.
+
+> [!INTERVIEW] State what each protection covers and which outputs still
+> need governance.
+
+> [!CHECK] Why is deduplication useful before training?
+>
+> It reduces repetition that increases memorization and can also lower
+> training work.
+
+> [!CHECK] Why measure utility on rare classes under differential privacy?
+>
+> The privacy mechanism can reduce quality unevenly, especially for data
+> with sparse representation.
+
+> [!CHECK] Why is deletion hard once a model has trained?
+>
+> The model can retain learned influence beyond the underlying row,
+> requiring a plan for replacement or retraining.
+
 ## What to take away
 
 1. Models memorise verbatim, and duplicated or rare unique strings — exactly what
@@ -245,3 +286,28 @@ requirements document.
 
 Next: on-device and edge inference, where the model runs on someone else's
 hardware.
+
+## Exercises
+
+> [!EXERCISE recall] What does composition mean for repeated private
+> training?
+>
+> **Solution:** Privacy losses accumulate across releases or runs touching
+> the same records. Plan the budget for the complete sequence.
+
+> [!EXERCISE apply] Devices should keep raw records locally. The team
+> proposes releasing individually visible model updates. Which safeguards
+> address the remaining privacy risk?
+>
+> **Solution:** Use secure aggregation so individual updates are
+> restricted, and add an appropriate differential privacy mechanism if a
+> formal privacy guarantee is required. Local training by itself still
+> allows sensitive information to be reflected in updates.
+
+> [!EXERCISE stretch] A user-facing search index stores embeddings trained
+> from contributed data. How would you support a future deletion request?
+>
+> **Solution:** Track dependencies from the source records to the index
+> and model artifacts. Plan how to remove derived records and replace or
+> retrain models where necessary. Removing only the source row leaves
+> downstream artifacts outside the plan.

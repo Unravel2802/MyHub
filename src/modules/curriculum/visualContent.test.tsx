@@ -186,6 +186,15 @@ export const EXERCISE_TRACKS: string[] = [
   "deep-learning.sequence",
   "deep-learning.ssm",
   "deep-learning.training",
+  "ml-systems.inference-optimization",
+  "ml-systems.labeling",
+  "ml-systems.lifecycle",
+  "ml-systems.monitoring",
+  "ml-systems.privacy",
+  "ml-systems.recsys",
+  "ml-systems.serving",
+  "ml-systems.training-infra",
+  "ml-systems.vector-search",
 ];
 const DS3_VISUAL_TRACKS = [
   "distributed.messaging",
@@ -1453,6 +1462,76 @@ describe("curriculum visual content gates", () => {
       );
       const multi = topicChapters.length > 1;
       expect(topicChapters, topic).toHaveLength(1);
+      for (const file of topicChapters) {
+        const source = readFileSync(file, "utf8");
+        const name = relative(ROOT, file);
+        const diagrams = count(source, /^```mermaid\s*$/gm);
+        expect(diagrams, name).toBeGreaterThanOrEqual(multi ? 0 : 1);
+        expect(diagrams, name).toBeLessThanOrEqual(multi ? 2 : 3);
+        expect(count(source, /^```chart\s*$/gm), name).toBeLessThanOrEqual(
+          multi ? 1 : 2,
+        );
+        expect(count(source, /^```widget\s*$/gm), name).toBe(0);
+        const prose = source.replace(/^```[^\n]*\n[\s\S]*?^```[^\n]*$/gm, "");
+        expect(count(prose, /^> \[!KEY\]/gm), name).toBeLessThanOrEqual(
+          multi ? 2 : 3,
+        );
+        const checks = [...prose.matchAll(/^> \[!CHECK\]/gm)];
+        expect(checks, name).toHaveLength(multi ? 2 : 3);
+        const recapAt = prose.indexOf("## What to take away");
+        expect(recapAt, name).toBeGreaterThan(0);
+        expect(
+          checks.every((check) => check.index < recapAt),
+          name,
+        ).toBe(true);
+        const why = /^> \[!WHY\] (.+)$/m.exec(prose);
+        expect(why?.[1].trim(), name).toBeTruthy();
+        expect(why?.index, name).toBeLessThan(prose.indexOf("## "));
+        expect(source, name).not.toMatch(/[A-Za-z]-[ \t]*\n/);
+        expect(source, name).not.toMatch(/[A-Za-z]\n-[a-z]/);
+        for (const fence of source.matchAll(/^```([^\n]*)\n([\s\S]*?)^```/gm)) {
+          for (const line of fence[2].trimEnd().split("\n")) {
+            expect(line.length, `${name}: ${line}`).toBeLessThanOrEqual(76);
+          }
+          if (fence[1].trim() === "mermaid" && /^flowchart /m.test(fence[2])) {
+            expect(fence[2], name).toMatch(/^flowchart TB$/m);
+          }
+        }
+      }
+      const source = topicChapters
+        .map((file) => readFileSync(file, "utf8"))
+        .join("\n");
+      const pitfalls = count(source, /^> \[!PITFALL\]/gm);
+      expect(pitfalls, topic).toBeGreaterThanOrEqual(1);
+      expect(pitfalls, topic).toBeLessThanOrEqual(multi ? 3 : 2);
+      expect(count(source, /^> \[!INTERVIEW\]/gm), topic).toBe(1);
+    }
+  });
+  it("enforces the MS2 visual quotas and source formatting", () => {
+    const topicCounts: Record<string, number> = {
+      "ml-systems.inference-optimization": 3,
+      "ml-systems.labeling": 1,
+      "ml-systems.lifecycle": 5,
+      "ml-systems.monitoring": 3,
+      "ml-systems.privacy": 1,
+      "ml-systems.recsys": 2,
+      "ml-systems.serving": 3,
+      "ml-systems.training-infra": 5,
+      "ml-systems.vector-search": 2,
+    };
+    const topics = Object.keys(topicCounts);
+    const chapters = files.filter((file) =>
+      topics.includes(relative(ROOT, file).split("/")[0]),
+    );
+    expect(chapters).toHaveLength(25);
+    const count = (source: string, pattern: RegExp) =>
+      [...source.matchAll(pattern)].length;
+    for (const topic of topics) {
+      const topicChapters = chapters.filter(
+        (file) => relative(ROOT, file).split("/")[0] === topic,
+      );
+      const multi = topicChapters.length > 1;
+      expect(topicChapters, topic).toHaveLength(topicCounts[topic]);
       for (const file of topicChapters) {
         const source = readFileSync(file, "utf8");
         const name = relative(ROOT, file);

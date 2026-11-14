@@ -9,6 +9,16 @@ much of the privacy exposure. It replaces them with constraints you have never h
 to think about in a data centre: a battery, a thermal budget, a device you cannot
 update, and a fleet spanning a decade of hardware generations.
 
+> [!WHY] A device demo is smooth on the first inference and stutters after
+> several minutes. If the release relies on that cold result, thermal
+> throttling and unsupported operators can surprise the entire fleet.
+
+> [!GOALS]
+>
+> - Explain the device trade-off
+> - Choose a hybrid policy
+> - Design a fleet validation
+
 ## Why put a model on the device
 
 ```text
@@ -215,6 +225,14 @@ The cascade is the same idea as the inference-optimization chapter's cost cascad
 with the cheap tier being the user's phone. If 90% of requests are handled locally,
 serving cost falls by 90% and the median latency falls to a few milliseconds.
 
+```mermaid
+flowchart TB
+  A[Score on device]
+  B[Route hard cases]
+  C[Score on server]
+  A --> B --> C
+```
+
 ## Testing and monitoring
 
 ```text
@@ -239,6 +257,26 @@ It tells you what is actually running, which determines whether a fix has reache
 users and what the real quality distribution is — and without it you are reasoning
 about a fleet you cannot see.
 
+> [!PITFALL] Check accelerator coverage on each target device. An
+> unsupported operation can fall back to the CPU silently.
+
+> [!INTERVIEW] Explain who can complete inference offline and what happens
+> to cases requiring the server.
+
+> [!CHECK] Why plan for simultaneous model versions?
+>
+> Clients update at different times and some continue running older model
+> releases.
+
+> [!CHECK] What can a device memory limit do to the client?
+>
+> Exceeding the limit can cause the operating system to terminate the app.
+
+> [!CHECK] What must numerical parity testing compare?
+>
+> The converted device model and the reference model on representative
+> identical inputs.
+
 ## What to take away
 
 1. On-device inference buys latency, offline capability, privacy and serving cost,
@@ -258,3 +296,27 @@ That completes on-device inference, and with it the ML Systems & MLOps track. Th
 material connects outward: **LLMs & Frontier AI** covers what these systems serve,
 **Distributed Systems** covers the infrastructure underneath, and **ML
 Foundations** covers the modelling this engineering exists to support.
+
+## Exercises
+
+> [!EXERCISE recall] Why could a local model improve user experience
+> despite lower capacity than the server?
+>
+> **Solution:** It can work offline and avoid network latency. The trade
+> includes hardware variance, update lag and harder debugging.
+
+> [!EXERCISE apply] An application must respond offline, but a stronger
+> server model is available for uncertain cases when connected. What
+> should the route look like?
+>
+> **Solution:** Run a smaller model locally first. When it is uncertain
+> and the connection is available, use the server for the harder case.
+> Define useful local behavior for offline or failed fallback requests.
+
+> [!EXERCISE stretch] An optimization wins a one-off benchmark on a
+> flagship phone. How would you test it for release?
+>
+> **Solution:** Check sustained speed, thermal and battery behavior,
+> memory pressure, kernel placement and numerical parity by device class.
+> That one cold measurement omits sustained use and much of the supported
+> fleet.

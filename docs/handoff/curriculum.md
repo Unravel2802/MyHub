@@ -185,7 +185,7 @@ discipline (Product Sense's problem-first framing, Scoping's risk-first
 sequencing) that earlier tracks had already been quietly practicing without
 stopping to name.
 
-339 chapters, ~375,000 words, ~104 hours of reading, across **227 of 227
+338 chapters, ~375,000 words, ~104 hours of reading, across **227 of 227
 topics — the full map, complete.** (`curriculumCatalog.ts`'s `t()` helper is
 called exactly 227 times, one per topic; the `catalogCycles`/coverage script
 in `curriculumLayout.ts` is the authoritative way to check this, not a

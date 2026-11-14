@@ -128,7 +128,7 @@ unique constraint rather than this schema's usual partial index (the 0014 → 00
 The topic GRAPH is code (`curriculumCatalog.ts`) and the chapter PROSE is markdown files under
 `content/curriculum/`; only progress is a table. New chapters are generated with
 `docs/curriculum-authoring-prompt.md` and need no code change. **The curriculum is complete —
-all fourteen tracks, 227 of 227 topics, 339 chapters** — Distributed Systems, ML Systems &
+all fourteen tracks, 227 of 227 topics, 338 chapters** — Distributed Systems, ML Systems &
 MLOps, LLMs & Frontier AI, Systems Design, Backend Engineering, Software Craft, Frontend
 Engineering, CS Foundations, Infrastructure & Ops, Security, Data Engineering, Engineering
 Practice, ML Foundations and Deep Learning. (The catalog's `t()` topic constructor is called

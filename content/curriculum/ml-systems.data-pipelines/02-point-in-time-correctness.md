@@ -9,6 +9,17 @@ always a leakage story: the training set contained information that would not
 have been available at prediction time. The model learned to use the future, and
 production does not supply one.
 
+> [!WHY] An account-scoring model gets nearly perfect offline results
+> because its history table contains states assigned after the decision.
+> Using the historical cutoff removes the apparent gain before the model
+> can mislead a launch decision.
+
+> [!GOALS]
+>
+> - Explain label timing
+> - Apply an as-of join
+> - Design validation for time-indexed data
+
 ## What leakage looks like
 
 ```text
@@ -106,6 +117,14 @@ The naive join breaks this, and it is the standard way leakage enters:
 This is an **as-of join** (also called a temporal or point-in-time join), and it
 requires that features are stored *with history* rather than as a current-value
 table. That storage requirement is one of the main reasons feature stores exist.
+
+```mermaid
+flowchart TB
+  A[Set decision timestamp]
+  B[Join historical values]
+  C[Train on eligible rows]
+  A --> B --> C
+```
 
 ## Label timing
 
@@ -216,6 +235,15 @@ catalogue that records "available at event time" versus "available 24h later"
 versus "only after the outcome" makes leakage a lookup rather than an
 investigation.
 
+> [!CHECK] Why is fitting preprocessing before the split a leakage risk?
+>
+> Statistics from held-out rows influence transformations used to fit the
+> model.
+
+> [!CHECK] What gives the most recent examples an immature label?
+>
+> The prediction outcome still has time to change within the label window.
+
 ## What to take away
 
 1. An unexpectedly excellent offline metric is a bug report; leakage is the first
@@ -234,3 +262,26 @@ investigation.
 
 Next: feature stores — the infrastructure that makes both of these problems
 structurally impossible.
+
+## Exercises
+
+> [!EXERCISE recall] Why can a completed feature row still be ineligible
+> for a training set?
+>
+> **Solution:** Its outcome window may be open. Including it would treat
+> an unresolved outcome as though it were already known.
+
+> [!EXERCISE apply] A decision at 09:00 can use records known at 08:10 and
+> 08:50. A correction made at 09:15 refers to the same entity. Which value
+> belongs to the row?
+>
+> **Solution:** Use the latest value known by the decision timestamp,
+> which is the 08:50 value. The 09:15 correction was unavailable then even
+> if it describes an earlier event.
+
+> [!EXERCISE stretch] A new model uses a forward-looking label window.
+> Which split would you use to assess generalization?
+>
+> **Solution:** Split by decision time with a gap matching the label
+> window and evaluate future windows in sequence. A shuffled row split
+> blends time periods and can let future outcomes influence the past.

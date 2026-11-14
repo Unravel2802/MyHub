@@ -9,6 +9,17 @@ particular network topology. When distributed training is slower than expected,
 the answer is almost always in one of those two things — or in a single rank that
 is quietly slower than its peers.
 
+> [!WHY] Average accelerator utilization looks reasonable, yet each
+> training step waits behind one worker. A per-rank timeline can
+> distinguish a slow GPU from a transport selection problem before either
+> fix is attempted.
+
+> [!GOALS]
+>
+> - Explain topology-aware collectives
+> - Localize a transport regression
+> - Choose evidence for a straggler
+
 ## The collectives
 
 ```text
@@ -203,6 +214,15 @@ slows all 512** with no error anywhere.
 straggler's contribution and looks like ordinary variance. Per-rank timing is the
 only way, and it is a few lines of logging.
 
+```mermaid
+flowchart TB
+  A[Log time by rank]
+  B[Compare the outlier]
+  C[Inspect its local trace]
+  D[Test the fix]
+  A --> B --> C --> D
+```
+
 ## Debugging a hang
 
 ```text
@@ -253,6 +273,15 @@ a rank-conditional checkpoint is the deadlock.
 runs at a fraction of the expected speed, and the cause is that all traffic is
 going over a 1 Gb/s management network rather than the 400 Gb/s fabric.
 
+> [!CHECK] How does all-reduce relate to other collectives?
+>
+> It can be implemented with reduce-scatter followed by all-gather.
+
+> [!CHECK] Why set a timeout on collective work?
+>
+> A bounded failure gives a diagnostic signal when workers stop making
+> progress.
+
 ## What to take away
 
 1. Everything reduces to a few collectives; all-reduce is reduce-scatter plus
@@ -270,3 +299,28 @@ going over a 1 Gb/s management network rather than the 400 Gb/s fabric.
 
 That completes distributed training. Next in the track: **model serving** — putting
 the trained model behind an API, where the constraints invert.
+
+## Exercises
+
+> [!EXERCISE recall] Why is a node boundary important even when every
+> accelerator is the same model?
+>
+> **Solution:** Local links offer different bandwidth from cross-node
+> networking. Hierarchical collectives can keep more of the traffic on the
+> faster links.
+
+> [!EXERCISE apply] A standalone collective benchmark is slow before model
+> code runs, and the transport log shows a management interface. Which
+> layer should you fix first?
+>
+> **Solution:** Investigate fabric interface selection and the intended
+> RDMA transport. The independent benchmark reproduces the bottleneck
+> outside the training job, so changing model layers is unlikely to repair
+> it.
+
+> [!EXERCISE stretch] Training is slow but transport benchmarks and link
+> selection are normal. What evidence should guide the next change?
+>
+> **Solution:** Compare per-rank step times and inspect throttling, data
+> and runtime behavior on the slow outlier. Aggregate utilization alone
+> can hide the specific rank that gates the collective.

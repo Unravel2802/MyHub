@@ -9,6 +9,16 @@ you it is better, because only production contains the users, the feedback loops
 and the downstream effects. Running the experiment correctly is a distinct
 discipline from building the model.
 
+> [!WHY] A canary has healthy latency and no incidents, so the team
+> announces a conversion win. The canary proved limited rollout safety and
+> the claimed business effect still lacks a comparison.
+
+> [!GOALS]
+>
+> - Explain progressive exposure
+> - Diagnose an experiment flaw
+> - Plan long-term follow-up
+
 ## Why online is required
 
 ```text
@@ -45,6 +55,15 @@ user behaviour. **The experiment measures the whole change, not the model.**
 
 All three, in that order. Shadow answers "does it work"; canary answers "is it
 safe"; A/B answers "is it better". Skipping shadow is how skew reaches users.
+
+```mermaid
+flowchart TB
+  A[Shadow execution]
+  B[Canary safety]
+  C[Randomized A B test]
+  D[Check long term effect]
+  A --> B --> C --> D
+```
 
 ## Getting the experiment right
 
@@ -230,6 +249,17 @@ relationship instead of measuring it.
 experimentation safe: a variant that degrades a critical metric beyond a threshold
 is disabled without waiting for a human to read a dashboard.
 
+> [!CHECK] What should be verified when variant traffic diverges from its
+> intended split?
+>
+> Check for sample ratio mismatch and investigate assignment or logging
+> before trusting the estimate.
+
+> [!CHECK] Why power the experiment before launching?
+>
+> The expected effect and noise determine whether the planned sample can
+> detect a relevant change.
+
 ## What to take away
 
 1. Only online testing settles it, because the experiment measures the whole
@@ -246,3 +276,29 @@ is disabled without waiting for a human to read a dashboard.
    learn, and their estimates are confounded by adaptive allocation.
 
 Next: evaluating generative systems, where there is no single correct answer.
+
+## Exercises
+
+> [!EXERCISE recall] Which questions do shadow, canary and A/B each
+> answer?
+>
+> **Solution:** Shadow checks execution, canary checks limited production
+> safety and a randomized test measures comparative impact.
+
+> [!EXERCISE apply] An experiment targets an even split, but most assigned
+> records are in one variant and the discrepancy begins after logging
+> changes. The treatment metric looks strong. What is the next decision?
+>
+> **Solution:** Investigate sample ratio mismatch and instrument
+> assignment and exposure separately. Repair and revalidate the experiment
+> before interpreting treatment effects. An aggregate conversion number
+> cannot establish that the recorded groups are comparable.
+
+> [!EXERCISE stretch] A ranking test boosts clicks while satisfaction
+> indicators worsen. How would you decide whether the launch produces
+> lasting value?
+>
+> **Solution:** Use guardrail metrics and a lasting holdback with a
+> validated link between the short-term proxy and the intended outcome.
+> Optimizing clicks alone can reward an interaction pattern that hurts
+> longer-term satisfaction.

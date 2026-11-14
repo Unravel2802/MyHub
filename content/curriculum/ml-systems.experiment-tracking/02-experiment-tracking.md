@@ -9,6 +9,16 @@ the knowledge from them lives in a mix of notebooks, filenames, Slack messages
 and memory, and evaporates when someone leaves. Experiment tracking is the
 infrastructure that makes the failures cumulative rather than wasted.
 
+> [!WHY] Two experiments finish with the same score but one spent most of
+> training unstable. Storing only final values hides evidence that should
+> influence which recipe becomes the production baseline.
+
+> [!GOALS]
+>
+> - Explain useful run history
+> - Choose a fair comparison
+> - Protect the final test set
+
 ## What to log
 
 ```text
@@ -52,6 +62,15 @@ The specific things curves reveal that a final number cannot: divergence recover
 from by luck, overfitting beginning at epoch 12 while the run continued to 40, a
 learning rate that was too high for the first half, and a validation curve that
 was still improving when the run stopped.
+
+```mermaid
+flowchart TB
+  A[Record hypothesis]
+  B[Log curves]
+  C[Compare paired runs]
+  D[Store conclusion]
+  A --> B --> C --> D
+```
 
 ## Organising runs
 
@@ -195,6 +214,16 @@ The sixth is the subtle one. A tracking system containing only what worked canno
 tell you what has already been tried, so the team repeatedly re-runs the same
 failed idea. **Log the failures deliberately**, with the conclusion attached.
 
+> [!CHECK] Why store the search space?
+>
+> It preserves the tried ranges and strategies, including where repeated
+> exploration adds little evidence.
+
+> [!CHECK] Why should failed runs be tracked?
+>
+> They show what was tried and prevent the record from overstating
+> reliability.
+
 ## What to take away
 
 1. Log the hypothesis and the conclusion alongside the config — that is what turns
@@ -211,3 +240,28 @@ failed idea. **Log the failures deliberately**, with the conclusion attached.
    always the one that worked.
 
 Next: the model registry — the bridge between an experiment and a deployment.
+
+## Exercises
+
+> [!EXERCISE recall] What makes tracking an experiment different from
+> storing a leaderboard row?
+>
+> **Solution:** A hypothesis, configuration, curves and conclusion show
+> what was changed and why the outcome matters. The score only records the
+> final measurement.
+
+> [!EXERCISE apply] One candidate changes batch size and augmentation
+> while its baseline used a different validation set. How would you test
+> the augmentation claim?
+>
+> **Solution:** Hold other settings and evaluation data fixed, run the
+> augmentation comparison over paired seeds and measure the spread. The
+> original experiment confounds augmentation with other changes.
+
+> [!EXERCISE stretch] A search winner narrowly beats all other trials on
+> validation. What evaluation is appropriate?
+>
+> **Solution:** Report the search and seed variation, choose the recipe
+> from validation, then use untouched test data for the final assessment.
+> Repeatedly using the test set to choose winners turns it into another
+> selection set.

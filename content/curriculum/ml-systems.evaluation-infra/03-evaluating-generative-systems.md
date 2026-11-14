@@ -9,6 +9,16 @@ acceptable answers, quality is multidimensional, and the failure modes are thing
 like "confidently wrong" that no string comparison detects. This changes what an
 evaluation looks like without changing the need for one.
 
+> [!WHY] A generated answer is wrong and the team is ready to retune the
+> model. Feeding it the known evidence first can avoid a rebuild when the
+> retrieval stage lost the relevant document.
+
+> [!GOALS]
+>
+> - Explain judge calibration
+> - Isolate a failed answer
+> - Choose regression coverage
+
 ## What breaks
 
 ```text
@@ -62,17 +72,16 @@ judges only where the output is genuinely open.
 ```text
   the biases, all measured and all real:
 
-  POSITION      prefers the first (or last) option presented
-                → randomise order; evaluate both orders
-  VERBOSITY     prefers longer answers
-                → control for length, or penalise it explicitly
-  SELF-
-  PREFERENCE    prefers its own family's outputs
-                → use a different model family as judge
-  SYCOPHANCY    agrees with framing in the prompt
-                → do not reveal which output is "the new one"
-  SCALE         clusters on 7–8 out of 10
-                → prefer PAIRWISE comparison to absolute scores
+  POSITION         prefers the first (or last) option presented
+                   → randomise order; evaluate both orders
+  VERBOSITY        prefers longer answers
+                   → control for length, or penalise it explicitly
+  SELF-PREFERENCE  prefers its own family's outputs
+                   → use a different model family as judge
+  SYCOPHANCY       agrees with framing in the prompt
+                   → do not reveal which output is "the new one"
+  SCALE            clusters on 7–8 out of 10
+                   → prefer PAIRWISE comparison to absolute scores
 ```
 
 ```text
@@ -119,6 +128,15 @@ or you cannot tell which one is broken:
 
 That one experiment saves a great deal of misdirected work, and it requires only
 that your evaluation set includes the correct supporting documents.
+
+```mermaid
+flowchart TB
+  A[Run normal retrieval]
+  B[Test with gold context]
+  C[Locate regression]
+  D[Fix affected stage]
+  A --> B --> C --> D
+```
 
 ## Building the evaluation set
 
@@ -189,6 +207,16 @@ thumbs-down, and an accepted code completion is a stronger positive than a ratin
 that refuses everything scores perfectly on harm metrics while being useless.
 Tracking both directions keeps the trade-off visible.
 
+> [!CHECK] When can an objective check replace a judge?
+>
+> When success has an executable condition such as tests or schema
+> validation.
+
+> [!CHECK] Why track over-refusal alongside harmful compliance?
+>
+> A release can reduce harmful compliance by refusing useful benign
+> requests, so both outcomes matter.
+
 ## What to take away
 
 1. Public benchmark scores may reflect contamination; your own unpublished
@@ -207,3 +235,28 @@ Tracking both directions keeps the trade-off visible.
 
 That completes evaluation and online testing. Next in the track: **recommendation
 and ranking systems** — where most of these ideas come together.
+
+## Exercises
+
+> [!EXERCISE recall] What evidence makes a subjective judge usable for
+> regression comparisons?
+>
+> **Solution:** A defined rubric, order randomization or reversal, and
+> agreement measured against human labels make its preferences
+> interpretable.
+
+> [!EXERCISE apply] A system fails with ordinary retrieval and answers
+> correctly when given the known supporting passage. Where would you
+> investigate first?
+>
+> **Solution:** Inspect retrieval rank, coverage and whether the passage
+> reached the generation prompt. The gold-context run shows the generator
+> can produce the answer with the required evidence.
+
+> [!EXERCISE stretch] A prompt edit improves a public benchmark. Which
+> regression set should gate the production change?
+>
+> **Solution:** Build or maintain an unpublished set from representative
+> real cases and run it across prompt revisions. Start with executable
+> checks and use calibrated judges where tasks are open-ended. The public
+> score alone can reflect contamination or omit product failures.

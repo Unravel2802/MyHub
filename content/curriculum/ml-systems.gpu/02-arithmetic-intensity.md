@@ -8,6 +8,16 @@ Before optimising a kernel, you need to know what is limiting it. There is one
 number that answers this, it is easy to compute by hand, and it determines
 whether an optimisation will help at all.
 
+> [!WHY] A faster accelerator produces little improvement for a
+> normalization chain. A roofline estimate can show that the next gain
+> comes from moving fewer bytes through memory.
+
+> [!GOALS]
+>
+> - Explain the ridge point
+> - Compute a roofline comparison
+> - Choose a batch-one optimization
+
 ## Arithmetic intensity
 
 ```text
@@ -68,6 +78,15 @@ speedup**. Activation checkpointing recomputes the forward pass in the backward
 pass, adding ~30% more FLOPs — and on a memory-bound kernel, or when it saves the
 memory traffic of storing and reloading activations, it can be faster as well as
 smaller.
+
+```mermaid
+flowchart TB
+  A[Count operations and bytes]
+  B[Compute intensity]
+  C[Compare against ridge]
+  D[Target the bottleneck]
+  A --> B --> C --> D
+```
 
 ## Worked examples
 
@@ -214,6 +233,16 @@ change the algorithm instead of tuning the kernel.
   □  compute the lower bound before optimising anything
 ```
 
+> [!CHECK] Why can fusing elementwise kernels reduce traffic?
+>
+> Intermediate values can remain on chip instead of being written and read
+> between kernels.
+
+> [!CHECK] What does the lower roofline imply about observed time?
+>
+> It is an ideal bound. Extra overhead can leave the measured kernel
+> slower than that bound.
+
 ## What to take away
 
 1. Arithmetic intensity — FLOPs per byte moved — compared against the hardware's
@@ -230,3 +259,29 @@ change the algorithm instead of tuning the kernel.
    every inference optimisation is a bandwidth optimisation.
 
 Next: precision — the other lever that buys both bandwidth and arithmetic.
+
+## Exercises
+
+> [!EXERCISE recall] What do you compare against a kernel's arithmetic
+> intensity?
+>
+> **Solution:** Compare FLOPs per byte moved with the device ratio of peak
+> FLOPs per second to available bytes per second.
+
+> [!EXERCISE apply] A kernel performs 12 billion FLOPs and moves 120
+> million bytes. Peak compute is 240 trillion FLOPs per second and
+> bandwidth is 2 trillion bytes per second. Identify the limiting term and
+> ideal time.
+>
+> **Solution:** Intensity = FLOPs ÷ bytes = 12 billion ÷ 120 million = 100
+> FLOPs/byte. Ridge = peak FLOPs ÷ bandwidth = 240 trillion ÷ 2 trillion =
+> 120 FLOPs/byte. Time bound = max(FLOPs/peak FLOPs, bytes/bandwidth) =
+> max(50 μs, 60 μs) = 60 μs. The memory term limits it.
+
+> [!EXERCISE stretch] Uncached weights dominate single-token generation,
+> and latency depends on reading them each step. Which optimization would
+> you measure?
+>
+> **Solution:** Benchmark a weight format that reduces bytes read and
+> verify quality. Raising arithmetic throughput alone leaves the weight
+> traffic in place.

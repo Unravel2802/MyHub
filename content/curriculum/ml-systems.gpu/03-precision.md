@@ -9,6 +9,17 @@ bytes to move and faster arithmetic. It is also the one most likely to produce
 silently wrong results, because a model trained in the wrong format does not
 crash — it diverges, or converges to something worse.
 
+> [!WHY] A low-precision training run develops unstable reductions even
+> though matrix multiplies are fast. Choosing precision per operation can
+> keep the compute benefit while preserving the numerical behavior
+> required for training.
+
+> [!GOALS]
+>
+> - Explain the master weight copy
+> - Choose an inference precision policy
+> - Diagnose numerical instability
+
 ## The formats
 
 ```text
@@ -78,6 +89,14 @@ The fp32 master copy exists for a specific reason:
 This is **stochastic rounding's problem** and the reason "just train in bf16
 everywhere" fails: small updates to large weights vanish. The master copy costs 4
 bytes per parameter and is not optional for standard optimisers.
+
+```mermaid
+flowchart TB
+  A[Use lower precision for compute]
+  B[Accumulate in higher precision]
+  C[Update master weights]
+  A --> B --> C
+```
 
 ## Loss scaling, for fp16
 
@@ -239,6 +258,16 @@ gives a speedup of approximately zero.
 That last line matters. Published quantisation results are on standard benchmarks;
 your task's sensitivity may be quite different, and the check is cheap.
 
+> [!CHECK] Why does bf16 tolerate a wider magnitude range than fp16?
+>
+> Its exponent range is comparable to fp32, which reduces the risk of
+> overflow and underflow from narrow exponents.
+
+> [!CHECK] Why validate quantization on the deployment evaluation set?
+>
+> Grouping, outliers and task distribution can change the accuracy cost
+> relative to a published benchmark.
+
 ## What to take away
 
 1. bf16 shares fp32's exponent range, so it does not overflow or underflow where
@@ -258,3 +287,27 @@ your task's sensitivity may be quite different, and the check is cheap.
    published benchmark numbers.
 
 Next: reading a profile, and finding out what is actually slow.
+
+## Exercises
+
+> [!EXERCISE recall] Why can small updates need higher precision even when
+> low-precision matmul works?
+>
+> **Solution:** An update can be smaller than the representable spacing
+> around a lower-precision weight. Maintaining a higher-precision copy
+> preserves those updates.
+
+> [!EXERCISE apply] Interactive token generation is limited by weight
+> bandwidth. A separate throughput batch is limited by arithmetic. Which
+> quantization candidates fit the two bottlenecks?
+>
+> **Solution:** Try weight-only int4 for interactive generation and
+> weight-plus-activation int8 for the compute-bound batch. Measure speed
+> and quality at each actual operating point.
+
+> [!EXERCISE stretch] A custom lower-precision softmax and reduction are
+> introduced, and scores become unstable. What would you test first?
+>
+> **Solution:** Restore higher precision for sensitive reductions and
+> softmax and compare the results under the same inputs. Moving every
+> operator to a narrower format preserves the suspected numerical problem.

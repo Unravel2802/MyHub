@@ -9,6 +9,16 @@ training and inference, with history for point-in-time joins and low latency for
 serving. It exists to make the two previous chapters' failures impossible by
 construction rather than by discipline.
 
+> [!WHY] Ranking for a single request now needs feature values for a whole
+> slate of candidates. Serial remote lookups eat the latency budget and
+> stale cached values can move the scores without any serving error.
+
+> [!GOALS]
+>
+> - Explain the online store
+> - Choose a ranking lookup shape
+> - Choose when to build a store
+
 ## The architecture
 
 ```text
@@ -33,6 +43,15 @@ construction rather than by discipline.
 
 One definition, two materialisations shaped for two access patterns. That is the
 whole idea, and everything else is consequence.
+
+```mermaid
+flowchart TB
+  A[Shared transformation]
+  B[Offline history]
+  C[Online latest values]
+  A --> B
+  A --> C
+```
 
 ## What it solves
 
@@ -214,6 +233,15 @@ The consistency check is the one that catches real bugs: sample a few hundred
 entities periodically, compute the feature both ways, and compare. It is the
 log-and-replay technique from the skew chapter, run continuously.
 
+> [!CHECK] What belongs in the offline store?
+>
+> Timestamped history that supports as-of joins.
+
+> [!CHECK] When can materialization itself introduce skew?
+>
+> When the serving refresh cadence differs from the freshness assumed by
+> training.
+
 ## What to take away
 
 1. A feature store computes a feature once and serves both training and inference,
@@ -231,3 +259,27 @@ log-and-replay technique from the skew chapter, run continuously.
    value.
 
 Next: versioning and validating the data itself.
+
+## Exercises
+
+> [!EXERCISE recall] Why does serving keep the latest materialized values
+> available for keys?
+>
+> **Solution:** Inference needs a fast lookup for current values, while
+> training reconstructs past decisions from history.
+
+> [!EXERCISE apply] An online ranker retrieves candidate and user
+> features, then scores all the candidates together. How should the
+> serving path fetch the data?
+>
+> **Solution:** Batch the keys across candidates and fetch the needed user
+> features as part of the serving lookup. Independent network round trips
+> for each candidate add serial overhead.
+
+> [!EXERCISE stretch] One model has one owner and can share a versioned
+> table and transformation library. What design would you choose now?
+>
+> **Solution:** Use the library and versioned table with parity and
+> timestamp checks. Revisit a store when duplicated features or multiple
+> models justify its operation. A full platform imposes synchronization
+> and freshness work before reuse exists.

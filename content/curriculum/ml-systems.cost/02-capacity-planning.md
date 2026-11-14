@@ -9,6 +9,17 @@ changes everything: accelerators are frequently **unavailable at any price**.
 Scaling out is not a credit-card transaction, so the planning horizon is longer
 and the consequences of getting it wrong are larger.
 
+> [!WHY] A traffic spike coincides with a replica failure and the
+> autoscaler requests machines outside the regional quota. Capacity
+> planning has to cover the failure during the ramp, when the requested
+> hardware is still unavailable.
+
+> [!GOALS]
+>
+> - Explain scarcity risk
+> - Plan a degraded serving window
+> - Choose an efficiency response
+
 ## Scarcity is the constraint
 
 ```text
@@ -93,6 +104,15 @@ nothing more.
 Running at 90% to save money puts you on the steep part of the latency curve and
 one traffic bump from an incident — the arithmetic from the distributed-systems
 track applies unchanged, and matters more here because scale-up is slow.
+
+```mermaid
+flowchart TB
+  A[Forecast peak]
+  B[Add failure headroom]
+  C[Check regional quota]
+  D[Confirm fallback]
+  A --> B --> C --> D
+```
 
 ## Sizing training capacity
 
@@ -197,6 +217,17 @@ as a capacity strategy rather than a performance hobby.
     □  capacity forecast for the next two quarters
 ```
 
+> [!CHECK] Why allocate training and serving different utilization
+> targets?
+>
+> Training can queue. Serving needs idle capacity to respond to bursts
+> within a latency target.
+
+> [!CHECK] Which demand belongs in a reservation?
+>
+> The measured durable floor. Variable demand fits flexible purchasing
+> better.
+
 ## What to take away
 
 1. Accelerator scarcity means capacity may be unavailable at any price — plan in
@@ -213,3 +244,28 @@ as a capacity strategy rather than a performance hobby.
 
 That completes cost and capacity. Next in the track: **labelling and
 human-in-the-loop** — where training data comes from.
+
+## Exercises
+
+> [!EXERCISE recall] Why can the budget be approved and a training run
+> still miss its start date?
+>
+> **Solution:** Accelerator supply and quota have lead times. Budget does
+> not guarantee that a suitable instance is available in the right region.
+
+> [!EXERCISE apply] Traffic peaks during a deployment and additional
+> replicas take time to start. One region can lose a replica before
+> replacements arrive. Which forecast should size the initial fleet?
+>
+> **Solution:** Start with peak and variance, then include surviving
+> capacity after failure and the cold-start ramp. Check the quota and
+> validate that utilization under those conditions leaves headroom. An
+> average-day forecast omits the interval that drives delayed responses.
+
+> [!EXERCISE stretch] The next hardware allocation is a quarter away and
+> inference is bandwidth-bound. What would you pursue within this quarter?
+>
+> **Solution:** Benchmark batching and a smaller fallback on the current
+> fleet and confirm quality and latency at peak. These improve the
+> capacity available immediately. Reserving unavailable hardware leaves
+> the current quota and wait time unchanged.

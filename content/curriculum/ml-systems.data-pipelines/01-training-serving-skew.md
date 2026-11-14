@@ -10,6 +10,17 @@ not a bad metric — it is that **the features the model sees in production are 
 the features it was trained on**. This is training/serving skew, and it is the
 defining production failure of ML systems.
 
+> [!WHY] A retrained classifier looks healthy in evaluation yet starts
+> sending almost identical scores after deployment. Replaying a production
+> row can uncover a feature transform bug before the team spends a week
+> changing the model.
+
+> [!GOALS]
+>
+> - Identify causes of skew
+> - Diagnose fitted state
+> - Choose a parity strategy
+
 ## The shape of it
 
 ```text
@@ -144,6 +155,15 @@ The cost is that you can only train on features you were already serving, so
 adding a feature means logging it for weeks before you can use it. Many mature
 systems accept that and do it anyway, because it removes the entire failure class.
 
+```mermaid
+flowchart TB
+  A[Capture served features]
+  B[Rebuild the same request]
+  C[Compare per row]
+  D[Trace the mismatch]
+  A --> B --> C --> D
+```
+
 ## Prevention
 
 Ordered by how completely each removes the problem:
@@ -206,6 +226,22 @@ Feature order is the mundane one that still causes incidents: a model expecting
 `[age, income, tenure]` served `[income, age, tenure]` produces confident
 nonsense with no error.
 
+> [!PITFALL] Version the scaler and feature order with the weights. A
+> mismatch can preserve shape while corrupting every score.
+
+> [!INTERVIEW] Describe an end-to-end feature parity test, including
+> timestamps and fitted state.
+
+> [!CHECK] What can log-and-replay find when feature histograms agree?
+>
+> It can find a wrong value on an individual row while aggregate
+> distributions stay similar.
+
+> [!CHECK] Why is comparing shapes alone insufficient?
+>
+> Feature order or fitted parameters can change without altering the
+> shape.
+
 ## What to take away
 
 1. Training/serving skew is the defining production failure of ML systems: the
@@ -222,3 +258,29 @@ nonsense with no error.
    along with the feature order.
 
 Next: time skew specifically — the leakage that makes an offline metric a lie.
+
+## Exercises
+
+> [!EXERCISE recall] How can two implementations of the same feature
+> diverge across training and serving?
+>
+> **Solution:** Separate implementations can disagree on windows, sources
+> and transforms. Feedback can also change the observations that enter
+> each path.
+
+> [!EXERCISE apply] Serving standardizes each request with a newly fitted
+> scaler. The training normalization uses one scaler fitted on historical
+> rows. Which artifact should be carried into production?
+>
+> **Solution:** Carry the training-fitted transform state and its feature
+> ordering with the weights. Apply that same transform to the request.
+> Fitting a single row collapses its centered values and creates inputs
+> the model did not learn on.
+
+> [!EXERCISE stretch] Two independent transforms must remain for now. How
+> would you detect drift between their implementations before release?
+>
+> **Solution:** Run a contract test on fixed inputs that exercise window
+> boundaries and compare the exact ordered feature rows. Compare real
+> logged requests through replay after rollout. A dashboard of request
+> counts alone cannot expose incorrect semantics.

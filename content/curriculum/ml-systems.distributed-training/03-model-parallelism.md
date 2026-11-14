@@ -9,6 +9,16 @@ single layer is too large for one device, or when you need to reduce per-device
 memory further, the model itself must be split — either *within* a layer (tensor
 parallelism) or *across* layers (pipeline parallelism).
 
+> [!WHY] A pipeline is split evenly by layer count and one device finishes
+> long after its neighbors. Paying for all the idle devices makes measured
+> stage balance a deployment requirement.
+
+> [!GOALS]
+>
+> - Explain pipeline stage balance
+> - Calculate pipeline idle fraction
+> - Map a configuration to the network
+
 ## Tensor parallelism
 
 Split individual matrices across devices.
@@ -130,6 +140,15 @@ backward passes so at most P microbatches' activations are live, rather than M.
   1F1B (interleaved)
     → at most P live. much less memory, same bubble.
     → what modern implementations use
+```
+
+```mermaid
+flowchart TB
+  A[Split into stages]
+  B[Schedule microbatches]
+  C[Measure stage time]
+  D[Rebalance costs]
+  A --> B --> C --> D
 ```
 
 ## Comparison
@@ -258,6 +277,15 @@ rewriting, no stage balancing — and for many models it is sufficient. Tensor a
 pipeline parallelism are what you reach for when a layer genuinely does not fit or
 when FSDP's communication pattern does not suit the hardware.
 
+> [!CHECK] Why keep tensor parallel groups within a node?
+>
+> Its frequent within-layer collectives benefit from the fastest links.
+
+> [!CHECK] What makes expert imbalance expensive?
+>
+> A heavily selected expert becomes the bottleneck while devices assigned
+> to less popular experts wait.
+
 ## What to take away
 
 1. Tensor parallelism splits within a layer and requires very fast interconnect —
@@ -275,3 +303,29 @@ when FSDP's communication pattern does not suit the hardware.
 
 Next: the communication layer itself, and debugging a job that is slower than it
 should be.
+
+## Exercises
+
+> [!EXERCISE recall] Why can equally sized groups of layers have different
+> iteration times?
+>
+> **Solution:** Layer costs can differ, and the slowest stage sets the
+> pace. Measure stage work during a representative schedule.
+
+> [!EXERCISE apply] A balanced pipeline has 4 stages. Compare the bubble
+> for 12 and 16 microbatches using the chapter formula. Which satisfies a
+> 16% maximum bubble?
+>
+> **Solution:** Bubble = (P−1)/(M+P−1). For 12 microbatches, numerator =
+> 4−1 = 3 and denominator = 12+4−1 = 15, giving 3/15 = 20%. For 16,
+> denominator = 16+4−1 = 19, giving 3/19 ≈ 15.8% rounded to one decimal.
+> Only 16 meets the limit.
+
+> [!EXERCISE stretch] A single layer needs splitting and there are two
+> nodes connected by a slower fabric. Where should the frequent
+> within-layer traffic go?
+>
+> **Solution:** Place the tensor-parallel group on the fast local links
+> and put a less chatty dimension across nodes. Stretching tensor
+> parallelism across the slow boundary exposes frequent collectives on the
+> expensive link.

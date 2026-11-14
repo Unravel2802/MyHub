@@ -9,6 +9,16 @@ throughput in exchange for giving up almost everything a CPU spends transistors
 on. Understanding what was given up explains both why deep learning runs well on
 one and why so much other code does not.
 
+> [!WHY] Moving a small workload onto an accelerator increases latency
+> despite a much higher peak compute rating. Launch overhead and a short
+> serial workload can leave the accelerator little useful parallel work.
+
+> [!GOALS]
+>
+> - Explain warp divergence
+> - Choose a data layout
+> - Choose a latency target
+
 ## The bargain
 
 ```text
@@ -68,6 +78,14 @@ pointer, so **divergence is expensive**:
 
 This is why data-dependent branching is discouraged in GPU code, and why
 operations are expressed as arithmetic over masks rather than as conditionals.
+
+```mermaid
+flowchart TB
+  A[Group threads in warps]
+  B[Execute paths in lockstep]
+  C[Store results]
+  A --> B --> C
+```
 
 ## Occupancy and latency hiding
 
@@ -223,6 +241,22 @@ The interconnect is the reason, not the FLOPs: multi-GPU training is
 communication-bound, and cards without NVLink communicate over PCIe at a small
 fraction of the bandwidth.
 
+> [!PITFALL] Owning a fast accelerator does not guarantee that a kernel
+> keeps it busy.
+
+> [!INTERVIEW] Identify the work the hardware can execute together, and
+> how a warp reads memory.
+
+> [!CHECK] Why schedule many resident warps?
+>
+> Ready warps can execute while others wait on memory, hiding some
+> latency.
+
+> [!CHECK] Why are coalesced reads faster than scattered reads?
+>
+> Neighboring lanes can use shared memory transactions and consume more of
+> the bytes fetched.
+
 ## What to take away
 
 1. A GPU trades single-stream speed for arithmetic throughput; it is fast only
@@ -239,3 +273,26 @@ fraction of the bandwidth.
 
 Next: arithmetic intensity — the number that predicts whether a kernel is limited
 by maths or by memory.
+
+## Exercises
+
+> [!EXERCISE recall] What does branching inside one warp do to execution?
+>
+> **Solution:** Lanes share instruction progress. If they follow different
+> branch paths, the warp spends cycles executing the paths for the
+> relevant sets of lanes.
+
+> [!EXERCISE apply] Consecutive lanes read the same field from records
+> placed far apart in memory. A proposed layout puts those field values
+> next to each other. Which is more promising?
+>
+> **Solution:** The contiguous-field layout allows neighboring lanes to
+> coalesce their accesses, improving useful memory bandwidth. Check the
+> resulting throughput on the full kernel.
+
+> [!EXERCISE stretch] A small sequential operation dominates latency and
+> leaves much of the accelerator idle. What would you test?
+>
+> **Solution:** Compare a CPU path or a reformulation that batches
+> independent work. Increasing theoretical accelerator FLOPs does little
+> when the operation cannot offer enough simultaneous work.

@@ -9,6 +9,17 @@ thing. Profiling GPU code is different from profiling CPU code in one important
 way — the asynchrony means naive timing lies — and knowing the tools' order of
 use saves days.
 
+> [!WHY] A microbenchmark says the GPU call takes almost no time while
+> users see long responses. Measuring only CPU dispatch can send an
+> optimization effort after work that was still queued when the timer
+> stopped.
+
+> [!GOALS]
+>
+> - Explain timing of queued work
+> - Interpret a profile
+> - Choose a deeper profiling step
+
 ## Why naive timing is wrong
 
 ```text
@@ -230,6 +241,24 @@ step 4 shows you are near the hardware limit and the algorithm is the constraint
 Roughly in order of how often each turns out to be the answer — and the first
 three cover a large fraction of real cases.
 
+```mermaid
+flowchart TB
+  A[Synchronize timing]
+  B[Read timeline]
+  C[Identify bottleneck]
+  D[Measure targeted change]
+  A --> B --> C --> D
+```
+
+> [!CHECK] Why warm up before measuring?
+>
+> One-time work such as initialization can distort steady-state timing.
+
+> [!CHECK] What can a steadily increasing allocated-memory trace indicate?
+>
+> A retained graph or other growing live allocation, distinct from
+> fragmented reserved memory.
+
 ## What to take away
 
 1. GPU work is asynchronous, so naive timing measures queueing; synchronise, warm
@@ -248,3 +277,27 @@ three cover a large fraction of real cases.
 That completes GPUs and accelerators. Next in the track: **distributed
 training** — using many of them together, where communication becomes the
 constraint.
+
+## Exercises
+
+> [!EXERCISE recall] Why does wall time around an asynchronous GPU launch
+> mismeasure the kernel?
+>
+> **Solution:** The CPU can return before the device finishes.
+> Synchronizing makes elapsed time include the device work.
+
+> [!EXERCISE apply] A trace has large gaps before compute kernels, and the
+> kernels themselves use bandwidth efficiently. Where would you
+> investigate?
+>
+> **Solution:** Inspect host-side scheduling and data readiness. The gaps
+> indicate time spent waiting for work, so optimizing the active memory
+> kernel may barely affect total iteration time.
+
+> [!EXERCISE stretch] The timeline has no host gaps and one kernel
+> dominates with low achieved bandwidth and compute. What measurement
+> would guide the fix?
+>
+> **Solution:** Inspect that kernel's access pattern and parallelism with
+> kernel-level profiling. A higher-level utilization plot cannot
+> distinguish scattered accesses from inadequate parallel work.

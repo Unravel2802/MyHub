@@ -9,6 +9,17 @@ is expensive enough that idle capacity is a visible cost, and starting a new
 instance can take minutes. Both push against the autoscaling instincts that work
 for stateless web services.
 
+> [!WHY] Queue age climbs during a burst while new replicas are still
+> loading weights. The scaler recognizes that capacity is needed, but
+> those replicas cannot shorten the current queue until their cold start
+> ends.
+
+> [!GOALS]
+>
+> - Explain the warm pool
+> - Choose a serving size
+> - Choose an early release warning
+
 ## The cold-start problem
 
 ```text
@@ -42,6 +53,15 @@ scale quickly:
 
 The weight-download step is the one most easily fixed: caching model artifacts on
 the node, or in a sidecar volume, removes minutes from every start.
+
+```mermaid
+flowchart TB
+  A[Keep warm headroom]
+  B[Detect queue growth]
+  C[Start extra replicas]
+  D[Admit traffic after load]
+  A --> B --> C --> D
+```
 
 ## Scaling signals
 
@@ -203,6 +223,16 @@ and large win.
   □  cost per 1,000 predictions known
 ```
 
+> [!CHECK] Which scaling signal reflects contention directly?
+>
+> Queue wait or in-flight concurrency reflects pending work more directly
+> than aggregate accelerator use.
+
+> [!CHECK] Why track achieved batch sizes?
+>
+> The configured maximum may hide small actual batches and poor
+> weight-read amortization.
+
 ## What to take away
 
 1. GPU cold starts are minutes, so autoscaling cannot substitute for headroom;
@@ -219,3 +249,28 @@ and large win.
 
 That completes model serving. Next in the track: **inference optimization** —
 making the model itself cheaper, which is where the largest gains are.
+
+## Exercises
+
+> [!EXERCISE recall] How does spare loaded capacity help during a burst?
+>
+> **Solution:** It can handle new requests before cold replicas have
+> finished loading weights and starting.
+
+> [!EXERCISE apply] Small models barely occupy a large dedicated
+> accelerator, and they can share hardware within capacity and isolation
+> limits. What would you benchmark?
+>
+> **Solution:** Compare smaller hardware, partitions or multi-model
+> serving on representative traffic. Measure request cost and tail
+> behavior. Choosing the largest accelerator by peak FLOPs can waste most
+> of each paid instance.
+
+> [!EXERCISE stretch] A canary's error rate and latency look normal, while
+> the labels for outcomes arrive later. What should be monitored
+> immediately?
+>
+> **Solution:** Compare prediction distributions and achieved batch
+> behavior across canary and production, then confirm eventual quality
+> using mature labels. Waiting for HTTP errors misses changes in valid but
+> wrong predictions.

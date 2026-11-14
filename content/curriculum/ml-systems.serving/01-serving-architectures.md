@@ -9,6 +9,16 @@ milliseconds, under variable load, with availability requirements. The
 constraints invert, and the first decision — where the prediction happens relative
 to the request — determines everything else.
 
+> [!WHY] A request path spends most of its tail latency fetching features,
+> but release planning focuses only on a faster model. Shortening a small
+> stage can leave the request outside its user-facing budget.
+
+> [!GOALS]
+>
+> - Explain a hybrid serving design
+> - Choose a serving pattern
+> - Budget a tail-latency fix
+
 ## The four patterns
 
 ```text
@@ -135,6 +145,15 @@ common misallocation of effort. Profile the path before tuning the model.
 and flush asynchronously; a synchronous write to a log service adds its latency
 and its availability to every prediction.
 
+```mermaid
+flowchart TB
+  A[Accept request]
+  B[Fetch features]
+  C[Score model]
+  D[Apply fallback policy]
+  A --> B --> C --> D
+```
+
 ## The latency budget
 
 ```text
@@ -240,6 +259,22 @@ diverge numerically from the trained one. Validate that the exported model
 produces the same outputs on a fixture before trusting it — export bugs are quiet
 and produce plausible wrong answers.
 
+> [!PITFALL] Separate application health from model availability and plan
+> a degraded response.
+
+> [!INTERVIEW] Choose batch, embedded, remote or hybrid serving from the
+> freshness and latency needs.
+
+> [!CHECK] Why consider batch scoring first?
+>
+> Offline scoring avoids much of the synchronous availability and latency
+> burden when predictions are reusable.
+
+> [!CHECK] Why shadow a new serving path?
+>
+> It compares behavior on real-shaped traffic before serving its
+> predictions to users.
+
 ## What to take away
 
 1. Ask whether batch scoring will do before building online serving — it removes
@@ -255,3 +290,27 @@ and produce plausible wrong answers.
    must never be in the application's readiness probe.
 
 Next: batching and the throughput/latency trade that defines model serving.
+
+## Exercises
+
+> [!EXERCISE recall] How can offline work reduce online latency for
+> ranking?
+>
+> **Solution:** Precompute expensive reusable data and combine it with the
+> live request during the smaller online scoring phase.
+
+> [!EXERCISE apply] A small CPU model uses fast local request features.
+> Remote serving overhead would exceed the latency budget and the model is
+> released with the app. Which pattern fits?
+>
+> **Solution:** Embed the model so scoring shares the application process
+> and avoids an extra network hop. Preserve a versioned model and
+> fallback. A separate endpoint adds the problematic overhead without a
+> hardware requirement.
+
+> [!EXERCISE stretch] Profiling shows feature retrieval dominates p99 and
+> inference is a small component. Which work would you prioritize?
+>
+> **Solution:** Reduce or precompute expensive retrieval and re-measure
+> the request path at the tail. Quantizing the small inference stage
+> leaves the measured bottleneck largely in place.

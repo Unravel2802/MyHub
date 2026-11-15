@@ -100,9 +100,9 @@ flowchart TB
 
 ```text
   → break up long synchronous work (chunk it, defer non-critical parts to
-    `requestIdleCallback` or a microtask boundary) so the main thread gets
-    control back between chunks, letting the browser paint an intermediate
-    frame instead of one long unresponsive block.
+    `requestIdleCallback` or a later task) so the main thread gets control
+    back between chunks, giving the browser a chance to paint instead of
+    one long unresponsive block.
 ```
 
 ## Bundle size and code splitting

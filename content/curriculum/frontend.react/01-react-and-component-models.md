@@ -92,10 +92,9 @@ flowchart TB
 ```
 
 ```text
-  useState    persists a value ACROSS re-renders — this is the
-              closures chapter's mechanism directly: React
-              keeps the state in a place tied to this component
-              INSTANCE, and each render's function call closes
+  useState    persists a value ACROSS re-renders — React keeps
+              the state in a place tied to this component
+              INSTANCE, and each render's callbacks close
               over the value as of that render
 
   useEffect   runs AFTER the DOM has been updated to match this
@@ -215,10 +214,9 @@ flowchart TB
 2. A key is how React matches elements across a re-render — using array
    index as key for a reorderable list causes React to misattribute state
    (like a form input's value) to the wrong row.
-3. `useState` persists a value across renders via the same closure mechanism
-   from the JavaScript chapter; a value read in `useEffect` but missing from
-   its dependency array is that chapter's stale-closure bug in React's own
-   idiom.
+3. `useState` persists a value across renders in React's storage for the
+   component. A value read in `useEffect` but missing from its dependency
+   array can cause the stale-closure bug from the JavaScript chapter.
 4. Hooks are tracked by call order across renders, not by name — calling one
    conditionally desyncs which stored value belongs to which call, which is
    why the rule exists.

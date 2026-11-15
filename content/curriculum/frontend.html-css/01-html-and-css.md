@@ -87,15 +87,15 @@ flowchart TB
 ## The cascade: why a rule doesn't apply
 
 ```text
-  SPECIFICITY, roughly, from lowest to highest:
-    element selector (p)           1 point
-    class/attribute (.button)       10 points
-    id (#header)                     100 points
-    inline style (style="...")        wins over all of the above
-    !important                         wins over EVERYTHING
+  SPECIFICITY compares three counts: IDs, classes, then types.
+    element selector (p)           (0, 0, 1)
+    class/attribute (.button)      (0, 1, 0)
+    id (#header)                   (1, 0, 0)
 
-  a MORE SPECIFIC selector wins regardless of source order; an
-  EQUALLY specific one, the LATER rule in the stylesheet wins.
+  origin, !important, and cascade layer take precedence over
+  specificity. inline styles beat normal author stylesheet rules.
+  for otherwise tied rules, the MORE SPECIFIC selector wins;
+  if specificity and scope proximity also tie, the LATER rule wins.
 ```
 
 ```text

@@ -70,8 +70,8 @@ works at all on a surface with no guarantees.
 ## Convexity, and living without it
 
 ```text
-  CONVEX          one minimum, and it is global
-                  → gradient descent finds it
+  CONVEX          any local minimum is global
+                  → gradient descent can find it with suitable steps
                   → linear/logistic regression, SVMs
 
   NON-CONVEX      many local minima and saddle points
@@ -83,9 +83,8 @@ works at all on a surface with no guarantees.
   so why does it work?
 
   □  in HIGH DIMENSIONS, most critical points are SADDLES,
-     not local minima — a point is a local minimum only if
-     the surface curves up in EVERY one of a million
-     directions, which is vanishingly unlikely
+     not local minima — a minimum cannot curve down in any
+     direction, though it can be flat
   □  most local minima that exist are nearly as good as the
      global one
   □  stochastic gradient noise helps escape saddles
@@ -100,7 +99,7 @@ the difficulty is saddle points and plateaus, and noise handles them.
 
 ```text
   the HESSIAN — the matrix of second derivatives — describes
-  CURVATURE.
+  CURVATURE. At a critical point:
 
   □  positive definite → a local minimum
   □  mixed signs       → a saddle

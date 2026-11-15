@@ -2,7 +2,11 @@
 
 ## Batch B
 
-Locations refer to the base revision (`c37abed`).
+Original audit locations refer to the base revision (`c37abed`).
+
+### Review follow-up
+
+- foundations.data-structures/04-linked-structures.md:218 — Rewrapped takeaway 1 to the chapter’s prose width.
 
 ### backend
 

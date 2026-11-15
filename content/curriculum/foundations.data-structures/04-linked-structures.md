@@ -215,8 +215,8 @@ a weak one quotes the complexity table and stops there.
 
 ## What to take away
 
-1. A linked list buys O(1) splicing if you already have the needed pointers, and nothing
-   else worth having.
+1. A linked list buys O(1) splicing if you already have the needed pointers,
+   and nothing else worth having.
 2. Traversal can be 10–50× slower than an array of the same length because of
    cache misses. Big-O is silent about the memory hierarchy.
 3. Per-node allocation and pointer overhead make them memory-hungry, especially

@@ -107,12 +107,11 @@ as a genuine attack surface rather than an implicitly trusted given.
   ONLY during the build step, leaving the source code in git
   looking completely clean and legitimate to any reviewer.
 
-  → a reproducible build lets ANYONE rebuild from the SAME
-    source and verify they get BIT-IDENTICAL output to what was
-    actually published — a mismatch reveals tampering happened
-    somewhere in the BUILD PROCESS itself, even when the source
-    code under review never contained anything suspicious at
-    all.
+  → a reproducible build lets ANYONE use the same source,
+    environment, and instructions to check for BIT-IDENTICAL
+    output. a mismatch means the published artifact differs
+    from the rebuild and warrants investigation, even when the
+    source code under review looks clean.
 ```
 
 ```mermaid
@@ -182,7 +181,7 @@ flowchart TB
 5. A reproducible build defends specifically against a compromised build
    server injecting malicious code during the build step while the source
    in git stays clean — a mismatch between rebuild and published artifact
-   reveals tampering the source review would never catch.
+   warrants investigating for tampering that source review could miss.
 
 ## Exercises
 

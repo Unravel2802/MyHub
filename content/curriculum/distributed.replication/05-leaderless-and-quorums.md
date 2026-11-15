@@ -127,9 +127,9 @@ by setting, and "before" costs latency.
 
 ```mermaid
 flowchart TB
-  W[Write quorum] -->|W=3 acknowledgements| A[Replicas 1 and 2]
+  W[Write quorum] -->|2 of 3 acknowledgements| A[Replicas 1 and 2]
   W -->|write v2| I[Replica 3]
-  R[Read quorum] -->|R=3 responses| B[Replicas 4 and 5]
+  R[Read quorum] -->|2 of 3 responses| B[Replicas 4 and 5]
   R -->|read v2| I
   I -->|shared replica| O[Read and write sets overlap]
 ```

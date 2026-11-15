@@ -98,8 +98,8 @@ One component fails, and its load moves onto the others, which fail in turn.
 Two properties make this specific:
 
 **Capacity headroom must survive the failure.** Running three servers at 60% is
-running at 90% post-failure. If your target utilisation is 60%, your *real*
-utilisation with N+1 redundancy is 60% × N/(N−1).
+running at 90% post-failure. If pre-failure utilisation is 60% with N+1
+servers, post-failure utilisation is 60% × (N+1)/N.
 
 **Failure moves load; it does not remove it.** This is the arithmetic people skip.
 The users whose requests went to A do not go away.
@@ -115,7 +115,7 @@ Redundancy arithmetic assumes independence. Most real failures are correlated,
 which means the arithmetic overstates your safety, often by orders of magnitude.
 
 ```text
-  claimed:  3 replicas at 99.9% → 99.9999997% availability
+  claimed:  3 replicas at 99.9% → 99.9999999% availability
 
   reality — what they SHARE:
     □  the same rack, PDU, top-of-rack switch

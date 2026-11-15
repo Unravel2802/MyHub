@@ -26,14 +26,13 @@ in a multi-dimensional cluster, is always.
   user B's tasks:  1 CPU, 20 GB   ← memory-heavy
 
   "fair = equal CPU":  50 tasks each
-    A uses  50 CPU,  200 GB
-    B uses  50 CPU, 1000 GB   ← RAM exhausted; A cannot grow
-                                even though CPU is free
+    A needs 50 CPU,  200 GB
+    B needs 50 CPU, 1000 GB   ← combined RAM exceeds capacity
 ```
 
-Equal CPU produced an allocation where one user hit a wall and the other could
-not use the remaining CPU. The question "what is a fair share?" has no answer
-until you say fair _in what_.
+Equal CPU proposed an allocation that fits the CPU budget but exceeds the RAM
+budget. The question "what is a fair share?" has no answer until you say fair
+_in what_.
 
 ## Dominant Resource Fairness
 

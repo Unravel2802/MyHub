@@ -163,7 +163,7 @@ Worth internalising, because it is counter-intuitive in both directions.
 **Services in series** (all must work): multiply.
 
 ```text
-  0.999 ^ 5 = 0.995     → 99.5%, ~3.6 hours down per month
+  0.999 ^ 5 ≈ 0.995     → 99.5%, ~3.6 hours down per month
 ```
 
 **Replicas in parallel** (any one suffices): multiply the *failure* rates.

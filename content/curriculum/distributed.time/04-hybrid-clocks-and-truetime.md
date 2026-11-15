@@ -54,7 +54,7 @@ def hlc_receive(state, msg, wall_now):
 Traced:
 
 ```text
-  node A, wall = 100      node B, wall = 100 (slightly behind, says 99)
+  node A, wall = 100      node B, wall = 99 (slightly behind)
 
   A: event      → (100, 0)
   A: event      → (100, 1)      same millisecond, counter bumps

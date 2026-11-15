@@ -80,7 +80,7 @@ independent of whether processing finished:
 ```text
   t=0.0  poll returns messages 100–200
   t=0.5  processing is at message 140
-  t=5.0  AUTO-COMMIT fires, records offset 200   ← nothing knows
+  t=5.0  AUTO-COMMIT fires, records offset 201   ← nothing knows
   t=5.1  crash
 
   → messages 141–200 were never processed and never will be.

@@ -142,13 +142,14 @@ than processing a queue in order while falling further behind.
                       × replication_factor
                       × 1.3            ← indexes and headroom
 
-  example: 5,000 msg/s × 2 KB × 7 days × 3 × 1.3
+  example: 5,000 msg/s × 2 KiB × 7 days × 3 × 1.3
          = 5,000 × 2,048 × 604,800 × 3 × 1.3
          ≈ 24 TB
 ```
 
 That number surprises people, and it is why retention is a cost decision rather
-than a default. Halving retention to three days halves the bill.
+than a default. Halving retention to three and a half days halves the storage
+bill.
 
 **Partition count** from the throughput you need per consumer:
 

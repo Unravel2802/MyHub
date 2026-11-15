@@ -208,9 +208,9 @@ rises, queueing dominates, and it does so **non-linearly**:
                  utilisation
 ```
 
-For an M/M/1 queue, waiting time scales as `1/(1 - ρ)` where ρ is utilisation.
-At 50% utilisation you wait 1× the service time; at 90% you wait 9×; at 99% you
-wait 99×. Concretely:
+For an M/M/1 queue, total latency scales as `1/(1 - ρ)` where ρ is utilisation.
+Waiting alone scales as `ρ/(1 - ρ)`. At 50% utilisation you wait 1× the service
+time; at 90% you wait 9×; at 99% you wait 99×. Total latency is:
 
 | Utilisation | Latency multiplier |
 | --- | --- |
@@ -282,7 +282,7 @@ every time.
    cheapest large win available.
 4. Bandwidth and latency are separate resources; the bandwidth-delay product
    determines whether you can use the bandwidth you have.
-5. Queueing delay scales as 1/(1−ρ). At 90% utilisation you wait ten times the
+5. Total latency scales as 1/(1−ρ). At 90% utilisation it is ten times the
    service time, which is why 60–70% is the target for latency-sensitive
    services.
 6. Measure the breakdown before optimising; the business logic is rarely the row

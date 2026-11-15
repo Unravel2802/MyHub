@@ -52,21 +52,22 @@ outliers while remaining far below them — the worst of both.
 The instinct is that p99 affects 1% of requests, so it is a rounding error.
 That is wrong twice over.
 
-**First: a page is many requests.** If loading a screen makes 20 backend calls,
-the chance that *at least one* hits the p99 is:
+**First: a page is many requests.** If a screen makes 20 independent
+backend calls with the same p99, the chance that *at least one* hits it is:
 
 ```text
-  1 - 0.99^20 = 18%
+  1 - 0.99^20 ≈ 18%
 ```
 
 Nearly one in five page loads contains a p99 request. And the page is only as
 fast as its slowest call, so **the p99 of your services is roughly the p82 of
 your pages**.
 
-**Second: your heaviest users hit it most.** A user who makes 100 requests in a
-session has a `1 - 0.99^100 = 63%` chance of hitting the p99 at least once.
-The people most engaged with your product are the ones most likely to see its
-worst behaviour — which is exactly backwards from what you would choose.
+**Second: your heaviest users hit it most.** A user who makes 100 independent
+requests in a session has a `1 - 0.99^100 ≈ 63%` chance of hitting the p99 at
+least once. The people most engaged with your product are the ones most likely
+to see its worst behaviour — which is exactly backwards from what you would
+choose.
 
 ```text
   requests per session   chance of hitting p99 at least once
@@ -91,9 +92,9 @@ samples lands far into the tail.
 
 ```text
   1 backend at p99=1s:   parent p99 ≈ 1s
-  100 backends, each with a 1% chance of exceeding 1s:
+  100 independent backends, each with a 1% chance of exceeding 1s:
 
-    P(at least one is slow) = 1 - 0.99^100 = 63%
+    P(at least one is slow) = 1 - 0.99^100 ≈ 63%
 
   → the parent exceeds 1s on 63% of requests
   → the backend's ONE-PERCENT case is the parent's TYPICAL case

@@ -83,14 +83,14 @@ genuinely different skill than counting operations in a specific example.
 ## Amortized analysis: expensive sometimes, cheap on average
 
 ```text
-  a dynamic array (JavaScript's Array, a Vector/ArrayList) that
-  doubles its capacity when full:
+  a dynamic array (like a Vector/ArrayList) starting empty
+  with capacity 1 that doubles its capacity when full:
 
-    push 1: array full → ALLOCATE NEW (size 2), copy 1 element
-    push 2: fits
-    push 3: array full → ALLOCATE NEW (size 4), copy 3 elements
+    push 1: fits
+    push 2: array full → ALLOCATE NEW (size 2), copy 1 element
+    push 3: array full → ALLOCATE NEW (size 4), copy 2 elements
     push 4: fits
-    push 5: array full → ALLOCATE NEW (size 8), copy 7 elements
+    push 5: array full → ALLOCATE NEW (size 8), copy 4 elements
     ...
 ```
 
@@ -107,8 +107,8 @@ genuinely different skill than counting operations in a specific example.
 ```text
   → this is WHY doubling (not adding a fixed amount) is the
     standard growth strategy: growing by a CONSTANT amount each
-    time (say, +10 capacity) makes EVERY resize copy roughly the
-    same amount, giving O(n) amortized cost PER PUSH instead of
+    time (say, +10 capacity) makes resizes copy progressively
+    more elements, giving O(n) amortized cost PER PUSH instead of
     O(1) — the growth factor being multiplicative rather than
     additive is the entire mechanism that makes amortized O(1)
     possible.
@@ -134,9 +134,9 @@ genuinely different skill than counting operations in a specific example.
 ```text
   the practical skill this chapter builds toward: given a
   proposed algorithm, estimate its complexity BEFORE
-  implementing and benchmarking it — "this does a nested loop
-  over the input, so it's at least O(n²)" is a five-second
-  mental check that catches a large class of design mistakes
+  implementing and benchmarking it — "this loops over the
+  whole input for each element, so it does n² iterations" is
+  a quick check that catches many design mistakes
   before any code is written, let alone profiled.
 ```
 

@@ -33,9 +33,10 @@ wrong until you see the statistics behind it.
 
   → a B-TREE keeps data SORTED and BALANCED — every leaf is
     the SAME DEPTH from the root, which guarantees O(log n)
-    lookup, insert, and range scan, REGARDLESS of insertion
-    order (unlike a naive binary search tree, which can
-    degrade to a linked list on sorted input).
+    lookup and insert, REGARDLESS of insertion order. a range
+    scan also reads the k matching entries: O(log n + k).
+    a naive binary search tree can degrade to a linked list
+    on sorted input.
 ```
 
 ```text

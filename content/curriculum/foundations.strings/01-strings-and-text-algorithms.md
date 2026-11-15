@@ -77,10 +77,10 @@ ASCII and quietly wrong once real Unicode text arrives.
 
   → a TRIE stores strings by their SHARED PREFIXES — "cat" and
     "cars" share the "ca" path, diverging only where the
-    strings actually differ. lookup, insert, and — critically —
-    "all strings with this prefix" are all O(length of the
-    string/prefix), INDEPENDENT of how many total strings are
-    stored.
+    strings actually differ. lookup and insert are O(string
+    length). finding the prefix node takes O(prefix length);
+    listing the matches also takes time to traverse its
+    subtree and return the strings.
 ```
 
 ```text
@@ -191,9 +191,8 @@ flowchart TB
 1. Naive pattern matching is O(n·m) worst case; KMP achieves guaranteed
    O(n+m) by never re-examining a character it's already confirmed matched
    — precompute once, reuse across the scan.
-2. A trie stores strings by shared prefixes, making prefix-based queries
-   (autocomplete) independent of the total number of stored strings — the
-   actual mechanism behind typeahead search.
+2. A trie stores strings by shared prefixes: autocomplete follows the
+   prefix, then enumerates matching strings without scanning other branches.
 3. Suffix arrays/trees trade upfront preprocessing for fast repeated
    substring queries, which pays off specifically when the same large text
    is searched many times.

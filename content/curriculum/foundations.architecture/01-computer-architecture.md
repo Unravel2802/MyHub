@@ -34,8 +34,8 @@ explains the difference.
 ```
 
 ```text
-  → each level is roughly an ORDER OF MAGNITUDE slower and
-    larger than the one above it — this exact table is what the
+  → lower levels are generally slower and larger, with varying
+    gaps between them — this exact table is what the
     Back-of-Envelope Estimation chapter's numbers are built
     from, and it's worth having memorized rather than looked
     up: an L1 hit and a main-memory access differ by roughly
@@ -155,9 +155,9 @@ flowchart TB
 ```text
   struct Bad {                    struct Good {
     bool a;      // 1 byte          int32 b;   // 4 bytes
-    int32 b;     // 4 bytes         int32 c;   // 4 bytes
-    bool c;      // 1 byte          bool a;    // 1 byte
-  }                                 bool d;    // 1 byte
+    int32 b;     // 4 bytes         bool a;    // 1 byte
+    bool c;      // 1 byte          bool c;    // 1 byte
+  }
   // → often 12 bytes with        }
   //   padding between fields     // → often 8 bytes — same
   //   to keep b ALIGNED           //   data, ordered by size,
@@ -199,9 +199,8 @@ flowchart TB
 
 ## What to take away
 
-1. The memory hierarchy's roughly-10×-per-level cost gap is the entire
-   reason caching exists at every level of a system, from an L1 cache line
-   to a Redis layer.
+1. The memory hierarchy's cost gaps explain why caching exists at every
+   level of a system, from an L1 cache line to a Redis layer.
 2. A cache fetches an entire cache line on a miss, betting on spatial
    locality — this single fact explains why array iteration is fast and
    pointer-chasing is slow at identical Big-O.

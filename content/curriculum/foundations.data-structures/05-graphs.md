@@ -267,7 +267,7 @@ The graph is implicit; the skill is seeing it.
 4. Mark vertices as seen when enqueuing, not when dequeuing.
 5. Dijkstra is BFS with a priority queue, and needs non-negative weights because
    it finalises a vertex on pop.
-6. Topological sort orders a DAG _and_ identifies the cycle when there isn't one.
+6. Topological sort orders a DAG _and_ detects when a cycle prevents that order.
 
 Next: putting all of this together — how to actually choose a data structure
 under real constraints.

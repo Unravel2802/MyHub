@@ -49,7 +49,7 @@ discovering later that the hot operation is a lookup you did not consider.
    │
    ├─ YES ─ Do you need them in sorted order,
    │        or range queries ("all keys between X and Y")?
-   │         ├─ YES ──▶ balanced tree / sorted map      O(log n)
+   │         ├─ YES ──▶ balanced tree / sorted map      O(log n) to seek
    │         └─ NO ───▶ hash map                        O(1) average
    │
    └─ NO ── Do you only ever touch the ends?
@@ -81,11 +81,11 @@ Two additions the tree does not capture:
 | Linked list   | O(n)     | O(n)     | O(1)†     | O(1)†    | insertion      | cache-hostile       |
 | Hash map      | —        | O(1)‡    | O(1)‡     | O(1)‡    | **no**         | needs good hash     |
 | Balanced tree | —        | O(log n) | O(log n)  | O(log n) | yes            | ranges, successors  |
-| Heap          | O(1) min | O(n)     | O(log n)  | O(log n) | partial        | min/max only        |
+| Heap          | O(1) min | O(n)     | O(log n)  | O(log n) | partial        | root/index deletion |
 | Trie          | —        | O(k)     | O(k)      | O(k)     | yes, by prefix | k = key length      |
 | Bloom filter  | —        | O(1)     | O(1)      | ✗        | no             | probabilistic       |
 
-\* amortized † given a node reference ‡ average, not worst
+\* amortized † given the needed node pointers ‡ average, not worst
 
 ## Where the table lies
 

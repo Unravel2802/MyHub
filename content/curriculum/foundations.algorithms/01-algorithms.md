@@ -23,8 +23,8 @@ what lets you recognize a new problem as an old one in disguise.
 ## Sorting: the baseline every comparison builds on
 
 ```text
-  COMPARISON SORTS have a PROVEN lower bound of O(n log n) —
-  no comparison-based sort can beat this in the general case
+  COMPARISON SORTS have a PROVEN worst-case lower bound of
+  Ω(n log n) — no comparison-based sort can beat this in general
   (a proof from information theory: distinguishing n! possible
   orderings needs at least log₂(n!) ≈ n log n comparisons).
 
@@ -185,8 +185,8 @@ flowchart TB
 
 > [!CHECK] What is the general comparison-sort lower bound?
 >
-> O(n log n); counting and radix sorts escape it by exploiting value
-> structure rather than comparing arbitrary elements.
+> Ω(n log n) in the worst case; counting and radix sorts exploit value
+> structure instead of comparing arbitrary elements.
 
 > [!CHECK] Why is DFS not a shortest-hop substitute for BFS?
 >
@@ -199,9 +199,9 @@ flowchart TB
 
 ## What to take away
 
-1. Comparison sorts have a proven O(n log n) lower bound; non-comparison
-   sorts (radix, counting) can beat it because they exploit structure in the
-   data instead of comparing elements.
+1. Comparison sorts have a proven worst-case Ω(n log n) lower bound.
+   Non-comparison sorts (radix, counting) can beat it because they exploit
+   structure in the data instead of comparing elements.
 2. Nearly every algorithm here has a precondition (sortedness for binary
    search, a specific graph shape for BFS's shortest-path guarantee) whose
    violation silently produces a wrong answer rather than an error.

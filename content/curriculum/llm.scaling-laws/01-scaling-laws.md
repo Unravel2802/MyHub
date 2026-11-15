@@ -127,8 +127,8 @@ toward smaller models trained longer.
 ```text
   loss falls as a power law, which means:
 
-    each 10× of compute buys a FIXED reduction in loss
-    → the 10× after that buys the same fixed reduction
+    each 10× of compute cuts the reducible loss by a FIXED fraction
+    → the 10× after that cuts a smaller base by the same fraction
     → and the absolute gains get smaller and smaller
 ```
 
@@ -242,8 +242,8 @@ paid once and the inference cost is paid per token for the life of the product.
    _training_, overturning the "bigger is better" assumption.
 3. Nobody trains compute-optimal any more, because inference dominates lifetime
    cost — modern models are deliberately over-trained by 50–100×.
-4. Power-law returns mean each 10× of compute buys a fixed, shrinking absolute
-   gain.
+4. Power-law returns mean each 10× of compute cuts the reducible loss by
+   the same fraction, so the absolute gain shrinks.
 5. High-quality text is finite; synthetic data, multimodal data, repeated epochs and
    test-time compute are the responses to the data wall.
 6. Scaling laws predict loss well and downstream capability poorly, and their

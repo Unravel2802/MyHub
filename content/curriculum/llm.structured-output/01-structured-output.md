@@ -34,7 +34,7 @@ by constraining the decoder rather than by asking politely.
 
   3. CONSTRAINED
      DECODING            mask illegal tokens at each step
-     ✓  output is GUARANTEED to parse
+     ✓  completed output is GUARANTEED to parse
      ✓  works with any model you control the decoder for
 ```
 
@@ -48,7 +48,7 @@ the logit masking from the tokenization topic:
     2. every other token's logit is set to −infinity
     3. sample from what remains
 
-  → invalid output is not unlikely. it is IMPOSSIBLE.
+  → completed output conforms to the grammar.
 ```
 
 ```text
@@ -101,14 +101,14 @@ produces a confident wrong label.
 
 ## Failure modes that remain
 
-Constrained decoding guarantees _syntax_, not _semantics_:
+For completed outputs, constrained decoding guarantees _syntax_, not _semantics_:
 
 ```text
   ✓  guaranteed valid JSON matching the schema
   ✗  the values may still be wrong, invented, or nonsensical
 
-  a date field will contain a valid date. it may be the
-  wrong date.
+  a date-shaped string can still encode an impossible date.
+  check calendar validity and whether it is the right date.
 ```
 
 ```text
@@ -139,7 +139,7 @@ field, then the constrained result.
 ```text
   even with constraints, validate:
 
-  1. SCHEMA        (guaranteed if constrained; check anyway)
+  1. SCHEMA        (guaranteed if constrained and complete)
   2. SEMANTIC      is the date plausible? does the id exist?
                    is the total the sum of the line items?
   3. BUSINESS      does this violate a rule?
@@ -225,7 +225,7 @@ available.
 ## What to take away
 
 1. Asking for JSON fails at a rate high enough to hurt and low enough to escape
-   testing; constrained decoding makes invalid output impossible.
+   testing; constrained decoding makes completed output match the grammar.
 2. The mechanism is logit masking against a grammar automaton — a decoding-time
    guarantee, not a prompting technique.
 3. Put a reasoning field _before_ the answer so it functions as chain of thought
@@ -235,7 +235,7 @@ available.
 5. Constraining too early costs quality; let the model reason freely first, then
    constrain the answer.
 6. Grammar constraints apply to SQL, code and citations — restricting citations to
-   ids present in the context makes fabricated citations impossible.
+   ids present in the context prevents unknown ids, but not wrong attribution.
 
 Next: the protocols that connect models to real systems.
 

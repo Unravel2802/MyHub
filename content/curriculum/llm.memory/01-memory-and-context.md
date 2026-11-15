@@ -30,8 +30,8 @@ runs.
   turn 50    60,000
   turn 100   context exhausted
 
-  and cost per turn grows with the conversation, so a long
-  session is quadratic in total cost.
+  with a fixed number of tokens added each turn and no
+  compaction, cumulative input tokens grow quadratically.
 ```
 
 ```text
@@ -257,8 +257,8 @@ X" produces higher-quality memory and better-calibrated trust.
 
 ## What to take away
 
-1. A model has no state — everything remembered is text you resend, so a long
-   session is quadratic in cost and degrades before the window limit.
+1. The model only sees the context you supply. Resending uncompressed history
+   with a fixed per-turn growth gives quadratic cumulative input tokens.
 2. The converged design is recent turns verbatim, a running summary, retrieved
    history, and structured state, with stable content first for prefix caching.
 3. Compact from the original content rather than re-summarising summaries; the

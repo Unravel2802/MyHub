@@ -41,7 +41,7 @@ distributed system driven by a probabilistic controller.
 ```text
   every iteration APPENDS to the context.
 
-  → context grows monotonically
+  → without compaction or eviction, context grows monotonically
   → cost per step grows
   → and eventually the window is exhausted
   → which is why context management (next topic) is the
@@ -266,7 +266,7 @@ exercised deterministically, and only the release gate pays for real calls.
 
 ## What to take away
 
-1. An agent is a loop whose context grows monotonically — context management is the
+1. An agent loop's uncompacted context keeps growing — context management is the
    binding constraint on long runs.
 2. Tool descriptions are prompts, and the most-omitted part is when _not_ to use
    the tool; error messages are prompts too.

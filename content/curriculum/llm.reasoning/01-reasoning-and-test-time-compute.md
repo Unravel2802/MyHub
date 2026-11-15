@@ -90,8 +90,8 @@ reasoning by default.
     logic     → does it satisfy the constraints?
 
   → the reward is a PROGRAM, not a preference model
-  → so it cannot be reward-hacked in the usual way, and the
-    model can be trained for a long time against it
+  → so the model cannot exploit errors in a preference model,
+    but can still exploit gaps in the program's checks
 ```
 
 ```text
@@ -105,9 +105,9 @@ reasoning by default.
 ```
 
 The verifiable-reward point is the important one. Preference-based RL is limited by
-reward hacking (as the alignment chapter described); a reward that is _checked by
-running the code_ has no such ceiling, which is why reasoning training could be
-pushed much further than RLHF.
+reward hacking (as the alignment chapter described). A reward _checked by running
+the code_ measures test performance directly, but incomplete tests can still
+reward incorrect code.
 
 ```text
   the trade
@@ -260,9 +260,8 @@ an explanation in a regulated or safety-critical setting is a mistake.
    because the model is explaining itself.
 2. Self-consistency — sample N paths, take the majority — is the highest
    value-per-complexity test-time technique.
-3. Reasoning models are trained with RL against _verifiable_ rewards, which cannot
-   be reward-hacked the way preference models can — that is why the training could
-   be pushed so far.
+3. Reasoning models are trained with RL against _verifiable_ rewards,
+   which bypass preference-model errors but still depend on check coverage.
 4. Test-time compute trades against model size, and unlike model size it is elastic
    per request.
 5. Route by difficulty: a cheap model for the easy majority, escalating to a

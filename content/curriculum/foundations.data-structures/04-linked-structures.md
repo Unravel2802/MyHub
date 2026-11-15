@@ -43,16 +43,18 @@ node and a second pointer to fix on every mutation.
 | -------------------------------- | ---------------------- | ------------------------ |
 | Index `i`                        | O(1)                   | O(n)                     |
 | Insert / delete at front         | O(n)                   | **O(1)**                 |
-| Insert / delete at back          | O(1)*                  | O(1) with a tail pointer |
-| Insert / delete **given a node** | O(n)                   | **O(1)**                 |
+| Insert at back                   | O(1)*                  | O(1) with a tail pointer |
+| Delete at back                   | O(1)                   | O(1) doubly, O(n) singly |
+| Insert / delete **given a node** | O(n)                   | **O(1)**†                |
 | Search                           | O(n)                   | O(n)                     |
 | Memory per element               | the element            | element + 1–2 pointers   |
 | Growth                           | occasional O(n) resize | never copies             |
 
-\* amortized.
+\* amortized. † A singly linked list needs the predecessor to delete a node.
 
 The two bolded cells are the entire case for a linked list: **cheap insertion
-and removal at a position you already hold**, and no bulk copying on growth.
+and removal when you have the pointers you need**, and no bulk copying on
+growth.
 
 ## What it costs, in practice
 
@@ -129,7 +131,6 @@ copying. This structural sharing is what makes immutable data affordable at all.
 **Stable references.** Elements of a vector move when it reallocates, which
 invalidates every pointer and iterator into it — a classic C++ bug. Nodes never
 move, so a reference to one stays valid for its lifetime.
-
 
 ```mermaid
 flowchart TB
@@ -213,8 +214,8 @@ a weak one quotes the complexity table and stops there.
 
 ## What to take away
 
-1. A linked list buys O(1) splicing at a position you already hold, and nothing
-   else worth having.
+1. A linked list buys O(1) splicing if you already have the needed pointers,
+   and nothing else worth having.
 2. Traversal can be 10–50× slower than an array of the same length because of
    cache misses. Big-O is silent about the memory hierarchy.
 3. Per-node allocation and pointer overhead make them memory-hungry, especially

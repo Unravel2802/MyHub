@@ -85,15 +85,15 @@ flowchart TB
     exploits a genuinely clever probabilistic fact: the
     LONGEST RUN of leading zero bits seen across many hashed
     values gives a statistical estimate of how many distinct
-    values were hashed, with a well-understood, boundable
-    error rate (typically under 2%).
+    values were hashed, with a well-understood relative
+    standard error (typically under 2%).
 ```
 
 ```text
   → this is the standard choice for a metrics dashboard's
     "unique users" counter specifically because the EXACT count
-    isn't actually needed — knowing "approximately 1.2 million,
-    ±2%" serves the real business question just as well as
+    isn't actually needed — knowing "approximately 1.2 million"
+    with 2% standard error serves the question just as well as
     "exactly 1,203,847," at a fraction of the memory an exact
     set would require, and that memory saving is the entire
     point.
@@ -122,10 +122,9 @@ flowchart TB
   finding the MEDIAN (or the k-th smallest element) of an
   unsorted array — sorting first and indexing would be
   O(n log n); QUICKSELECT (quicksort's partitioning idea,
-  recursing into only the HALF containing the target) achieves
-  EXPECTED O(n) — by choosing the PIVOT randomly, the algorithm
-  makes its worst case (a specific adversarial input) vanishingly
-  unlikely rather than eliminating it entirely.
+  recursing into only the PART containing the target) achieves
+  EXPECTED O(n) with random pivots. a sequence of heavily
+  unbalanced partitions can still take O(n²).
 ```
 
 ```text
@@ -141,8 +140,8 @@ flowchart TB
 ## The trade-off, stated plainly
 
 ```text
-  every structure in this chapter trades EXACTNESS for a
-  MASSIVE reduction in time or space — and the trade is only
+  approximate structures trade EXACTNESS for a MASSIVE
+  reduction in time or space — and the trade is only
   worth it when:
 
     ✓  the EXACT answer isn't actually needed (approximately
@@ -192,7 +191,7 @@ flowchart TB
    which is exactly why it's used as a cheap pre-check before an expensive
    definitive lookup, never as the definitive answer itself.
 3. HyperLogLog counts distinct items in fixed, tiny memory regardless of
-   true count, with a bounded error — the standard choice when an
+   true count, with a known standard error — the standard choice when an
    approximate count serves the real question just as well as an exact one.
 4. Reservoir sampling picks a uniform random item from a stream of unknown
    length in O(1) memory, by replacing the current pick with probability
@@ -225,8 +224,8 @@ flowchart TB
 > distinct-visitor dashboard; another needs an exact per-customer count.
 > Recommend whether both should share a HyperLogLog-only implementation.
 >
-> **Solution:** Use HyperLogLog for the dashboard if its bounded
-> estimation error meets the business question and memory savings matter.
+> **Solution:** Use HyperLogLog for the dashboard if its statistical
+> error meets the business question and memory savings matter.
 > Keep an exact structure for the product requiring exact counts. A weaker
 > answer uses HyperLogLog for both because its memory is small: an
 > understood error rate still does not satisfy an exactness requirement.

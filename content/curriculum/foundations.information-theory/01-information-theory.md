@@ -164,7 +164,7 @@ flowchart TB
    assigning shorter codes to frequent patterns and longer ones to rare
    ones, which is exactly why already-compressed or random data barely
    compresses further.
-3. Cross-entropy measures the extra bits needed when encoding true data
+3. Cross-entropy measures the average bits needed when encoding true data
    with a code optimized for a different, predicted distribution — the
    worse the prediction, the higher the cost.
 4. Minimizing cross-entropy loss during classifier training is literally

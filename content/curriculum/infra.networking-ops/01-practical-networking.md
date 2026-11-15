@@ -105,11 +105,10 @@ flowchart TB
     (Time To Live) — each router that forwards a packet
     decrements TTL, and when it hits zero, that router sends
     back an error, REVEALING itself as one hop on the path.
-    reading it: a SUDDEN latency jump between two specific hops
-    localizes WHERE a slowdown is happening; a chain of "* * *"
-    timeouts at the END (never reaching the destination) means
-    the path itself is broken, not just slow — genuinely
-    different problems, and traceroute distinguishes them.
+    reading it: a SUDDEN round-trip latency jump points to a
+    part of the path to investigate. replies can take different
+    return paths, and a chain of "* * *" timeouts at the END
+    can mean a broken path or probes that get no reply.
 ```
 
 ## CDNs: caching at the edge, and cache invalidation's real cost
@@ -213,9 +212,8 @@ flowchart TB
 3. A load balancer's health check needs to verify actual dependencies, not
    just that a port is open — a server with a dead database connection can
    pass a naive TCP check while failing every real request.
-4. Traceroute localizes a network problem by revealing which hop introduces
-   a latency jump or where the path stops responding entirely — two
-   genuinely different problems it distinguishes.
+4. Traceroute helps investigate a network problem by showing jumps in
+   probe round-trip times or where replies stop, both clues to follow up.
 5. Default-deny fails safely (annoying but visible); default-allow fails
    dangerously (invisible until exploited) — this asymmetry is why
    default-deny is the standard for a security-sensitive network boundary.

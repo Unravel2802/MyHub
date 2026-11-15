@@ -31,15 +31,14 @@ about time or money that felt obviously true and wasn't.
 ```
 
 ```text
-  "3am doesn't exist" / "3am happens twice"
+  "2am doesn't exist" / "1am happens twice" (US Eastern time)
 
-  spring forward:  2:59 AM → 4:00 AM  (2:xx never occurs)
+  spring forward:  1:59 AM → 3:00 AM  (2:xx never occurs)
   fall back:       1:59 AM → 1:00 AM  (1:xx occurs TWICE)
 
-  → "schedule a job for 2:30 AM local time" is ambiguous or
-    impossible twice a year, for any timezone that observes
-    DST. a cron job pinned to local time either skips a day
-    or double-fires.
+  → a job set for 2:30 AM local time can skip a day in spring;
+    one set for 1:30 AM can double-fire in fall. what happens
+    depends on how the scheduler handles the transition.
 ```
 
 ```text

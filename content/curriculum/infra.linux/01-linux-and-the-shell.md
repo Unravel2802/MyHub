@@ -108,8 +108,8 @@ flowchart TB
   → each command's STDOUT is connected DIRECTLY to the next command's STDIN
     — this is the actual mechanism (a kernel-level pipe, not a temp file or
     copy) behind Unix's "small tools that compose" philosophy: three simple,
-    single-purpose tools chained together solve "how many 500 errors are in
-    this log" without any of the three needing to know about the other two,
+    single-purpose tools chained together count lines containing "500"
+    without any of the three needing to know about the other two,
     or about the specific problem being solved.
 ```
 

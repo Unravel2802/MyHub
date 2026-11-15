@@ -136,7 +136,7 @@ flowchart TB
 ```
 
 ```text
-  → a plain string comparison sorts by numeric code point,
+  → a plain string comparison sorts by UTF-16 code units,
     which does not match how a human reader of a given language
     actually expects accented characters, case, or
     language-specific ordering rules (some languages sort
@@ -181,7 +181,7 @@ flowchart TB
 4. RTL support needs logical CSS properties (margin-inline-start, not
    margin-left) that flip automatically with reading direction, not manual
    per-direction overrides of physical properties.
-5. A plain string sort orders by numeric code point, which doesn't match how
+5. A plain string sort orders by UTF-16 code units, which doesn't match how
    a human reader of a given language expects accented characters or
    language-specific ordering — `localeCompare` with the right locale is the
    fix.

@@ -112,8 +112,8 @@ flowchart TB
 ```
 
 ```text
-  ^18.2.0   accepts anything up to (but not including) 19.0.0
-  ~18.2.0   accepts anything up to (but not including) 18.3.0
+  ^18.2.0   stable versions from 18.2.0 up to, excluding, 19.0.0
+  ~18.2.0   stable versions from 18.2.0 up to, excluding, 18.3.0
   18.2.0    exact version only
 ```
 

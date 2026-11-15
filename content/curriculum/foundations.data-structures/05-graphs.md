@@ -218,7 +218,6 @@ dependency_ and tells you exactly which items are in it. This is precisely how
 `assignLayers` in this app's own curriculum layout works — layering the topic
 graph and reporting whatever a cycle stranded.
 
-
 ```mermaid
 flowchart TB
   I[Compute in-degrees] --> Q[Queue zero-degree vertices]
@@ -267,7 +266,7 @@ The graph is implicit; the skill is seeing it.
 4. Mark vertices as seen when enqueuing, not when dequeuing.
 5. Dijkstra is BFS with a priority queue, and needs non-negative weights because
    it finalises a vertex on pop.
-6. Topological sort orders a DAG _and_ identifies the cycle when there isn't one.
+6. Topological sort orders a DAG _and_ detects when a cycle prevents that order.
 
 Next: putting all of this together — how to actually choose a data structure
 under real constraints.
@@ -287,8 +286,7 @@ under real constraints.
 >
 > **Solution:** Initial in-degrees are P=0, Q=0, R=2, S=1. Queue [P,Q];
 > emit P and lower R to 1, then emit Q and lower R to 0. Emit R, lower S
-> to 0, then emit S: [P,Q,R,S]. Adding S→R raises R’s initial in-degree to
-> 3. P and Q emit, but R remains at 1 and S at 1, so processing stops
+> to 0, then emit S: [P,Q,R,S]. Adding S→R raises R’s initial in-degree to 3. P and Q emit, but R remains at 1 and S at 1, so processing stops
 > after two vertices, detecting a cycle.
 
 > [!EXERCISE stretch] A route planner changes from equal-cost hops to

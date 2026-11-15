@@ -105,20 +105,20 @@ flowchart TB
   class NonEmptyList<T> {
     private constructor(private items: [T, ...T[]]) {}
     static of<T>(items: T[]): NonEmptyList<T> | null {
-      return items.length > 0 ? new NonEmptyList(items as any) : null;
+      return items.length > 0 && 0 in items
+        ? new NonEmptyList([...items] as [T, ...T[]])
+        : null;
     }
-    first(): T { return this.items[0]; }  // never undefined —
-                                            // the type GUARANTEES
-                                            // at least one item
+    first(): T { return this.items[0]; }  // a first item exists
   }
 ```
 
 ```text
   → a PRIVATE constructor plus a validating static factory is
     the pattern: the only way to get an instance is through
-    the factory, so every existing instance is guaranteed to
-    satisfy the invariant — `.first()` needs no null check,
-    ever, anywhere it's called.
+    the factory, which copies the input, so each instance must
+    have a first item — `.first()` needs no separate empty
+    case.
 ```
 
 ## Newtypes: preventing mix-ups between same-shaped values
@@ -175,8 +175,8 @@ flowchart TB
 > [!CHECK] What two mechanisms can enforce a non-empty value at
 > construction?
 >
-> A private constructor plus a validating factory that rejects empty
-> input.
+> A private constructor plus a validating factory that requires a first
+> element.
 
 > [!CHECK] What does narrowing by a union discriminant provide?
 >

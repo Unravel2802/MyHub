@@ -116,7 +116,6 @@ is the correct default — deep copying is expensive and often wrong, since it
 duplicates things that were deliberately shared — but it means "I made a copy"
 is never sufficient information. The question is _how deep_.
 
-
 ```mermaid
 flowchart TB
   O[Original dict] --> L[Shared tags list]
@@ -231,11 +230,11 @@ a == c            // false — different objects
 a.equals(c)       // true  — same contents
 ```
 
-Python has the same trap for small integers, which it caches:
+CPython has the same trap for small integers, which it caches:
 
 ```python
-a = 256; b = 256; a is b     # True  — cached
-a = 257; b = 257; a is b     # False — separate objects
+a = int("256"); b = int("256"); a is b  # True  — cached
+a = int("257"); b = int("257"); a is b  # False — separate objects
 ```
 
 Neither of these is a puzzle to memorise. They are both "you asked about

@@ -286,8 +286,9 @@ under real constraints.
 >
 > **Solution:** Initial in-degrees are P=0, Q=0, R=2, S=1. Queue [P,Q];
 > emit P and lower R to 1, then emit Q and lower R to 0. Emit R, lower S
-> to 0, then emit S: [P,Q,R,S]. Adding S→R raises R’s initial in-degree to 3. P and Q emit, but R remains at 1 and S at 1, so processing stops
-> after two vertices, detecting a cycle.
+> to 0, then emit S: [P,Q,R,S]. Adding S→R raises R’s initial
+> in-degree to 3. P and Q emit, but R remains at 1 and S at 1, so
+> processing stops after two vertices, detecting a cycle.
 
 > [!EXERCISE stretch] A route planner changes from equal-cost hops to
 > non-negative travel times. Recommend whether its BFS queue remains

@@ -251,3 +251,30 @@ No demonstrable fixes in this track.
 - ml-systems.monitoring/02-drift.md:102 — a 0.1% shift gives p < 0.001 → unchanged (the result depends on sample size, variance and test assumptions).
 - ml-systems.distributed-training/04-communication-and-debugging.md:93 — selected transport silently halves inter-node bandwidth → unchanged (effective throughput depends on network configuration and baseline).
 - ml-systems.vector-search/01-ann-algorithms.md:138 — probing two of 1,000 IVF lists scans 1/500 of the corpus → unchanged (this is a reasonable equal-list-size approximation and an individual query can see uneven lists).
+
+## Review — 2026-11-15 (Claude)
+
+Approved after one round of changes. I re-derived every numerical fix,
+including the A/B sample size (2 × 0.05 × 0.95 × 2.8² ÷ 0.0005² ≈ 2.98M per
+arm, 600 days at 10,000 users/day), the video egress (6.75 PB/day ≈ 202.5
+PB/month), direct object-storage egress (30 PB × $0.08/GB = $2.4M), the
+lease expiry (renewed at 20 s with a 30 s TTL → 50 s), 16P bytes for
+weights, gradients and optimizer state together, 11.5 false alarms per true
+positive at 8% precision, and the 8-byte struct. The redrawn git DAG, roofline and
+virtual-node ring were checked column by column.
+
+The first round's five changes: the video chapter's cost lines still followed
+the old 6.75 EB figure; the storage chapter's $120,000 origin figure needed a
+note that the CDN's own bill is extra; the reasoning and RL chapters had
+dropped the true point that verifiable rewards are much harder to game, which
+is why reasoning RL ran longer; and two edited lines needed re-wrapping. All
+five were fixed.
+
+Batch B went past arithmetic into general technical accuracy (CSS cascade,
+`useState`, traceroute, reproducible builds). Each of those was a
+demonstrable error, so they stay. The "unsure" lists were left as written.
+
+Merging normalised a few lines through the pre-commit prettier pass
+(emphasis style, stray blank lines) and joined one exercise line, which was
+re-wrapped. Gates on the merged main: lint and typecheck pass, 1,634 unit
+and 390 curriculum E2E tests pass.

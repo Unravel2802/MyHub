@@ -2,6 +2,11 @@
 
 ## audit-a
 
+### Review follow-up
+
+- systems-design.case-video/01-video-streaming.md:38 — Replaced the stale egress-cost comparison with ~$16.2M/month at the case-storage rate (202,500,000 GB × $0.08/GB), with CDN delivery cheaper per GB.
+- systems-design.case-storage/01-object-storage-and-cdn.md:177 — Clarified that the ~$120,000/month origin estimate has an additional, unpriced CDN delivery bill.
+
 ### distributed
 
 - distributed.failure/01-how-systems-actually-fail.md:101 — N+1 failover used N/(N−1) → (N+1)/N, with 60% before the failure (the N survivors share the same total load from N+1 servers).

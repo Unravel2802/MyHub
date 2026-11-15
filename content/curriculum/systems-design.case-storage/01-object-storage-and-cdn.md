@@ -174,6 +174,7 @@ content, so it can be cached forever with no invalidation.
     1 PB/day of egress, origin charged at $0.08/GB
       direct from object storage:  ~$2.4M/month
       origin with 95% of bytes served at the edge: ~$120,000/month
+      the CDN's delivery bill is extra and is unpriced here
 
   → and the latency improvement is a separate, additional
     benefit

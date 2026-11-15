@@ -26,8 +26,8 @@ parent(s) — nearly every command's behavior follows from it directly.
   plus metadata (author, message, timestamp).
 
     C1 ← C2 ← C3 ← C4        (main)
-                    ↖
-                     C5 ← C6  (feature)
+              ↖
+               C5 ← C6       (feature)
 
   a BRANCH is just a movable pointer to one commit — not a
   copy of the code, not a separate timeline stored elsewhere.
@@ -46,22 +46,19 @@ parent(s) — nearly every command's behavior follows from it directly.
 ```text
   MERGE                              REBASE
 
-  C1←C2←C3←────┐                    C1←C2←C3←C5'←C6'
-              C4(merge)                          (main, feature)
-  C1←C4'←C5'←C6'   (feature)
-       ↖
-        (main's C2,C3 preserved
-         as-is; a merge commit
-         ties the histories
-         together)
+  C1←C2←C3←C4←M (main)               C1←C2←C3←C4←C5'←C6'
+         ↖    │                               ↑       ↑
+          C5←C6 (feature)                     main    feature
+
+  M has parents C4 and C6; no
+  existing commit is rewritten.
 
   → preserves exactly what        → REWRITES feature's commits
     happened, when                  onto main's current tip —
-                                    a linear history, but the
-                                    ORIGINAL commits (C5, C6)
-                                    are gone, replaced by new
-                                    ones (C5', C6') with new
-                                    hashes
+                                    a linear history, with
+                                    new commits (C5', C6') in
+                                    place of C5 and C6 on
+                                    the feature branch
 ```
 
 ```text

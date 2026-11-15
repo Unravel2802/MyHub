@@ -97,9 +97,9 @@ groups were assigned or logged, and no amount of analysis rescues the result.
   detecting a 1% relative change in a 5% conversion rate,
   95% confidence, 80% power:
 
-    ≈ 300,000 users per arm
+    ≈ 3,000,000 users per arm
 
-  → at 10,000 users/day, that is 60 days.
+  → at 10,000 users/day total, that is about 600 days.
 ```
 
 ```text

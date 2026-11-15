@@ -175,7 +175,7 @@ something that cannot be deployed — the handoff failure from the lifecycle top
 in its most concrete form.
 
 **Budget for p99, not the mean.** As the distributed-systems track established,
-a service p99 is a user's typical experience once a page makes several calls.
+a service p99 can become more visible when a page waits on many calls.
 
 ## Availability and fallbacks
 

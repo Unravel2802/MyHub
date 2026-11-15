@@ -26,7 +26,7 @@ optimisation in model serving.
   batch 1     read 14 GB of weights → 1 prediction
   batch 32    read 14 GB of weights → 32 predictions
 
-  → 32× the throughput for approximately the same memory traffic
+  → 32 predictions for roughly the same weight-read traffic
 ```
 
 ```text

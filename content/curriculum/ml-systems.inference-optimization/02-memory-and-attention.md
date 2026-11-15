@@ -219,7 +219,7 @@ by 4× in how many concurrent users a GPU supports.
 ## Quantising the cache
 
 ```text
-  KV in fp8 or int8 → 2–4× more sequences per GPU
+  KV in fp8 or int8 → half the bf16 payload, before metadata
 
   quality impact is usually small, because attention is
   relatively tolerant — but it is task-dependent and worth

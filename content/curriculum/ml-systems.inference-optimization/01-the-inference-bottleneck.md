@@ -115,7 +115,7 @@ The cost is memory, and it is larger than people expect:
     × bytes_per_element
 
   a 7B model (32 layers, 32 heads, dim 128), bf16:
-    per token  = 2 × 32 × 32 × 128 × 2 = 512 KB
+    per token  = 2 × 32 × 32 × 128 × 2 = 512 KiB
 
     2,000 tokens          → 1 GB
     32 concurrent seqs
@@ -139,7 +139,7 @@ This is why so much inference engineering is really KV-cache engineering:
   PAGED ATTENTION    allocate the cache in fixed blocks rather
                      than contiguously → removes fragmentation
                      waste (next chapter)
-  QUANTISED CACHE    fp8 or int8 KV → 2–4× smaller
+  QUANTISED CACHE    fp8 or int8 KV → half the bf16 payload
   SLIDING WINDOW     keep only the last W tokens
   EVICTION           drop low-attention tokens
 ```
@@ -154,7 +154,7 @@ serving an older multi-head model is disproportionately expensive.
   TTFT   time to first token          — dominated by PREFILL
   TPOT   time per output token        — dominated by DECODE
   ITL    inter-token latency          — the same, per token
-  E2E    TTFT + TPOT × output_length
+  E2E    TTFT + TPOT × (output_length − 1), for ≥1 output token
   THROUGHPUT  total tokens/second across all users
 ```
 

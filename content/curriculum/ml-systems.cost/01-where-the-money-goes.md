@@ -96,7 +96,7 @@ once, inference is paid per request forever.
 
 ```text
   cost per 1,000 requests
-    = instance $/hour ÷ (requests/hour)
+    = 1,000 × instance $/hour ÷ (requests/hour)
 
   and requests/hour is set by BATCHING, quantisation and
   hardware — which is why the serving optimisations are cost

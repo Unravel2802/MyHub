@@ -43,17 +43,14 @@ Almost nothing achieves that, which is why **most kernels are memory-bound**.
 ```text
   attainable
   FLOP/s
-      │                    ┌──────────────────── peak compute
-      │                   ╱
-      │                  ╱  ← compute bound: more FLOPs/byte
-      │                 ╱      does not help; you are at peak
-      │                ╱
-      │  memory       ╱
-      │  bound:      ╱
-      │  slope =    ╱
-      │  bandwidth ╱
-      │           ╱
-      └──────────┴─────────────────────────────▶ arithmetic intensity
+      │          ┌──────────────────── peak compute
+      │         ╱    compute bound: more FLOPs/byte
+      │        ╱     does not help beyond the ridge
+      │       ╱
+      │      ╱  memory bound:
+      │     ╱   slope = bandwidth
+      │    ╱
+      └──────────┴────────────────────▶ arithmetic intensity
                  ▲
             the ridge point (~156 on A100)
 ```
@@ -183,7 +180,7 @@ hardware.
       almost entirely idle
 ```
 
-The GPU is at a few percent of its FLOP capability, entirely bandwidth-bound. This
+The GPU is below 1% of its FLOP capability, entirely bandwidth-bound. This
 single fact drives the whole inference-optimisation topic:
 
 ```text

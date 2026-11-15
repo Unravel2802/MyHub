@@ -183,9 +183,9 @@ badly costs real users a bad experience.
 ```
 
 The verifiable-reward point, from the reasoning topic, is the crucial one. RLHF
-against a learned preference model can exploit its errors. Running tests instead
-reduces dependence on human preferences, though an incomplete test can still
-reward a wrong answer.
+against a learned preference model can exploit its errors. Rewards based on
+running tests are usually harder to game, which helped reasoning RL run much
+longer than RLHF. An incomplete test can still reward a wrong answer.
 
 > [!PITFALL] A simulator’s cheap exploration does not imply that trying
 > poor actions on real users is equally cheap.
@@ -220,8 +220,10 @@ reward a wrong answer.
    dominates games and is rare in production.
 5. If the problem can be framed as supervised learning on logged data, do that
    instead — RL earns its complexity when actions affect future state.
-6. RL works for language models because of a strong pretrained start, a KL penalty,
-   short episodes, and — for reasoning — verifiable rewards.
+6. RL works for language models with a strong pretrained start, a KL penalty,
+   and short episodes. Verifiable rewards are usually harder to game than a
+   learned preference model, which helped reasoning RL run longer than RLHF.
+   Incomplete tests can still reward wrong answers.
 
 Next: graphs, audio, state space models and compression.
 

@@ -105,9 +105,10 @@ reasoning by default.
 ```
 
 The verifiable-reward point is the important one. Preference-based RL is limited by
-reward hacking (as the alignment chapter described). A reward _checked by running
-the code_ measures test performance directly, but incomplete tests can still
-reward incorrect code.
+reward hacking (as the alignment chapter described). A reward _checked by
+running the code_ is usually much harder to game than a learned preference
+model. That helped reasoning RL run much longer than RLHF, though incomplete
+tests can still reward incorrect code.
 
 ```text
   the trade
@@ -260,8 +261,9 @@ an explanation in a regulated or safety-critical setting is a mistake.
    because the model is explaining itself.
 2. Self-consistency — sample N paths, take the majority — is the highest
    value-per-complexity test-time technique.
-3. Reasoning models are trained with RL against _verifiable_ rewards,
-   which bypass preference-model errors but still depend on check coverage.
+3. _Verifiable_ rewards are usually harder to game than a learned preference
+   model, which helped reasoning RL run longer than RLHF. Incomplete checks
+   can still reward wrong answers.
 4. Test-time compute trades against model size, and unlike model size it is elastic
    per request.
 5. Route by difficulty: a cheap model for the easy majority, escalating to a

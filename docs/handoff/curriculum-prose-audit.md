@@ -2,6 +2,11 @@
 
 ## Batch C
 
+### Review follow-up
+
+- deep-learning.cnn/01-convolutional-networks.md:80 — Rewrapped the receptive-field paragraph to the chapter’s prose width.
+- llm.reasoning/01-reasoning-and-test-time-compute.md:107 and deep-learning.rl/01-reinforcement-learning.md:185 — Restored the link between harder-to-game verifiable rewards and longer reasoning RL runs in both chapters and takeaways. Incomplete tests can still reward wrong answers.
+
 #### data (2 fixes, 3 unsure)
 
 - data.analytics-eng/01-analytics-engineering.md:49 — SQL subtracts every joined refund and the comment says timely refunds are excluded → subtracts total in-window refunds once per order and documents the same policy (summing only amounts dated from the order through day 30 yields $230 in the Apply example, while summing all refunds yields $220)

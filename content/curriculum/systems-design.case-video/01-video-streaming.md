@@ -33,7 +33,7 @@ foundation.
 ```text
   10M DAU, 30 minutes each
     = 5M hours/day of watching
-    at ~3 Mbps average = ~6.75 EB/month of egress
+    at ~3 Mbps average = ~202.5 PB/month of egress
 
   → at CDN rates this is tens of millions of dollars a month
   → and at object-storage egress rates it is an order of

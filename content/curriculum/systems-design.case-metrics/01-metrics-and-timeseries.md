@@ -139,7 +139,8 @@ Compressed point: 1.4
 ```
 
 ```text
-  → each tier is roughly 30× smaller than the one above
+  → over the same time span, successive tiers have
+    30×, 12× and 24× fewer samples
   → and the query layer picks the tier from the requested
     range: a one-year dashboard reads the hourly rollup,
     not a year of 10-second points

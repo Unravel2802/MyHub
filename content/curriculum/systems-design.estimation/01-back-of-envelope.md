@@ -75,11 +75,11 @@ cross-region: 100000000
 ## Powers of two, for storage
 
 ```text
-  2¹⁰  = 1 thousand   KB
-  2²⁰  = 1 million    MB
-  2³⁰  = 1 billion    GB
-  2⁴⁰  = 1 trillion   TB
-  2⁵⁰  =              PB
+  2¹⁰ B  ≈ 1 thousand B  = 1 KiB
+  2²⁰ B  ≈ 1 million B   = 1 MiB
+  2³⁰ B  ≈ 1 billion B   = 1 GiB
+  2⁴⁰ B  ≈ 1 trillion B  = 1 TiB
+  2⁵⁰ B  ≈ 1 PB          = 1 PiB
 ```
 
 ## The four calculations
@@ -116,7 +116,7 @@ cross-region: 100000000
     each user opens the feed 20 times, 20 posts each
       100M × 20 = 2B feed loads/day ≈ 23,000 QPS
       peak ≈ 115,000 QPS
-      → read:write ≈ 10:1 by request, 100:1 by item
+      → read:write ≈ 10:1 by request, 200:1 by item
 
   STORAGE
     200M posts × 500 B (text + metadata) = 100 GB/day
@@ -144,7 +144,7 @@ Drawn as a system, those numbers imply this architecture:
 flowchart TB
   client[Client] -->|media| cdn[CDN]
   client -->|115k QPS peak| lb[Load balancer]
-  cdn -->|40 TB/day, 95% hits| obj[(Object storage)]
+  cdn -->|cache misses| obj[(Object storage)]
   lb --> app[App servers]
   app -->|20 GB hot set| cache[(Cache)]
   app -->|12k writes/s| db[(Postgres, partitioned)]

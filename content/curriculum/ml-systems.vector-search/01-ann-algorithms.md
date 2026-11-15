@@ -25,7 +25,7 @@ approximation.
   10M vectors × 768 dimensions, float32
 
   brute force per query:
-    10M dot products × 768 multiply-adds = 7.7 GFLOP
+    10M × 768 multiply-adds = 7.7G multiply-adds (~15.4 GFLOP)
     plus reading 10M × 768 × 4 = 30 GB from memory
 
   → ~15 ms on a fast GPU, ~1 second on a CPU

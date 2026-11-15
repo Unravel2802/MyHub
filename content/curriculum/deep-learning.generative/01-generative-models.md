@@ -146,8 +146,8 @@ diffusion needs many.
   → stable, scalable, no adversarial dynamics
 ```
 
-That simplicity is the whole reason it won. There is no second network, no
-equilibrium to find, and the loss goes down monotonically.
+That simplicity is the whole reason it won. There is no second network and no
+adversarial equilibrium to find, though the loss can still fluctuate.
 
 ```text
   the practical machinery

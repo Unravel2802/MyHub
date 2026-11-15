@@ -78,7 +78,7 @@ different systems.
 
     ROC-AUC 0.95  sounds excellent
     at a usable threshold, precision may be 8%
-    → 92 false alarms per true positive
+    → 11.5 false alarms per true positive
 
   the PR curve shows this immediately; the ROC curve hides it.
 ```
@@ -127,7 +127,7 @@ flowchart TB
   the choice is again about cost:
 
     is an error of 10 twice as bad as an error of 5 (MAE),
-    or four times as bad (RMSE)?
+    or does it contribute four times as much squared error (RMSE)?
 ```
 
 ## Ranking metrics

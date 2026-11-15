@@ -96,7 +96,7 @@ once, inference is paid per request forever.
 
 ```text
   cost per 1,000 requests
-    = instance $/hour ÷ (requests/hour)
+    = 1,000 × instance $/hour ÷ (requests/hour)
 
   and requests/hour is set by BATCHING, quantisation and
   hardware — which is why the serving optimisations are cost
@@ -281,12 +281,12 @@ training (visible and bursty) when the bill is dominated by feature pipelines
 2. Doubling MFU halves the training bill, and going from 20% to 40% is usually a
    dataloader and batch-size fix.
 3. Batching and quantisation can change inference cost by more than an order of
-   magnitude on identical hardware — serving optimisation *is* cost optimisation.
+   magnitude on identical hardware — serving optimisation _is_ cost optimisation.
 4. Audit for unused features, over-frequent materialisation and abandoned
    checkpoints quarterly; nothing fails when they are wasted.
 5. Cost per unit of value is the decision-making frame, and it requires the
    permanent holdout to know the value at all.
-6. Compute the API-versus-self-hosting crossover at your *actual* utilisation, and
+6. Compute the API-versus-self-hosting crossover at your _actual_ utilisation, and
    measure before optimising — the visible cost is rarely the largest one.
 
 Next: capacity planning for hardware that is scarce as well as expensive.

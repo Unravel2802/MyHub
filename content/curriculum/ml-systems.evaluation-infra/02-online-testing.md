@@ -97,9 +97,9 @@ groups were assigned or logged, and no amount of analysis rescues the result.
   detecting a 1% relative change in a 5% conversion rate,
   95% confidence, 80% power:
 
-    ≈ 300,000 users per arm
+    ≈ 3,000,000 users per arm
 
-  → at 10,000 users/day, that is 60 days.
+  → at 10,000 users/day total, that is about 600 days.
 ```
 
 ```text
@@ -118,7 +118,7 @@ error: the test had no ability to detect the effect in the first place, so its
 null result carries almost no information.
 
 **CUPED** is the standard variance-reduction technique and is worth using: adjust
-each user's metric by their *pre-experiment* value of the same metric. It removes
+each user's metric by their _pre-experiment_ value of the same metric. It removes
 the variance explained by pre-existing differences between users, often cutting
 the required sample size by half or more.
 

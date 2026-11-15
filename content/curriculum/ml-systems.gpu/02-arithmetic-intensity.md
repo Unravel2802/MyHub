@@ -34,7 +34,7 @@ whether an optimisation will help at all.
   AI > the ratio   →  COMPUTE BOUND
 ```
 
-That the ratio is *hundreds* is the fact to internalise: modern accelerators can
+That the ratio is _hundreds_ is the fact to internalise: modern accelerators can
 perform hundreds of arithmetic operations in the time it takes to fetch one byte.
 Almost nothing achieves that, which is why **most kernels are memory-bound**.
 
@@ -43,17 +43,14 @@ Almost nothing achieves that, which is why **most kernels are memory-bound**.
 ```text
   attainable
   FLOP/s
-      │                    ┌──────────────────── peak compute
-      │                   ╱
-      │                  ╱  ← compute bound: more FLOPs/byte
-      │                 ╱      does not help; you are at peak
-      │                ╱
-      │  memory       ╱
-      │  bound:      ╱
-      │  slope =    ╱
-      │  bandwidth ╱
-      │           ╱
-      └──────────┴─────────────────────────────▶ arithmetic intensity
+      │          ┌──────────────────── peak compute
+      │         ╱    compute bound: more FLOPs/byte
+      │        ╱     does not help beyond the ridge
+      │       ╱
+      │      ╱  memory bound:
+      │     ╱   slope = bandwidth
+      │    ╱
+      └──────────┴────────────────────▶ arithmetic intensity
                  ▲
             the ridge point (~156 on A100)
 ```
@@ -183,7 +180,7 @@ hardware.
       almost entirely idle
 ```
 
-The GPU is at a few percent of its FLOP capability, entirely bandwidth-bound. This
+The GPU is below 1% of its FLOP capability, entirely bandwidth-bound. This
 single fact drives the whole inference-optimisation topic:
 
 ```text
@@ -217,7 +214,7 @@ that is because the roofline says so.
 ```
 
 That fourth step is the one that saves the most effort. Knowing that an operation
-*cannot* go faster than 4 ms because it must move 8 GB tells you to stop, and to
+_cannot_ go faster than 4 ms because it must move 8 GB tells you to stop, and to
 change the algorithm instead of tuning the kernel.
 
 ## The practical rules
@@ -253,7 +250,7 @@ change the algorithm instead of tuning the kernel.
    below the ridge and always run at bandwidth.
 4. Fusing an elementwise chain cuts memory traffic proportionally, which is what
    `torch.compile` and Triton exist to do.
-5. FlashAttention performs *more* arithmetic and is several times faster, because
+5. FlashAttention performs _more_ arithmetic and is several times faster, because
    it never materialises the N×N matrix — counting FLOPs mispredicts performance.
 6. Batch-1 autoregressive inference reads the whole model per token, which is why
    every inference optimisation is a bandwidth optimisation.

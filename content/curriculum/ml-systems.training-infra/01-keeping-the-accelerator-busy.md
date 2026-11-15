@@ -28,7 +28,7 @@ of keeping the expensive part fed.
                          → necessary and NOT sufficient
 
   MODEL FLOPS
-  UTILISATION (MFU)      achieved FLOPs ÷ the hardware's peak
+  UTILISATION (MFU)      model FLOP/s ÷ peak hardware FLOP/s
                          → the honest number
 ```
 
@@ -47,7 +47,7 @@ occupancy while doing almost no arithmetic.
 
 MFU is worth computing even roughly: `6 × parameters × tokens` is the standard
 approximation for transformer training FLOPs, divided by elapsed time, divided by
-the GPU's peak. A number under 20% means there is a large, findable problem.
+the combined GPU peak. A number under 20% means there is a large, findable problem.
 
 ## The four ways the GPU starves
 
@@ -285,7 +285,7 @@ often buys 3× on the hardware you already have, at no cost.
    of throughput.
 4. Push batch size toward the memory limit; use gradient accumulation to decouple
    effective batch from what fits, and remember to divide the loss.
-5. Optimizer state is roughly 16P bytes and dominates memory — activation
+5. Model and optimizer state total roughly 16P bytes — activation
    checkpointing is the highest-leverage single technique.
 6. Fix utilisation before adding GPUs; doubling hardware on a 20% MFU job buys
    2× of 20%.

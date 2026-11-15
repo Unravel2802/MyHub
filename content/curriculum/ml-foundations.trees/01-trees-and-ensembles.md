@@ -89,8 +89,8 @@ settings, which is not true of boosting.
   errors of the ensemble so far.
 
     F₀ = a constant
-    Fₘ = Fₘ₋₁ + η · hₘ(x)     where hₘ fits the gradient of
-                              the loss w.r.t. Fₘ₋₁
+    Fₘ = Fₘ₋₁ + η · hₘ(x)     where hₘ fits the negative
+                              gradient of the loss w.r.t. Fₘ₋₁
 ```
 
 ```text

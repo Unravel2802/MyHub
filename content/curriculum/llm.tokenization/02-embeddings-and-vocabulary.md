@@ -27,8 +27,8 @@ decisions live here.
 
   vocab 128,000 × d_model 4,096 × 2 bytes = ~1 GB
 
-  for a 7B model that is ~15% of all parameters, spent
-  entirely on a lookup table.
+  for a 7B model one table is ~7.5% of all parameters;
+  both tables together use ~15% if they are untied.
 ```
 
 The output side mirrors it:
@@ -42,7 +42,7 @@ The output side mirrors it:
 **Weight tying** shares one matrix between input and output:
 
 ```text
-  ✓ saves ~15% of parameters in a small model
+  ✓ saves one table's parameters, ~7.5% in the 7B example
   ✓ often improves quality on small models
   ✗ the two roles are not identical; large models usually
     keep them separate
@@ -194,7 +194,7 @@ The layer where constrained generation happens:
 
 Masking is the important one: by computing which tokens are _legal_ at each step
 according to a grammar, and setting everything else to −infinity, output can be
-guaranteed to parse. This is the foundation of the structured-output topic, and it
+guaranteed to parse once complete. This is the basis of structured output, and it
 is a decoding-time mechanism rather than a prompting technique.
 
 > [!CHECK] What does weight tying share?

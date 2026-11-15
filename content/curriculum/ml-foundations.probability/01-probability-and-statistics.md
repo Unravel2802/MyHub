@@ -58,7 +58,7 @@ attached.
 ```text
   the base-rate example, worth doing once
 
-    a test is 99% accurate; the disease affects 1 in 10,000.
+    sensitivity and specificity are 99%; prevalence is 1 in 10,000.
     you test positive. what is P(disease)?
 
       P(D|+) = (0.99 × 0.0001) /
@@ -71,8 +71,8 @@ attached.
 
 **This is the single most consequential statistical intuition for ML
 practitioners**, because it is exactly the situation of a rare-class classifier:
-fraud, disease, defects, anomalies. A 99%-accurate detector for a 0.01% event is
-mostly wrong when it fires, and the reason is the base rate rather than the model.
+fraud, disease, defects, anomalies. At 99% sensitivity and specificity, a detector
+for a 0.01% event is mostly wrong when it fires because of the base rate.
 
 ## Estimation
 
@@ -92,8 +92,8 @@ mostly wrong when it fires, and the reason is the base rate rather than the mode
 ```
 
 That MAP correspondence is worth internalising: **weight decay is a Gaussian prior
-on the weights**, which is why the regularisation strength and the prior variance
-are the same parameter viewed two ways.
+on the weights**, which is why the regularisation strength is proportional to
+the inverse of the prior variance.
 
 ## Expectation, variance, covariance
 
@@ -107,7 +107,7 @@ are the same parameter viewed two ways.
 
     E[aX + b]  = aE[X] + b          expectation is linear
     Var(aX)    = a²Var(X)           variance is not
-    Var(X+Y)   = Var(X)+Var(Y)      ONLY if independent
+    Var(X+Y)   = Var(X)+Var(Y)      when covariance is zero
 ```
 
 ```text
@@ -123,7 +123,7 @@ are the same parameter viewed two ways.
 flowchart TB
   X[Random variable X] --> E[Mean scales linearly]
   X --> V[Variance scales quadratically]
-  V --> I[Add variances only if independent]
+  V --> I[Add variances if covariance is zero]
 ```
 
 ## Hypothesis testing and its traps
@@ -227,9 +227,9 @@ It is under-used relative to how cheap it is.
 1. The CLT explains why Gaussians are everywhere and why the assumption fails for
    heavy-tailed quantities like latency.
 2. The base-rate calculation is the most consequential statistical intuition for ML:
-   a highly accurate detector for a rare event is mostly wrong when it fires.
+   even a highly accurate detector for a rare event can be mostly wrong when it fires.
 3. Cross-entropy minimisation is maximum likelihood, and weight decay is a Gaussian
-   prior — regularisation strength and prior variance are the same parameter.
+   prior — regularisation strength rises as the prior variance falls.
 4. Correlation measures linear association only; zero correlation does not mean
    independence.
 5. Report effect sizes and confidence intervals, and power your tests — an
@@ -250,12 +250,12 @@ Next: what learning theory says about generalisation.
 
 > [!EXERCISE apply] Let E[X]=3 and Var(X)=2. Compute E[2X+5] and Var(2X).
 > Then an independent Y has Var(Y)=3; compute Var(2X+Y), stating where
-> independence is needed.
+> independence is used.
 >
 > **Solution:** Use E[aX+b]=aE[X]+b: E[2X+5]=2×3+5=6+5=11. Use
 > Var(aX)=a²Var(X): Var(2X)=2²×2=4×2=8. For independent quantities,
-> Var(U+V)=Var(U)+Var(V), so Var(2X+Y)=8+3=11. Independence is needed for
-> that sum-of-variances step, not for the linear expectation identity.
+> Var(U+V)=Var(U)+Var(V), so Var(2X+Y)=8+3=11. Independence gives zero
+> covariance for that step. The expectation identity needs no such condition.
 
 > [!EXERCISE stretch] A small experiment is non-significant and a team
 > wants to announce that there is no effect. Recommend an interpretation.

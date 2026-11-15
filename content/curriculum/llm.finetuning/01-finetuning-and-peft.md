@@ -68,7 +68,7 @@ flowchart TB
 
   LoRA                      a small low-rank adapter
     freeze W; learn ΔW = B·A where A is [r × d], B is [d × r]
-    r is typically 8–64, so ΔW has ~0.1–1% of W's parameters
+    r is typically 8–64, so A and B have ~0.1–1% of W's parameters
 
          W (frozen)
          ↓

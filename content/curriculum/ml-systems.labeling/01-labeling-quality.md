@@ -1,12 +1,12 @@
 ---
 title: Labelling and annotation quality
 minutes: 19
-summary: Where training data comes from, and why annotator agreement is the ceiling on your model.
+summary: Where training data comes from, and what annotator agreement reveals about its quality.
 ---
 
 Supervised learning needs labels, and labels come from people. That makes
 annotation a process-design problem as much as a data problem — and its quality
-sets a hard ceiling that no amount of modelling can exceed.
+can expose label ambiguity that extra modelling alone cannot resolve.
 
 > [!WHY] Two annotators disagree consistently about whether a borderline
 > ticket belongs in the target class. Adding more labels at the same pace
@@ -19,19 +19,18 @@ sets a hard ceiling that no amount of modelling can exceed.
 > - Choose labeling acquisition
 > - Plan a guideline repair
 
-## The ceiling
+## Measuring agreement
 
 ```text
-  if two competent annotators agree only 75% of the time,
-  then the task itself is 25% ambiguous.
+  if two annotators agree only 75% of the time,
+  they disagree on 25% of the items.
 
-  → a model cannot exceed ~75% "accuracy" against either
-    annotator, because the disagreement is in the task,
-    not in the model
+  → investigate whether the remaining disagreement comes from
+    ambiguous instructions, annotator error or subjectivity
 ```
 
-**Measure inter-annotator agreement before training anything.** It tells you the
-achievable ceiling, and low agreement is nearly always a _definition_ problem
+**Measure inter-annotator agreement before training anything.** It measures
+label consistency, and low agreement may reveal a _definition_ problem
 rather than an annotator problem — the guidelines are ambiguous, the categories
 overlap, or the task is genuinely subjective.
 
@@ -40,7 +39,7 @@ overlap, or the task is genuinely subjective.
                       same
                       → inflated when one class dominates:
                         two annotators labelling everything
-                        "negative" agree 95% by chance
+                        "negative" agree 100% of the time
 
   COHEN'S KAPPA       agreement corrected for chance
                       < 0.4  poor
@@ -276,8 +275,8 @@ in randomly sampled items keeps the label set representative.
 
 ## What to take away
 
-1. Inter-annotator agreement is the ceiling on model performance; measure it with
-   kappa, not raw agreement, and treat low agreement as a definition problem.
+1. Inter-annotator agreement measures label consistency; report it with
+   kappa and investigate unclear guidelines, annotator errors or subjectivity.
 2. Guidelines are a living product refined from observed disagreements, and a
    "cannot tell" option prevents forced noise.
 3. Seed a gold set into the stream — it is the only way to measure ongoing quality

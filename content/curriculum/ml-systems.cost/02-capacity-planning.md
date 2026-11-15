@@ -181,7 +181,7 @@ delay, and it happens routinely.
 The reframing that makes optimisation urgent rather than optional:
 
 ```text
-  a 2× throughput improvement is a 50% capacity increase
+  a 2× throughput improvement is a 100% capacity increase
   that requires NO hardware, NO quota, NO lead time.
 ```
 
@@ -239,7 +239,7 @@ as a capacity strategy rather than a performance hobby.
 4. Training clusters should run hot (70–90%) and serving clusters should not — the
    difference is who is waiting.
 5. Forecast a range with known lead times, and check quotas before you need them.
-6. When capacity is scarce, a 2× efficiency improvement is a 50% capacity increase
+6. When capacity is scarce, a 2× efficiency improvement is a 100% capacity increase
    with no lead time — which makes optimisation a capacity strategy.
 
 That completes cost and capacity. Next in the track: **labelling and

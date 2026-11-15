@@ -125,9 +125,8 @@ other languages into many small pieces:
     Japanese   30
     Thai       45
 
-  → the same content costs 4× as much and consumes 4× the
-    context window. this is a real cost and fairness issue,
-    not a curiosity.
+  → the Thai version uses about 4× the English token budget.
+    this is a real cost and fairness issue, not a curiosity.
 ```
 
 **Numbers tokenize badly.**

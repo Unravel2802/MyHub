@@ -76,8 +76,8 @@ wrong thing.
 ```text
   THE IMPOSSIBILITY RESULT
 
-    when base rates differ between groups, you CANNOT
-    simultaneously have
+    when base rates differ and TPR and FPR are nonzero,
+    you CANNOT simultaneously have
       □  equal false-positive rates
       □  equal false-negative rates
       □  equal precision
@@ -217,15 +217,15 @@ the most common well-intentioned mistake in the area.
 
 1. Bias enters at seven distinct points; measurement bias — a label that encodes
    inequity — is the deepest and least fixable technically.
-2. Fairness definitions provably conflict when base rates differ, so choosing one is
-   a value judgement to be made deliberately and documented.
+2. With differing base rates and nonzero TPR and FPR, equalised odds and
+   predictive parity conflict. Choosing one is a documented value judgement.
 3. Disaggregate every metric by group and by intersection, and check calibration per
    group, not only error rates.
 4. Removing the protected attribute does not remove bias — proxies are abundant, and
    fairness through unawareness is the common well-intentioned mistake.
 5. The fairness/accuracy trade-off is often smaller than assumed and sometimes
    negative; measure it.
-6. Ask whether the *system* is fair — recourse, appeals, human override and
+6. Ask whether the _system_ is fair — recourse, appeals, human override and
    deployment context — not just the model.
 
 Next: hyperparameter optimisation.

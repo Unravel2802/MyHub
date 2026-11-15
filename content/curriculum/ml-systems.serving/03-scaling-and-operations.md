@@ -194,7 +194,7 @@ systematically different scores, and downstream thresholds will be wrong.
   the arithmetic worth doing:
 
     cost per 1,000 predictions
-      = instance $/hour ÷ (predictions/hour)
+      = 1,000 × instance $/hour ÷ (predictions/hour)
 
   and track it over time. it should FALL as you optimise, and
   a rise means something regressed.

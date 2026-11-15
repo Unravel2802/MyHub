@@ -66,7 +66,7 @@ flowchart TB
 ```text
   an image is split into patches; each patch is a token.
 
-    a 1024×1024 image at 14×14 patches
+    a 1024×1024 image at 14×14 patches, dropping partial patches
       = 73 × 73 = 5,329 patches
 
   → high-resolution images consume thousands of tokens

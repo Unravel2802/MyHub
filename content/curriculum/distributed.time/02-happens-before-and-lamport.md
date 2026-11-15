@@ -143,9 +143,9 @@ Traced through:
                   ╲              ╱
   P2  ──[1]────────[3]────────[4]────────▶
 
-  P1: event=1, event=2, send with t=2
+  P1: event=1, send event with t=2
   P2: event=1, then receives 2 → max(1,2)+1 = 3
-  P2: event 4, sends with t=4
+  P2: send event with t=4
   P1: receives 4 → max(2,4)+1 = 5
 ```
 

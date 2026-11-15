@@ -90,7 +90,7 @@ common performance defect in service architectures:
 orders = order_service.list(user_id)          # 1 call
 for o in orders:                              # 200 orders
     o.product = product_service.get(o.sku)    # 200 more calls
-# 201 round trips × 2 ms = 400 ms of pure network
+# 201 round trips × 2 ms ≈ 400 ms of pure network
 ```
 
 **The fix** is to batch, and to design APIs that make batching possible:

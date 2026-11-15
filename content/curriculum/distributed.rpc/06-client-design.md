@@ -24,7 +24,7 @@ that matter and why.
 Establishing a connection costs a TCP handshake plus a TLS handshake — two to
 three round trips before any application data moves. At 1 ms per round trip
 within a region, that is 2–3 ms added to every request that opens a fresh
-connection, which for a 5 ms call is a 50% overhead.
+connection, which for a 5 ms call is a 40–60% overhead.
 
 A pool keeps connections open and hands them out:
 

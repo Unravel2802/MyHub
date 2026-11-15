@@ -109,10 +109,10 @@ outputs a **suspicion level** — a number that rises the longer silence
 continues, computed from the _distribution_ of past heartbeat intervals.
 
 ```text
-  φ = -log10(probability that a heartbeat this late is normal,
-             given the observed distribution)
+  φ = -log10(probability of an interval at least this long,
+             under the observed heartbeat distribution)
 
-  φ = 1   →  ~10% chance we are wrong to suspect
+  φ = 1   →  ~10% tail probability under that model
   φ = 2   →  ~1%
   φ = 3   →  ~0.1%
   φ = 8   →  ~0.000001%

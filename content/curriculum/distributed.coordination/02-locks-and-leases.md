@@ -159,11 +159,9 @@ A long-running job holds a lease and renews it periodically:
     ├─ renew at 10s  ✓
     ├─ renew at 20s  ✓
     ├─ renew at 30s  ✗ network blip
+    │  ← THE JOB MUST STOP HERE. immediately.
     │
-    │  lease expires at 40s. someone else acquires.
-    │
-    └─ renew at 40s  ✗ "lease not found"
-       ← THE JOB MUST STOP HERE. immediately.
+    └─ lease expires at 50s. someone else acquires.
 ```
 
 The rule: **a failed renewal must stop the work, not retry the renewal.** A job

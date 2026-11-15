@@ -31,7 +31,7 @@ servers should handle almost none of the bytes.
     = 1 EB of stored data
   uploads: 50M files/day at 2 MB = 100 TB/day
   downloads: 10× reads → 1 PB/day egress
-    → at $0.08/GB that is ~$80M/month WITHOUT a CDN
+    → at $0.08/GB that is ~$2.4M/month WITHOUT a CDN
 ```
 
 That last number is the design's dominant constraint, and it arrives from the
@@ -171,9 +171,10 @@ content, so it can be cached forever with no invalidation.
 ```text
   the CDN economics, which are the point
 
-    1 PB/day of egress
-      direct from object storage:  ~$80M/month
-      via a CDN at a 95% hit rate: ~$10–20M/month
+    1 PB/day of egress, origin charged at $0.08/GB
+      direct from object storage:  ~$2.4M/month
+      origin with 95% of bytes served at the edge: ~$120,000/month
+      the CDN's delivery bill is extra and is unpriced here
 
   → and the latency improvement is a separate, additional
     benefit
@@ -183,11 +184,11 @@ content, so it can be cached forever with no invalidation.
 type: bar
 scale: linear
 unit: $/month
-title: Monthly egress cost
-caption: Chapter estimates for 1 PB/day and 95% CDN hits.
+title: Monthly origin egress cost
+caption: Origin charges for 1 PB/day and 95% of bytes served at the edge.
 ---
-Direct storage: 80000000
-CDN: 10000000-20000000
+Direct storage: 2400000
+Origin with CDN: 120000
 ```
 
 ```text

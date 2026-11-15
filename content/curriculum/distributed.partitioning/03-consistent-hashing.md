@@ -40,7 +40,7 @@ miss storm; for a database it means moving nearly the whole dataset while servin
 traffic.
 
 The ideal is to move only `1/(N+1)` of keys — just the share the new node should
-own. That is exactly what consistent hashing achieves.
+own. That is what consistent hashing achieves on average.
 
 ## The ring
 
@@ -87,7 +87,7 @@ hands its arc to exactly one successor. Nothing else moves.
   keys remapped when adding one node:
 
     mod N:              ~N/(N+1)  of all keys   (80–99%)
-    consistent hashing:  ~1/(N+1) of all keys   (the minimum possible)
+    consistent hashing:  1/(N+1) of all keys on average
 ```
 
 ## Why the naive ring is not good enough
@@ -132,7 +132,8 @@ The fix: give each physical node many positions on the ring.
 
   ring with 3 physical nodes × 8 vnodes:
 
-  ├─A─┼─C─┼─B─┼─A─┼─B─┼─C─┼─A─┼─C─┼─B─┼─A─┼─C─┼─B─┼─A─┼─B─┼─C─┼─A─┤
+  ├─A─┼─C─┼─B─┼─A─┼─B─┼─C─┼─A─┼─C─┼─B─┼─A─┼─C─┼─B─┼
+  ┼─A─┼─B─┼─C─┼─A─┼─B─┼─C─┼─B─┼─C─┼─A─┼─B─┼─C─┼─A─┤
 
   each physical node owns MANY small arcs, so the totals even out
 ```
@@ -293,8 +294,8 @@ it is the same idea as the "fixed partitions" scheme in the next chapter.
 
 ## What to take away
 
-1. `hash(key) mod N` remaps 80–99% of keys when N changes; consistent hashing
-   remaps only the ~1/(N+1) that must move.
+1. Adding one node with `hash(key) mod N` remaps about N/(N+1) of keys;
+   consistent hashing remaps 1/(N+1) on average.
 2. A ring with one position per node distributes badly and concentrates a failed
    node's entire load on one successor.
 3. Virtual nodes (100–500 per physical node) cut imbalance to a few percent and

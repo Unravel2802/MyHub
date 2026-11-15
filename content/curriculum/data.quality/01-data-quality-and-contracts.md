@@ -73,7 +73,7 @@ plausible right up until someone notices the numbers don't add up.
 
   → a VOLUME check ("today's row count should be within X% of
     the recent historical average") catches the OPPOSITE
-    failure too — a source sending 100× its NORMAL row count
+    failure too — a source sending 2× its NORMAL row count
     (a duplicate job accidentally run twice, an upstream bug
     generating spurious events) is just as real a data-quality
     problem as sending too few, and it's one a naive "did SOME

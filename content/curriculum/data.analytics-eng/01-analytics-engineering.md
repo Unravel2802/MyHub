@@ -47,10 +47,15 @@ same rigor software engineering has applied to application code all along.
 ```text
   -- models/revenue.sql
   SELECT
-    order_id,
-    amount - COALESCE(refund_amount, 0) AS net_revenue
-  FROM orders
-  LEFT JOIN refunds USING (order_id)
+    o.order_id,
+    o.amount - COALESCE((
+      SELECT SUM(r.refund_amount)
+      FROM refunds r
+      WHERE r.order_id = o.order_id
+        AND r.processed_at BETWEEN o.ordered_at
+                               AND o.ordered_at + INTERVAL '30 days'
+    ), 0) AS net_revenue
+  FROM orders o
 
   → this SQL file lives in GIT (the Git and Version Control
     chapter's discipline), goes through CODE REVIEW (the Code
@@ -133,7 +138,7 @@ flowchart TB
 
 ```text
   -- models/revenue.sql
-  -- Net revenue excludes refunds processed within 30 days of
+  -- Net revenue subtracts refunds processed within 30 days of
   -- the original order. Refunds processed later are NOT
   -- subtracted here — see finance_adjustments for those.
 

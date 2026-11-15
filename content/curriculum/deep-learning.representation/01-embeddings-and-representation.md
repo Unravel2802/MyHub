@@ -75,7 +75,8 @@ structure in the data becomes geometry in the space.
 ```text
   InfoNCE loss
 
-    L = −log[ exp(sim(a, p)/τ) / Σ exp(sim(a, nᵢ)/τ) ]
+    P = exp(sim(a, p)/τ)
+    L = −log[ P / (P + Σ exp(sim(a, nᵢ)/τ)) ]
 
     a  anchor      p  positive      nᵢ  negatives
     τ  temperature

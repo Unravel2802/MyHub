@@ -77,9 +77,9 @@ both their strength and where they were superseded.
                   architectures
 ```
 
-The receptive field is the concept that ties depth to capability: a single 3×3
-convolution sees 3 pixels, two stacked see 5, and a deep stack sees the whole
-image. Depth is how a CNN builds global understanding out of local operations.
+The receptive field ties depth to capability. With unit stride and no
+dilation, one 3×3 convolution sees a 3×3 region, two stacked layers see
+5×5, and a deep enough stack can see the whole image. Depth is how a CNN builds global understanding out of local operations.
 
 ```mermaid
 flowchart TB

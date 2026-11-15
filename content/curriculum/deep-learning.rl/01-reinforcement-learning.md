@@ -81,8 +81,8 @@ The algorithm you will meet, because it is what RLHF used.
   large destroys the policy, and there is no validation set
   to catch it.
 
-  PPO's answer: CLIP the objective so a single update cannot
-  move the policy too far from the one that collected the data.
+  PPO's answer: CLIP the objective to remove the incentive
+  for some large ratio changes. This is no hard update bound.
 
     L = min( ratio · A,  clip(ratio, 1−ε, 1+ε) · A )
 
@@ -175,17 +175,17 @@ badly costs real users a bad experience.
 
   □  a strong PRETRAINED initialisation — you are not
      exploring from scratch
-  □  a KL penalty to the reference model, which bounds how
-     far the policy can move
+  □  a KL penalty to the reference model, which discourages
+     the policy from moving too far
   □  short episodes (one response)
-  □  and, for reasoning: a VERIFIABLE reward that cannot be
-     hacked
+  □  and, for reasoning: a VERIFIABLE reward that still
+     depends on what the check covers
 ```
 
 The verifiable-reward point, from the reasoning topic, is the crucial one. RLHF
-against a learned preference model is limited by reward hacking; RL against "do
-the tests pass" is not, which is why reasoning training could be pushed orders of
-magnitude further.
+against a learned preference model can exploit its errors. Running tests instead
+reduces dependence on human preferences, though an incomplete test can still
+reward a wrong answer.
 
 > [!PITFALL] A simulator’s cheap exploration does not imply that trying
 > poor actions on real users is equally cheap.
@@ -214,13 +214,13 @@ magnitude further.
    changes as the policy does — that non-stationarity is why it is unstable.
 2. Value-based methods are sample-efficient and awkward for continuous actions;
    policy-based handle them at higher variance; actor-critic combines both.
-3. PPO clips the update so a single step cannot destroy the policy; GRPO removes the
+3. PPO clips the objective to limit incentives for large updates. GRPO removes the
    value network by using a group of samples as the baseline.
 4. Exploration is fundamental and has real cost outside a simulator, which is why RL
    dominates games and is rare in production.
 5. If the problem can be framed as supervised learning on logged data, do that
    instead — RL earns its complexity when actions affect future state.
-6. RL works for language models because of a strong pretrained start, a KL bound,
+6. RL works for language models because of a strong pretrained start, a KL penalty,
    short episodes, and — for reasoning — verifiable rewards.
 
 Next: graphs, audio, state space models and compression.

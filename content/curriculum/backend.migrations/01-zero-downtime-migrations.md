@@ -88,7 +88,7 @@ multiple deploys, each one individually safe.
                                                  touches until
                                                  commit
 
-  → batch it: UPDATE ... WHERE id BETWEEN X AND X+1000,
+  → batch it: UPDATE ... WHERE id >= X AND id < X+1000,
     committing between batches, with a short pause — each
     batch's lock is brief, and other transactions get a
     chance to run between batches instead of queuing behind

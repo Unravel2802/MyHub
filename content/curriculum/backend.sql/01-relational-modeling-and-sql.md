@@ -185,8 +185,8 @@ flowchart TB
     SELECT * FROM orders LIMIT 50;      -- 1 query
     SELECT * FROM customers WHERE id=?; -- × 50, one per order
 
-  → 51 round trips where one JOIN (or one batched
-    WHERE id IN (...)) does the same work in 2
+  → 51 round trips where one JOIN does the same work in 1,
+    or fetching orders and then batching WHERE id IN (...) in 2
 ```
 
 ```text

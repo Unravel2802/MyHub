@@ -155,13 +155,12 @@ flowchart TB
 
   → modern warehouses/lakehouses SEPARATE the two: data sits in
     cheap OBJECT STORAGE, and COMPUTE (query engines) SCALES
-    INDEPENDENTLY, spinning up ONLY when a query actually runs
-    — this is the Cloud Primitives chapter's compute-spectrum
-    idea and the Serverless and Edge chapter's scale-to-zero
-    idea, both applied specifically to analytical query
-    engines: pay for compute only while a query is actually
-    executing, rather than for a permanently-provisioned
-    cluster sized for PEAK load that sits mostly idle.
+    INDEPENDENTLY. it can suspend or scale to zero when no
+    queries run — the Cloud Primitives chapter's compute
+    spectrum and the Serverless and Edge chapter's scale-to-zero
+    idea, both applied to analytical query engines. suspending
+    idle compute avoids paying for a cluster sized for PEAK
+    load that sits mostly idle.
 ```
 
 > [!PITFALL] A partition key only helps pruning when the query actually
@@ -203,9 +202,8 @@ flowchart TB
    ingesting data whose shape isn't agreed upon yet) — a real trade-off,
    not one being strictly better.
 5. Separating storage from compute lets query capacity scale independently
-   of data volume, paying for compute only while a query actually runs —
-   the same scale-to-zero idea serverless applies, aimed at analytical
-   query engines specifically.
+   of data volume, and lets it suspend or scale to zero when no queries
+   run — the same serverless idea, applied to analytical query engines.
 
 ## Exercises
 

@@ -222,8 +222,9 @@ Usually the strongest design:
 ```
 
 The cascade is the same idea as the inference-optimization chapter's cost cascade,
-with the cheap tier being the user's phone. If 90% of requests are handled locally,
-serving cost falls by 90% and the median latency falls to a few milliseconds.
+with the cheap tier being the user's phone. If 90% of requests are handled
+locally, serving cost falls by up to 90% because harder requests fall back to
+the server. Median latency falls to a few milliseconds.
 
 ```mermaid
 flowchart TB

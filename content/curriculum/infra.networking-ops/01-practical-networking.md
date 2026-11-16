@@ -39,8 +39,9 @@ configures and debugs when a networked system misbehaves in production.
 ```
 
 ```text
-  → EXPIRY is the most common real-world TLS incident: a certificate
-    silently expiring (often because a manual renewal process was forgotten)
+  → EXPIRY is one of the most common real-world TLS incidents:
+    a certificate silently expiring (often because a manual
+    renewal process was forgotten)
     takes a service from working to completely broken for every client,
     instantly, at a specific known moment — which is exactly why automated
     renewal (Let's Encrypt's ACME protocol, a managed cloud certificate) has
@@ -206,9 +207,9 @@ flowchart TB
 1. A server must send its full certificate chain, not just the leaf — a
    browser without the intermediate cached can't verify an otherwise
    perfectly valid certificate.
-2. Certificate expiry is the most common real-world TLS incident precisely
-   because it's a zero-warning, total-impact failure — which is why
-   automated renewal has replaced manual processes as the default.
+2. Certificate expiry is one of the most common real-world TLS incidents.
+   Its total impact is why automated renewal has replaced manual processes
+   as the default.
 3. A load balancer's health check needs to verify actual dependencies, not
    just that a port is open — a server with a dead database connection can
    pass a naive TCP check while failing every real request.

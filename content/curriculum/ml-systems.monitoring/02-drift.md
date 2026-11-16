@@ -98,9 +98,9 @@ doing nothing.
 **The p-value trap** is worth stating plainly:
 
 ```text
-  with a million samples, EVERY test is significant.
-  a 0.1% shift in the mean gives p < 0.001 and matters to
-  nobody.
+  with two independent samples of a million observations
+  each, a mean shift of 0.01 standard deviations gives p < 0.001
+  (z ≈ 0.01 × √(10⁶/2) ≈ 7.1) and matters to nobody.
 
   → use EFFECT SIZE (PSI, Wasserstein), not significance
   → or fix the sample size at a few thousand

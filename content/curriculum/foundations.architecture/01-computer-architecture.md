@@ -100,8 +100,9 @@ flowchart TB
 
 ```text
   → both loops are O(n²), doing the IDENTICAL number of
-    additions — and the row-major version is commonly 5-10×
-    faster in practice, purely from cache behavior. this is the
+    additions — and for matrices larger than the cache,
+    the row-major version is commonly 5-10× faster, purely
+    from cache behavior. this is the
     canonical example that "same Big-O" does not mean "same
     speed," and it's a real, measurable difference, not a
     theoretical one.
@@ -205,8 +206,8 @@ flowchart TB
    locality — this single fact explains why array iteration is fast and
    pointer-chasing is slow at identical Big-O.
 3. Row-major vs column-major matrix traversal is the canonical proof that
-   identical Big-O doesn't mean identical speed — a 5-10× real difference
-   from access pattern alone.
+   identical Big-O doesn't mean identical speed — for matrices larger
+   than the cache, access pattern alone can make a 5-10× difference.
 4. Branch misprediction has a real, measurable cost, which is why sorting
    data before a loop that branches on it can genuinely speed the loop up —
    sorted data makes the branch predictable.

@@ -201,7 +201,7 @@ written to an appending sink produces 100 + 105 + 107 = 312.
                correct within an hour
 
   window        tumbling, 5 minutes, EVENT time
-  watermark     max event time − 30 s   (from measured p99)
+  watermark     max event time − 30 s   (this stream's measured p99)
   early trigger every 10 s while the window is open
   allowed
   lateness      1 hour   → late events update the result

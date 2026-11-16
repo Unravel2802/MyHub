@@ -90,7 +90,7 @@ across PCIe.
 ```
 
 Checking that it is actually enabled is worth doing — it is a configuration issue
-that silently halves inter-node bandwidth.
+that silently cuts inter-node bandwidth.
 
 ## Hierarchical collectives
 

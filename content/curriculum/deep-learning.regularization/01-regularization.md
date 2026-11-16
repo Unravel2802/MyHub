@@ -94,7 +94,7 @@ usually better answers.
   the modern LLM situation is different:
 
     trained on trillions of tokens for roughly ONE EPOCH,
-    the model never sees an example twice.
+    most examples are seen once or only a few times.
     → classical overfitting barely applies
     → dropout is often disabled entirely
     → the constraint is DATA, not capacity

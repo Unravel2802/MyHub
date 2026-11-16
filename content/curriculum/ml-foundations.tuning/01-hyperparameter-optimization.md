@@ -32,8 +32,8 @@ process.
                       matters and the one that does not
 
   RANDOM            sample from distributions
-                    ✓ strictly better than grid at equal
-                      budget (Bergstra & Bengio)
+                    ✓ usually better than grid at equal budget
+                      when few dimensions matter (Bergstra & Bengio)
                     → 60 random samples land within the top
                       5% along the important dimensions with
                       ~95% probability
@@ -212,8 +212,8 @@ maintain.
 
 ## What to take away
 
-1. Random search strictly beats grid at equal budget because every sample varies
-   every dimension.
+1. When few dimensions matter, random search usually beats grid at equal budget
+   because every sample varies every dimension.
 2. Successive halving (Hyperband/ASHA) is usually the best wall-clock choice, on the
    assumption that early performance predicts final performance.
 3. Search learning rate and regularisation on a log scale, and record the search

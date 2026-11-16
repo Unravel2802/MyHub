@@ -171,7 +171,7 @@ flowchart TB
 ```
 
 ```text
-  cost estimate and actual time disagreeing by an order of
+  estimated and actual row counts disagreeing by an order of
   magnitude usually means the table's statistics are stale
   (ANALYZE hasn't run recently) — the planner is choosing a
   plan based on a row-count estimate that is simply wrong.
@@ -241,8 +241,8 @@ Isolation chapter — this chapter is the schema and query layer underneath it.
 3. Composite index column order matters: equality columns before range
    columns, and every index has a write cost, so index for the reads that
    actually happen.
-4. In a query plan, trust `actual time` over the cost estimate, and treat a
-   large gap between them as a signal that statistics are stale.
+4. Use `actual time` to see how long a plan took. A large gap between
+   estimated and actual row counts can signal stale statistics.
 5. N+1 is usually an ORM's lazy-loading default producing a query inside a
    loop — look for it there, not in the SQL itself.
 

@@ -187,8 +187,8 @@ absent.
 
 ```text
   □  report a CONFIDENCE INTERVAL, not a point estimate
-  □  n=50 gives roughly ±14% at 95% confidence — small
-     differences are not real
+  □  n=50 gives roughly ±14 percentage points at 95%
+     confidence — small differences are hard to distinguish
   □  PAIRED comparison on the same examples is far more
      sensitive than comparing two means
   □  run several trials for non-deterministic systems

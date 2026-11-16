@@ -6,7 +6,7 @@ summary: Where the subtle bugs live — commit timing, rebalancing, and the pois
 
 Producing to a log is mostly a matter of configuration. Consuming correctly is
 where the real difficulty is, because the consumer owns its position, and every
-decision about *when* to record that position is a decision about what happens
+decision about _when_ to record that position is a decision about what happens
 after a crash.
 
 > [!WHY] A billing consumer can write a charge and crash before recording its offset, or record the offset before the charge commits. That timing choice decides whether the system loses a charge or risks applying it twice.
@@ -41,7 +41,7 @@ Two rules follow, and both are commonly discovered the hard way:
 one permanently idle. Scaling a consumer means having planned enough partitions.
 
 **One slow consumer blocks its partitions only.** Its partitions fall behind; the
-others are unaffected. This makes lag *per partition* the metric that matters,
+others are unaffected. This makes lag _per partition_ the metric that matters,
 not lag averaged over the group.
 
 ## Offset commit: the decision that defines your semantics
@@ -101,7 +101,7 @@ with db.transaction():
 # a crash anywhere rolls back all three together
 ```
 
-Storing the offset in *your own database* alongside the effect is what makes it
+Storing the offset in _your own database_ alongside the effect is what makes it
 atomic. Committing to the broker is a separate system and can never be atomic
 with your write — which is the two-writes problem again, and this is its answer.
 
@@ -124,8 +124,8 @@ deploy, a scale-up, a crash — and it is where most consumer bugs surface.
     ▸ any local state for a moved partition must be rebuilt
 ```
 
-**The stop-the-world problem.** The classic ("eager") protocol revokes *all*
-partitions from *all* consumers and reassigns from scratch — so one consumer
+**The stop-the-world problem.** The classic ("eager") protocol revokes _all_
+partitions from _all_ consumers and reassigns from scratch — so one consumer
 joining pauses the entire group. With slow state rebuilding, a rolling deploy of
 ten instances triggers ten full rebalances and can take the group offline for
 minutes.
@@ -271,12 +271,10 @@ runbook procedures rather than improvised during an incident.
    than `max.poll.interval.ms` causes rebalance storms.
 5. A poison message blocks its whole partition forever — dead-letter it, advance
    the offset, alert on the rate, and keep a replay path.
-6. Alert on lag trend per partition *and* on throughput, because a stopped
+6. Alert on lag trend per partition _and_ on throughput, because a stopped
    consumer can show zero lag.
 
-Next: operating a log — schemas, evolution, and the patterns that make an
-event-driven system maintainable.
-
+Next: schemas and evolution — how producers and consumers change independently.
 
 ## Exercises
 

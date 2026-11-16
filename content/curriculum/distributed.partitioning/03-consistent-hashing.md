@@ -272,7 +272,7 @@ Redis Cluster's fixed-slot approach is worth noting as a design: rather than a
 continuous ring, it defines 16,384 slots, maps keys to slots by CRC16, and maps
 slots to nodes explicitly. This makes rebalancing a matter of _moving slots_,
 which is easier to reason about, monitor and control than moving ring arcs — and
-it is the same idea as the "fixed partitions" scheme in the next chapter.
+it is the same idea as the fixed partitions in Rebalancing and request routing.
 
 > [!PITFALL] Replica count can lie: the next virtual positions may all belong to one
 > machine. Select distinct physical nodes, and account for racks or zones,

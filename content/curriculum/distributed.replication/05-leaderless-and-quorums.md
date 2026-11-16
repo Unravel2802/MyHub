@@ -6,7 +6,7 @@ summary: Dynamo-style writes, the R + W > N arithmetic, and the guarantees it do
 
 Leaderless replication removes the leader entirely. Clients — or a coordinator
 acting for them — write to several replicas at once and read from several at
-once, and consistency comes from the *overlap* between those sets rather than
+once, and consistency comes from the _overlap_ between those sets rather than
 from any node being in charge. It is the design behind Dynamo, Cassandra, Riak
 and S3, and its central idea is one inequality.
 
@@ -60,12 +60,12 @@ that saw the latest write.
 Choosing R and W is choosing where to spend latency and where to accept
 unavailability:
 
-| Config (N=3) | Read | Write | Property |
-| --- | --- | --- | --- |
-| W=3, R=1 | fast | slow | Fast reads; any node down blocks writes |
-| W=1, R=3 | slow | fast | Fast writes; any node down blocks reads |
-| W=2, R=2 | balanced | balanced | Tolerates one node down for both |
-| W=1, R=1 | fastest | fastest | **No overlap** — eventual only |
+| Config (N=3) | Read     | Write    | Property                                |
+| ------------ | -------- | -------- | --------------------------------------- |
+| W=3, R=1     | fast     | slow     | Fast reads; any node down blocks writes |
+| W=1, R=3     | slow     | fast     | Fast writes; any node down blocks reads |
+| W=2, R=2     | balanced | balanced | Tolerates one node down for both        |
+| W=1, R=1     | fastest  | fastest  | **No overlap** — eventual only          |
 
 `W = R = ⌈(N+1)/2⌉` — a simple majority for both — is the usual default, because
 it tolerates the most node failures while keeping the guarantee.
@@ -102,7 +102,7 @@ first time you meet it, and it means "the write failed" cannot be relied upon to
 mean "the write did not happen".
 
 **Sloppy quorums break the overlap entirely.** Under a partition, some systems
-accept a write on *any* N reachable nodes, not the N nodes that own the key:
+accept a write on _any_ N reachable nodes, not the N nodes that own the key:
 
 ```text
   key K's home replicas: [1] [2] [3]   ← all unreachable from the client
@@ -175,7 +175,7 @@ between two large collections".
 ## Tombstones and the resurrection problem
 
 Deletion in a leaderless system cannot be "remove the row", because a replica
-that missed the delete would see the row as *present* and helpfully replicate it
+that missed the delete would see the row as _present_ and helpfully replicate it
 back:
 
 ```text
@@ -228,21 +228,21 @@ matching the store to the guarantee each dataset needs.
 
 ## The three architectures, compared
 
-| | Single leader | Multi leader | Leaderless |
-| --- | --- | --- | --- |
-| Write conflicts | impossible | resolve | resolve |
-| Write availability | fails during failover | high | **highest** |
-| Read-your-writes | easy | needs care | needs R+W>N and care |
-| Ordering | total | per leader | none |
-| Uniqueness constraints | ✅ | ✗ | ✗ |
-| Failover complexity | high | none | **none** |
-| Operational complexity | low | high | medium |
-| Examples | Postgres, MySQL | multi-region MySQL, CouchDB | Cassandra, Riak, S3 |
+|                        | Single leader         | Multi leader                | Leaderless           |
+| ---------------------- | --------------------- | --------------------------- | -------------------- |
+| Write conflicts        | impossible            | resolve                     | resolve              |
+| Write availability     | fails during failover | high                        | **highest**          |
+| Read-your-writes       | easy                  | needs care                  | needs R+W>N and care |
+| Ordering               | total                 | per leader                  | none                 |
+| Uniqueness constraints | ✅                    | ✗                           | ✗                    |
+| Failover complexity    | high                  | none                        | **none**             |
+| Operational complexity | low                   | high                        | medium               |
+| Examples               | Postgres, MySQL       | multi-region MySQL, CouchDB | Cassandra, Riak, S3  |
 
 The two cells worth reading together are "failover complexity: high" for single
 leader and "none" for leaderless. That is the real trade at the heart of Dynamo's
 design: it gave up ordering and constraints to eliminate the entire class of
-failover problems from the previous chapter.
+leader replacement problems discussed in Failover.
 
 > [!PITFALL] Sloppy quorum: accepting writes on substitute reachable
 > nodes preserves availability but can leave the read set with no copy of

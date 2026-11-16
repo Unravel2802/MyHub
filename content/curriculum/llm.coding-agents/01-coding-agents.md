@@ -275,7 +275,7 @@ requiring explanation, not just acceptance.
    fall in proportion to writing effort saved — and provenance recording is what
    makes escaped defects attributable.
 
-Next: evaluating these systems honestly.
+Next: LLM Evaluation — evaluating these systems honestly.
 
 ## Exercises
 

@@ -61,7 +61,7 @@ cause trouble:
   ┌─ module-level singletons ──── a cache, a connection pool, a registry
   ├─ class attributes ─────────── shared by every instance
   ├─ mutable default arguments ── Python's famous one
-  ├─ closures over mutable cells ─ see the previous chapter
+  ├─ closures over mutable cells ─ see The call stack and closures
   ├─ the filesystem ───────────── the most-forgotten global variable
   ├─ environment variables ─────── configuration read at import time
   ├─ the clock ────────────────── now() is a hidden input
@@ -222,7 +222,6 @@ rule grows.
 A useful signal: **if a test needs a mock, ask whether the logic could have been
 pure instead.** Mocks are usually a sign that effects have leaked into a place
 that only needed to make a decision.
-
 
 ```mermaid
 flowchart TB

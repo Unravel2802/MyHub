@@ -290,7 +290,7 @@ model need different optimisations.
 6. Prefix caching is often the largest single win for agent and RAG workloads, and
    requires only that stable content comes first.
 
-Next: the techniques themselves — paged attention, speculation and compression.
+Next: memory and attention — paged allocation and sharing for the KV cache.
 
 ## Exercises
 

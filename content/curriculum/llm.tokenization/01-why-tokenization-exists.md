@@ -250,7 +250,7 @@ memorised spellings rather than being able to inspect them.
 6. A different tokenizer means a different model — their embeddings are not
    comparable.
 
-Next: what the model does with those tokens — the modern transformer stack.
+Next: embeddings and vocabulary — how token IDs become model inputs.
 
 ## Exercises
 

@@ -269,7 +269,7 @@ isolation is not achievable, so separation is the reliable defence.
    deadlock; and network, disk and cache isolation are weak enough that
    separation beats co-location for latency-sensitive work.
 
-Next: preemption, autoscaling, and how real schedulers put this together.
+Next: preemption and elasticity — reclaiming and scaling capacity.
 
 ## Exercises
 

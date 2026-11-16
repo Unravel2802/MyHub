@@ -218,7 +218,7 @@ it; a restart that requires a human means the job is idle overnight.
 
   □  GRADUAL MEMORY GROWTH
        a retained graph; OOM after hours
-       → the `total_loss += loss` bug from the previous chapter
+       → the `total_loss += loss` bug in Keeping the accelerator busy
 ```
 
 The silent straggler is the one that wastes the most money without anyone

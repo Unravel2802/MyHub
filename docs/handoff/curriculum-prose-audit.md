@@ -347,3 +347,25 @@ speedup ≈ acceptance × K (labelled approximate); IVF 1/500 (equal-list
 approximation); same-DC RTT 300 vs 500 µs (both inside the real range, and
 the 300 µs figure feeds that chapter's scaled analogy); PCIe ranges (different
 examples); 128k × 512 KiB ≈ 64 GB (rounded).
+
+### X7 applied
+
+- distributed.batch-stream/04-windows-and-watermarks.md — The 30 s offset comes from this stream’s measured p99.
+- systems-design.case-search/01-search-and-autocomplete.md — About 40% of queries wait on at least one of 50 independent shards past its p99.
+- systems-design.estimation/01-back-of-envelope.md — A 95% CDN byte hit rate leaves about $4,800/month in origin egress, plus the unpriced CDN delivery fee.
+- backend.sql/01-relational-modeling-and-sql.md — Estimated versus actual row counts can reveal stale statistics. Planner cost uses arbitrary units.
+- foundations.architecture/01-computer-architecture.md — The illustrative 5–10× traversal gap applies when the matrix is larger than the cache.
+- infra.networking-ops/01-practical-networking.md — Certificate expiry is one of the most common real-world TLS incidents.
+- data.warehouse/01-warehouses-lakes-and-lakehouses.md — Query compute can suspend or scale to zero when idle.
+- ml-foundations.tuning/01-hyperparameter-optimization.md — Random search usually beats grid at equal budget when only a few dimensions matter.
+- deep-learning.compression/01-pruning-distillation-nas.md — A distilled model that meets the bar can be an order of magnitude cheaper, permanently.
+- deep-learning.regularization/01-regularization.md — Most examples are seen once or only a few times.
+- llm.architecture/01-the-transformer-block.md — With eight experts and top-2 routing, about 5.7× the dense block’s parameters and 1.7× its FLOPs under the stated FFN approximation.
+- llm.frontier/01-reading-the-frontier.md — The transformer’s core design has been stable since 2017, with refinements including pre-norm, RoPE, SwiGLU, GQA and MoE.
+- llm.evaluation/01-llm-evaluation.md — At n=50 the rough 95% margin is ±14 percentage points.
+- ml-systems.cost/01-where-the-money-goes.md — A 2% lift on $100M/year is about $2M/year against $600k/year in model cost.
+- ml-systems.edge/01-on-device-inference.md — Handling 90% locally can cut serving cost by up to 90%, since harder requests fall back.
+- ml-systems.monitoring/02-drift.md — A mean shift of 0.01 standard deviations can give p < 0.001 with a million observations per sample and still matter to nobody.
+- ml-systems.distributed-training/04-communication-and-debugging.md — The misconfiguration silently cuts inter-node bandwidth.
+- distributed.failure/03-admission-control.md — The unbounded-queue example refers to Streaming and backpressure.
+- engineering.leadership/01-technical-leadership-and-influence.md — This is the last chapter in the Engineering Practice track.

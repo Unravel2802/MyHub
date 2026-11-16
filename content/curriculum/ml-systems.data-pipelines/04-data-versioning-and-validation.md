@@ -86,7 +86,7 @@ minor version.
 
 ## Data validation
 
-The higher-value half of this chapter, because it catches problems *before* they
+The higher-value half of this chapter, because it catches problems _before_ they
 become models.
 
 ```text
@@ -242,8 +242,7 @@ failure as an unwatched dead-letter queue.
 6. Validate at serving too, with a written decision about what happens when a
    feature is out of range.
 
-Next: labelling — where training data actually comes from, and why its quality
-caps everything.
+Next: orchestration and freshness — how pipelines keep features up to date.
 
 ## Exercises
 

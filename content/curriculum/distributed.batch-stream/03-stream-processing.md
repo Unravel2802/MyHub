@@ -122,7 +122,8 @@ watermark, which is the next chapter.
 
 The stateless/stateful split is the one that determines operational difficulty. A
 stateless pipeline is close to trivial: partition it, restart on failure, done. A
-stateful one needs everything in the fault-tolerance chapter.
+stateful one needs the recovery mechanisms in State, fault tolerance and the
+duality.
 
 ## Streaming joins, which are genuinely hard
 

@@ -5,7 +5,7 @@ summary: How the standard reliability tools become the cause of the outage, and 
 ---
 
 Timeouts and retries are the first reliability tools anyone reaches for, and
-they are also, configured naively, one of the most common *causes* of large
+they are also, configured naively, one of the most common _causes_ of large
 outages. A retry is additional load applied at exactly the moment a system is
 least able to absorb it. This chapter is about getting the parameters right,
 because the difference between a system that rides out a blip and one that
@@ -78,16 +78,16 @@ with room for the caller to do something with the failure.
 
 Retrying the wrong thing is worse than not retrying.
 
-| Error | Retry? | Why |
-| --- | --- | --- |
-| Connection refused | **Yes** | Nothing happened; probably a restarting instance |
-| Timeout | **Carefully** | May have succeeded — only if idempotent |
-| 429 Too Many Requests | **Yes**, after `Retry-After` | Explicitly asked to |
-| 503 Service Unavailable | **Yes**, with backoff | Transient by definition |
-| 500 Internal Server Error | **Maybe** | Could be a deterministic bug — retrying repeats it |
-| 400 Bad Request | **Never** | The request is malformed; it will always be |
-| 401 / 403 | **Never** | Retrying will not grant permission |
-| 404 | **Never** | It is not there |
+| Error                     | Retry?                       | Why                                                |
+| ------------------------- | ---------------------------- | -------------------------------------------------- |
+| Connection refused        | **Yes**                      | Nothing happened; probably a restarting instance   |
+| Timeout                   | **Carefully**                | May have succeeded — only if idempotent            |
+| 429 Too Many Requests     | **Yes**, after `Retry-After` | Explicitly asked to                                |
+| 503 Service Unavailable   | **Yes**, with backoff        | Transient by definition                            |
+| 500 Internal Server Error | **Maybe**                    | Could be a deterministic bug — retrying repeats it |
+| 400 Bad Request           | **Never**                    | The request is malformed; it will always be        |
+| 401 / 403                 | **Never**                    | Retrying will not grant permission                 |
+| 404                       | **Never**                    | It is not there                                    |
 
 The distinction is **transient versus permanent**. Retrying a permanent error is
 pure waste that turns one failure into five, and on a 4xx it is often a signal
@@ -95,7 +95,7 @@ that your client is broken in a way retries will hide.
 
 And the precondition that overrides all of this: **retry only what is safe to
 repeat.** A timeout on a non-idempotent operation is the case where a retry
-charges the card twice. Idempotency keys, from the previous chapter, are what
+charges the card twice. Idempotency keys, from Partial failure, are what
 make the "carefully" row safe.
 
 ## The three things that must go together
@@ -179,7 +179,7 @@ The defences:
 1. **Retry at ONE layer.** Usually the outermost one that has enough context to
    decide, or the one closest to the failure — but not both. Every layer that
    retries must know that the layers around it do not.
-2. **Retry budgets.** Cap retries as a *fraction of total traffic* — for example
+2. **Retry budgets.** Cap retries as a _fraction of total traffic_ — for example
    "retries may not exceed 10% of requests in the last minute". Under normal
    conditions the budget is never touched; under widespread failure it stops the
    amplification cold. This is the mechanism gRPC and Envoy expose, and it is
@@ -214,8 +214,8 @@ answer.
 
 - **Closed** — normal. Count failures over a rolling window.
 - **Open** — fail immediately without making the call. This is the point: it
-  protects *the caller* from exhausting its threads, and it protects *the
-  callee* from load while it recovers.
+  protects _the caller_ from exhausting its threads, and it protects _the
+  callee_ from load while it recovers.
 - **Half-open** — after a cooldown, allow a single trial request. Success closes
   the circuit; failure opens it again. Letting all traffic through at once would
   re-kill a service that had just come back.

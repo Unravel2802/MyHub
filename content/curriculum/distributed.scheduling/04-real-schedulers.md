@@ -81,7 +81,7 @@ only what it is offered, so no global optimisation is possible.
 
 **YARN** is Hadoop's, built for batch. Its Capacity Scheduler implements
 hierarchical queues with guarantees and borrowing, and its Fair Scheduler
-implements DRF. Both are the mechanisms from the previous chapter, named.
+implements DRF. Both mechanisms come from Fairness and multitenancy.
 
 **Nomad** is deliberately simpler — one binary, several workload types
 (containers, VMs, raw executables), optimistic concurrency over shared state. A

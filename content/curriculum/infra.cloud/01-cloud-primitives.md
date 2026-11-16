@@ -83,7 +83,7 @@ providers in a way memorizing product names never does.
     yourself.
 ```
 
-## Networking: VPCs, subnets, and the shapes from the previous chapter
+## Networking: VPCs, subnets, and the shapes from Practical networking
 
 ```text
   → this is directly the Practical Networking chapter's VPC/

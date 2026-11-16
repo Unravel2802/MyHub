@@ -103,3 +103,20 @@ compared at the precision and under the assumptions used in each example.
 | Retrieval recall@k                 | Relevant results in top k ÷ all relevant results; ANN substitutes the exact top k as its gold set                            | ml-foundations.evaluation/01; ml-systems.recsys/02; ml-systems.vector-search/01,02; ml-systems.evaluation-infra/03; llm.rag/01 |
 | Reciprocal rank                    | 1 ÷ first relevant result's rank, averaged across queries in MRR                                                             | ml-foundations.evaluation/01; ml-systems.vector-search/02; llm.rag/01                                                          |
 | Cohen’s κ                          | Chance-corrected annotator agreement, defined in one chapter. Kappa architecture is a separate term                          | ml-systems.labeling/01; distributed.batch-stream/05 (different sense)                                                          |
+
+## Review — 2026-11-16 (Claude)
+
+Approved on the first review. I checked each Part 1 fix against the cited
+chapters: the A100 40 GB / 80 GB SXM bandwidths (1,555 and 2,039 GB/s on
+NVIDIA's datasheet), recall@k now matching ml-foundations.evaluation's
+definition in both retrieval chapters, the self-hosted cost scaled to a
+million tokens to match the API's unit, and GQA/MQA cache size following the
+KV head count. Each Part 2 fix points at a chapter that exists and says what
+is attributed to it, and each changed "Next:" line names the following
+chapter's actual subject. Edited fenced lines stay within 76 characters.
+
+Running prettier on each touched file also re-aligned wide tables and
+switched `*emphasis*` to `_emphasis_` in six files; that is formatting only
+and matches what the pre-commit hook does. The openers gate now has a 30 s
+timeout. Gates on the branch: lint and typecheck pass, 1,634 unit and 390
+curriculum E2E tests pass.

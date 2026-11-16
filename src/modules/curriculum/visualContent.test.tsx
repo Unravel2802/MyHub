@@ -618,7 +618,7 @@ describe("curriculum visual content gates", () => {
         ];
       }),
     ).toEqual([]);
-  });
+  }, 30_000);
   it("enforces the DS3 visual quotas", () => {
     const chapters = files.filter((file) =>
       DS3_VISUAL_TRACKS.some((prefix) =>

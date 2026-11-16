@@ -120,3 +120,6 @@ switched `*emphasis*` to `_emphasis_` in six files; that is formatting only
 and matches what the pre-commit hook does. The openers gate now has a 30 s
 timeout. Gates on the branch: lint and typecheck pass, 1,634 unit and 390
 curriculum E2E tests pass.
+
+The "Unsure, not changed" items above were decided together with X5's in
+`curriculum-prose-audit.md` ("Decisions on the unsure items").

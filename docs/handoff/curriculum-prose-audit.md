@@ -278,3 +278,72 @@ Merging normalised a few lines through the pre-commit prettier pass
 (emphasis style, stray blank lines) and joined one exercise line, which was
 re-wrapped. Gates on the merged main: lint and typecheck pass, 1,634 unit
 and 390 curriculum E2E tests pass.
+
+## Decisions on the unsure items — 2026-11-16 (Claude)
+
+Covers the "Unsure, not changed" lists here and in
+`curriculum-consistency-audit.md` (38 distinct items; two appear in both).
+**Edit** items go to Codex as X7; **keep** items stay as written.
+
+Edit (19):
+
+- distributed.batch-stream/04 watermark — the worked example's 30 s reads as
+  contradicting the measured 45 s p99 above it; label it as this stream's own
+  measured p99.
+- systems-design.case-search/01 fan-out — "p99 becomes the typical query
+  latency" overstates it; 1 − 0.99⁵⁰ ≈ 39%, so about 40% of queries wait on a
+  shard past its p99 (independent shards).
+- systems-design.estimation/01 CDN total — $10,000–20,000 has no stated CDN
+  tariff; give the computable part (5% origin egress ≈ $4,800/month) plus
+  the CDN's own unpriced fee, as the case-storage chapter now does.
+- backend.sql/01 EXPLAIN — planner cost is in arbitrary units and cannot be
+  compared with milliseconds; the stale-statistics signal is estimated rows
+  versus actual rows.
+- foundations.architecture/01 row- vs column-major — the 5–10× gap holds for
+  matrices larger than cache; say so (body and takeaway).
+- infra.networking-ops/01 certificate expiry — "the most common" is
+  unprovable; "one of the most common" (body and takeaway).
+- data.warehouse/01 — compute does not always run "only when a query runs";
+  it can suspend or scale to zero when idle.
+- ml-foundations.tuning/01 random search — not "strictly" better; Bergstra
+  & Bengio show it is usually better when few dimensions matter.
+- deep-learning.compression/01 distillation — "is 10× cheaper" → "can be an
+  order of magnitude cheaper".
+- deep-learning.regularization/01 — "never sees an example twice" is false
+  for upsampled sources; most examples are seen once or a few times.
+- llm.architecture/01 MoE — the chapter's own "FFN ≈ two-thirds of the
+  parameters" gives 8 experts top-2 ≈ 1/3 + 8 × 2/3 ≈ 5.7× parameters and
+  1/3 + 2 × 2/3 ≈ 1.7× FLOPs, not ~4× and ~1.3×.
+- llm.frontier/01 — "the transformer architecture has been stable since
+  2017" contradicts the architecture chapter's pre-norm, RoPE, SwiGLU, GQA
+  and MoE; the core design is stable and the rest are refinements.
+- llm.evaluation/01 — n = 50 gives ±14 percentage points (worst case
+  1.96 × √(0.25/50) ≈ 0.139), not ±14%.
+- ml-systems.cost/01 — the $50k/month model "obviously worth it" needs its
+  arithmetic: 2% on $100M a year is ~$2M a year against $600k a year.
+- ml-systems.edge/01 — fallback requests are the harder ones, so 90% local
+  cuts serving cost by up to 90%, not exactly 90%.
+- ml-systems.monitoring/02 — a 0.1% mean shift is not significant at a
+  million samples for typical variance; a shift of 0.01 standard deviations
+  is (z ≈ 0.01 × √(10⁶/2) ≈ 7.1).
+- ml-systems.distributed-training/04 GPUDirect — "halves" has no stated
+  baseline; "cuts".
+- distributed.failure/03 — "the streaming chapter" is
+  distributed.rpc/05 Streaming and backpressure (unbounded queue → memory
+  exhaustion); name it.
+- engineering.leadership/01 — it is the last chapter of Engineering
+  Practice, not of the curriculum (Engineering Practice is 12th of 14
+  tracks).
+
+Keep (19): consistent-hashing 1/√V (the table matches 1/√V); git's strict
+rebase rule (deliberate teaching rule); i18n 30–50% expansion; interpreted
+loops 20–100× slower; package signatures and identity; Arrow zero
+serialization; CDC adds no _query_ load (true as stated); the three
+engineering-track heuristics; most high-dimensional critical points are
+saddles; Thompson sampling "usually" best; FlashAttention does more
+arithmetic (the backward recomputation, per the paper); over-training by
+50–100× (Llama-3-class ratios fall in that range); speculative-decoding
+speedup ≈ acceptance × K (labelled approximate); IVF 1/500 (equal-list
+approximation); same-DC RTT 300 vs 500 µs (both inside the real range, and
+the 300 µs figure feeds that chapter's scaled analogy); PCIe ranges (different
+examples); 128k × 512 KiB ≈ 64 GB (rounded).

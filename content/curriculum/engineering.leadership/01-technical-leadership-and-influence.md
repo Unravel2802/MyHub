@@ -4,12 +4,12 @@ minutes: 18
 summary: Driving decisions without formal authority — every discipline in this track, aimed at a scope larger than any one team.
 ---
 
-This is the last chapter in the curriculum, and it doesn't introduce a new
-technique so much as name what happens when every discipline this track has
-covered — clear writing, productive disagreement, mentoring, scoping,
-honest measurement — gets aimed at a scope that spans multiple teams, with
-no direct reporting line giving anyone the authority to simply mandate the
-outcome.
+This is the last chapter in the Engineering Practice track. It doesn't
+introduce a new technique so much as name what happens when every discipline
+this track has covered — clear writing, productive disagreement, mentoring,
+scoping, honest measurement — gets aimed at a scope that spans multiple teams,
+with no direct reporting line giving anyone the authority to simply mandate
+the outcome.
 
 > [!WHY] A cross-team technical direction is announced, but another team
 > drops it as soon as its own deadline tightens. Formal compliance did not

@@ -178,8 +178,9 @@ The framing that makes decisions possible:
 ```
 
 ```text
-  a recommendation model costing $50k/month that lifts
-  conversion by 2% on $100M of revenue is obviously worth it.
+  a recommendation model costs $50k/month, or $600k/year.
+  a 2% lift on $100M/year in revenue is about $2M/year.
+  → the recommendation model is clearly worth it.
 
   a churn model costing $30k/month whose interventions have
   never been measured against a holdout might not be.

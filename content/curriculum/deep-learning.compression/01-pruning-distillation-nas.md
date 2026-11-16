@@ -101,8 +101,8 @@ to skip the dense training phase.
 
 **Distillation is the most under-used compression technique**, as the
 inference-optimization topic said, because it looks like a modelling project
-rather than an efficiency one. A distilled model that meets the bar is 10×
-cheaper permanently, which no serving optimisation matches.
+rather than an efficiency one. A distilled model that meets the bar can be an
+order of magnitude cheaper, permanently, which no serving optimisation matches.
 
 ```mermaid
 flowchart TB

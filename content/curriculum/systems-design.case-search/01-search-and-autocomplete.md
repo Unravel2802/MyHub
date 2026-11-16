@@ -119,8 +119,8 @@ flowchart TB
   the tail-latency problem, from the fundamentals topic
 
     the query is as slow as the SLOWEST shard.
-    with 50 shards, a p99 shard latency becomes the typical
-    query latency.
+    with 50 independent shards, about 40% of queries wait
+    on at least one shard past its p99 (1 − 0.99⁵⁰ ≈ 0.39).
 
   → hedged requests to a replica
   → or return partial results past a deadline, marked

@@ -214,8 +214,10 @@ why mixture-of-experts targets it specifically.
 ```
 
 ```text
-  → many more PARAMETERS, roughly constant compute per token
-  → e.g. 8 experts, top-2: ~4× the parameters, ~1.3× the FLOPs
+  → many more PARAMETERS, with compute set by active experts
+  → 8 experts, top-2, with FFN ~2/3 of dense weights and FLOPs:
+    parameters: 1/3 + 8 × 2/3 ≈ 5.7× the dense block
+    FLOPs:      1/3 + 2 × 2/3 ≈ 1.7× the dense block
 
   the costs
     □  ALL experts' weights must be in memory
@@ -281,8 +283,9 @@ dump attention it does not need to allocate elsewhere.
    4k model becomes a 128k model without retraining.
 4. GQA is the architectural answer to the KV cache bottleneck and is now the
    default.
-5. The FFN is two-thirds of the parameters, which is what MoE targets — more
-   parameters at constant compute, at the cost of memory and all-to-all routing.
+5. The FFN is about two-thirds of the parameters, which is what MoE targets.
+   All experts add parameters, while only active experts add FFN compute.
+   The trade-offs are memory and all-to-all routing.
 6. Attention sinks: keeping the first few tokens is necessary for sliding-window
    attention to work at all.
 

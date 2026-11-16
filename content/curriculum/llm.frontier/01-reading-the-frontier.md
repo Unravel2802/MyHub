@@ -37,10 +37,10 @@ apart: which claims to take seriously, and what to watch.
     □  chat interfaces → tool-using agents
 ```
 
-The shape of that list is the useful observation: **the architecture is stable and
-almost everything else has moved.** An engineer who understands attention,
-scaling and the training pipeline can absorb each new development; one who has
-memorised current model names cannot.
+**The transformer's core design has been stable since 2017**, with
+refinements including pre-norm, RoPE, SwiGLU, GQA and MoE. An engineer who
+understands attention, scaling and the training pipeline can absorb each new
+development; one who has memorised current model names cannot.
 
 ## Evaluating a claim
 
@@ -194,9 +194,9 @@ across model generations; prompt tricks and model-specific workarounds do not.
 
 ## What to take away
 
-1. The transformer architecture has been stable since 2017; almost everything else
-   — training economics, alignment methods, context length, test-time compute — has
-   moved.
+1. The transformer's core design has been stable since 2017, with refinements
+   including pre-norm, RoPE, SwiGLU, GQA and MoE. Training economics, alignment
+   methods, context length and test-time compute have moved.
 2. Evaluate claims by asking for compute-matched comparisons, ablations and
    independent reproduction, and wait for production reports.
 3. Efficiency gains are frequently more consequential for products than capability

@@ -464,7 +464,7 @@ test("estimation charts render SVG and latency rows expose keyboard and hover to
     "same-DC round trip: 0.5 ms",
   );
   const egress = page.getByRole("region", {
-    name: "Monthly egress for 40 TB/day of media",
+    name: "Monthly origin egress for 40 TB/day of media",
     exact: true,
   });
   await expect(egress.locator('svg[role="img"]')).toHaveAttribute(
@@ -473,7 +473,7 @@ test("estimation charts render SVG and latency rows expose keyboard and hover to
   );
   await expect(egress.locator('svg[role="img"]')).toHaveAttribute(
     "aria-label",
-    /CDN, 95% hits: \$10–20k/,
+    /origin with CDN, 95% byte hits: \$4\.8k/,
   );
   const screenshot = test.info().outputPath("latency-chart.png");
   await latency.screenshot({ path: screenshot });

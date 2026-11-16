@@ -219,8 +219,9 @@ estimation-calculator
     40 TB/day of media served directly from object storage
     = 1.2 PB/month × $0.08 = ~$96,000/month
 
-    the same traffic through a CDN with a 95% hit rate
-    ≈ $10,000–20,000/month
+    with a 95% CDN byte hit rate, origin egress falls to
+    5% of $96,000 ≈ $4,800/month, plus the CDN's own delivery
+    fee, which this example does not price
 
   → which is a second, independent argument for the CDN
 ```
@@ -228,12 +229,12 @@ estimation-calculator
 ```chart
 type: bar
 unit: $/month
-title: Monthly egress for 40 TB/day of media
-caption: The second, independent argument for the CDN.
+title: Monthly origin egress for 40 TB/day of media
+caption: Origin charges only. The CDN's delivery fee is extra.
 highlight: direct from object storage
 ---
 direct from object storage: 96000
-through a CDN, 95% hits: 10000-20000
+origin with CDN, 95% byte hits: 4800
 ```
 
 ## Common mistakes
@@ -265,7 +266,7 @@ through a CDN, 95% hits: 10000-20000
 > the worked example?
 >
 > Text is 100 GB a day; images are 40 TB a day, 400× more. That volume belongs
-> in object storage behind a CDN, which also fixes the egress bill.
+> in object storage behind a CDN, which also cuts origin egress charges.
 
 ## What to take away
 

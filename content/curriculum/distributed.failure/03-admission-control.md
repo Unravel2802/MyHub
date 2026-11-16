@@ -210,7 +210,7 @@ see.
 
 Every queue in the system is an admission-control decision that was made
 implicitly. An unbounded queue converts an overload into a memory exhaustion and
-a latency collapse, as the streaming chapter described.
+a latency collapse, as Streaming and backpressure described.
 
 ```text
   □  HTTP server accept backlog

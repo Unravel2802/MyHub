@@ -219,7 +219,7 @@ about as well as what it says.
 
 ```text
   RETRIEVAL METRICS
-    recall@k           is the right document in the top k?
+    recall@k           fraction of relevant documents in the top k
     MRR                how high is the first relevant one?
     NDCG@k             ranking quality with graded relevance
 

@@ -107,7 +107,8 @@ or you cannot tell which one is broken:
 
 ```text
   RETRIEVAL
-    □  recall@k — is the answer-bearing document retrieved?
+    □  recall@k — what fraction of answer-bearing documents
+       are in the top k? with just one, did we retrieve it?
     □  precision — how much irrelevant context is included?
 
   GENERATION

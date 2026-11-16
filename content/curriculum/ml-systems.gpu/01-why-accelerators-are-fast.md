@@ -200,14 +200,15 @@ Worth stating plainly, because it explains where they should not be used:
 ```
 
 The small-workload point is the one that catches people deploying models: a tiny
-model on a single request may be *slower* on a GPU than on a CPU, because launch
+model on a single request may be _slower_ on a GPU than on a CPU, because launch
 overhead and transfer dominate the arithmetic. GPUs win on batches.
 
 ## The generations, roughly
 
 ```text
   V100 (2017)   fp16 tensor cores, 900 GB/s, 32 GB
-  A100 (2020)   bf16 + TF32, 2 TB/s, 40/80 GB, MIG partitioning
+  A100 (2020)   bf16 + TF32, 40/80 GB, MIG partitioning
+                ~1.56 TB/s at 40 GB; ~2 TB/s at 80 GB (SXM)
   H100 (2022)   fp8, 3.35 TB/s, 80 GB, transformer engine
   H200 (2024)   H100 compute, 4.8 TB/s, 141 GB
   B200 (2025)   fp4, ~8 TB/s, 192 GB

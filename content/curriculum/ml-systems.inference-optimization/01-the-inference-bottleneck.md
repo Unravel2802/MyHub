@@ -134,8 +134,8 @@ This is why so much inference engineering is really KV-cache engineering:
 
 ```text
   GQA / MQA          fewer KV heads than query heads
-                     → 4–8× smaller cache. now standard in new
-                       models.
+                     → cache shrinks in proportion to KV head count.
+                       GQA is now standard in new models.
   PAGED ATTENTION    allocate the cache in fixed blocks rather
                      than contiguously → removes fragmentation
                      waste (next chapter)
@@ -194,7 +194,7 @@ Ordered by effect per unit of effort:
   1. BATCHING (continuous)          5–20×   throughput
   2. A PURPOSE-BUILT SERVER          2–4×   over a naive loop
   3. QUANTISATION (weight-only int4) 2–4×   on decode
-  4. GQA/MQA (architecture)          2–4×   cache and bandwidth
+  4. GQA/MQA (architecture)          less KV cache and KV read traffic
   5. FLASH/PAGED ATTENTION           1.5–3× and much less memory
   6. SPECULATIVE DECODING            1.5–3× on latency
   7. A SMALLER OR DISTILLED MODEL    varies, often the largest

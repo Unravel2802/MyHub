@@ -27,8 +27,8 @@ whether an optimisation will help at all.
 ```text
   compare against the hardware's ratio:
 
-    A100:  312 TFLOP/s (bf16) ÷ 2.0 TB/s = ~156 FLOP/byte
-    H100:  990 TFLOP/s (bf16) ÷ 3.35 TB/s = ~295 FLOP/byte
+    A100 80 GB SXM: 312 TFLOP/s (bf16) ÷ 2.0 TB/s = ~156 FLOP/byte
+    H100 80 GB SXM: 990 TFLOP/s (bf16) ÷ 3.35 TB/s = ~295 FLOP/byte
 
   AI < the ratio   →  MEMORY BOUND
   AI > the ratio   →  COMPUTE BOUND

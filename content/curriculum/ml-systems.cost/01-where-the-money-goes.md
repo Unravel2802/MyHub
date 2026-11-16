@@ -211,7 +211,7 @@ years without knowing.
   the crossover arithmetic
 
     API:         $X per million tokens
-    self-hosted: instance $/hour ÷ (tokens/hour achieved)
+    self-hosted: 1,000,000 × instance $/hour ÷ (tokens/hour achieved)
 
   compute BOTH at your ACTUAL utilisation. self-hosting at
   20% utilisation is often more expensive than the API, and
